@@ -1273,3 +1273,121 @@ button {
   filter: saturate(0.45) brightness(1.05) contrast(0.92);
   opacity: 0.9;
 }
+
+/* Ficha, páginas 2 e 3 */
+.rec-lines-2 { grid-template-columns: repeat(2, 1fr); }
+.rec-lines-3 { grid-template-columns: repeat(3, 1fr); }
+.rec-lines-4 { grid-template-columns: repeat(4, 1fr); }
+.rec-lines-5 { grid-template-columns: repeat(5, 1fr); }
+
+.rec-columns-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rec-stack {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rec-three {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.rec-plain-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.rec-exhausted .rec-value {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.rec-textbox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid var(--ink);
+  min-height: 70px;
+}
+
+.rec-left-label {
+  text-align: left;
+}
+
+.rec-long {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rec-inline-field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.rec-desc-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.rec-sketch {
+  flex: 0 0 220px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rec-sketch-frame {
+  height: 260px;
+  display: grid;
+  place-items: center;
+  border: 1.3px solid var(--ink);
+  overflow: hidden;
+}
+
+.rec-sketch-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rec-desc-grid {
+  flex: 1 1 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rec-desc-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (width < 560px) {
+  .rec-lines-4,
+  .rec-lines-5 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .rec-desc-split {
+    grid-template-columns: 1fr;
+  }
+
+  .rec-sketch {
+    flex: 1 1 100%;
+  }
+}

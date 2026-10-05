@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
 import type { EquipmentItem, PlayerCharacter, SavingThrows } from '../types/library'
+import { dash } from '../lib/format'
+import { Cell, HeaderLine, SectionTitle } from './SheetBits'
 
 // Página 1 da ficha oficial (OfficialRecordSheet do iPad, a partir do PDF
 // MI_ADDCharSheet46): cabeçalho, atributos, jogadas de proteção, combate,
@@ -8,31 +9,6 @@ import type { EquipmentItem, PlayerCharacter, SavingThrows } from '../types/libr
 // recalcular regra nenhuma. As exceções são contas de exibição que o iPad
 // também faz na tela, sem gravar: total do save (base − mod) e a tabela
 // "Target's AC" (THAC0 − CA, ou o valor ajustado à mão).
-
-const dash = (value: string | number | null | undefined) =>
-  value === null || value === undefined || value === '' ? '—' : String(value)
-
-function Cell({ label, value, wide }: { label?: string; value: ReactNode; wide?: boolean }) {
-  return (
-    <div className={wide ? 'rec-cell rec-cell-wide' : 'rec-cell'}>
-      {label && <span className="rec-cell-label">{label}</span>}
-      <span className="rec-value">{value}</span>
-    </div>
-  )
-}
-
-function SectionTitle({ children }: { children: ReactNode }) {
-  return <h2 className="rec-title">{children}</h2>
-}
-
-function HeaderLine({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="rec-header-line">
-      <span className="rec-value rec-header-value">{children}</span>
-      <span className="rec-cell-label">{label}</span>
-    </div>
-  )
-}
 
 // --- Cabeçalho -------------------------------------------------------------
 

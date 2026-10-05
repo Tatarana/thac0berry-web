@@ -1,25 +1,48 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/context'
+import { RecordPageThree } from '../components/RecordPageThree'
+import { RecordPageTwo } from '../components/RecordPageTwo'
 import { RecordSheet } from '../components/RecordSheet'
 import { supabase } from '../lib/supabase'
 import type { PlayerCharacter } from '../types/library'
 
-// Ficha de um personagem (W2.2: página 1, só leitura). No servidor,
-// `character.data` é o PlayerCharacter do iPad sem `spellSheets`,
-// `portraitImageData`, `lastChangedField` e `recentAutoChanges`.
+// Ficha de um personagem, só leitura: páginas 1 a 3 da ficha oficial do iPad
+// (a 4ª, de tabelas de referência da classe, vem junto com as regras). No
+// servidor, `character.data` é o PlayerCharacter do iPad sem `spellSheets`,
+// `portraitImageData`, `lastChangedField` e `recentAutoChanges`; o retrato
+// fica no Storage (`portrait_attachment`).
 type ServerCharacter = Omit<PlayerCharacter, 'spellSheets' | 'portraitImageData'>
 
 interface Loaded {
   character: ServerCharacter
   campaignName: string | null
+  portraitAttachment: string | null
   updatedAt: string
+}
+
+const pages = [
+  { id: '1', label: 'Record' },
+  { id: '2', label: 'Equipment' },
+  { id: '3', label: 'Description' },
+]
+
+/** Link temporário (1 h) do retrato; o bucket é privado. */
+async function portraitURL(attachmentID: string): Promise<string | null> {
+  const { data } = await supabase.from('attachment').select('storage_path').eq('id', attachmentID).maybeSingle()
+  const path = (data as { storage_path: string } | null)?.storage_path
+  if (!path) return null
+  const signed = await supabase.storage.from('attachments').createSignedUrl(path, 3600)
+  return signed.data?.signedUrl ?? null
 }
 
 export function CharacterSheet() {
   const { id } = useParams()
+  const [params, setParams] = useSearchParams()
+  const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
   const { session, loading, signInWithGoogle } = useAuth()
   const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [portrait, setPortrait] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const userID = session?.user.id ?? null
 
@@ -29,25 +52,52 @@ export function CharacterSheet() {
     void (async () => {
       const { data, error: readError } = await supabase
         .from('character')
-        .select('data, campaign_id, updated_at')
+        .select('data, campaign_id, portrait_attachment, updated_at')
         .eq('id', id)
         .is('deleted_at', null)
         .maybeSingle()
       if (cancelled) return
       if (readError) return setError(readError.message)
       if (!data) return setError('This character is not on your account.')
-      const row = data as { data: ServerCharacter; campaign_id: string | null; updated_at: string }
+      const row = data as {
+        data: ServerCharacter
+        campaign_id: string | null
+        portrait_attachment: string | null
+        updated_at: string
+      }
       let campaignName: string | null = null
       if (row.campaign_id) {
         const campaign = await supabase.from('campaign').select('name').eq('id', row.campaign_id).maybeSingle()
         campaignName = (campaign.data as { name: string } | null)?.name ?? null
       }
-      if (!cancelled) setLoaded({ character: row.data, campaignName, updatedAt: row.updated_at })
+      if (!cancelled) {
+        setLoaded({
+          character: row.data,
+          campaignName,
+          portraitAttachment: row.portrait_attachment,
+          updatedAt: row.updated_at,
+        })
+      }
     })()
     return () => {
       cancelled = true
     }
   }, [userID, id])
+
+  // O retrato só é buscado quando a página 3 abre.
+  const attachment = loaded?.portraitAttachment ?? null
+  useEffect(() => {
+    if (page !== '3' || !attachment || portrait) return
+    let cancelled = false
+    void portraitURL(attachment).then((url) => {
+      if (!cancelled) setPortrait(url)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [page, attachment, portrait])
+
+  const character = loaded?.character as PlayerCharacter | undefined
 
   return (
     <div className="paper-page">
@@ -69,7 +119,25 @@ export function CharacterSheet() {
         )}
         {error && <p className="paper-soft">Could not open the character: {error}</p>}
         {session && !loaded && !error && <p className="paper-soft">Loading the character…</p>}
-        {loaded && <RecordSheet character={loaded.character as PlayerCharacter} campaignName={loaded.campaignName} />}
+        {loaded && character && (
+          <>
+            <nav className="chip-row" aria-label="Sheet pages">
+              {pages.map((p) => (
+                <button
+                  key={p.id}
+                  className={page === p.id ? 'chip chip-on' : 'chip'}
+                  aria-current={page === p.id ? 'page' : undefined}
+                  onClick={() => setParams(p.id === '1' ? {} : { page: p.id }, { replace: true })}
+                >
+                  {p.id} · {p.label}
+                </button>
+              ))}
+            </nav>
+            {page === '1' && <RecordSheet character={character} campaignName={loaded.campaignName} />}
+            {page === '2' && <RecordPageTwo character={character} />}
+            {page === '3' && <RecordPageThree character={character} portraitURL={portrait} />}
+          </>
+        )}
       </div>
     </div>
   )
