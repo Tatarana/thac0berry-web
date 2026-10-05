@@ -775,3 +775,22 @@ button {
 .rule-table tbody tr:nth-child(even) td {
   background: rgb(47 39 28 / 0.06);
 }
+
+/* ---- Itens mágicos ---- */
+
+.detail-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+.chip-row-scroll {
+  max-height: 9.5rem;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.show-all {
+  padding: 8px 2px;
+}

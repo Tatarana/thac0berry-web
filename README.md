@@ -39,7 +39,13 @@ equipamento em tabela (no celular, cada linha vira um cartão).
 **W1d (regras):** Rules Reference com 888 regras de 14 livros: filtro por livro, capítulos
 recolhíveis, busca aproximada por tópico e palavras-chave (igual à do iPad), e a ficha com
 o texto formatado (títulos, listas, negrito/itálico) e as tabelas no lugar das
-referências. Próximo: itens mágicos e poderes psiônicos.
+referências.
+
+**W1e (itens mágicos e psiônicos):** 5.669 itens mágicos (busca; filtro por grupo de fonte e
+por livro; categorias; ficha com valores, fontes, encantamento, poder/cargas, magias e
+defesa; até 150 linhas por categoria com "Show all") e 257 poderes psiônicos (filtro por
+categoria; grupos por disciplina; ficha completa). **Com isso a W1 (compêndio) está
+completa.**
 
 **Dados:** `scripts/build-data.mjs` gera `public/data/` (fora do git) a partir do repo
 `thac0berry-data`, que precisa estar clonado ao lado (`../thac0berry-data`) ou apontado

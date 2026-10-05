@@ -9,6 +9,8 @@ import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
 import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
+import { MagicItemCompendium } from './pages/MagicItemCompendium'
+import { PsionicCompendium } from './pages/PsionicCompendium'
 import { RulesCompendium } from './pages/RulesCompendium'
 import { Settings } from './pages/Settings'
 
@@ -32,6 +34,8 @@ export default function App() {
           <Route path="/compendium/deities" element={<DeityCompendium />} />
           <Route path="/compendium/proficiencies" element={<ProficiencyCompendium />} />
           <Route path="/compendium/rules" element={<RulesCompendium />} />
+          <Route path="/compendium/magic-items" element={<MagicItemCompendium />} />
+          <Route path="/compendium/psionics" element={<PsionicCompendium />} />
           <Route path="/compendium/weapons" element={<WeaponCompendium />} />
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />

@@ -12,6 +12,9 @@
 //   public/data/weapons.json, armor.json, mundane_items.json   equipamento (cópia)
 //   public/data/rules-index.json        índice das regras (lista e busca)
 //   public/data/rules/<livro>.json      regras completas de cada livro
+//   public/data/magic-index.json         índice dos itens mágicos (com resumo)
+//   public/data/magic/magic_*.json       itens mágicos completos, por categoria
+//   public/data/psionic-powers.json      poderes psiônicos, sem o texto bruto de wiki
 //
 // Magias: priest_* e wizard_* em ordem alfabética; id repetido é descartado.
 // `sample_spells.json` (62 exemplos antigos do Kelmon) fica DE FORA do
@@ -100,6 +103,34 @@ for (const [book, list] of Object.entries(rulesByBook)) {
   writeFileSync(join(out, 'rules', `${book}.json`), JSON.stringify(list))
 }
 console.log(`data: ${rules.length} regras em ${Object.keys(rulesByBook).length} livros`)
+
+// Itens mágicos: índice com o resumo (a lista do iPad mostra) + cópia dos
+// arquivos por categoria (detalhe completo, baixado ao abrir um item).
+mkdirSync(join(out, 'magic'), { recursive: true })
+const magicIndex = []
+for (const file of files.filter((f) => f.startsWith('magic_')).sort()) {
+  copyFileSync(join(source, file), join(out, 'magic', file))
+  for (const item of JSON.parse(readFileSync(join(source, file), 'utf8'))) {
+    magicIndex.push({
+      id: item.id,
+      name: item.name,
+      category: item.classification.broadCategory,
+      books: (item.sources ?? []).map((s) => s.book).filter(Boolean),
+      summary: item.description.briefSummary,
+      file,
+    })
+  }
+}
+writeFileSync(join(out, 'magic-index.json'), JSON.stringify(magicIndex))
+console.log(`data: ${magicIndex.length} itens mágicos`)
+
+// Poderes psiônicos: sem o texto bruto de wiki.
+const powers = JSON.parse(readFileSync(join(source, 'psionic_powers.json'), 'utf8')).map((power) => {
+  const { rawWikitext: _omitido, ...description } = power.description
+  return { ...power, description }
+})
+writeFileSync(join(out, 'psionic-powers.json'), JSON.stringify(powers))
+console.log(`data: ${powers.length} poderes psiônicos`)
 
 for (const file of ['deities.json', 'proficiencies.json', 'weapons.json', 'armor.json', 'mundane_items.json']) {
   copyFileSync(join(source, file), join(out, file))

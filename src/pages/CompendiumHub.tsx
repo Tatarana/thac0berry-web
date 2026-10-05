@@ -10,8 +10,8 @@ interface HubEntry {
   accent: string
 }
 
-// Mesmos itens e textos do CompendiumHubView do iPad. Sem `to` = ainda não
-// existe na web (entra nas próximas partes da W1).
+// Mesmos itens e textos do CompendiumHubView do iPad. Sem `image` = o iPad
+// também ainda não tem arte própria para o item (aparece ✦).
 const entries: HubEntry[] = [
   { title: 'Priest Grimoire', subtitle: '1,795 spells · search, spheres, settings', to: '/compendium/priest', image: 'icon_priest_grimoire', accent: 'var(--amber)' },
   { title: 'Mage Grimoire', subtitle: '2,608 spells · search, schools, settings', to: '/compendium/mage', image: 'icon_mage_grimoire', accent: 'var(--teal)' },
@@ -25,8 +25,8 @@ const entries: HubEntry[] = [
   { title: 'Weapons', subtitle: '75 weapons · PHB & CPrH', to: '/compendium/weapons', image: 'icon_weapons', accent: 'var(--crimson)' },
   { title: 'Armor', subtitle: '20 items · armor, helmets & shields', to: '/compendium/armor', image: 'icon_armor', accent: 'var(--brass)' },
   { title: 'Equipment', subtitle: '183 items · gear, clothing, food & more', to: '/compendium/equipment', image: 'icon_equipment', accent: 'var(--amber)' },
-  { title: 'Magic Items', subtitle: 'Coming soon', accent: 'var(--brass-dim)' },
-  { title: 'Psionic Powers', subtitle: 'Coming soon', accent: 'var(--brass-dim)' },
+  { title: 'Magic Items', subtitle: '5,669 items · full corpus, filter by source', to: '/compendium/magic-items', image: 'icon_magic_items', accent: 'var(--glow)' },
+  { title: 'Psionic Powers', subtitle: '257 powers · 6 disciplines, Complete Psionics Handbook', to: '/compendium/psionics', accent: 'var(--teal)' },
 ]
 
 function HubRow({ entry }: { entry: HubEntry }) {
