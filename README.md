@@ -3,8 +3,12 @@
 Versão web do THAC0berry, ficha de personagem de AD&D 2ª edição. É irmã do app iPad e
 compartilha com ele contas, campanhas e fichas pelo backend.
 
-**Stack:** Vite + React + TypeScript, com lint pelo oxlint. Backend: Supabase (cliente
-oficial `@supabase/supabase-js`, a ser adicionado na Fase 1).
+**Stack:** Vite + React + TypeScript, React Router (rotas com `#`), lint pelo oxlint.
+Backend: Supabase (`@supabase/supabase-js`, login PKCE). Fontes: Libre Baskerville e
+Caveat (via `@fontsource`, sem depender do Google Fonts).
+
+O login só funciona em endereços liberados em *Redirect URLs* no Supabase
+(`http://localhost:5173/**` e `https://tatarana.github.io/thac0berry-web/**`).
 
 | Repo | Papel |
 |---|---|
@@ -15,14 +19,19 @@ oficial `@supabase/supabase-js`, a ser adicionado na Fase 1).
 
 ## Estado
 
-Só a estrutura gerada pelo Vite (`npm create vite`, template `react-ts`), com CI. As
-funcionalidades entram por fases, na mesma ordem do backend.
+**W0 (base):** site publicado no GitHub Pages, identidade visual do app iPad
+(obsidiana, latão, Baskerville e letra de mão), login com Google e a página
+Diagnostics (Settings → Open Diagnostics). Próximo: **W1, Compêndio** (grimórios,
+kits, regras e itens lidos do `thac0berry-data`).
+
+Site: **https://tatarana.github.io/thac0berry-web/**. Publicado a cada push na
+`main` (`.github/workflows/pages.yml`).
 
 ## Rodar
 
 ```bash
 npm install
-npm run dev       # servidor de desenvolvimento
+npm run dev       # http://localhost:5173/thac0berry-web/
 npm run lint      # oxlint
 npm run build     # checagem de tipos + build de produção em dist/
 ```

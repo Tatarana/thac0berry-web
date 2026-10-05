@@ -1,7 +1,7 @@
 {
   "name": "thac0berry-web",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,8 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/caveat": "^5.3.0",
+    "@fontsource/libre-baskerville": "^5.3.0",
+    "@supabase/supabase-js": "^2.117.2",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router": "^7.18.4"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

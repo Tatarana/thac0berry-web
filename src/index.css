@@ -1,111 +1,289 @@
+/* Identidade visual do app iPad (PaperTheme.swift / EmberTheme.swift):
+   fundo de obsidiana com brasa, cartões com borda de latão, texto "impresso"
+   em Baskerville e valores em letra de mão. */
+
+@import '@fontsource/libre-baskerville/400.css';
+@import '@fontsource/libre-baskerville/400-italic.css';
+@import '@fontsource/libre-baskerville/700.css';
+@import '@fontsource/caveat/500.css';
+@import '@fontsource/caveat/700.css';
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Ember (telas escuras) */
+  --obsidian: #1b140f;
+  --obsidian-deep: #100b08;
+  --obsidian-raise: #251c15;
+  --obsidian-highlight: #372b21;
+  --glow: #e0581e;
+  --glow-bright: #ffb23c;
+  --brass: #c9a227;
+  --brass-dim: #8a712a;
+  --on-obsidian: #efe4d3;
+  --on-obsidian-soft: #b8a690;
+  --wine: #6b161a;
+  --crimson: #cc3829;
+  --amber: #db9e33;
+  --teal: #2e8c7a;
+  --mint-glow: #94e0a3;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Paper (folha de pergaminho) */
+  --sheet: #e9dcbe;
+  --sheet-deep: #dbcaa5;
+  --ink: #2f271c;
+  --ink-soft: #6b5c46;
+  --pen-ink: #1e3557;
+  --red-ink: #8c2f22;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  --font-printed: 'Libre Baskerville', Baskerville, Palatino, Georgia, serif;
+  --font-hand: 'Caveat', 'Bradley Hand', 'Noteworthy', cursive;
+
+  color-scheme: dark;
+  font-family: var(--font-printed);
+  color: var(--on-obsidian);
+  background: var(--obsidian-deep);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
+  /* Sem cor própria: a cor de base fica no :root e a brasa em body::before.
+     Um fundo aqui cobriria a camada fixa de z-index negativo. */
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* ObsidianBackground: brasa no alto, vinho nos cantos, escurecendo para baixo.
+   Camada fixa atrás de tudo (em vez de background-attachment: fixed, que o
+   Safari do iOS não suporta). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% -8%, rgb(224 88 30 / 0.5), rgb(224 88 30 / 0.14) 45%, transparent 75%),
+    radial-gradient(ellipse 55% 45% at 12% 105%, rgb(107 22 26 / 0.38), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 95% 60%, rgb(107 22 26 / 0.22), transparent 70%),
+    linear-gradient(to bottom, rgb(27 20 15 / 0.4), var(--obsidian-deep));
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+a {
+  color: inherit;
+  text-decoration: none;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+
+button {
+  font: inherit;
+  color: inherit;
 }
-p {
+
+/* ---- Tipografia ---- */
+
+.smallcaps {
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.hand {
+  font-family: var(--font-hand);
+  font-weight: 700;
+}
+
+.title-hand {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 2.9rem;
+  line-height: 1;
+  color: var(--on-obsidian);
+  transform: rotate(-0.7deg);
+  transform-origin: left bottom;
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+.soft {
+  color: var(--on-obsidian-soft);
+  font-style: italic;
+  font-size: 0.85rem;
+  margin: 0;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* ---- Estrutura ---- */
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.divider {
+  height: 1.4px;
+  background: var(--brass-dim);
+  border: 0;
+  margin: 0;
+}
+
+/* EmberCard: gradiente de obsidiana, faixa de destaque à esquerda, borda de latão */
+.ember-card {
+  position: relative;
+  padding: 14px 14px 14px 17px;
+  background: linear-gradient(135deg, rgb(55 43 33 / 0.55), var(--obsidian-raise));
+  border: 1.2px solid rgb(201 162 39 / 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ember-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent, var(--brass-dim));
+}
+
+.card-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Botão "chip" das telas escuras (Settings, Diagnostics) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgb(255 255 255 / 0.1);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--on-obsidian);
+}
+
+.btn:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.back-button {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  background: rgb(255 255 255 / 0.08);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+/* ---- Home ---- */
+
+.home-badge {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(920px, 90vw);
+  height: auto;
+  opacity: 0.26;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.home-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.gear img {
+  width: 42px;
+  height: 42px;
+  filter: drop-shadow(0 1.5px 3px rgb(0 0 0 / 0.35));
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.tile {
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 22px 14px;
+  transition: transform 0.12s ease;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+}
+
+.tile img {
+  width: 108px;
+  height: 108px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.45));
+}
+
+.tile-title {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+/* ---- Diagnostics ---- */
+
+.result-line {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.82rem;
+  user-select: text;
+}
+
+.result-ok {
+  color: var(--mint-glow);
+}
+
+.result-fail {
+  color: var(--crimson);
+}
+
+.ember-card.version {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
 }
