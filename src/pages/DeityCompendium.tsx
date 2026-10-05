@@ -4,6 +4,7 @@ import { DeityDetail } from '../components/DeityDetail'
 import { GroupSection } from '../components/GroupSection'
 import { loadDeities, rankGroup, rankOrder, type Deity } from '../data/deities'
 import { normalize } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 
 const books = ['Faiths & Avatars', 'Powers & Pantheons']
 
@@ -14,7 +15,6 @@ export function DeityCompendium() {
   const [error, setError] = useState<string | null>(null)
   const [book, setBook] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Deity | null>(null)
 
   useEffect(() => {
@@ -46,16 +46,7 @@ export function DeityCompendium() {
     [filtered],
   )
 
-  const searching = query.trim() !== ''
-
-  function toggle(rank: string) {
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (next.has(rank)) next.delete(rank)
-      else next.add(rank)
-      return next
-    })
-  }
+  const { isExpanded, toggle } = useGroupToggle(query.trim() !== '')
 
   return (
     <div className="paper-page">
@@ -93,7 +84,7 @@ export function DeityCompendium() {
             key={entry.rank}
             label={entry.rank}
             count={entry.deities.length}
-            expanded={searching || expanded.has(entry.rank)}
+            expanded={isExpanded(entry.rank)}
             onToggle={() => toggle(entry.rank)}
           >
             {entry.deities.map((deity) => (

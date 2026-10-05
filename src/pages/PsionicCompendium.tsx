@@ -4,6 +4,7 @@ import { Field, PaperModal, TextBlock } from '../components/DetailBits'
 import { GroupSection } from '../components/GroupSection'
 import { loadData } from '../data/load'
 import { normalize } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 
 // Poderes psiônicos (schemas/psionic-power.schema.json; PsionicPowerCompendiumView
 // do iPad): filtro por categoria, busca por nome ou disciplina, grupos por
@@ -62,10 +63,6 @@ export function PsionicCompendium() {
   const [error, setError] = useState<string | null>(null)
   const [tier, setTier] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  // Com busca ou categoria escolhida, tudo abre; estes são os que o usuário
-  // fechou mesmo assim (antes não dava para fechar com filtro ativo).
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<PsionicPower | null>(null)
 
   useEffect(() => {
@@ -95,18 +92,7 @@ export function PsionicCompendium() {
     [filtered],
   )
 
-  const active = query.trim() !== '' || tier !== null
-  const isExpanded = (discipline: string) => (active ? !collapsed.has(discipline) : expanded.has(discipline))
-
-  function toggle(discipline: string) {
-    const setter = active ? setCollapsed : setExpanded
-    setter((current) => {
-      const next = new Set(current)
-      if (next.has(discipline)) next.delete(discipline)
-      else next.add(discipline)
-      return next
-    })
-  }
+  const { isExpanded, toggle } = useGroupToggle(query.trim() !== '' || tier !== null)
 
   return (
     <div className="paper-page">

@@ -12,6 +12,7 @@ import {
 } from '../data/proficiencies'
 import { isGenericSetting } from '../data/spells'
 import { normalize } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 
 function ProficiencyDetail({ proficiency, onClose }: { proficiency: Proficiency; onClose: () => void }) {
   const { mechanics } = proficiency
@@ -38,7 +39,6 @@ export function ProficiencyCompendium() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [settings, setSettings] = useState<Set<string>>(new Set())
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Proficiency | null>(null)
 
   useEffect(() => {
@@ -74,16 +74,7 @@ export function ProficiencyCompendium() {
     [filtered],
   )
 
-  const active = query.trim() !== '' || settings.size > 0
-
-  function toggleGroup(group: string) {
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (next.has(group)) next.delete(group)
-      else next.add(group)
-      return next
-    })
-  }
+  const { isExpanded, toggle: toggleGroup } = useGroupToggle(query.trim() !== '' || settings.size > 0)
 
   function toggleSetting(setting: string) {
     setSettings((current) => {
@@ -134,7 +125,7 @@ export function ProficiencyCompendium() {
             key={entry.group}
             label={entry.group}
             count={entry.items.length}
-            expanded={active || expanded.has(entry.group)}
+            expanded={isExpanded(entry.group)}
             onToggle={() => toggleGroup(entry.group)}
           >
             {entry.items.map((p) => (

@@ -12,6 +12,7 @@ import {
   type SourceGroup,
 } from '../data/magicItems'
 import { normalize } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 
 // Linhas por categoria antes do "Show all": com uma fonte escolhida, o iPad
 // abre tudo (até ~5.100 itens); no navegador isso trava o celular por mais de
@@ -26,8 +27,6 @@ export function MagicItemCompendium() {
   const [query, setQuery] = useState('')
   const [sourceGroup, setSourceGroup] = useState<SourceGroup | null>(null)
   const [book, setBook] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<MagicItemIndexEntry | null>(null)
   // Categorias em que o usuário pediu "mostrar todos" (ver ROW_LIMIT).
   const [showAll, setShowAll] = useState<Set<string>>(new Set())
@@ -66,18 +65,7 @@ export function MagicItemCompendium() {
   )
 
   // Como no iPad: com busca ou fonte escolhida, tudo abre (e dá para fechar).
-  const autoExpand = query.trim() !== '' || sourceGroup !== null
-  const isExpanded = (category: string) => (autoExpand ? !collapsed.has(category) : expanded.has(category))
-
-  function toggle(category: string) {
-    const setter = autoExpand ? setCollapsed : setExpanded
-    setter((current) => {
-      const next = new Set(current)
-      if (next.has(category)) next.delete(category)
-      else next.add(category)
-      return next
-    })
-  }
+  const { isExpanded, toggle } = useGroupToggle(query.trim() !== '' || sourceGroup !== null)
 
   function chooseGroup(group: SourceGroup | null) {
     setSourceGroup(group)

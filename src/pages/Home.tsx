@@ -4,7 +4,9 @@ import { HomeTile } from '../components/HomeTile'
 export function Home() {
   const base = import.meta.env.BASE_URL
   return (
-    <div className="page">
+    // Como no HomeView do iPad: título no alto; um espaço flexível empurra a
+    // linha de latão e as 3 caixas para a parte de baixo da tela.
+    <div className="page home-page">
       <img className="home-badge" src={`${base}images/main_badge.png`} alt="" />
       <div className="home-header">
         <div>
@@ -15,6 +17,7 @@ export function Home() {
           <img src={`${base}images/icon_settings.png`} alt="" />
         </Link>
       </div>
+      <div className="home-spacer" />
       <hr className="divider" />
       <div className="tile-grid">
         <HomeTile to="/campaigns" image="icon_campaigns" title="Campaigns" subtitle="Coming soon" accent="var(--amber)" />

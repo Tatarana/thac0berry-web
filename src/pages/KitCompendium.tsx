@@ -4,6 +4,7 @@ import { GroupSection } from '../components/GroupSection'
 import { KitDetail } from '../components/KitDetail'
 import { loadKits, subclassOrder, type ClassGroup, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 
 // Compêndio de kits de um grupo de classe (KitCompendiumView do iPad):
 // busca por nome, divindade ou título na igreja; grupos por subclasse.
@@ -11,7 +12,6 @@ export function KitCompendium({ group }: { group: ClassGroup }) {
   const [kits, setKits] = useState<Kit[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Kit | null>(null)
 
   useEffect(() => {
@@ -44,16 +44,7 @@ export function KitCompendium({ group }: { group: ClassGroup }) {
     [filtered, group],
   )
 
-  const searching = query.trim() !== ''
-
-  function toggle(subclass: string) {
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (next.has(subclass)) next.delete(subclass)
-      else next.add(subclass)
-      return next
-    })
-  }
+  const { isExpanded, toggle } = useGroupToggle(query.trim() !== '')
 
   return (
     <div className="paper-page">
@@ -79,7 +70,7 @@ export function KitCompendium({ group }: { group: ClassGroup }) {
             key={entry.subclass}
             label={entry.subclass}
             count={entry.kits.length}
-            expanded={searching || expanded.has(entry.subclass)}
+            expanded={isExpanded(entry.subclass)}
             onToggle={() => toggle(entry.subclass)}
           >
             {entry.kits.map((kit) => (

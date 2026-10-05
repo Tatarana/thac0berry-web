@@ -10,6 +10,7 @@ import {
   type SpellIndexEntry,
 } from '../data/spells'
 import { matchesName } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 
 interface LevelGroup {
   level: number
@@ -31,7 +32,6 @@ export function Grimoire({ caster }: { caster: Caster }) {
   const [query, setQuery] = useState('')
   const [axisFilter, setAxisFilter] = useState<Set<string>>(new Set())
   const [settingFilter, setSettingFilter] = useState<Set<string>>(new Set())
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [selected, setSelected] = useState<SpellIndexEntry | null>(null)
 
   useEffect(() => {
@@ -74,16 +74,9 @@ export function Grimoire({ caster }: { caster: Caster }) {
   }, [filtered])
 
   const hasActiveFilter = query.trim() !== '' || axisFilter.size > 0 || settingFilter.size > 0
-  const isExpanded = (level: number) => hasActiveFilter || expanded.has(level)
-
-  function toggleLevel(level: number) {
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (next.has(level)) next.delete(level)
-      else next.add(level)
-      return next
-    })
-  }
+  const groupToggle = useGroupToggle(hasActiveFilter)
+  const isExpanded = (level: number) => groupToggle.isExpanded(String(level))
+  const toggleLevel = (level: number) => groupToggle.toggle(String(level))
 
   return (
     <div className="paper-page">

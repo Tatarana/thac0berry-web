@@ -794,3 +794,14 @@ button {
 .show-all {
   padding: 8px 2px;
 }
+
+/* Home: altura da tela inteira; o espaçador empurra as caixas para baixo. */
+.home-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.home-spacer {
+  flex: 1;
+  min-height: 12px;
+}

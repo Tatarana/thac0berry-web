@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { loadData } from '../data/load'
 import { normalize } from '../lib/search'
+import { useGroupToggle } from '../lib/useGroupToggle'
 import { GroupSection } from './GroupSection'
 
 export interface Column<T> {
@@ -37,7 +38,6 @@ export function TableCompendium<T extends { id: string; name: string }>({
   const [items, setItems] = useState<T[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<T | null>(null)
 
   useEffect(() => {
@@ -62,17 +62,8 @@ export function TableCompendium<T extends { id: string; name: string }>({
       .filter((group) => group.items.length > 0)
   }, [filtered, groupOf, groupOrder])
 
-  const searching = query.trim() !== ''
+  const { isExpanded, toggle } = useGroupToggle(query.trim() !== '')
   const gridStyle = { gridTemplateColumns: `minmax(9rem, 2.2fr) repeat(${columns.length}, minmax(3.2rem, 1fr))` }
-
-  function toggle(label: string) {
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (next.has(label)) next.delete(label)
-      else next.add(label)
-      return next
-    })
-  }
 
   return (
     <div className="paper-page">
@@ -106,7 +97,7 @@ export function TableCompendium<T extends { id: string; name: string }>({
             key={group.label}
             label={group.label}
             count={group.items.length}
-            expanded={searching || expanded.has(group.label)}
+            expanded={isExpanded(group.label)}
             onToggle={() => toggle(group.label)}
           >
             {group.items.map((item) => (
