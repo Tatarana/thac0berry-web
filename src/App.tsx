@@ -9,6 +9,7 @@ import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
 import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
+import { RulesCompendium } from './pages/RulesCompendium'
 import { Settings } from './pages/Settings'
 
 // HashRouter: o GitHub Pages só serve arquivos estáticos; com rotas em "#/…"
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/compendium/kits/rogue" element={<KitCompendium key="Rogue" group="Rogue" />} />
           <Route path="/compendium/deities" element={<DeityCompendium />} />
           <Route path="/compendium/proficiencies" element={<ProficiencyCompendium />} />
+          <Route path="/compendium/rules" element={<RulesCompendium />} />
           <Route path="/compendium/weapons" element={<WeaponCompendium />} />
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />

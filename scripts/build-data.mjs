@@ -10,6 +10,8 @@
 //   public/data/deities.json            divindades (cópia)
 //   public/data/proficiencies.json      proficiências (cópia)
 //   public/data/weapons.json, armor.json, mundane_items.json   equipamento (cópia)
+//   public/data/rules-index.json        índice das regras (lista e busca)
+//   public/data/rules/<livro>.json      regras completas de cada livro
 //
 // Magias: priest_* e wizard_* em ordem alfabética; id repetido é descartado.
 // `sample_spells.json` (62 exemplos antigos do Kelmon) fica DE FORA do
@@ -75,6 +77,29 @@ for (const [group, list] of Object.entries(kitGroups)) {
   writeFileSync(join(out, `kits-${group.toLowerCase()}.json`), JSON.stringify(list))
 }
 console.log(`data: ${kits.length} kits (${Object.entries(kitGroups).map(([g, l]) => `${g} ${l.length}`).join(', ')})`)
+
+// Regras: índice leve (lista e busca) + um arquivo por livro com o texto e as
+// tabelas (só baixado ao abrir uma regra daquele livro).
+const rules = JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8'))
+mkdirSync(join(out, 'rules'), { recursive: true })
+const rulesByBook = {}
+const rulesIndex = rules.map((rule) => {
+  ;(rulesByBook[rule.book] ??= []).push(rule)
+  return {
+    id: rule.id,
+    book: rule.book,
+    chapterNumber: rule.chapterNumber,
+    chapterTitle: rule.chapterTitle,
+    topic: rule.topic,
+    summary: rule.summary,
+    searchKeywords: rule.searchKeywords,
+  }
+})
+writeFileSync(join(out, 'rules-index.json'), JSON.stringify(rulesIndex))
+for (const [book, list] of Object.entries(rulesByBook)) {
+  writeFileSync(join(out, 'rules', `${book}.json`), JSON.stringify(list))
+}
+console.log(`data: ${rules.length} regras em ${Object.keys(rulesByBook).length} livros`)
 
 for (const file of ['deities.json', 'proficiencies.json', 'weapons.json', 'armor.json', 'mundane_items.json']) {
   copyFileSync(join(source, file), join(out, file))

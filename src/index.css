@@ -697,3 +697,81 @@ button {
     color: var(--ink-soft);
   }
 }
+
+/* ---- Regras (RuleDetailSheet e RuleTableView do iPad) ---- */
+
+.search-results {
+  border: 1.3px solid var(--ink);
+  background: rgb(255 255 255 / 0.12);
+}
+
+.rule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rule-heading {
+  margin: 4px 0 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.45rem;
+  color: var(--pen-ink);
+}
+
+.rule-subheading {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.rule-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.rule-list li::marker {
+  color: var(--ink-soft);
+}
+
+.rule-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rule-table-scroll {
+  overflow-x: auto;
+  border: 1px solid rgb(107 92 70 / 0.35);
+  border-radius: 6px;
+  background: rgb(233 220 190 / 0.5);
+}
+
+.rule-table table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 0.78rem;
+}
+
+.rule-table th {
+  background: var(--ink);
+  color: var(--sheet);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-align: left;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+.rule-table td {
+  padding: 4px 8px;
+  color: var(--ink);
+  vertical-align: top;
+}
+
+.rule-table tbody tr:nth-child(even) td {
+  background: rgb(47 39 28 / 0.06);
+}

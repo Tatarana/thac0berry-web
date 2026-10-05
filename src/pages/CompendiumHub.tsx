@@ -20,7 +20,7 @@ const entries: HubEntry[] = [
   { title: 'Warrior Kits', subtitle: '114 kits · Fighter, Paladin, Ranger & Barbarian', to: '/compendium/kits/warrior', accent: 'var(--crimson)' },
   { title: 'Rogue Kits', subtitle: '73 kits · Thief, Bard & Ninja', to: '/compendium/kits/rogue', accent: 'var(--mint-glow)' },
   { title: 'Deities', subtitle: '79 deities · Faiths & Avatars, Powers & Pantheons', to: '/compendium/deities', image: 'icon_deities', accent: 'var(--brass)' },
-  { title: 'Rules Reference', subtitle: 'Coming soon', accent: 'var(--brass-dim)' },
+  { title: 'Rules Reference', subtitle: '888 rules · PHB, DMG, 8 Complete Handbooks & Psionics', to: '/compendium/rules', image: 'icon_rules_reference', accent: 'var(--brass)' },
   { title: 'Proficiencies', subtitle: '372 proficiencies · general, class & racial', to: '/compendium/proficiencies', image: 'icon_proficiencies', accent: 'var(--teal)' },
   { title: 'Weapons', subtitle: '75 weapons · PHB & CPrH', to: '/compendium/weapons', image: 'icon_weapons', accent: 'var(--crimson)' },
   { title: 'Armor', subtitle: '20 items · armor, helmets & shields', to: '/compendium/armor', image: 'icon_armor', accent: 'var(--brass)' },

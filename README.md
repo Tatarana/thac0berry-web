@@ -34,8 +34,12 @@ especialista abre a ficha da divindade dele.
 
 **W1c (proficiências e equipamento):** proficiências (filtro por cenário, grupos, ficha com
 atributo, modificador, slots e a regra opcional Skills & Powers), armas, armaduras e
-equipamento em tabela (no celular, cada linha vira um cartão). Próximo: regras (Rules
-Reference), itens mágicos e poderes psiônicos.
+equipamento em tabela (no celular, cada linha vira um cartão).
+
+**W1d (regras):** Rules Reference com 888 regras de 14 livros: filtro por livro, capítulos
+recolhíveis, busca aproximada por tópico e palavras-chave (igual à do iPad), e a ficha com
+o texto formatado (títulos, listas, negrito/itálico) e as tabelas no lugar das
+referências. Próximo: itens mágicos e poderes psiônicos.
 
 **Dados:** `scripts/build-data.mjs` gera `public/data/` (fora do git) a partir do repo
 `thac0berry-data`, que precisa estar clonado ao lado (`../thac0berry-data`) ou apontado
