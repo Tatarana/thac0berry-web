@@ -63,6 +63,9 @@ export function PsionicCompendium() {
   const [tier, setTier] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  // Com busca ou categoria escolhida, tudo abre; estes são os que o usuário
+  // fechou mesmo assim (antes não dava para fechar com filtro ativo).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<PsionicPower | null>(null)
 
   useEffect(() => {
@@ -93,9 +96,11 @@ export function PsionicCompendium() {
   )
 
   const active = query.trim() !== '' || tier !== null
+  const isExpanded = (discipline: string) => (active ? !collapsed.has(discipline) : expanded.has(discipline))
 
   function toggle(discipline: string) {
-    setExpanded((current) => {
+    const setter = active ? setCollapsed : setExpanded
+    setter((current) => {
       const next = new Set(current)
       if (next.has(discipline)) next.delete(discipline)
       else next.add(discipline)
@@ -139,7 +144,7 @@ export function PsionicCompendium() {
             key={group.discipline}
             label={group.discipline}
             count={group.powers.length}
-            expanded={active || expanded.has(group.discipline)}
+            expanded={isExpanded(group.discipline)}
             onToggle={() => toggle(group.discipline)}
           >
             {group.powers.map((power) => (
