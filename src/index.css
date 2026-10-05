@@ -1262,3 +1262,14 @@ button {
     padding: 10px;
   }
 }
+
+/* Mesmo tratamento do iPad: 92 pt, um pouco desbotado. */
+.rec-badge {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  align-self: center;
+  margin-top: 8px;
+  filter: saturate(0.45) brightness(1.05) contrast(0.92);
+  opacity: 0.9;
+}

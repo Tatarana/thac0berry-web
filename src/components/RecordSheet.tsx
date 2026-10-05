@@ -72,6 +72,9 @@ function RecordHeader({ c, campaignName }: { c: PlayerCharacter; campaignName: s
           {campaignName ? `${c.playerName ? ' · ' : ''}${campaignName}` : ''}
         </span>
         {c.status !== 'alive' && <span className="rec-status">{c.status === 'dead' ? 'Dead' : 'Archived'}</span>}
+        {/* O dragão do canto (record_badge do iPad). Lá ele dá lugar ao sinal de
+            consequência pendente, que só existe com edição (W2.5). */}
+        <img className="rec-badge" src={`${import.meta.env.BASE_URL}images/record_badge.png`} alt="" />
       </div>
     </header>
   )
