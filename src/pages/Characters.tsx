@@ -5,7 +5,7 @@ import { PageHeader } from '../components/PageHeader'
 import { supabase } from '../lib/supabase'
 
 // Lista de personagens da conta, agrupados por campanha (as colunas de
-// resumo são geradas pelo banco a partir da ficha). Abrir a ficha: W2.2.
+// resumo são geradas pelo banco a partir da ficha). Clicar abre a ficha.
 interface CharacterSummary {
   id: string
   name: string | null
@@ -106,11 +106,13 @@ export function Characters() {
               <ul className="import-list">
                 {group.members.map((c) => (
                   <li key={c.id} className="import-row">
-                    <span className="import-name">{c.name || 'Unnamed character'}</span>
-                    <div className="soft import-detail">
-                      {c.character_class ?? '—'} {c.level ?? ''}
-                      {c.status && c.status !== 'alive' ? ` · ${statusLabel[c.status] ?? c.status}` : ''}
-                    </div>
+                    <Link className="character-link" to={`/characters/${c.id}`}>
+                      <span className="import-name">{c.name || 'Unnamed character'}</span>
+                      <div className="soft import-detail">
+                        {c.character_class ?? '—'} {c.level ?? ''}
+                        {c.status && c.status !== 'alive' ? ` · ${statusLabel[c.status] ?? c.status}` : ''}
+                      </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

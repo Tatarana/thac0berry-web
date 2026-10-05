@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { Characters } from './pages/Characters'
+import { CharacterSheet } from './pages/CharacterSheet'
 import { CompendiumHub } from './pages/CompendiumHub'
 import { DeityCompendium } from './pages/DeityCompendium'
 import { ComingSoon } from './pages/ComingSoon'
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
           <Route path="/characters" element={<Characters />} />
+          <Route path="/characters/:id" element={<CharacterSheet />} />
           <Route path="/import" element={<ImportBackup />} />
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" note="Campaigns, sessions and the notebook arrive after the characters." />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
