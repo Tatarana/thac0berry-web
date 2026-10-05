@@ -21,8 +21,15 @@ O login só funciona em endereços liberados em *Redirect URLs* no Supabase
 
 **W0 (base):** site publicado no GitHub Pages, identidade visual do app iPad
 (obsidiana, latão, Baskerville e letra de mão), login com Google e a página
-Diagnostics (Settings → Open Diagnostics). Próximo: **W1, Compêndio** (grimórios,
-kits, regras e itens lidos do `thac0berry-data`).
+Diagnostics (Settings → Open Diagnostics).
+
+**W1a (grimórios):** Compendium → Priest/Mage Grimoire, com busca (ignora acentos; aceita
+iniciais, ex. "clw"), filtro por esfera/escola e por cenário, círculos recolhíveis e a
+ficha de cada magia. Próximo: o resto do compêndio (kits, divindades, regras, itens…).
+
+**Dados:** `scripts/build-data.mjs` gera `public/data/` (fora do git) a partir do repo
+`thac0berry-data`, que precisa estar clonado ao lado (`../thac0berry-data`) ou apontado
+por `DATA_DIR`. Roda sozinho antes de `npm run dev` e `npm run build`.
 
 Site: **https://tatarana.github.io/thac0berry-web/**. Publicado a cada push na
 `main` (`.github/workflows/pages.yml`).

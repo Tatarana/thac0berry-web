@@ -30,3 +30,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Gerado por scripts/build-data.mjs a partir do thac0berry-data
+public/data/

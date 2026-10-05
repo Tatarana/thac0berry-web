@@ -12,6 +12,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      # Dados de referência: fonte única no repo thac0berry-data
+      # (scripts/build-data.mjs gera public/data/ a partir dele).
+      - uses: actions/checkout@v7
+        with:
+          repository: Tatarana/thac0berry-data
+          path: thac0berry-data
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -19,3 +25,5 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+        env:
+          DATA_DIR: thac0berry-data/data

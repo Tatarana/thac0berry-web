@@ -1,7 +1,9 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
+import { CompendiumHub } from './pages/CompendiumHub'
 import { ComingSoon } from './pages/ComingSoon'
 import { Diagnostics } from './pages/Diagnostics'
+import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
 import { Settings } from './pages/Settings'
 
@@ -15,7 +17,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/diagnostics" element={<Diagnostics />} />
-          <Route path="/compendium" element={<ComingSoon title="Compendium" note="Grimoires, kits, rules and items arrive in the next step (W1)." />} />
+          <Route path="/compendium" element={<CompendiumHub />} />
+          <Route path="/compendium/priest" element={<Grimoire key="divine" caster="divine" />} />
+          <Route path="/compendium/mage" element={<Grimoire key="arcane" caster="arcane" />} />
           <Route path="/characters" element={<ComingSoon title="Characters" note="Character sheets synced with your account arrive in step W2." />} />
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" note="Campaigns, sessions and the notebook arrive after the characters." />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
