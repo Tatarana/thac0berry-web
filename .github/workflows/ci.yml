@@ -24,6 +24,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # Tipos da ficha (src/types/library.ts) batem com o schema do thac0berry-data?
+      - run: npm run types -- --check
+        env:
+          SCHEMA_DIR: thac0berry-data/schemas
       - run: npm run build
         env:
           DATA_DIR: thac0berry-data/data
