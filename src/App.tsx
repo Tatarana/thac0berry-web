@@ -1,5 +1,6 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
+import { Characters } from './pages/Characters'
 import { CompendiumHub } from './pages/CompendiumHub'
 import { DeityCompendium } from './pages/DeityCompendium'
 import { ComingSoon } from './pages/ComingSoon'
@@ -7,6 +8,7 @@ import { Diagnostics } from './pages/Diagnostics'
 import { ArmorCompendium, EquipmentCompendium, WeaponCompendium } from './pages/GearCompendiums'
 import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
+import { ImportBackup } from './pages/ImportBackup'
 import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
 import { MagicItemCompendium } from './pages/MagicItemCompendium'
@@ -39,7 +41,8 @@ export default function App() {
           <Route path="/compendium/weapons" element={<WeaponCompendium />} />
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
-          <Route path="/characters" element={<ComingSoon title="Characters" note="Character sheets synced with your account arrive in step W2." />} />
+          <Route path="/characters" element={<Characters />} />
+          <Route path="/import" element={<ImportBackup />} />
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" note="Campaigns, sessions and the notebook arrive after the characters." />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
         </Routes>

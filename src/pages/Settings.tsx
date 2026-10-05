@@ -32,6 +32,14 @@ export function Settings() {
       </section>
 
       <section className="ember-card">
+        <h2 className="card-title">Backup</h2>
+        <p className="soft">Bring campaigns and characters from an iPad backup into your account.</p>
+        <div className="btn-row">
+          <Link className="btn" to="/import">Import iPad backup</Link>
+        </div>
+      </section>
+
+      <section className="ember-card">
         <h2 className="card-title">Diagnostics</h2>
         <p className="soft">Tests the connection to the THAC0berry server. Nothing is saved.</p>
         <div className="btn-row">

@@ -805,3 +805,69 @@ button {
   flex: 1;
   min-height: 12px;
 }
+
+/* Import do backup e lista de personagens */
+.btn-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.import-campaign,
+.import-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.import-campaign input,
+.import-row input {
+  accent-color: var(--brass, #c9a227);
+}
+
+.import-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-row {
+  padding: 6px 0 0 4px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.import-row-bad .import-name {
+  opacity: 0.55;
+}
+
+.import-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.import-detail {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+}
+
+.import-row label + .import-detail {
+  padding-left: 24px;
+}
+
+.import-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgb(255 255 255 / 0.1);
+}
+
+.import-tag-bad {
+  background: rgb(190 60 50 / 0.35);
+}

@@ -15,6 +15,7 @@
 //   public/data/magic-index.json         índice dos itens mágicos (com resumo)
 //   public/data/magic/magic_*.json       itens mágicos completos, por categoria
 //   public/data/psionic-powers.json      poderes psiônicos, sem o texto bruto de wiki
+//   public/data/library.schema.json      schema da ficha (de ../schemas), para o import
 //
 // Magias: priest_* e wizard_* em ordem alfabética; id repetido é descartado.
 // `sample_spells.json` (62 exemplos antigos do Kelmon) fica DE FORA do
@@ -136,3 +137,8 @@ for (const file of ['deities.json', 'proficiencies.json', 'weapons.json', 'armor
   copyFileSync(join(source, file), join(out, file))
   console.log(`data: ${file} (${JSON.parse(readFileSync(join(source, file), 'utf8')).length} registros)`)
 }
+
+// Schema da ficha (thac0berry-data/schemas, ao lado de data/): o import do
+// backup do iPad valida cada personagem e campanha contra ele no navegador.
+copyFileSync(join(source, '..', 'schemas', 'library.schema.json'), join(out, 'library.schema.json'))
+console.log('data: library.schema.json')
