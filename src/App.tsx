@@ -4,8 +4,10 @@ import { CompendiumHub } from './pages/CompendiumHub'
 import { DeityCompendium } from './pages/DeityCompendium'
 import { ComingSoon } from './pages/ComingSoon'
 import { Diagnostics } from './pages/Diagnostics'
+import { ArmorCompendium, EquipmentCompendium, WeaponCompendium } from './pages/GearCompendiums'
 import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
+import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
 import { Settings } from './pages/Settings'
 
@@ -27,6 +29,10 @@ export default function App() {
           <Route path="/compendium/kits/warrior" element={<KitCompendium key="Warrior" group="Warrior" />} />
           <Route path="/compendium/kits/rogue" element={<KitCompendium key="Rogue" group="Rogue" />} />
           <Route path="/compendium/deities" element={<DeityCompendium />} />
+          <Route path="/compendium/proficiencies" element={<ProficiencyCompendium />} />
+          <Route path="/compendium/weapons" element={<WeaponCompendium />} />
+          <Route path="/compendium/armor" element={<ArmorCompendium />} />
+          <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
           <Route path="/characters" element={<ComingSoon title="Characters" note="Character sheets synced with your account arrive in step W2." />} />
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" note="Campaigns, sessions and the notebook arrive after the characters." />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />

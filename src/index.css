@@ -634,3 +634,66 @@ button {
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+
+/* ---- Compêndios em tabela (armas, armaduras, equipamento) ---- */
+
+.table-head,
+.table-row {
+  display: grid;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.table-head {
+  padding: 0 10px;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.table-row {
+  width: 100%;
+  padding: 5px 2px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgb(47 39 28 / 0.18);
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+}
+
+.table-row:hover {
+  background: rgb(47 39 28 / 0.06);
+}
+
+.table-cell {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--pen-ink);
+}
+
+@media (max-width: 560px) {
+  .table-head {
+    display: none;
+  }
+
+  .table-row {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .table-row .spell-name {
+    grid-column: 1 / -1;
+  }
+
+  .table-cell::before {
+    content: attr(data-label) ' ';
+    font-family: var(--font-printed);
+    font-weight: 400;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+}

@@ -30,8 +30,12 @@ ficha de cada magia.
 **W1b (kits e divindades):** kits de sacerdote, mago, guerreiro e ladino (busca por nome,
 divindade ou título; grupos por subclasse; ficha com requisitos, perícias e descrição) e
 divindades (filtro por livro; grupos por posto; ficha completa). O kit de sacerdote
-especialista abre a ficha da divindade dele. Próximo: proficiências, armas, armaduras e
-equipamento.
+especialista abre a ficha da divindade dele.
+
+**W1c (proficiências e equipamento):** proficiências (filtro por cenário, grupos, ficha com
+atributo, modificador, slots e a regra opcional Skills & Powers), armas, armaduras e
+equipamento em tabela (no celular, cada linha vira um cartão). Próximo: regras (Rules
+Reference), itens mágicos e poderes psiônicos.
 
 **Dados:** `scripts/build-data.mjs` gera `public/data/` (fora do git) a partir do repo
 `thac0berry-data`, que precisa estar clonado ao lado (`../thac0berry-data`) ou apontado

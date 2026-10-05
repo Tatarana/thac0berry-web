@@ -8,6 +8,8 @@
 //   public/data/kits-<grupo>.json       kits por grupo de classe (Priest, Wizard,
 //                                       Warrior, Rogue), sem o texto bruto de wiki
 //   public/data/deities.json            divindades (cópia)
+//   public/data/proficiencies.json      proficiências (cópia)
+//   public/data/weapons.json, armor.json, mundane_items.json   equipamento (cópia)
 //
 // Magias: priest_* e wizard_* em ordem alfabética; id repetido é descartado.
 // `sample_spells.json` (62 exemplos antigos do Kelmon) fica DE FORA do
@@ -74,5 +76,7 @@ for (const [group, list] of Object.entries(kitGroups)) {
 }
 console.log(`data: ${kits.length} kits (${Object.entries(kitGroups).map(([g, l]) => `${g} ${l.length}`).join(', ')})`)
 
-copyFileSync(join(source, 'deities.json'), join(out, 'deities.json'))
-console.log(`data: ${JSON.parse(readFileSync(join(source, 'deities.json'), 'utf8')).length} divindades → public/data`)
+for (const file of ['deities.json', 'proficiencies.json', 'weapons.json', 'armor.json', 'mundane_items.json']) {
+  copyFileSync(join(source, file), join(out, file))
+  console.log(`data: ${file} (${JSON.parse(readFileSync(join(source, file), 'utf8')).length} registros)`)
+}
