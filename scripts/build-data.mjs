@@ -5,6 +5,9 @@
 // Saída (fora do git, ver .gitignore):
 //   public/data/spells/<arquivo>.json   cópia dos arquivos de magias (detalhe)
 //   public/data/spells-index.json       índice leve para a lista e a busca
+//   public/data/kits-<grupo>.json       kits por grupo de classe (Priest, Wizard,
+//                                       Warrior, Rogue), sem o texto bruto de wiki
+//   public/data/deities.json            divindades (cópia)
 //
 // Magias: priest_* e wizard_* em ordem alfabética; id repetido é descartado.
 // `sample_spells.json` (62 exemplos antigos do Kelmon) fica DE FORA do
@@ -55,4 +58,21 @@ for (const file of spellFiles) {
 }
 
 writeFileSync(join(out, 'spells-index.json'), JSON.stringify(index))
-console.log(`data: ${index.divine.length} magias de sacerdote, ${index.arcane.length} de mago (${spellFiles.length} arquivos) → public/data`)
+console.log(`data: ${index.divine.length} magias de sacerdote, ${index.arcane.length} de mago (${spellFiles.length} arquivos)`)
+
+// Kits: um arquivo por grupo de classe; `description.rawWikitext` (~1,9 MB no
+// total) fica de fora porque nenhuma tela usa.
+const kits = JSON.parse(readFileSync(join(source, 'kits.json'), 'utf8'))
+const kitGroups = {}
+for (const kit of kits) {
+  const group = kit.classEligibility.classGroup
+  const { rawWikitext: _omitido, ...description } = kit.description
+  ;(kitGroups[group] ??= []).push({ ...kit, description })
+}
+for (const [group, list] of Object.entries(kitGroups)) {
+  writeFileSync(join(out, `kits-${group.toLowerCase()}.json`), JSON.stringify(list))
+}
+console.log(`data: ${kits.length} kits (${Object.entries(kitGroups).map(([g, l]) => `${g} ${l.length}`).join(', ')})`)
+
+copyFileSync(join(source, 'deities.json'), join(out, 'deities.json'))
+console.log(`data: ${JSON.parse(readFileSync(join(source, 'deities.json'), 'utf8')).length} divindades → public/data`)

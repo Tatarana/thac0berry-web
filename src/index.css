@@ -596,3 +596,41 @@ button {
     text-align: left;
   }
 }
+
+/* ---- Linhas de kit/divindade e seções da descrição ---- */
+
+.spell-row.kit-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.kit-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.kit-summary {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.section-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}

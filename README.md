@@ -25,7 +25,13 @@ Diagnostics (Settings → Open Diagnostics).
 
 **W1a (grimórios):** Compendium → Priest/Mage Grimoire, com busca (ignora acentos; aceita
 iniciais, ex. "clw"), filtro por esfera/escola e por cenário, círculos recolhíveis e a
-ficha de cada magia. Próximo: o resto do compêndio (kits, divindades, regras, itens…).
+ficha de cada magia.
+
+**W1b (kits e divindades):** kits de sacerdote, mago, guerreiro e ladino (busca por nome,
+divindade ou título; grupos por subclasse; ficha com requisitos, perícias e descrição) e
+divindades (filtro por livro; grupos por posto; ficha completa). O kit de sacerdote
+especialista abre a ficha da divindade dele. Próximo: proficiências, armas, armaduras e
+equipamento.
 
 **Dados:** `scripts/build-data.mjs` gera `public/data/` (fora do git) a partir do repo
 `thac0berry-data`, que precisa estar clonado ao lado (`../thac0berry-data`) ou apontado

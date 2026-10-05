@@ -1,10 +1,12 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { CompendiumHub } from './pages/CompendiumHub'
+import { DeityCompendium } from './pages/DeityCompendium'
 import { ComingSoon } from './pages/ComingSoon'
 import { Diagnostics } from './pages/Diagnostics'
 import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
+import { KitCompendium } from './pages/KitCompendium'
 import { Settings } from './pages/Settings'
 
 // HashRouter: o GitHub Pages só serve arquivos estáticos; com rotas em "#/…"
@@ -20,6 +22,11 @@ export default function App() {
           <Route path="/compendium" element={<CompendiumHub />} />
           <Route path="/compendium/priest" element={<Grimoire key="divine" caster="divine" />} />
           <Route path="/compendium/mage" element={<Grimoire key="arcane" caster="arcane" />} />
+          <Route path="/compendium/kits/priest" element={<KitCompendium key="Priest" group="Priest" />} />
+          <Route path="/compendium/kits/wizard" element={<KitCompendium key="Wizard" group="Wizard" />} />
+          <Route path="/compendium/kits/warrior" element={<KitCompendium key="Warrior" group="Warrior" />} />
+          <Route path="/compendium/kits/rogue" element={<KitCompendium key="Rogue" group="Rogue" />} />
+          <Route path="/compendium/deities" element={<DeityCompendium />} />
           <Route path="/characters" element={<ComingSoon title="Characters" note="Character sheets synced with your account arrive in step W2." />} />
           <Route path="/campaigns" element={<ComingSoon title="Campaigns" note="Campaigns, sessions and the notebook arrive after the characters." />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
