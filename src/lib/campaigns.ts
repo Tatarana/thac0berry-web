@@ -38,6 +38,10 @@ export const campaignSettings = [
   'Spelljammer',
 ]
 
+/** Logo da ambientação (CampaignSettingCatalog.logoImageName do iPad), em public/images/settings. */
+export const settingLogo = (setting: string) =>
+  `${import.meta.env.BASE_URL}images/settings/campaign_${setting.toLowerCase().replace(/[^a-z]+/g, '_')}.png`
+
 /**
  * CharacterLibrary.addCampaign do iPad: campanha sem nome, começando hoje,
  * sem filtro de ambientação. Devolve o id (UUID em maiúsculas, como o iPad).

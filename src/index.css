@@ -2861,6 +2861,9 @@ button.slot-dot:hover {
 }
 
 .setting-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font: inherit;
   font-size: 0.78rem;
   padding: 4px 10px;
@@ -2883,4 +2886,22 @@ button.slot-dot:hover {
 
 .setting-chip-on:hover {
   color: #2a2117;
+}
+
+/* Logo da ambientação tingido com a cor do texto (renderingMode .template do iPad). */
+.setting-logo {
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+.btn-danger {
+  background: rgb(190 60 50 / 0.3);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgb(190 60 50 / 0.5);
 }

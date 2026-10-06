@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { createPortal } from 'react-dom'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/context'
+import { PaperModal } from '../components/DetailBits'
 import { PageHeader } from '../components/PageHeader'
-import { campaignSettings, dateFromInput, dateInputValue, useCampaignDoc } from '../lib/campaigns'
+import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, settingLogo, useCampaignDoc } from '../lib/campaigns'
+import { assignToCampaign, createCharacter, deleteCampaign } from '../lib/roster'
 import { supabase } from '../lib/supabase'
+import { useConfirm } from '../lib/useConfirm'
 import type { SaveState } from '../lib/useCharacterDoc'
 
 // Detalhe da campanha (CampaignDetailView do iPad): nome, início, anotações,
-// ambientações em jogo, arquivar, e o elenco com link para cada ficha.
+// ambientações em jogo, arquivar, o elenco com link para cada ficha
+// (personagem novo ou trazido do Sandbox) e apagar a campanha.
 // Sessões (W3.2) e caderno (W3.3) entram nas próximas etapas.
 
 interface CastMember {
@@ -52,6 +57,46 @@ function CastList({ members }: { members: CastMember[] }) {
   )
 }
 
+/** "Add from Sandbox": personagens sem campanha; escolher um traz para esta. */
+function SandboxPicker({ onChoose, onClose }: { onChoose: (id: string) => void; onClose: () => void }) {
+  const [sandbox, setSandbox] = useState<CastMember[] | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void supabase
+      .from('character')
+      .select('id, name, character_class, level, status')
+      .is('campaign_id', null)
+      .is('deleted_at', null)
+      .order('name')
+      .then(({ data }) => {
+        if (!cancelled) setSandbox((data ?? []) as CastMember[])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return createPortal(
+    <PaperModal title="Add from Sandbox" subtitle="Characters not in any campaign yet" onClose={onClose}>
+      {sandbox === null && <p className="paper-soft">Loading…</p>}
+      {sandbox !== null && sandbox.length === 0 && <p className="paper-soft">The Sandbox is empty.</p>}
+      <ul className="slot-choices">
+        {(sandbox ?? []).map((c) => (
+          <li key={c.id}>
+            <button className="slot-choice" onClick={() => onChoose(c.id)}>
+              <span className="slot-choice-fav" />
+              <span className="rec-value">{c.name || 'Unnamed character'}</span>
+              <span className="rec-soft">
+                {c.character_class ?? '—'} {c.level ?? ''}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </PaperModal>,
+    document.body,
+  )
+}
+
 export function CampaignDetail() {
   const { id } = useParams()
   const { session, loading, signInWithGoogle } = useAuth()
@@ -59,6 +104,12 @@ export function CampaignDetail() {
   const { campaign, loadError, save, conflict, dismissConflict, update, retry } = useCampaignDoc(id, userID)
   const [cast, setCast] = useState<CastMember[] | null>(null)
   const [open, setOpen] = useState<{ dead: boolean; archived: boolean }>({ dead: false, archived: false })
+  const [castVersion, setCastVersion] = useState(0)
+  const [picking, setPicking] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!userID || !id) return
@@ -75,7 +126,53 @@ export function CampaignDetail() {
     return () => {
       cancelled = true
     }
-  }, [userID, id])
+  }, [userID, id, castVersion])
+
+  /** Roda uma ação do elenco, mostrando o erro se falhar. */
+  async function run(action: () => Promise<void>) {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await action()
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const newCharacter = () =>
+    run(async () => {
+      if (!id) return
+      navigate(`/characters/${await createCharacter(id)}`)
+    })
+
+  const addFromSandbox = (characterID: string) => {
+    setPicking(false)
+    void run(async () => {
+      if (!id) return
+      await assignToCampaign(characterID, id)
+      setCastVersion((v) => v + 1)
+    })
+  }
+
+  async function removeCampaign() {
+    if (!id || !campaign) return
+    const count = cast?.length ?? 0
+    const ok = await confirm(
+      <>
+        Delete <b>{campaignTitle(campaign)}</b>? Its sessions and notebook go with it
+        {count > 0 ? `; its ${count === 1 ? 'character returns' : `${count} characters return`} to the Sandbox` : ''}. The server keeps a copy in the history.
+      </>,
+      'Delete campaign',
+    )
+    if (!ok) return
+    await run(async () => {
+      await retry()
+      await deleteCampaign(id)
+      navigate('/campaigns')
+    })
+  }
 
   const alive = (cast ?? []).filter((c) => c.status !== 'dead' && c.status !== 'archived')
   const dead = (cast ?? []).filter((c) => c.status === 'dead')
@@ -174,6 +271,7 @@ export function CampaignDetail() {
                 const on = campaign.enabled_settings?.includes(setting) ?? false
                 return (
                   <button key={setting} className={`setting-chip${on ? ' setting-chip-on' : ''}`} aria-pressed={on} onClick={() => toggleSetting(setting)}>
+                    <span className="setting-logo" style={{ maskImage: `url(${settingLogo(setting)})`, WebkitMaskImage: `url(${settingLogo(setting)})` }} />
                     {setting}
                   </button>
                 )
@@ -190,6 +288,20 @@ export function CampaignDetail() {
 
           <section className="ember-card">
             <h2 className="card-title">Cast</h2>
+            <div className="btn-row">
+              <button className="btn" disabled={busy} onClick={() => void newCharacter()}>
+                + New character
+              </button>
+              <button className="btn" disabled={busy} onClick={() => setPicking(true)}>
+                Add from Sandbox
+              </button>
+            </div>
+            {actionError && (
+              <div className="result-line">
+                <span className="result-fail">✖</span>
+                <span>{actionError}</span>
+              </div>
+            )}
             {cast === null && <p className="soft">Loading characters…</p>}
             {cast !== null && alive.length === 0 && <p className="soft">No characters in this campaign yet.</p>}
             {alive.length > 0 && <CastList members={alive} />}
@@ -210,6 +322,14 @@ export function CampaignDetail() {
               </>
             )}
           </section>
+
+          <div className="btn-row">
+            <button className="btn btn-danger" disabled={busy} onClick={() => void removeCampaign()}>
+              Delete campaign
+            </button>
+          </div>
+          {picking && <SandboxPicker onChoose={addFromSandbox} onClose={() => setPicking(false)} />}
+          {dialog}
         </>
       )}
     </div>
