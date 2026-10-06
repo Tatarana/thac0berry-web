@@ -80,7 +80,7 @@ export interface Campaign {
   isArchived: boolean
   /** As sessões de mesa — cada uma agrupa um punhado de folhas de dia de um ou mais personagens. */
   sessions: Session[]
-  /** Caderno de anotações livres da campanha — encontros com NPCs, pistas, decisões do grupo. Compartilhado por todo mundo que joga essa campanha, não mais um caderno por personagem. */
+  /** LEGADO: o caderno era da campanha até o formato 2 (2026-10-06). Agora cada personagem tem o seu (`PlayerCharacter.notebookEntries`); `CharacterLibrary.migrateNotebooks` move as folhas daqui para lá ao abrir um arquivo antigo. O campo continua só para ler esses arquivos. */
   notebookEntries: NotebookEntry[]
   /** Cenários de campanha ligados (ver `CampaignSettingCatalog`) — `nil` é o padrão (campanha nova, ou nunca mexeu nisso) e significa "sem filtro, mostra tudo", igual toda outra feature de sinalização deste app (esferas de acesso, etc.): nunca quebra campanha existente, só SOMA um filtro quando o jogador liga pelo menos um cenário. Um conjunto vazio (todos os cenários desligados na mão) tem o mesmo efeito de `nil` — só o conteúdo genérico/core apareceria, o que não faz sentido pra nenhuma mesa de verdade, então é tratado como "sem filtro" também (ver `allowsSetting`). */
   enabledSettings?: string[] | null
@@ -318,6 +318,8 @@ export interface PlayerCharacter {
   deathNote?: string | null
   /** Se este personagem nasceu de "Clonar personagem", o id de quem foi clonado — só pra rastrear a linhagem; nada no app depende disso pra funcionar. */
   clonedFromCharacterID?: string | null
+  /** Caderno do personagem (formato 2, 2026-10-06): anotações do jogador sobre a história, NPCs e o próprio personagem. Cada personagem tem o seu; antes o caderno era da campanha (ver `Campaign.notebookEntries`). Optional pelo mesmo motivo de sempre: fichas antigas não têm a chave. */
+  notebookEntries?: NotebookEntry[] | null
   lastAppliedLevel?: number | null
   lastAppliedAbilities?: AbilityScores | null
   /** Classe no último snapshot de consequências — sem ela, trocar de classe nunca aparecia como mudança (o "antes" usava a classe atual). */

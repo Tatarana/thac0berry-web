@@ -11,6 +11,7 @@ import { WizardSpellbook } from '../components/WizardSpellbook'
 import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEffects'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
+import { Notebook } from '../components/Notebook'
 import { portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
@@ -92,6 +93,16 @@ function SpellsIcon() {
   )
 }
 
+// Caderno ("note.text" do iPad): folha com linhas.
+function NotebookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <rect x="4.5" y="3.5" width="15" height="17" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8 8.5h8M8 12h8M8 15.5h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 // Efeitos ativos ("sparkles" do iPad): acende quando há algum efeito.
 function EffectsIcon() {
   return (
@@ -117,7 +128,7 @@ function SpellbookIcon() {
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const view = (['spells', 'spellbook'] as const).find((v) => v === params.get('view')) ?? 'record'
+  const view = (['spells', 'spellbook', 'notebook'] as const).find((v) => v === params.get('view')) ?? 'record'
   // Efeitos ativos: janela por cima da ficha, não uma aba (pedido do usuário).
   const [effectsOpen, setEffectsOpen] = useState(false)
   const { session, loading, signInWithGoogle } = useAuth()
@@ -307,6 +318,16 @@ export function CharacterSheet() {
               >
                 <SheetIcon />
               </button>
+              {/* Caderno do personagem, sempre à mão (como a aba Notebook do iPad). */}
+              <button
+                className={view === 'notebook' ? 'paper-tab paper-tab-on' : 'paper-tab'}
+                title="Notebook"
+                aria-label="Notebook"
+                aria-current={view === 'notebook' ? 'page' : undefined}
+                onClick={() => setParams({ view: 'notebook' }, { replace: true })}
+              >
+                <NotebookIcon />
+              </button>
               {sheets && sheets.length > 0 && (
                 <button
                   className={view === 'spells' ? 'paper-tab paper-tab-on' : 'paper-tab'}
@@ -341,6 +362,7 @@ export function CharacterSheet() {
               )}
             </nav>
             {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
+            {view === 'notebook' && id && <Notebook characterID={id} userID={userID} />}
             {effectsOpen && <ActiveEffectsWindow c={character} edit={edit} onClose={() => setEffectsOpen(false)} />}
             <AttackNegationFloat c={character} edit={edit} />
             {view === 'record' && (

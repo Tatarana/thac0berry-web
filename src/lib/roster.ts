@@ -127,9 +127,9 @@ async function softDelete(table: 'campaign' | 'session' | 'notebook_entry', rows
 }
 
 /**
- * deleteCampaign do iPad: os personagens voltam para o Sandbox; a campanha
- * some com as sessões e o caderno dela. Aqui tudo vira `deleted_at` (fica no
- * histórico do servidor).
+ * deleteCampaign do iPad: os personagens voltam para o Sandbox (com o caderno
+ * deles); a campanha some com as sessões e as folhas antigas de caderno da
+ * campanha, sem personagem. Aqui tudo vira `deleted_at` (fica no histórico).
  */
 export async function deleteCampaign(campaignID: string) {
   const cast = await supabase.from('character').select('id').eq('campaign_id', campaignID).is('deleted_at', null)
@@ -137,7 +137,8 @@ export async function deleteCampaign(campaignID: string) {
   for (const c of cast.data as { id: string }[]) await assignToCampaign(c.id, null)
 
   for (const table of ['notebook_entry', 'session'] as const) {
-    const rows = await supabase.from(table).select('id, version').eq('campaign_id', campaignID).is('deleted_at', null)
+    const query = supabase.from(table).select('id, version').eq('campaign_id', campaignID).is('deleted_at', null)
+    const rows = await (table === 'notebook_entry' ? query.is('character_id', null) : query)
     if (rows.error) throw new Error(`${table}: ${rows.error.message}`)
     await softDelete(table, rows.data as { id: string; version: number }[])
   }

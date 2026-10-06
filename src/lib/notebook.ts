@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { isoNow } from '../rules/spellSheets'
 import { supabase } from './supabase'
 
-// Caderno da campanha (CampaignNotebookView do iPad): folhas com título,
-// data e texto, em papel liso, pautado ou quadriculado. Cada folha é uma
-// linha de `notebook_entry`, e só o autor a vê (RLS do backend).
+// Caderno do personagem (aba Notebook da ficha do iPad): folhas com título,
+// data e texto, em papel liso, pautado ou quadriculado. Cada personagem tem o
+// seu (pedido do usuário, 2026-10-06; formato 2 do iPad). Cada folha é uma
+// linha de `notebook_entry` com `character_id`, e só o autor a vê (RLS).
 //
 // Folhas "freeform" (desenho do PencilKit) só existem no iPad: aqui aparecem,
 // mas o desenho não abre e não dá para criar uma.
@@ -33,7 +34,7 @@ type Editable = Partial<Pick<NotebookPage, 'title' | 'text' | 'paper_style'>>
 const SAVE_DELAY_MS = 1000
 const byDate = (a: NotebookPage, b: NotebookPage) => (a.date ?? '').localeCompare(b.date ?? '')
 
-export function useNotebook(campaignID: string | undefined, userID: string | null) {
+export function useNotebook(characterID: string | undefined, userID: string | null) {
   const [pages, setPages] = useState<NotebookPage[] | null>(null)
   const [defaultStyle, setDefaultStyle] = useState<PaperStyle>('plain')
   const [error, setError] = useState<string | null>(null)
@@ -44,13 +45,13 @@ export function useNotebook(campaignID: string | undefined, userID: string | nul
   const timers = useRef(new Map<string, number>())
 
   useEffect(() => {
-    if (!userID || !campaignID) return
+    if (!userID || !characterID) return
     let cancelled = false
     void Promise.all([
       supabase
         .from('notebook_entry')
         .select('id, date, title, text, kind, paper_style, drawing_attachment, version')
-        .eq('campaign_id', campaignID)
+        .eq('character_id', characterID)
         .is('deleted_at', null),
       supabase.from('user_preferences').select('default_notebook_paper_style').eq('user_id', userID).maybeSingle(),
     ]).then(([found, prefs]) => {
@@ -66,7 +67,7 @@ export function useNotebook(campaignID: string | undefined, userID: string | nul
     return () => {
       cancelled = true
     }
-  }, [userID, campaignID])
+  }, [userID, characterID])
 
   const flush = useCallback(async (pageID: string) => {
     const timer = timers.current.get(pageID)
@@ -125,7 +126,7 @@ export function useNotebook(campaignID: string | undefined, userID: string | nul
 
   /** addNotebookPage do iPad: folha transcrita nova, no papel padrão. Devolve o id. */
   const addPage = useCallback(async (): Promise<string | null> => {
-    if (!campaignID) return null
+    if (!characterID) return null
     const page: NotebookPage = {
       id: crypto.randomUUID().toUpperCase(),
       date: isoNow(),
@@ -136,12 +137,13 @@ export function useNotebook(campaignID: string | undefined, userID: string | nul
       drawing_attachment: null,
     }
     const { drawing_attachment: _d, ...row } = page
-    const { error } = await supabase.from('notebook_entry').insert({ ...row, campaign_id: campaignID })
+    // Sem campanha: a folha é do personagem e o acompanha se ele mudar de campanha.
+    const { error } = await supabase.from('notebook_entry').insert({ ...row, character_id: characterID })
     if (error) throw new Error(error.message)
     versions.current.set(page.id, 1)
     setPages((current) => [...(current ?? []), page].sort(byDate))
     return page.id
-  }, [campaignID, defaultStyle])
+  }, [characterID, defaultStyle])
 
   /** Apagar folha: `deleted_at` (fica no histórico do servidor). */
   const deletePage = useCallback(async (pageID: string) => {

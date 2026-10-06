@@ -166,7 +166,7 @@ async function serverCharacterData(ids: string[]): Promise<Map<string, unknown>>
 
 /** O que vai para `character.data`: a ficha sem folhas, retrato e estado de tela. */
 function characterServerData(c: PlayerCharacter) {
-  const { spellSheets: _sheets, portraitImageData: _portrait, lastChangedField: _field, recentAutoChanges: _changes, ...data } = c
+  const { spellSheets: _sheets, portraitImageData: _portrait, lastChangedField: _field, recentAutoChanges: _changes, notebookEntries: _notebook, ...data } = c
   return data
 }
 
@@ -321,20 +321,32 @@ export async function runImport(
   await write('spell_sheet', sheetRows)
 
   onProgress({ step: 'Notebook' })
+  // Caderno por personagem (formato 2). Backup do formato 1 traz o caderno na
+  // campanha: vai para o primeiro personagem vivo dela, em ordem de nome
+  // (CharacterLibrary.migrateNotebooks do iPad).
+  const pages: { entry: NotebookEntry; characterID: string }[] = characters.flatMap((c) =>
+    (c.notebookEntries ?? []).map((entry) => ({ entry, characterID: c.id })),
+  )
+  for (const campaign of campaigns) {
+    if ((campaign.notebookEntries ?? []).length === 0) continue
+    const cast = characters.filter((c) => c.campaignID === campaign.id).sort((x, y) => x.name.localeCompare(y.name))
+    const target = cast.find((c) => (c.status ?? 'alive') === 'alive') ?? cast[0]
+    if (!target) continue
+    for (const entry of campaign.notebookEntries) pages.push({ entry, characterID: target.id })
+  }
   const notebookRows = []
-  for (const c of campaigns) {
-    for (const entry of c.notebookEntries as NotebookEntry[]) {
-      notebookRows.push({
-        id: entry.id,
-        campaign_id: c.id,
-        date: entry.date,
-        title: entry.title,
-        text: entry.text,
-        kind: entry.kind ?? null,
-        paper_style: entry.paperStyle ?? null,
-        drawing_attachment: await attachment(userID, entry.drawingData),
-      })
-    }
+  for (const { entry, characterID } of pages) {
+    notebookRows.push({
+      id: entry.id,
+      character_id: characterID,
+      campaign_id: null,
+      date: entry.date,
+      title: entry.title,
+      text: entry.text,
+      kind: entry.kind ?? null,
+      paper_style: entry.paperStyle ?? null,
+      drawing_attachment: await attachment(userID, entry.drawingData),
+    })
   }
   await write('notebook_entry', notebookRows)
 

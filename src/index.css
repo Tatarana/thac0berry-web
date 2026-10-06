@@ -3116,3 +3116,17 @@ button.slot-dot:hover {
   gap: 12px;
   margin-top: 4px;
 }
+
+/* Aba Notebook da ficha. */
+.notebook {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notebook-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}

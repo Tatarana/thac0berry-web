@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
-import { useAuth } from '../auth/context'
-import { PageBeads } from '../components/SheetBits'
-import { campaignTitle } from '../lib/campaigns'
+import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { paperStyles, useNotebook, type NotebookPage } from '../lib/notebook'
-import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
+import { PageBeads } from './SheetBits'
 
-// Caderno da campanha (CampaignNotebookView do iPad): uma folha por vez,
+// Caderno do personagem (aba Notebook da ficha do iPad): uma folha por vez,
 // bolinhas numeradas em ordem de data, "+" para folha nova; cada folha com
-// título, texto e o papel (liso, pautado ou quadriculado).
+// título, texto e o papel (liso, pautado ou quadriculado). Folhas de desenho
+// do iPad aparecem só com o aviso (a imagem chega numa próxima etapa).
 
 const longDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
@@ -75,38 +73,19 @@ function NotebookSheet({
   )
 }
 
-export function CampaignNotebook() {
-  const { id } = useParams()
-  const { session, loading, signInWithGoogle } = useAuth()
-  const userID = session?.user.id ?? null
-  const { pages, error, saving, update, addPage, deletePage } = useNotebook(id, userID)
-  const [name, setName] = useState<string | null>(null)
+/** Aba Notebook da ficha: o caderno deste personagem. A folha aberta vai na URL (`note`). */
+export function Notebook({ characterID, userID }: { characterID: string; userID: string | null }) {
+  const { pages, error, saving, update, addPage, deletePage } = useNotebook(characterID, userID)
   const [params, setParams] = useSearchParams()
   const [actionError, setActionError] = useState<string | null>(null)
   const { confirm, dialog } = useConfirm()
 
-  useEffect(() => {
-    if (!userID || !id) return
-    let cancelled = false
-    void supabase
-      .from('campaign')
-      .select('name')
-      .eq('id', id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setName(campaignTitle((data as { name: string } | null) ?? { name: '' }))
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [userID, id])
-
   const list = pages ?? []
   // Sem escolha na URL, abre a folha mais recente.
-  const asked = Number(params.get('page'))
+  const asked = Number(params.get('note'))
   const current = asked >= 1 && asked <= list.length ? asked : list.length
   const page = list[current - 1]
-  const select = (n: number) => setParams({ page: String(n) }, { replace: true })
+  const select = (n: number) => setParams({ view: 'notebook', note: String(n) }, { replace: true })
 
   async function guard(action: () => Promise<void>) {
     setActionError(null)
@@ -138,44 +117,30 @@ export function CampaignNotebook() {
   }
 
   return (
-    <div className="paper-page">
+    <section className="notebook">
       {dialog}
-      <div className="paper-sheet">
-        <div className="paper-top">
-          <Link to={`/campaigns/${id}`} className="paper-link">
-            ‹ {name ?? 'Campaign'}
-          </Link>
-          <span className="paper-soft">{saving ? 'Saving…' : ''}</span>
-        </div>
-        <h1 className="paper-title">Notebook</h1>
-
-        {loading && <p className="paper-soft">Checking your session…</p>}
-        {!loading && !session && (
-          <>
-            <p className="paper-soft">Sign in to open the notebook.</p>
-            <button className="paper-link" onClick={() => void signInWithGoogle()}>Sign in with Google</button>
-          </>
-        )}
-        {(error || actionError) && <p className="paper-soft save-error">Not saved: {actionError ?? error}</p>}
-        {session && pages === null && !error && <p className="paper-soft">Loading the notebook…</p>}
-
-        {pages !== null && (
-          <>
-            <PageBeads titles={list.map((p) => p.title || longDate(p.date))} current={current} onSelect={select} onAdd={() => void add()} />
-            {list.length === 0 && <p className="paper-soft">No pages yet — start your campaign notebook with the “+” above.</p>}
-            {page && (
-              <NotebookSheet
-                key={page.id}
-                page={page}
-                number={current}
-                count={list.length}
-                onChange={(patch, now) => update(page.id, patch, now)}
-                onDelete={() => void remove(page, current)}
-              />
-            )}
-          </>
-        )}
+      <div className="notebook-top">
+        <h2 className="paper-title">Notebook</h2>
+        <span className="paper-soft">{saving ? 'Saving…' : ''}</span>
       </div>
-    </div>
+      {(error || actionError) && <p className="paper-soft save-error">Not saved: {actionError ?? error}</p>}
+      {pages === null && !error && <p className="paper-soft">Loading the notebook…</p>}
+      {pages !== null && (
+        <>
+          <PageBeads titles={list.map((p) => p.title || longDate(p.date))} current={current} onSelect={select} onAdd={() => void add()} />
+          {list.length === 0 && <p className="paper-soft">No pages yet — start this character&apos;s notebook with the “+” above.</p>}
+          {page && (
+            <NotebookSheet
+              key={page.id}
+              page={page}
+              number={current}
+              count={list.length}
+              onChange={(patch, now) => update(page.id, patch, now)}
+              onDelete={() => void remove(page, current)}
+            />
+          )}
+        </>
+      )}
+    </section>
   )
 }
