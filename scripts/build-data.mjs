@@ -142,3 +142,21 @@ for (const file of ['deities.json', 'proficiencies.json', 'weapons.json', 'armor
 // backup do iPad valida cada personagem e campanha contra ele no navegador.
 copyFileSync(join(source, '..', 'schemas', 'library.schema.json'), join(out, 'library.schema.json'))
 console.log('data: library.schema.json')
+
+// Regras de jogo (src/rules/): as tabelas vêm do PRÓPRIO código Swift do iPad,
+// pela seção `tables` de fixtures/rules/rules-fixtures.json (gerado no CI de
+// lá), mais os JSON de THAC0, saves e XP de data/. Vai para src/ (fora do git)
+// porque as regras são usadas de forma síncrona na tela.
+{
+  const fixtures = JSON.parse(readFileSync(join(source, '..', 'fixtures', 'rules', 'rules-fixtures.json'), 'utf8'))
+  const rulesData = {
+    tables: fixtures.tables,
+    thac0: JSON.parse(readFileSync(join(source, 'rules_thac0.json'), 'utf8')),
+    savingThrows: JSON.parse(readFileSync(join(source, 'rules_saving_throws.json'), 'utf8')),
+    experience: JSON.parse(readFileSync(join(source, 'rules_experience.json'), 'utf8')),
+  }
+  const generated = join(root, 'src', 'rules', 'generated')
+  mkdirSync(generated, { recursive: true })
+  writeFileSync(join(generated, 'rules-data.json'), JSON.stringify(rulesData))
+  console.log(`data: src/rules/generated/rules-data.json (${Object.keys(fixtures.tables).length} tabelas)`)
+}

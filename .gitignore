@@ -33,3 +33,6 @@ dist-ssr
 
 # Gerado por scripts/build-data.mjs a partir do thac0berry-data
 public/data/
+
+# Gerado por scripts/build-data.mjs (tabelas de regra do iPad)
+src/rules/generated/

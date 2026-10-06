@@ -31,3 +31,8 @@ jobs:
       - run: npm run build
         env:
           DATA_DIR: thac0berry-data/data
+      # Regras em TypeScript × valores calculados pelo Swift do iPad
+      # (thac0berry-data/fixtures/rules/rules-fixtures.json).
+      - run: npm test
+        env:
+          DATA_DIR: thac0berry-data/data

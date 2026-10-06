@@ -11,6 +11,8 @@
     "prebuild": "npm run data",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "pretest": "npm run data",
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"tests/**/*.test.ts\"",
     "preview": "vite preview"
   },
   "dependencies": {
