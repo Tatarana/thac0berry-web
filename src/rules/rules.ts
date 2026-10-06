@@ -545,3 +545,38 @@ export function thievingSkillsShown(
     return { skill, value: existing ? existing.value : thievingSeedTotal(skill, c.characterClass, c.race, c.abilities.dexterity) }
   })
 }
+
+/**
+ * ConsequenceEngine.refreshLevelChanges: preenche as linhas de THAC0 e saves da
+ * tabela "Level Changes". Sem `force`, só as que estão vazias (ao abrir a ficha
+ * ou mudar o nível); com `force` (troca de classe), regrava as duas. Linha cuja
+ * regra não muda em nenhum nível fica como estava. Devolve se mudou algo.
+ */
+export function refreshLevelChanges(
+  c: { characterClass: CharacterClass | string; abilities: AbilityScores; levelChanges?: LevelChangesTable | null },
+  force = false,
+): boolean {
+  const empty = () => ({ by: '', atLevels: '' })
+  const table: LevelChangesTable = structuredClone(
+    c.levelChanges ?? { thac0: empty(), savingThrows: empty(), weaponProficiencies: empty(), nonWeaponProficiencies: empty() },
+  )
+  const ctx = { characterClass: c.characterClass, abilities: c.abilities }
+  let changed = false
+  const isEmpty = (row: { by: string; atLevels: string }) => row.by === '' && row.atLevels === ''
+  if (force || isEmpty(table.thac0)) {
+    const row = levelChangeRow('thac0', ctx, true)
+    if (row) {
+      table.thac0 = { by: row.by, atLevels: row.atLevels }
+      changed = true
+    }
+  }
+  if (force || isEmpty(table.savingThrows)) {
+    const row = levelChangeRow('savingThrows', ctx, false)
+    if (row) {
+      table.savingThrows = { ...table.savingThrows, atLevels: row.atLevels }
+      changed = true
+    }
+  }
+  if (changed) c.levelChanges = table
+  return changed
+}

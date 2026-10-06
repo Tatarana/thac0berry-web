@@ -1,6 +1,22 @@
-import type { EquipmentItem, PlayerCharacter, SavingThrows } from '../types/library'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
+import type { CharacterClass, EquipmentItem, PlayerCharacter, SavingThrows } from '../types/library'
+import { loadSpellIndex } from '../data/spells'
 import { dash } from '../lib/format'
+import { normalize } from '../lib/search'
+import {
+  applyAutomatic,
+  displaySummary,
+  hasPendingConsequences,
+  markConsequencesReviewed,
+  pendingConsequences,
+  setAbility,
+  setClass,
+  setLevel,
+  type AbilityKey,
+} from '../rules/consequences'
 import { backstabMultiplier, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, SectionTitle } from './SheetBits'
 
 /** Aplica uma mudança na ficha (a página grava sozinha). Ausente = só leitura. */
@@ -13,10 +29,11 @@ export type Edit = (mutate: (c: PlayerCharacter) => void) => void
 // mesmas do iPad: total do save (base − mod) e a tabela "Target's AC"
 // (THAC0 − CA, ou o valor ajustado à mão).
 //
-// Com `edit` (W2.5a), os campos que não disparam regra viram editáveis.
-// Ficam só leitura até as próximas etapas: classe, kit, nível, raça,
-// atributos, THAC0 e saves base (motor de consequências, W2.5b), ferimentos
-// e especialização de arma (mexem em PV e slots), e incluir/remover linhas.
+// Com `edit`, os campos viram editáveis (W2.5a). Nível, classe e atributos
+// passam pelo motor de consequências (W2.5b, src/rules/consequences.ts): o
+// dragão do canto vira o sinal verde e abre a lista "What Changes".
+// Ainda só leitura: kit, raça, ferimentos, especialização de arma e
+// incluir/remover linhas.
 
 // --- Cabeçalho -------------------------------------------------------------
 
@@ -34,6 +51,39 @@ const alignmentOptions: [string, string][] = [
   ['NE', 'Neutral Evil'],
   ['CE', 'Chaotic Evil'],
 ]
+
+const classOptions: CharacterClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja']
+
+/** "Read Magic" do compêndio (1º círculo arcano), para o grimório do mago novo. */
+async function findReadMagic(): Promise<{ id: string; name: string } | null> {
+  const index = await loadSpellIndex()
+  const entry = index.arcane.find((s) => s.level === 1 && normalize(s.name) === 'read magic')
+  return entry ? { id: entry.id, name: entry.name } : null
+}
+
+function ClassSelect({ value, onChange }: { value: CharacterClass; onChange: (cls: CharacterClass, readMagic: { id: string; name: string } | null) => void }) {
+  const known = classOptions.includes(value)
+  return (
+    <select
+      className="ink-input ink-select ink-class"
+      value={value}
+      aria-label="Class"
+      onChange={(event) => {
+        const cls = event.target.value as CharacterClass
+        // O mago novo ganha "Read Magic"; o id vem do compêndio (carregado sob demanda).
+        if (cls === 'Mage') void findReadMagic().then((readMagic) => onChange(cls, readMagic))
+        else onChange(cls, null)
+      }}
+    >
+      {!known && <option value={value}>{value}</option>}
+      {classOptions.map((cls) => (
+        <option key={cls} value={cls}>
+          {cls}
+        </option>
+      ))}
+    </select>
+  )
+}
 
 function AlignmentSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const known = alignmentOptions.some(([, name]) => name === value)
@@ -63,11 +113,28 @@ function RecordHeader({ c, campaignName, edit }: { c: PlayerCharacter; campaignN
           <span className="rec-name">{c.name || 'Unnamed Character'}</span>
         </HeaderLine>
         <div className="rec-header-row">
-          <HeaderLine label="Class / Kit">
-            {c.characterClass}
-            {c.kit ? ` / ${c.kit}` : ''}
-          </HeaderLine>
-          <HeaderLine label="Level">{c.level}</HeaderLine>
+          {edit ? (
+            <div className="rec-header-line">
+              <span className="rec-header-inline">
+                <ClassSelect value={c.characterClass} onChange={(cls, readMagic) => edit((x) => setClass(x, cls, readMagic))} />
+                {c.kit ? <span className="rec-value"> / {c.kit}</span> : null}
+              </span>
+              <span className="rec-cell-label">Class / Kit</span>
+            </div>
+          ) : (
+            <HeaderLine label="Class / Kit">
+              {c.characterClass}
+              {c.kit ? ` / ${c.kit}` : ''}
+            </HeaderLine>
+          )}
+          {edit ? (
+            <div className="rec-header-line">
+              <InkNumber value={c.level} min={0} max={30} label="Level" onChange={(v) => edit((x) => setLevel(x, v))} />
+              <span className="rec-cell-label">Level</span>
+            </div>
+          ) : (
+            <HeaderLine label="Level">{c.level}</HeaderLine>
+          )}
         </div>
         {spheres.length > 0 && <HeaderLine label="Spheres">{spheres.join(', ')}</HeaderLine>}
         <div className="rec-header-row">
@@ -102,11 +169,77 @@ function RecordHeader({ c, campaignName, edit }: { c: PlayerCharacter; campaignN
           {campaignName ? `${c.playerName ? ' · ' : ''}${campaignName}` : ''}
         </span>
         {c.status !== 'alive' && <span className="rec-status">{c.status === 'dead' ? 'Dead' : 'Archived'}</span>}
-        {/* O dragão do canto (record_badge do iPad). Lá ele dá lugar ao sinal de
-            consequência pendente, que só existe com edição (W2.5). */}
-        <img className="rec-badge" src={`${import.meta.env.BASE_URL}images/record_badge.png`} alt="" />
+        {/* O dragão do canto (record_badge do iPad); com consequência pendente,
+            dá lugar ao sinal verde, no mesmo lugar e tamanho. */}
+        {edit && hasPendingConsequences(c) ? (
+          <ConsequenceSignal c={c} edit={edit} />
+        ) : (
+          <img className="rec-badge" src={`${import.meta.env.BASE_URL}images/record_badge.png`} alt="" />
+        )}
       </div>
     </header>
+  )
+}
+
+// --- Consequências (ConsequenceSignalBadge / ConsequencePreviewSheet do iPad) ---
+
+function ConsequenceSignal({ c, edit }: { c: PlayerCharacter; edit: Edit }) {
+  const [open, setOpen] = useState(false)
+  const items = pendingConsequences(c)
+  const hasAuto = items.some((i) => i.kind === 'autoApplicable')
+  // Fechar sem nada a aplicar dá a revisão por feita; com algo a aplicar, o sinal continua.
+  const close = () => {
+    if (!hasAuto) edit((x) => markConsequencesReviewed(x))
+    setOpen(false)
+  }
+  return (
+    <>
+      <button className="consequence-signal" title="Pending consequences — review" aria-label="Pending consequences — review" onClick={() => setOpen(true)}>
+        <img src={`${import.meta.env.BASE_URL}images/icon_consequence_signal.png`} alt="" />
+      </button>
+      {/* No body, fora do cabeçalho da ficha (que é todo em caixa alta). */}
+      {open &&
+        createPortal(
+        <PaperModal title="What Changes" subtitle={`${c.name || 'This character'} — level ${c.level}, ${c.characterClass}`} onClose={close}>
+          {items.length === 0 ? (
+            <p className="paper-soft">No tracked rule changed value for this edit.</p>
+          ) : (
+            <ul className="consequence-list">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <div className="consequence-head">
+                    <span>{item.label}</span>
+                    {item.kind === 'alreadyAutomatic' && <span className="consequence-auto">auto-updates</span>}
+                  </div>
+                  <div className="consequence-values">
+                    <span className="rec-value">{displaySummary(item.oldValue)}</span>
+                    <span aria-label="becomes">→</span>
+                    <span className="rec-value consequence-new">{displaySummary(item.newValue)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="btn-row consequence-actions">
+            {hasAuto && (
+              <button
+                className="consequence-apply"
+                onClick={() => {
+                  edit((x) => {
+                    applyAutomatic(pendingConsequences(x), x)
+                    markConsequencesReviewed(x)
+                  })
+                  setOpen(false)
+                }}
+              >
+                Apply automatic changes
+              </button>
+            )}
+          </div>
+        </PaperModal>,
+          document.body,
+        )}
+    </>
   )
 }
 
@@ -119,7 +252,7 @@ function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       ? `18/${String(c.abilities.exceptionalStrength).padStart(2, '0')}`
       : String(c.abilities.strength)
   // Cada célula: rótulo e o campo de PlayerCharacter.details que ela mostra.
-  const rows: [string, string | number, [string, string][]][] = [
+  const rows: [string, string | number, [string, string][], AbilityKey][] = [
     ['STR', strength, [
       ['Hit Adj', 'strengthHit'],
       ['Dmg Adj', 'strengthDamage'],
@@ -127,46 +260,52 @@ function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       ['Max Press', 'strengthMaxPress'],
       ['Open Doors', 'strengthDoors'],
       ['Bend Bars', 'strengthBars'],
-    ]],
+    ], 'strength'],
     ['DEX', c.abilities.dexterity, [
       ['Surprise Adjustment', 'dexterityReaction'],
       ['Missile Att Adjustment', 'dexterityMissile'],
       ['Defensive Adjustment', 'dexterityDefense'],
-    ]],
+    ], 'dexterity'],
     ['CON', c.abilities.constitution, [
       ['HP Adj', 'constitutionHP'],
       ['System Shock', 'constitutionShock'],
       ['Resurrect Survival', 'constitutionResurrection'],
       ['Poison Save', 'constitutionPoison'],
       ['Regen', 'constitutionRegen'],
-    ]],
+    ], 'constitution'],
     ['INT', c.abilities.intelligence, [
       ['Languages', 'intelligenceLanguages'],
       ['Spell Level', 'intelligenceMaxLevel'],
       ['Learn Spell', 'intelligenceLearn'],
       ['Max/ Level', 'intelligenceMaxPerLevel'],
       ['Spell Immun', 'intelligenceSpellImmunity'],
-    ]],
+    ], 'intelligence'],
     ['WIS', c.abilities.wisdom, [
       ['Magical Def Adj', 'wisdomDefense'],
       ['Bonus Spells', 'wisdomBonusSpells'],
       ['Spell Failure', 'wisdomFailure'],
       ['Spell Immun', 'wisdomSpellImmunity'],
-    ]],
+    ], 'wisdom'],
     ['CHA', c.abilities.charisma, [
       ['Max # of Henchmen', 'charismaHenchmen'],
       ['Loyalty Base', 'charismaLoyalty'],
       ['Reaction Adjustment', 'charismaReaction'],
-    ]],
+    ], 'charisma'],
   ]
   return (
     <section className="rec-section rec-abilities">
       <SectionTitle>Ability Scores</SectionTitle>
       <div className="rec-box">
-        {rows.map(([name, score, cells]) => (
+        {rows.map(([name, score, cells, ability]) => (
           <div key={name} className="rec-ability-row">
             <span className="rec-ability-name">{name}</span>
-            <span className="rec-ability-score rec-value">{score}</span>
+            {edit ? (
+              <span className="rec-ability-score">
+                <InkNumber value={c.abilities[ability]} min={1} max={25} label={name} onChange={(v) => edit((x) => setAbility(x, ability, v))} />
+              </span>
+            ) : (
+              <span className="rec-ability-score rec-value">{score}</span>
+            )}
             <div className="rec-ability-cells">
               {cells.map(([label, key]) =>
                 edit ? (
@@ -226,7 +365,13 @@ function SavingThrowsBlock({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
             return (
               <tr key={id}>
                 <td className="rec-row-label">{label}</td>
-                <td className="rec-value">{base}</td>
+                <td className="rec-value">
+                  {edit ? (
+                    <InkNumber value={base} min={1} max={20} label={`${label} start`} onChange={(v) => edit((x) => void ((x.saves as unknown as Record<string, number>)[key] = v))} />
+                  ) : (
+                    base
+                  )}
+                </td>
                 <td className="rec-value">
                   {edit ? (
                     <InkNumber
@@ -374,7 +519,11 @@ function Thac0Table({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
     <section className="rec-section">
       <div className="rec-thac0-head">
         <span className="rec-title-inline">THAC0</span>
-        <span className="rec-value rec-strong">{c.thac0}</span>
+        {edit ? (
+          <InkNumber className="ink-short rec-strong" value={c.thac0} min={-10} max={30} label="THAC0" onChange={(v) => edit((x) => void (x.thac0 = v))} />
+        ) : (
+          <span className="rec-value rec-strong">{c.thac0}</span>
+        )}
       </div>
       <div className="rec-scroll">
         <table className="rec-table rec-thac0">
