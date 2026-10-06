@@ -2503,3 +2503,50 @@ button.slot-dot:hover {
   flex-direction: column;
   gap: 2px;
 }
+
+/* Ferimentos, especialização e linhas com remover (W2.5d1) */
+.rec-wounds-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.wound-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wound-input {
+  width: 3em;
+  border-bottom: 1px solid var(--pen-ink);
+}
+
+.spec-toggle {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid rgb(47 39 28 / 0.25);
+  border-radius: 4px;
+  background: transparent;
+  font-family: var(--font-printed);
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.spec-on {
+  border-color: var(--brass-dim);
+  color: var(--brass-dim);
+  background: rgb(201 162 39 / 0.12);
+}
+
+.row-with-remove {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.row-with-remove .ink-input {
+  text-align: left;
+}

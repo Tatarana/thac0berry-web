@@ -16,6 +16,11 @@ import {
   type AbilityKey,
 } from '../rules/consequences'
 import { backstabMultiplier, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { loadData } from '../data/load'
+import { formattedRange, type Weapon } from '../data/gear'
+import type { Proficiency } from '../data/proficiencies'
+import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
+import { CompendiumPicker } from './CompendiumPicker'
 import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
 
@@ -32,8 +37,8 @@ export type Edit = (mutate: (c: PlayerCharacter) => void) => void
 // Com `edit`, os campos viram editáveis (W2.5a). Nível, classe e atributos
 // passam pelo motor de consequências (W2.5b, src/rules/consequences.ts): o
 // dragão do canto vira o sinal verde e abre a lista "What Changes".
-// Ainda só leitura: kit, raça, ferimentos, especialização de arma e
-// incluir/remover linhas.
+// W2.5d1: incluir/remover linhas (armas e proficiências pelo compêndio),
+// ferimentos e especialização de arma. Ainda só leitura: kit e raça.
 
 // --- Cabeçalho -------------------------------------------------------------
 
@@ -518,12 +523,69 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         </div>
         <div className="rec-wounds">
           <span className="rec-cell-label">Wounds</span>
-          <div className="rec-wounds-box">
-            {wounds.length === 0 ? <span className="rec-soft">—</span> : wounds.map((w, i) => <span key={i} className="rec-value">− {w}</span>)}
+          <div className="rec-wounds-row">
+            <div className="rec-wounds-box">
+              {wounds.length === 0 ? <span className="rec-soft">—</span> : wounds.map((w, i) => <span key={i} className="rec-value">− {w}</span>)}
+            </div>
+            {edit && <WoundControls hasWounds={wounds.length > 0} edit={edit} />}
           </div>
         </div>
       </div>
     </section>
+  )
+}
+
+/**
+ * Botões dos ferimentos (WoundsBlock do iPad): "+" abre a caixinha do dano;
+ * Enter registra (desconta dos PV); a lixeira apaga a lista, sem mexer nos PV.
+ */
+function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) {
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState('')
+  const commit = () => {
+    const amount = Number(draft.trim())
+    if (/^-?\d+$/.test(draft.trim()) && amount !== 0) edit((x) => recordWound(x, amount))
+    setDraft('')
+    setAdding(false)
+  }
+  return (
+    <div className="wound-controls">
+      {adding ? (
+        <input
+          className="ink-input wound-input"
+          value={draft}
+          placeholder="dmg"
+          inputMode="numeric"
+          autoFocus
+          aria-label="Damage taken"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit()
+            if (e.key === 'Escape') {
+              setDraft('')
+              setAdding(false)
+            }
+          }}
+        />
+      ) : (
+        <button className="counter-btn" aria-label="Add a wound" title="Add a wound" onClick={() => setAdding(true)}>
+          +
+        </button>
+      )}
+      {hasWounds && (
+        <button
+          className="counter-btn"
+          aria-label="Clear the wound list"
+          title="Clear the wound list (hit points stay as they are)"
+          onClick={() => {
+            if (window.confirm('Clear the wound list? Hit points stay as they are.')) edit((x) => clearWounds(x))
+          }}
+        >
+          🗑
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -623,10 +685,23 @@ function ModifierList({
               <td className="rec-value">
                 {edit ? <InkInput value={item.note} label={`${title}: value`} onChange={(v) => set(item.id, { note: v })} /> : dash(item.note)}
               </td>
+              {edit && (
+                <td className="remove-cell">
+                  <RowRemove label={`Remove ${item.name || 'this line'}`} onClick={() => edit((x) => void (x[field] = (x[field] ?? []).filter((m) => m.id !== item.id)))} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      {edit && (
+        <button
+          className="paper-link add-line"
+          onClick={() => edit((x) => void (x[field] = [...(x[field] ?? []), { id: crypto.randomUUID().toUpperCase(), name: '', note: '' }]))}
+        >
+          + add
+        </button>
+      )}
     </div>
   )
 }
@@ -661,7 +736,22 @@ type WeaponKey = 'name' | 'attacks' | 'size' | 'weaponType' | 'speed' | 'thac0' 
 // Opcionais no iPad: vazio volta a nil.
 const optionalWeaponKeys = new Set<WeaponKey>(['size', 'weaponType', 'speed', 'dmgAdj'])
 
+// Armas do compêndio para o seletor (carregadas uma vez).
+const loadWeapons = () => loadData<Weapon[]>('weapons.json')
+const loadProficiencies = () => loadData<Proficiency[]>('proficiencies.json')
+
+/** "×" de remover linha (RemoveRowButton do iPad). */
+function RowRemove({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button className="remove-btn" aria-label={label} title={label} onClick={onClick}>
+      ×
+    </button>
+  )
+}
+
 function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const [picking, setPicking] = useState(false)
+  const isFighter = canonicalClass(c.characterClass) === 'Fighter'
   const field = (w: PlayerCharacter['weapons'][number], key: WeaponKey, label: string) =>
     edit ? (
       <InkInput
@@ -701,7 +791,18 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
               <tr key={w.id}>
                 <td className="rec-value rec-left">
                   {edit ? field(w, 'name', 'name') : w.name || '…'}
-                  {w.isSpecialized && <span className="rec-spec"> ★ spec</span>}
+                  {edit && isFighter ? (
+                    // Só o Fighter especializa (CFH cap. 4); ligar preenche os ajustes do livro.
+                    <button
+                      className={w.isSpecialized ? 'spec-toggle spec-on' : 'spec-toggle'}
+                      title={w.isSpecialized ? 'specialized — click to undo' : 'specialize (costs extra slots)'}
+                      onClick={() => edit((x) => void (x.weapons = x.weapons.map((y) => (y.id === w.id ? (toggleSpecialization(y), y) : y))))}
+                    >
+                      {w.isSpecialized ? '★ spec' : '☆ spec'}
+                    </button>
+                  ) : (
+                    w.isSpecialized && <span className="rec-spec"> ★ spec</span>
+                  )}
                 </td>
                 <td className="rec-value">{field(w, 'attacks', 'attacks')}</td>
                 <td className="rec-value">{field(w, 'size', 'size')}</td>
@@ -714,11 +815,37 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                   {field(w, 'damageSmall', 'damage S/M')} / {field(w, 'damageLarge', 'damage L')}
                 </td>
                 <td className="rec-value">{field(w, 'range', 'range')}</td>
+                {edit && (
+                  <td className="remove-cell">
+                    <RowRemove label={`Remove ${w.name || 'this weapon'}`} onClick={() => edit((x) => void (x.weapons = x.weapons.filter((y) => y.id !== w.id)))} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {edit && (
+        <button className="paper-link add-line" onClick={() => setPicking(true)}>
+          + add weapon
+        </button>
+      )}
+      {picking && edit && (
+        <CompendiumPicker<Weapon>
+          title="Add a weapon"
+          load={loadWeapons}
+          hint={(w) => [w.type, w.damageSmall && `${w.damageSmall}/${w.damageLarge ?? '—'}`].filter(Boolean).join(' · ')}
+          onChoose={(w) => {
+            edit((x) => void (x.weapons = [...x.weapons, weaponFromCompendium({ ...w, formattedRange: formattedRange(w) })]))
+            setPicking(false)
+          }}
+          onTyped={(name) => {
+            edit((x) => void (x.weapons = [...x.weapons, emptyWeapon(name)]))
+            setPicking(false)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
       <WeaponSlotsLine c={c} />
       {c.nonProficiencyPenalty && <p className="rec-soft">Non-proficiency penalty: {c.nonProficiencyPenalty}</p>}
     </section>
@@ -736,6 +863,7 @@ function proficiencySlots(slots: number | string | undefined): number {
 }
 
 function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const [picking, setPicking] = useState(false)
   // Pela posição na lista gravada: no schema, o id da proficiência é opcional.
   const set = (index: number, patch: { slots?: number; target?: string | null }) =>
     edit?.((x) => void (x.proficiencies = (x.proficiencies ?? []).map((p, i) => (i === index ? { ...p, ...patch } : p))))
@@ -779,12 +907,41 @@ function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                       dash(p.target)
                     )}
                   </td>
+                  {edit && (
+                    <td className="remove-cell">
+                      <RowRemove
+                        label={`Remove ${p.name}`}
+                        onClick={() => edit((x) => void (x.proficiencies = (x.proficiencies ?? []).filter((_, i) => i !== p.index)))}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         ))}
       </div>
+      {edit && (
+        <button className="paper-link add-line" onClick={() => setPicking(true)}>
+          + add proficiency
+        </button>
+      )}
+      {picking && edit && (
+        <CompendiumPicker<Proficiency>
+          title="Add a proficiency"
+          load={loadProficiencies}
+          hint={(p) => `${p.primaryGroup} · ${p.mechanics.slotsRequired} slot(s) · ${p.mechanics.relevantAbility}`}
+          onChoose={(p) => {
+            edit((x) => void (x.proficiencies = [...(x.proficiencies ?? []), proficiencyFromCompendium(p, x.abilities)]))
+            setPicking(false)
+          }}
+          onTyped={(name) => {
+            edit((x) => void (x.proficiencies = [...(x.proficiencies ?? []), { id: crypto.randomUUID().toUpperCase(), name, slots: 1, checked: false }]))
+            setPicking(false)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </section>
   )
 }

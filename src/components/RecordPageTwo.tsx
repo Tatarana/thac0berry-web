@@ -1,6 +1,12 @@
 import type { EncumbranceRow, LevelChangeRow, LevelChangesTable, MovementRates, PlayerCharacter, QuantifiedItem } from '../types/library'
 import { dash } from '../lib/format'
 import { defaultEncumbranceTable, levelChanges, xpNeededForNextLevel, xpNote } from '../rules/rules'
+import { useState } from 'react'
+import { loadData } from '../data/load'
+import type { MundaneItem } from '../data/gear'
+import { loadMagicIndex, type MagicItemIndexEntry } from '../data/magicItems'
+import { leastFilledColumn } from '../rules/sheetEdits'
+import { CompendiumPicker } from './CompendiumPicker'
 import type { Edit } from './RecordSheet'
 import { Cell, InkInput, InkNumber, NumberCell, SectionTitle, SheetBlock, TallyMarks } from './SheetBits'
 
@@ -8,9 +14,30 @@ import { Cell, InkInput, InkNumber, NumberCell, SectionTitle, SheetBlock, TallyM
 // equipamento em duas colunas, movimento, carga, experiência, mudanças por
 // nível, itens mágicos, tesouro, idiomas, aliados e talento selvagem.
 //
-// Com `edit` (W2.5a), os campos simples viram editáveis. Ficam só leitura:
-// armadura e escudo (no iPad, trocar recalcula a CA), "XPs Needed" enquanto
-// é calculado pelo nível, as marcas de uso e incluir/remover linhas.
+// Com `edit` (W2.5a), os campos simples viram editáveis; W2.5d1 inclui e
+// remove linhas (equipamento e itens mágicos pelo compêndio). Ficam só
+// leitura: armadura e escudo (no iPad, trocar recalcula a CA), "XPs Needed"
+// enquanto é calculado pelo nível, e as marcas de uso.
+
+const newID = () => crypto.randomUUID().toUpperCase()
+const loadMundane = () => loadData<MundaneItem[]>('mundane_items.json')
+
+/** "×" de remover linha (RemoveRowButton do iPad). */
+function RowRemove({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button className="remove-btn" aria-label={label} title={label} onClick={onClick}>
+      ×
+    </button>
+  )
+}
+
+function AddLine({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button className="paper-link add-line" onClick={onClick}>
+      + {label}
+    </button>
+  )
+}
 
 function Armor({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   return (
@@ -58,7 +85,17 @@ function EquipmentColumn({ rows, edit }: { rows: EquipmentRow[]; edit?: Edit }) 
         {rows.map((row) => (
           <tr key={row.id}>
             <td className="rec-value rec-left">
-              {edit ? <InkInput value={row.item} label="Item" placeholder="…" onChange={(v) => set(row.index, 'item', v)} /> : row.item}
+              {edit ? (
+                <span className="row-with-remove">
+                  <InkInput value={row.item} label="Item" placeholder="…" onChange={(v) => set(row.index, 'item', v)} />
+                  <RowRemove
+                    label={`Remove ${row.item || 'this line'}`}
+                    onClick={() => edit((x) => void (x.page2Equipment = (x.page2Equipment ?? []).filter((_, i) => i !== row.index)))}
+                  />
+                </span>
+              ) : (
+                row.item
+              )}
             </td>
             <td className="rec-value">
               {edit ? <InkInput value={row.location} label={`${row.item} location`} onChange={(v) => set(row.index, 'location', v)} /> : dash(row.location)}
@@ -77,6 +114,13 @@ function EquipmentColumn({ rows, edit }: { rows: EquipmentRow[]; edit?: Edit }) 
 const orNull = (v: string) => (v === '' ? null : v)
 
 function Equipment({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const [picking, setPicking] = useState(false)
+  // Item novo vai para a coluna com menos itens (Page2EquipmentForm do iPad).
+  const add = (entry: { item: string; weight: string; matchedItemID: string | null }) =>
+    edit?.((x) => {
+      const list = x.page2Equipment ?? []
+      x.page2Equipment = [...list, { id: newID(), location: '', column: leastFilledColumn(list), ...entry }]
+    })
   // Coluna sem valor gravado: alterna pela posição, como o iPad faz ao migrar.
   // Editando, mostra também as linhas vazias (o iPad grava 10 para preencher).
   const all = (c.page2Equipment ?? []).map((e, index) => ({ ...e, index, column: e.column ?? index % 2 }))
@@ -94,6 +138,23 @@ function Equipment({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         <EquipmentColumn rows={shown.filter((e) => e.column === 0)} edit={edit} />
         <EquipmentColumn rows={shown.filter((e) => e.column !== 0)} edit={edit} />
       </div>
+      {edit && <AddLine label="add item" onClick={() => setPicking(true)} />}
+      {picking && (
+        <CompendiumPicker<MundaneItem>
+          title="Add equipment"
+          load={loadMundane}
+          hint={(i) => [i.category, i.weight && `${i.weight}`].filter(Boolean).join(' · ')}
+          onChoose={(i) => {
+            add({ item: i.name, weight: i.weight ?? '', matchedItemID: i.id })
+            setPicking(false)
+          }}
+          onTyped={(name) => {
+            add({ item: name, weight: '', matchedItemID: null })
+            setPicking(false)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
       <div className="rec-lines rec-lines-3">
         {footer('Total Weight', 'page2TotalWeight')}
         {footer('Encumbrance', 'page2EquipmentEncumbrance')}
@@ -283,6 +344,9 @@ type QuantityKey = 'page2MagicItems' | 'page2TreasureItems'
 // nome, marcas de uso e "usados de N".
 function QuantityList({ title, items, field, edit }: { title: string; items: QuantifiedItem[] | null | undefined; field: QuantityKey; edit?: Edit }) {
   const rows = items ?? []
+  const [picking, setPicking] = useState(false)
+  const add = (name: string, matchedItemID: string | null) =>
+    edit?.((x) => void (x[field] = [...(x[field] ?? []), { id: newID(), name, quantity: 1, matchedItemID }]))
   const set = (id: string, patch: Partial<QuantifiedItem>) =>
     edit?.((x) => void (x[field] = (x[field] ?? []).map((q) => (q.id === id ? { ...q, ...patch } : q))))
   return (
@@ -318,11 +382,34 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
                     <span className="rec-value">{item.quantity}</span>
                   )}
                 </td>
+                {edit && (
+                  <td className="remove-cell">
+                    <RowRemove label={`Remove ${item.name || 'this line'}`} onClick={() => edit((x) => void (x[field] = (x[field] ?? []).filter((q) => q.id !== item.id)))} />
+                  </td>
+                )}
               </tr>
             )
           })}
         </tbody>
       </table>
+      {/* Itens mágicos vêm do compêndio (MagicItemPickerSheet); outras posses, linha em branco. */}
+      {edit && <AddLine label="add" onClick={() => (field === 'page2MagicItems' ? setPicking(true) : add('', null))} />}
+      {picking && (
+        <CompendiumPicker<MagicItemIndexEntry>
+          title="Add a magic item"
+          load={loadMagicIndex}
+          hint={(i) => i.category}
+          onChoose={(i) => {
+            add(i.name, i.id)
+            setPicking(false)
+          }}
+          onTyped={(name) => {
+            add(name, null)
+            setPicking(false)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </SheetBlock>
   )
 }
@@ -352,10 +439,16 @@ function TextList({ title, items, field, edit }: { title: string; items: string[
                   item || <span className="rec-soft">…</span>
                 )}
               </td>
+              {edit && (
+                <td className="remove-cell">
+                  <RowRemove label={`Remove ${item || 'this line'}`} onClick={() => edit((x) => void (x[field] = x[field].filter((_, i) => i !== index)))} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      {edit && <AddLine label="add" onClick={() => edit((x) => void (x[field] = [...x[field], '']))} />}
     </SheetBlock>
   )
 }
@@ -423,10 +516,19 @@ function WildTalent({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                   power || <span className="rec-soft">…</span>
                 )}
               </td>
+              {edit && (
+                <td className="remove-cell">
+                  <RowRemove
+                    label={`Remove ${power || 'this power'}`}
+                    onClick={() => edit((x) => void (x.wildTalent && (x.wildTalent = { ...x.wildTalent, powers: x.wildTalent.powers.filter((_, i) => i !== index) })))}
+                  />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      {edit && <AddLine label="power" onClick={() => edit((x) => void (x.wildTalent = { ...(x.wildTalent ?? { psionicStrengthPoints: 0, powers: [] }), powers: [...(x.wildTalent?.powers ?? []), ''] }))} />}
     </SheetBlock>
   )
 }
