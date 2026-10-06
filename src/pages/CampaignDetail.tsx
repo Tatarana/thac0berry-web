@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/context'
 import { CampaignSessions } from '../components/CampaignSessions'
+import { CharacterActions } from '../components/CharacterActions'
 import { PaperModal } from '../components/DetailBits'
 import { PageHeader } from '../components/PageHeader'
 import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, settingLogo, useCampaignDoc } from '../lib/campaigns'
@@ -42,17 +43,19 @@ function SaveLine({ save, onRetry }: { save: SaveState; onRetry: () => void }) {
   }
 }
 
-function CastList({ members }: { members: CastMember[] }) {
+/** Elenco com o "⋯" de ações em cada personagem (castMenu do iPad). */
+function CastList({ members, campaignID, onChanged }: { members: CastMember[]; campaignID: string; onChanged: () => void }) {
   return (
     <ul className="import-list">
       {members.map((c) => (
-        <li key={c.id} className="import-row">
+        <li key={c.id} className="import-row cast-row">
           <Link className="character-link" to={`/characters/${c.id}`}>
             <span className="import-name">{c.name || 'Unnamed character'}</span>
             <div className="soft import-detail">
               {c.character_class ?? '—'} {c.level ?? ''}
             </div>
           </Link>
+          <CharacterActions character={{ ...c, campaign_id: campaignID }} onChanged={onChanged} />
         </li>
       ))}
     </ul>
@@ -306,13 +309,13 @@ export function CampaignDetail() {
             )}
             {cast === null && <p className="soft">Loading characters…</p>}
             {cast !== null && alive.length === 0 && <p className="soft">No characters in this campaign yet.</p>}
-            {alive.length > 0 && <CastList members={alive} />}
+            {alive.length > 0 && <CastList members={alive} campaignID={campaign.id} onChanged={() => setCastVersion((v) => v + 1)} />}
             {dead.length > 0 && (
               <>
                 <button className="disclosure" aria-expanded={open.dead} onClick={() => setOpen((o) => ({ ...o, dead: !o.dead }))}>
                   {open.dead ? '▾' : '▸'} Dead ({dead.length})
                 </button>
-                {open.dead && <CastList members={dead} />}
+                {open.dead && <CastList members={dead} campaignID={campaign.id} onChanged={() => setCastVersion((v) => v + 1)} />}
               </>
             )}
             {archived.length > 0 && (
@@ -320,7 +323,7 @@ export function CampaignDetail() {
                 <button className="disclosure" aria-expanded={open.archived} onClick={() => setOpen((o) => ({ ...o, archived: !o.archived }))}>
                   {open.archived ? '▾' : '▸'} Archived ({archived.length})
                 </button>
-                {open.archived && <CastList members={archived} />}
+                {open.archived && <CastList members={archived} campaignID={campaign.id} onChanged={() => setCastVersion((v) => v + 1)} />}
               </>
             )}
           </section>

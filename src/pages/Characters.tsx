@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/context'
+import { CharacterActions } from '../components/CharacterActions'
 import { PageHeader } from '../components/PageHeader'
+import { createCharacter } from '../lib/roster'
 import { supabase } from '../lib/supabase'
 
 // Lista de personagens da conta, agrupados por campanha (as colunas de
-// resumo são geradas pelo banco a partir da ficha). Clicar abre a ficha.
+// resumo são geradas pelo banco a partir da ficha). Clicar abre a ficha; o
+// "⋯" de cada linha tem as ações (clonar, morrer, arquivar, mover, apagar);
+// "+ New character" cria um personagem no Sandbox (AllCharactersView do iPad).
 interface CharacterSummary {
   id: string
   name: string | null
@@ -28,6 +32,9 @@ export function Characters() {
   const [characters, setCharacters] = useState<CharacterSummary[] | null>(null)
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [reload, setReload] = useState(0)
+  const [creating, setCreating] = useState(false)
+  const navigate = useNavigate()
   const userID = session?.user.id ?? null
 
   useEffect(() => {
@@ -52,7 +59,17 @@ export function Characters() {
     return () => {
       cancelled = true
     }
-  }, [userID])
+  }, [userID, reload])
+
+  const newCharacter = async () => {
+    setCreating(true)
+    try {
+      navigate(`/characters/${await createCharacter(null)}`)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+      setCreating(false)
+    }
+  }
 
   const groups = [
     ...campaigns.map((campaign) => ({
@@ -105,7 +122,7 @@ export function Characters() {
               </h2>
               <ul className="import-list">
                 {group.members.map((c) => (
-                  <li key={c.id} className="import-row">
+                  <li key={c.id} className="import-row cast-row">
                     <Link className="character-link" to={`/characters/${c.id}`}>
                       <span className="import-name">{c.name || 'Unnamed character'}</span>
                       <div className="soft import-detail">
@@ -113,6 +130,7 @@ export function Characters() {
                         {c.status && c.status !== 'alive' ? ` · ${statusLabel[c.status] ?? c.status}` : ''}
                       </div>
                     </Link>
+                    <CharacterActions character={c} onChanged={() => setReload((n) => n + 1)} />
                   </li>
                 ))}
               </ul>
@@ -120,6 +138,9 @@ export function Characters() {
           ))}
           <section className="ember-card">
             <div className="btn-row">
+              <button className="btn" disabled={creating} onClick={() => void newCharacter()}>
+                {creating ? 'Creating…' : '+ New character'}
+              </button>
               <Link className="btn" to="/import">Import iPad backup</Link>
             </div>
           </section>

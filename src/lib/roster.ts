@@ -146,3 +146,88 @@ export async function deleteCampaign(campaignID: string) {
   if (campaign.error) throw new Error(campaign.error.message)
   await softDelete('campaign', [campaign.data as { id: string; version: number }])
 }
+
+// --- Ações no personagem (menu de contexto do elenco no iPad) ------------------
+
+/** Lê a ficha com a versão, aplica a mudança e grava (UPDATE com o `version` conhecido). */
+async function editCharacter(characterID: string, mutate: (c: ServerCharacter) => void) {
+  const { data: row, error } = await supabase.from('character').select('data, version').eq('id', characterID).single()
+  if (error) throw new Error(error.message)
+  const { data, version } = row as { data: ServerCharacter; version: number }
+  const next = structuredClone(data)
+  mutate(next)
+  await checkCharacter(next)
+  const saved = await supabase.from('character').update({ data: next, version }).eq('id', characterID)
+  if (saved.error) throw new Error(saved.error.message)
+}
+
+/** markDead do iPad: morto na data, com uma nota opcional. */
+export const markDead = (characterID: string, diedOn: string, note: string) =>
+  editCharacter(characterID, (c) => {
+    c.status = 'dead'
+    c.diedOn = diedOn
+    c.deathNote = note.trim() === '' ? null : note.trim()
+  })
+
+/** toggleArchived do iPad: arquiva (ou desarquiva) sem apagar nada. */
+export const toggleArchived = (characterID: string) =>
+  editCharacter(characterID, (c) => {
+    c.status = c.status === 'archived' ? 'alive' : 'archived'
+  })
+
+/** reviveToAlive do iPad: morto ou arquivado volta ao elenco ativo. */
+export const bringBack = (characterID: string) =>
+  editCharacter(characterID, (c) => {
+    c.status = 'alive'
+    c.diedOn = null
+    c.deathNote = null
+  })
+
+/**
+ * cloneCharacter do iPad: nova identidade, viva, sem folhas de magia nem
+ * caderno (sem histórico), na campanha pedida. Ganha a primeira folha de magia
+ * se for conjurador numa campanha. Devolve o id do clone.
+ */
+export async function cloneCharacter(characterID: string, campaignID: string | null): Promise<string> {
+  const { data: row, error } = await supabase.from('character').select('data, portrait_attachment').eq('id', characterID).single()
+  if (error) throw new Error(error.message)
+  const { data, portrait_attachment } = row as { data: ServerCharacter; portrait_attachment: string | null }
+  const { notebookEntries: _notebook, ...rest } = data
+  const clone: ServerCharacter = {
+    ...structuredClone(rest),
+    id: newID(),
+    campaignID,
+    status: 'alive',
+    diedOn: null,
+    deathNote: null,
+    clonedFromCharacterID: data.id,
+  }
+  await checkCharacter(clone)
+  const inserted = await supabase.from('character').insert({ id: clone.id, campaign_id: campaignID, portrait_attachment, data: clone })
+  if (inserted.error) throw new Error(inserted.error.message)
+  if (campaignID) await seedFirstSpellSheet(clone.id, clone, campaignID)
+  return clone.id
+}
+
+/**
+ * deleteCharacter do iPad. Aqui o personagem, as folhas de magia e o caderno
+ * dele viram `deleted_at` (ficam no histórico do servidor).
+ */
+export async function deleteCharacter(characterID: string) {
+  const now = new Date().toISOString()
+  for (const table of ['spell_sheet', 'notebook_entry'] as const) {
+    const rows = await supabase.from(table).select('id, version').eq('character_id', characterID).is('deleted_at', null)
+    if (rows.error) throw new Error(`${table}: ${rows.error.message}`)
+    for (const r of rows.data as { id: string; version: number }[]) {
+      const { error } = await supabase.from(table).update({ deleted_at: now, version: r.version }).eq('id', r.id)
+      if (error) throw new Error(`${table}: ${error.message}`)
+    }
+  }
+  const row = await supabase.from('character').select('version').eq('id', characterID).single()
+  if (row.error) throw new Error(row.error.message)
+  const { error } = await supabase
+    .from('character')
+    .update({ deleted_at: now, version: (row.data as { version: number }).version })
+    .eq('id', characterID)
+  if (error) throw new Error(error.message)
+}

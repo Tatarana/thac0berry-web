@@ -3130,3 +3130,82 @@ button.slot-dot:hover {
   justify-content: space-between;
   align-items: baseline;
 }
+
+/* ---- Ações no personagem (menu "⋯") ---- */
+
+.cast-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cast-row .character-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  position: relative;
+}
+
+.actions-button {
+  width: 30px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.08);
+  color: var(--on-obsidian);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.actions-button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.actions-menu {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  z-index: 20;
+  min-width: 230px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--obsidian-raise);
+  border: 1.2px solid rgb(201 162 39 / 0.5);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.45);
+}
+
+.actions-item {
+  text-align: left;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--on-obsidian);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.actions-item:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+
+.actions-danger {
+  color: #ec7660;
+}
+
+.actions-error {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  width: 260px;
+  font-size: 0.75rem;
+  color: #ec7660;
+}
+
+.danger-apply {
+  background: #b23a2b;
+}
