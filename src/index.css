@@ -2112,3 +2112,133 @@ button {
   font-size: 1.5rem;
   text-align: center;
 }
+
+/* Folha de magia editável (W2.5c1) */
+button.slot-dot {
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+button.slot-dot:hover {
+  background: rgb(233 220 190 / 0.25);
+}
+
+.memorized th.memorized-strike,
+.memorized td.memorized-strike {
+  width: 22px;
+  padding-right: 4px;
+}
+
+.strike-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgb(47 39 28 / 0.3);
+  border-radius: 50%;
+  background: transparent;
+  color: rgb(47 39 28 / 0.3);
+  font-family: var(--font-hand);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.strike-btn:hover {
+  color: var(--red-ink);
+  border-color: var(--red-ink);
+}
+
+.strike-on {
+  color: var(--red-ink);
+  border-color: var(--red-ink);
+  background: rgb(140 47 34 / 0.08);
+}
+
+.memorized-empty {
+  font-style: italic;
+  color: rgb(107 92 70 / 0.6);
+}
+
+.spell-sheet-title .ink-input.spell-sheet-day {
+  font-size: 2.1rem;
+}
+
+.counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.counter-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgb(47 39 28 / 0.35);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.3);
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.counter-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Seletor de magia do slot */
+.slot-write {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid rgb(47 39 28 / 0.42);
+  margin-bottom: 10px;
+}
+
+.slot-write .ink-input {
+  font-size: 1.5rem;
+  text-align: left;
+}
+
+.slot-choices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.slot-choice {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 2px;
+  border: 0;
+  border-bottom: 1px solid rgb(47 39 28 / 0.18);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.slot-choice:hover {
+  background: rgb(255 255 255 / 0.35);
+}
+
+.slot-choice-fav {
+  color: var(--brass-dim);
+}
+
+.slot-choice-signal {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--red-ink);
+}
+
+.slot-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}

@@ -50,9 +50,9 @@ export interface ImportSelection {
 
 export type Validator = (value: unknown) => string | null
 
-let validators: Promise<{ campaign: Validator; character: Validator }> | null = null
+let validators: Promise<{ campaign: Validator; character: Validator; spellSheet: Validator }> | null = null
 
-/** Validadores do library.schema.json (campanha e personagem); null = válido, senão o motivo. */
+/** Validadores do library.schema.json (campanha, personagem, folha de magia); null = válido, senão o motivo. */
 export function loadValidators() {
   validators ??= loadData<{ $id: string }>('library.schema.json').then((schema) => {
     const ajv = new Ajv2020({ allErrors: false, strict: false })
@@ -68,7 +68,7 @@ export function loadValidators() {
         return `${where}${error.message ?? 'is invalid'}`
       }
     }
-    return { campaign: make('Campaign'), character: make('PlayerCharacter') }
+    return { campaign: make('Campaign'), character: make('PlayerCharacter'), spellSheet: make('SpellSheet') }
   })
   return validators
 }

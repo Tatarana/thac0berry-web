@@ -1,17 +1,42 @@
 import { useEffect, useMemo, useState } from 'react'
 import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
+import type { ServerSheet } from '../lib/useSpellSheets'
 import { bonusSpellTotals } from '../rules/rules'
-import type { CharacterClass, SpellSheet, SpellSlot } from '../types/library'
-import { SheetBlock, TallyMarks } from './SheetBits'
+import { assignSlot, clearSlot, toggleSpent } from '../rules/spellSheets'
+import type { CharacterClass, PlayerCharacter, SpellSlot } from '../types/library'
+import { InkInput, InkNumber, SheetBlock, TallyMarks } from './SheetBits'
+import { SlotEditor } from './SlotEditor'
 import { SpellDetail } from './SpellDetail'
 
-// Uma folha de magias (um dia de jogo), só leitura: SpellSheetView do iPad.
-// Cabeçalho, um bloco por círculo (bolinhas dos slots + tabela de
-// memorizadas com Cast e Dmg/Heal), Turn Undead (sacerdote), magias de
-// itens mágicos e magias adicionais. Clicar numa magia abre o detalhe do
-// compêndio. As anotações à caneta (inkNotes, PencilKit) não aparecem.
+// Uma folha de magias (um dia de jogo): SpellSheetView do iPad. Cabeçalho,
+// um bloco por círculo (bolinhas dos slots + tabela de memorizadas com Cast
+// e Dmg/Heal), Turn Undead (sacerdote), magias de itens mágicos e magias
+// adicionais. Clicar numa magia abre o detalhe do compêndio. As anotações à
+// caneta (inkNotes, PencilKit) não aparecem.
+//
+// Com `edit` (W2.5c1): título do dia; bolinha do slot abre o seletor de magia
+// (SlotEditor); riscar a magia gasta (no iPad, um traço de caneta sobre a
+// linha; aqui, o botão ✕ da linha); contadores com − e + (no iPad, riscos de
+// caneta). Dia novo e incluir/remover linhas entram na W2.5c2.
 
-type ServerSheet = Omit<SpellSheet, 'inkNotes'>
+/** Aplica uma mudança nesta folha (a página grava sozinha). */
+export type SheetEdit = (mutate: (s: ServerSheet) => void) => void
+
+/** Marcas de contagem com − e +: o equivalente, no navegador, a riscar com a caneta. */
+function Counter({ count, exhausted, min = 0, label, onChange }: { count: number; exhausted: boolean; min?: number; label: string; onChange?: (n: number) => void }) {
+  if (!onChange) return <TallyMarks count={count} exhausted={exhausted} />
+  return (
+    <span className="counter">
+      <button className="counter-btn" aria-label={`${label}: one less`} disabled={count <= min} onClick={() => onChange(count - 1)}>
+        −
+      </button>
+      <TallyMarks count={count} exhausted={exhausted} />
+      <button className="counter-btn" aria-label={`${label}: one more`} onClick={() => onChange(count + 1)}>
+        +
+      </button>
+    </span>
+  )
+}
 
 interface Resolved {
   entry: SpellIndexEntry
@@ -44,20 +69,38 @@ function useSpells(ids: string[]) {
 
 const casterOrder = ['arcane', 'divine'] as const
 
+/** Muda uma magia de item (usos, máximo, dano). */
+function setItemSpell(s: ServerSheet, itemID: string, useID: string, patch: { usedCount?: number; maxUses?: number; damageNote?: string }) {
+  s.magicItems = s.magicItems.map((item) =>
+    item.id === itemID ? { ...item, spells: item.spells.map((u) => (u.id === useID ? { ...u, ...patch } : u)) } : item,
+  )
+}
+
 function casterTitle(characterClass: CharacterClass): string {
   if (characterClass === 'Mage' || characterClass === 'Mago') return 'Wizard'
   if (characterClass === 'Bard' || characterClass === 'Bardo') return 'Bard'
   return 'Priest'
 }
 
-function SlotDots({ slots }: { slots: SpellSlot[] }) {
+function SlotDots({ slots, onPick }: { slots: SpellSlot[]; onPick?: (slot: SpellSlot) => void }) {
   return (
     <span className="slot-dots">
-      {slots.map((slot) => (
-        <span key={slot.id} className={slot.isSpent ? 'slot-dot slot-dot-spent' : 'slot-dot'}>
-          {slot.isSpent ? '✕' : ''}
-        </span>
-      ))}
+      {slots.map((slot) =>
+        onPick ? (
+          <button
+            key={slot.id}
+            className={slot.isSpent ? 'slot-dot slot-dot-spent' : 'slot-dot'}
+            aria-label={`Change the spell in this slot${slot.isSpent ? ' (used)' : ''}`}
+            onClick={() => onPick(slot)}
+          >
+            {slot.isSpent ? '✕' : ''}
+          </button>
+        ) : (
+          <span key={slot.id} className={slot.isSpent ? 'slot-dot slot-dot-spent' : 'slot-dot'}>
+            {slot.isSpent ? '✕' : ''}
+          </span>
+        ),
+      )}
     </span>
   )
 }
@@ -69,6 +112,8 @@ function CircleBlock({
   spells,
   casterLevel,
   onOpen,
+  onPick,
+  onStrike,
 }: {
   level: number
   /** Slots de bônus de Sabedoria neste círculo (sacerdote); 0 para arcano. */
@@ -77,6 +122,10 @@ function CircleBlock({
   spells: Map<string, Resolved>
   casterLevel: number
   onOpen: (entry: SpellIndexEntry) => void
+  /** Editando: abre o seletor de magia do slot. */
+  onPick?: (slot: SpellSlot) => void
+  /** Editando: risca (ou desfaz) a magia gasta. */
+  onStrike?: (slot: SpellSlot) => void
 }) {
   // Igual ao iPad: com bônus de Sabedoria, separa base e bônus.
   const title =
@@ -87,11 +136,12 @@ function CircleBlock({
     <section className="circle-block">
       <header className={slots.length > 5 ? 'circle-bar circle-bar-wrap' : 'circle-bar'}>
         <span>{title}</span>
-        <SlotDots slots={slots} />
+        <SlotDots slots={slots} onPick={onPick} />
       </header>
       <table className="memorized">
         <thead>
           <tr>
+            {onStrike && <th className="memorized-strike" aria-label="Used" />}
             <th className="memorized-name">Memorized Spell</th>
             <th>Cast</th>
             <th>Dmg/Heal</th>
@@ -105,9 +155,29 @@ function CircleBlock({
             const dmg = spell?.damageDice ? damageText(spell.damageDice, casterLevel) : spell?.damage ? '*' : null
             return (
               <tr key={slot.id} className={slot.isSpent ? 'memorized-spent' : undefined}>
+                {onStrike && (
+                  <td className="memorized-strike">
+                    {name !== null && (
+                      <button
+                        className={slot.isSpent ? 'strike-btn strike-on' : 'strike-btn'}
+                        aria-label={slot.isSpent ? `${name}: not used` : `${name}: used`}
+                        title={slot.isSpent ? 'unmark as used' : 'strike (used)'}
+                        onClick={() => onStrike(slot)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </td>
+                )}
                 <td className="memorized-name">
                   {name === null ? (
-                    <span className="rec-soft">—</span>
+                    onPick ? (
+                      <button className="memorized-link memorized-empty" onClick={() => onPick(slot)}>
+                        write the spell
+                      </button>
+                    ) : (
+                      <span className="rec-soft">—</span>
+                    )
                   ) : resolved ? (
                     <button className="memorized-link" onClick={() => onOpen(resolved.entry)}>{name}</button>
                   ) : (
@@ -125,7 +195,7 @@ function CircleBlock({
   )
 }
 
-function TurnUndead({ used }: { used: number }) {
+function TurnUndead({ used, onChange }: { used: number; onChange?: (n: number) => void }) {
   return (
     <section className="circle-block">
       <header className="circle-bar turn-bar">
@@ -135,7 +205,7 @@ function TurnUndead({ used }: { used: number }) {
       </header>
       <div className="turn-body">
         <span className="rec-cell-label">Attempts</span>
-        <TallyMarks count={used} exhausted={false} />
+        <Counter count={used} exhausted={false} label="Turn Undead attempts" onChange={onChange} />
         <span className="rec-value">{used}</span>
       </div>
     </section>
@@ -147,13 +217,25 @@ export function SpellSheetPage({
   characterName,
   characterClass,
   level,
+  edit,
+  character,
+  favorites,
+  usage,
 }: {
   sheet: ServerSheet
   characterName: string
   characterClass: CharacterClass
   level: number
+  edit?: SheetEdit
+  /** Esferas e grimório (para o seletor de magia). */
+  character?: Pick<PlayerCharacter, 'sphereAccess' | 'wizardSpellbook'>
+  favorites?: Set<string>
+  /** Quantas vezes cada magia foi memorizada, em todas as folhas. */
+  usage?: Map<string, number>
 }) {
   const [open, setOpen] = useState<SpellIndexEntry | null>(null)
+  const [picking, setPicking] = useState<string | null>(null)
+  const pickedSlot = picking ? sheet.slotBoard.slots.find((s) => s.id === picking) ?? null : null
   const ids = useMemo(() => {
     const set = new Set<string>()
     for (const slot of sheet.slotBoard.slots) if (slot.preparedSpellID) set.add(slot.preparedSpellID)
@@ -184,7 +266,11 @@ export function SpellSheetPage({
       <header className="spell-sheet-header">
         <div className="spell-sheet-title">
           <span className="rec-cell-label rec-left-label">{casterTitle(characterClass)} Spell Sheet — Game Day</span>
-          <span className="rec-value spell-sheet-day">{dayTitle}</span>
+          {edit ? (
+            <InkInput className="spell-sheet-day" value={sheet.title} placeholder={dayTitle} label="Game day" onChange={(v) => edit((s) => void (s.title = v))} />
+          ) : (
+            <span className="rec-value spell-sheet-day">{dayTitle}</span>
+          )}
         </div>
         <div className="spell-sheet-who">
           <span className="rec-cell-label">Character</span>
@@ -208,9 +294,11 @@ export function SpellSheetPage({
             spells={spells}
             casterLevel={level}
             onOpen={setOpen}
+            onPick={edit && ((slot) => setPicking(slot.id))}
+            onStrike={edit && ((slot) => edit((s) => toggleSpent(s, slot.id)))}
           />
         ))}
-        {hasDivine && <TurnUndead used={sheet.turnUndeadUsed} />}
+        {hasDivine && <TurnUndead used={sheet.turnUndeadUsed} onChange={edit && ((n) => edit((s) => void (s.turnUndeadUsed = n)))} />}
       </div>
       {circles.length === 0 && <p className="rec-soft">No spell slots on this sheet.</p>}
 
@@ -240,14 +328,41 @@ export function SpellSheetPage({
                         )}
                       </td>
                       <td className="sheet-rows-tally">
-                        <TallyMarks count={use.usedCount} exhausted={exhausted} />
+                        <Counter
+                          count={use.usedCount}
+                          exhausted={exhausted}
+                          label={`${use.spellName || 'Spell'} uses`}
+                          onChange={edit && ((n) => edit((s) => setItemSpell(s, item.id, use.id, { usedCount: n })))}
+                        />
                       </td>
                       <td className="sheet-rows-count">
                         <span className={exhausted ? 'rec-value rec-red' : 'rec-value'}>{use.usedCount}</span>
                         <span className="rec-soft"> of </span>
-                        <span className="rec-value">{use.maxUses}</span>
+                        {edit ? (
+                          <InkNumber
+                            className="ink-short"
+                            value={use.maxUses}
+                            min={1}
+                            max={99}
+                            label={`${use.spellName || 'Spell'} maximum uses`}
+                            onChange={(n) => edit((s) => setItemSpell(s, item.id, use.id, { maxUses: n }))}
+                          />
+                        ) : (
+                          <span className="rec-value">{use.maxUses}</span>
+                        )}
                       </td>
-                      <td className="rec-value item-dmg">{use.damageNote || '—'}</td>
+                      <td className="rec-value item-dmg">
+                        {edit ? (
+                          <InkInput
+                            value={use.damageNote}
+                            placeholder="1d6+1"
+                            label={`${use.spellName || 'Spell'} damage`}
+                            onChange={(v) => edit((s) => setItemSpell(s, item.id, use.id, { damageNote: v }))}
+                          />
+                        ) : (
+                          use.damageNote || '—'
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
@@ -281,7 +396,13 @@ export function SpellSheetPage({
                       <span className="rec-cell-label">Casts</span>
                     </td>
                     <td className="sheet-rows-tally">
-                      <TallyMarks count={entry.castCount} exhausted={false} />
+                      <Counter
+                        count={entry.castCount}
+                        exhausted={false}
+                        min={1}
+                        label={`${entry.displayName} casts`}
+                        onChange={edit && ((n) => edit((s) => void (s.entries = s.entries.map((e) => (e.id === entry.id ? { ...e, castCount: n } : e)))))}
+                      />
                     </td>
                     <td className="sheet-rows-count rec-value">{entry.castCount}</td>
                   </tr>
@@ -293,6 +414,27 @@ export function SpellSheetPage({
       </SheetBlock>
 
       {open && <SpellDetail entry={open} onClose={() => setOpen(null)} />}
+      {edit && pickedSlot && character && (
+        <SlotEditor
+          slot={pickedSlot}
+          character={character}
+          favorites={favorites ?? new Set()}
+          usage={usage ?? new Map()}
+          onAssign={(choice) => {
+            edit((s) => assignSlot(s, pickedSlot.id, choice))
+            setPicking(null)
+          }}
+          onClear={() => {
+            edit((s) => clearSlot(s, pickedSlot.id))
+            setPicking(null)
+          }}
+          onToggleSpent={() => {
+            edit((s) => toggleSpent(s, pickedSlot.id))
+            setPicking(null)
+          }}
+          onClose={() => setPicking(null)}
+        />
+      )}
     </div>
   )
 }

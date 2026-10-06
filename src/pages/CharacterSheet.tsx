@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/context'
 import { RecordPageFour } from '../components/RecordPageFour'
@@ -9,18 +9,28 @@ import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
+import { useSpellSheets } from '../lib/useSpellSheets'
+import { spellUsageCounts } from '../rules/spellSheets'
 import { recordSheetPageCount } from '../rules/rules'
-import type { PlayerCharacter, SpellSheet } from '../types/library'
+import type { PlayerCharacter } from '../types/library'
 
 // Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
 // (3, ou 4 com as tabelas de referência da classe, conforme
-// recordSheetPageCount); os campos simples são editáveis e gravam sozinhos
-// (useCharacterDoc). Aba "Spell Sheets": uma folha de magia por dia, ainda só
-// leitura. No servidor, `character.data` é o PlayerCharacter do iPad sem
+// recordSheetPageCount); os campos são editáveis e gravam sozinhos
+// (useCharacterDoc). Aba "Spell Sheets": uma folha de magia por dia. No servidor, `character.data` é o PlayerCharacter do iPad sem
 // `spellSheets`, `portraitImageData`, `lastChangedField` e
 // `recentAutoChanges`; o retrato fica no Storage (`portrait_attachment`).
-/** spell_sheet.data: o SpellSheet do iPad sem `inkNotes` (vira anexo). */
-type ServerSheet = Omit<SpellSheet, 'inkNotes'>
+// As folhas de magia vêm de spell_sheet e gravam sozinhas (useSpellSheets).
+
+/** Um só estado para a ficha e as folhas: erro > gravando > pendente > gravado (o mais recente). */
+function combineSave(a: SaveState, b: SaveState): SaveState {
+  for (const kind of ['error', 'saving', 'pending'] as const) {
+    const found = [a, b].find((x) => x.kind === kind)
+    if (found) return found
+  }
+  const at = [a, b].map((x) => (x.kind === 'saved' ? x.at : '')).sort().pop() ?? ''
+  return { kind: 'saved', at }
+}
 
 function SaveStatus({ save, onRetry }: { save: SaveState; onRetry: () => void }) {
   switch (save.kind) {
@@ -81,7 +91,6 @@ export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
   const view = params.get('view') === 'spells' ? 'spells' : 'record'
-  const [sheets, setSheets] = useState<ServerSheet[] | null>(null)
   const { session, loading, signInWithGoogle } = useAuth()
   const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
@@ -89,23 +98,27 @@ export function CharacterSheet() {
   const { doc, loadError, save, conflict, dismissConflict, update, retry } = useCharacterDoc(id, userID)
   const campaignID = doc?.campaignID ?? null
 
-  // Folhas de magia (cada uma é um dia de jogo), em ordem de data.
+  const spellSheets = useSpellSheets(id, userID)
+  const sheets = spellSheets.sheets
+  const usage = useMemo(() => spellUsageCounts(sheets ?? []), [sheets])
+
+  // Favoritas da conta (user_preferences): sobem para o topo da lista do seletor de magia.
+  const [favorites, setFavorites] = useState<Set<string>>(new Set())
   useEffect(() => {
-    if (!userID || !id) return
+    if (!userID) return
     let cancelled = false
     void supabase
-      .from('spell_sheet')
-      .select('data')
-      .eq('character_id', id)
-      .is('deleted_at', null)
-      .then(({ data, error }) => {
-        if (cancelled || error) return
-        setSheets((data as { data: ServerSheet }[]).map((r) => r.data).sort((a, b) => a.date.localeCompare(b.date)))
+      .from('user_preferences')
+      .select('favorite_spell_ids')
+      .eq('user_id', userID)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setFavorites(new Set((data as { favorite_spell_ids: string[] } | null)?.favorite_spell_ids ?? []))
       })
     return () => {
       cancelled = true
     }
-  }, [userID, id])
+  }, [userID])
 
   useEffect(() => {
     if (!campaignID) return
@@ -149,12 +162,28 @@ export function CharacterSheet() {
       <div className="paper-sheet">
         <div className="paper-top">
           <Link to="/characters" className="paper-link">‹ Characters</Link>
-          {loaded && <SaveStatus save={save} onRetry={() => void retry()} />}
+          {loaded && (
+            <SaveStatus
+              save={combineSave(save, spellSheets.save)}
+              onRetry={() => {
+                void retry()
+                void spellSheets.retry()
+              }}
+            />
+          )}
         </div>
-        {conflict && (
+        {(conflict || spellSheets.conflict) && (
           <div className="conflict-note" role="status">
             This sheet was also changed somewhere else. Your version was saved; the other one is kept in the history.{' '}
-            <button className="paper-link" onClick={dismissConflict}>OK</button>
+            <button
+              className="paper-link"
+              onClick={() => {
+                dismissConflict()
+                spellSheets.dismissConflict()
+              }}
+            >
+              OK
+            </button>
           </div>
         )}
         {loading && <p className="paper-soft">Checking your session…</p>}
@@ -223,6 +252,10 @@ export function CharacterSheet() {
                     characterName={character.name}
                     characterClass={character.characterClass}
                     level={character.level}
+                    edit={(mutate) => spellSheets.update(sheet.id, mutate)}
+                    character={character}
+                    favorites={favorites}
+                    usage={usage}
                   />
                 </>
               )
