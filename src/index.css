@@ -1337,20 +1337,7 @@ button {
   border-bottom: 1px solid var(--ink);
 }
 
-.rec-desc-top {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
-}
 
-.rec-sketch {
-  flex: 0 0 220px;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
 
 .rec-sketch-frame {
   height: 260px;
@@ -1366,16 +1353,7 @@ button {
   object-fit: cover;
 }
 
-.rec-desc-grid {
-  flex: 1 1 380px;
-  display: flex;
-  flex-direction: column;
-}
 
-.rec-desc-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
 
 @media (width < 560px) {
   .rec-lines-4,
@@ -1386,8 +1364,206 @@ button {
   .rec-desc-split {
     grid-template-columns: 1fr;
   }
+}
 
+/* Página 3 na ordem do iPad */
+.rec-desc-table {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Racial Abilities (q1+q2 = 2,8) | Skin…Origin (q3+q4 = 2) */
+.rec-desc-split {
+  display: grid;
+  grid-template-columns: 2.8fr 2fr;
+}
+
+.rec-desc-split .rec-textbox {
+  margin: 0 -1px -1px 0;
+}
+
+.rec-span-2 {
+  grid-column: span 2;
+  display: grid;
+}
+
+.rec-desc-middle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.rec-personality {
+  flex: 1 1 280px;
+  display: flex;
+}
+
+.rec-personality .rec-textbox {
+  flex: 1;
+  min-height: 220px;
+}
+
+.rec-sketch {
+  flex: 0 0 220px;
+  margin: 0 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rec-background .rec-textbox {
+  min-height: 320px;
+}
+
+@media (width < 560px) {
   .rec-sketch {
     flex: 1 1 100%;
   }
+}
+
+/* SheetBlock do iPad: tarja de tinta no título, contador à direita */
+.sheet-block {
+  border: 1.4px solid var(--ink);
+  background: rgb(255 255 255 / 0.12);
+}
+
+.sheet-block-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--ink);
+  color: var(--sheet);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.sheet-block-trailing {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  opacity: 0.75;
+}
+
+.sheet-block-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Linhas de lista com fio fino embaixo (DottedRule do iPad) */
+.sheet-rows {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sheet-rows td {
+  padding: 4px 0;
+  border-bottom: 1px solid rgb(47 39 28 / 0.42);
+  vertical-align: middle;
+}
+
+.sheet-rows-name {
+  text-align: left;
+}
+
+.sheet-rows-tally {
+  width: 1%;
+  padding: 3px 8px !important;
+}
+
+.sheet-rows-count {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.rec-red {
+  color: var(--red-ink);
+}
+
+/* Marcas de contagem no "poço de tinta" (TallyBoard/TallyMarks do iPad) */
+.tally {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 70px;
+  min-height: 26px;
+  padding: 3px 6px;
+  align-items: center;
+  border-radius: 5px;
+  background: var(--ink);
+  border: 1px solid rgb(233 220 190 / 0.22);
+  --tally: var(--sheet);
+}
+
+.tally-exhausted {
+  --tally: #ec7660;
+}
+
+.tally-group {
+  position: relative;
+  display: inline-flex;
+  gap: 3px;
+  height: 18px;
+}
+
+.tally-bar {
+  width: 2px;
+  height: 18px;
+  background: var(--tally);
+  border-radius: 1px;
+}
+
+.tally-bar:nth-child(2n) {
+  transform: rotate(3deg);
+}
+
+.tally-cross {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: 8px;
+  height: 2px;
+  background: var(--tally);
+  transform: rotate(-24deg);
+}
+
+/* Bolinhas das páginas (RecordSheetBeadRow/InkDayBead do iPad) */
+.beads {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 3px 0;
+  background: linear-gradient(to right, rgb(107 92 70 / 0.5) 1px, transparent 1px) left center / 6px 1px repeat-x;
+  align-self: flex-start;
+}
+
+.bead {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--sheet);
+  color: var(--ink-soft);
+  font-family: var(--font-hand);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: width 0.2s, height 0.2s;
+}
+
+.bead-on {
+  width: 30px;
+  height: 30px;
+  border-width: 1.6px;
+  background: var(--pen-ink);
+  color: var(--sheet);
+  font-size: 0.95rem;
+  box-shadow: 0 1.5px 3px rgb(47 39 28 / 0.3);
 }

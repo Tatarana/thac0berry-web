@@ -4,6 +4,7 @@ import { useAuth } from '../auth/context'
 import { RecordPageThree } from '../components/RecordPageThree'
 import { RecordPageTwo } from '../components/RecordPageTwo'
 import { RecordSheet } from '../components/RecordSheet'
+import { PageBeads } from '../components/SheetBits'
 import { supabase } from '../lib/supabase'
 import type { PlayerCharacter } from '../types/library'
 
@@ -21,10 +22,11 @@ interface Loaded {
   updatedAt: string
 }
 
+// Bolinhas 1, 2 e 3, como no iPad (lá não há rótulo, só o número).
 const pages = [
   { id: '1', label: 'Record' },
-  { id: '2', label: 'Equipment' },
-  { id: '3', label: 'Description' },
+  { id: '2', label: 'Equipment, Movement and Experience' },
+  { id: '3', label: 'Character Description' },
 ]
 
 /** Link temporário (1 h) do retrato; o bucket é privado. */
@@ -121,18 +123,11 @@ export function CharacterSheet() {
         {session && !loaded && !error && <p className="paper-soft">Loading the character…</p>}
         {loaded && character && (
           <>
-            <nav className="chip-row" aria-label="Sheet pages">
-              {pages.map((p) => (
-                <button
-                  key={p.id}
-                  className={page === p.id ? 'chip chip-on' : 'chip'}
-                  aria-current={page === p.id ? 'page' : undefined}
-                  onClick={() => setParams(p.id === '1' ? {} : { page: p.id }, { replace: true })}
-                >
-                  {p.id} · {p.label}
-                </button>
-              ))}
-            </nav>
+            <PageBeads
+              titles={pages.map((p) => p.label)}
+              current={Number(page)}
+              onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
+            />
             {page === '1' && <RecordSheet character={character} campaignName={loaded.campaignName} />}
             {page === '2' && <RecordPageTwo character={character} />}
             {page === '3' && <RecordPageThree character={character} portraitURL={portrait} />}

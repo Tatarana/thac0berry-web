@@ -1,6 +1,6 @@
 import type { EncumbranceRow, LevelChangeRow, Page2EquipmentEntry, PlayerCharacter, QuantifiedItem } from '../types/library'
 import { dash } from '../lib/format'
-import { Cell, SectionTitle } from './SheetBits'
+import { Cell, SectionTitle, SheetBlock, TallyMarks } from './SheetBits'
 
 // Página 2 da ficha oficial (RecordSheetPageTwo do iPad): armadura,
 // equipamento em duas colunas, movimento, carga, experiência, mudanças por
@@ -9,16 +9,14 @@ import { Cell, SectionTitle } from './SheetBits'
 
 function Armor({ c }: { c: PlayerCharacter }) {
   return (
-    <section className="rec-section">
-      <SectionTitle>Armor</SectionTitle>
+    <SheetBlock title="Armor" trailing="base AC 10">
       <div className="rec-lines rec-lines-4">
         <Cell label="Armor" value={dash(c.armorRating)} />
         <Cell label="Shield" value={dash(c.shieldRating)} />
         <Cell label="Dexterity" value={dash(c.details.dexterityDefense)} />
         <Cell label="Movement" value={c.movement} />
       </div>
-      <p className="rec-soft">Base AC 10.</p>
-    </section>
+    </SheetBlock>
   )
 }
 
@@ -173,57 +171,68 @@ function LevelChanges({ c }: { c: PlayerCharacter }) {
   )
 }
 
+// Tabela de verdade (uma linha por item), como o QuantityListBlock do iPad:
+// nome, marcas de uso e "usados de N".
 function QuantityList({ title, items }: { title: string; items: QuantifiedItem[] | null | undefined }) {
-  const filled = (items ?? []).filter((item) => item.name.trim() !== '')
+  const rows = items ?? []
   return (
-    <section className="rec-section">
-      <SectionTitle>{title}</SectionTitle>
-      {filled.length === 0 ? (
-        <p className="rec-soft">—</p>
-      ) : (
-        <ul className="rec-plain-list">
-          {filled.map((item) => {
+    <SheetBlock title={title} trailing={String(rows.length)}>
+      <table className="sheet-rows">
+        <tbody>
+          {rows.length === 0 && (
+            <tr>
+              <td className="rec-soft">—</td>
+            </tr>
+          )}
+          {rows.map((item) => {
             const used = item.usedCount ?? 0
             const exhausted = item.quantity > 0 && used >= item.quantity
             return (
-              <li key={item.id} className={exhausted ? 'rec-exhausted' : undefined}>
-                <span className="rec-value">{item.name}</span>
-                <span className="rec-soft">
-                  {' '}
-                  · {used} of {item.quantity} used
-                </span>
-              </li>
+              <tr key={item.id}>
+                <td className="rec-value sheet-rows-name">{item.name || <span className="rec-soft">…</span>}</td>
+                <td className="sheet-rows-tally">
+                  <TallyMarks count={used} exhausted={exhausted} />
+                </td>
+                <td className="sheet-rows-count">
+                  <span className={exhausted ? 'rec-value rec-red' : 'rec-value'}>{used}</span>
+                  <span className="rec-soft"> of </span>
+                  <span className="rec-value">{item.quantity}</span>
+                </td>
+              </tr>
             )
           })}
-        </ul>
-      )}
-    </section>
+        </tbody>
+      </table>
+    </SheetBlock>
   )
 }
 
+// ListBlock do iPad: uma linha por item, em tabela.
 function TextList({ title, items }: { title: string; items: string[] }) {
-  const filled = items.filter((item) => item.trim() !== '')
   return (
-    <section className="rec-section">
-      <SectionTitle>{title}</SectionTitle>
-      {filled.length === 0 ? (
-        <p className="rec-soft">—</p>
-      ) : (
-        <ul className="rec-plain-list">
-          {filled.map((item, index) => (
-            <li key={index} className="rec-value">{item}</li>
+    <SheetBlock title={title} trailing={String(items.length)}>
+      <table className="sheet-rows">
+        <tbody>
+          {items.length === 0 && (
+            <tr>
+              <td className="rec-soft">—</td>
+            </tr>
+          )}
+          {items.map((item, index) => (
+            <tr key={index}>
+              <td className="rec-value sheet-rows-name">{item || <span className="rec-soft">…</span>}</td>
+            </tr>
           ))}
-        </ul>
-      )}
-    </section>
+        </tbody>
+      </table>
+    </SheetBlock>
   )
 }
 
 function Treasure({ c }: { c: PlayerCharacter }) {
   const t = c.treasure
   return (
-    <section className="rec-section">
-      <SectionTitle>Treasure</SectionTitle>
+    <SheetBlock title="Treasure" trailing="coins">
       <div className="rec-lines rec-lines-5">
         <Cell label="PP" value={t.platinum} />
         <Cell label="GP" value={t.gold} />
@@ -231,24 +240,26 @@ function Treasure({ c }: { c: PlayerCharacter }) {
         <Cell label="SP" value={t.silver} />
         <Cell label="CP" value={t.copper} />
       </div>
-    </section>
+    </SheetBlock>
   )
 }
 
 function WildTalent({ c }: { c: PlayerCharacter }) {
   const talent = c.wildTalent
-  const powers = (talent?.powers ?? []).filter((p) => p.trim() !== '')
-  if (!talent || (powers.length === 0 && talent.psionicStrengthPoints === 0)) return null
+  if (!talent || (talent.powers.length === 0 && talent.psionicStrengthPoints === 0)) return null
   return (
-    <section className="rec-section">
-      <SectionTitle>Wild Talent</SectionTitle>
+    <SheetBlock title="Wild Talent" trailing={String(talent.powers.length)}>
       <p className="rec-soft">PSPs: {talent.psionicStrengthPoints}</p>
-      <ul className="rec-plain-list">
-        {powers.map((power, index) => (
-          <li key={index} className="rec-value">{power}</li>
-        ))}
-      </ul>
-    </section>
+      <table className="sheet-rows">
+        <tbody>
+          {talent.powers.map((power, index) => (
+            <tr key={index}>
+              <td className="rec-value sheet-rows-name">{power || <span className="rec-soft">…</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </SheetBlock>
   )
 }
 
