@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { CampaignDetail } from './pages/CampaignDetail'
+import { CampaignNotebook } from './pages/CampaignNotebook'
 import { Campaigns } from './pages/Campaigns'
 import { Characters } from './pages/Characters'
 import { CharacterSheet } from './pages/CharacterSheet'
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/import" element={<ImportBackup />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/:id" element={<CampaignDetail />} />
+          <Route path="/campaigns/:id/notebook" element={<CampaignNotebook />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
         </Routes>
       </HashRouter>

@@ -13,7 +13,8 @@ import type { SaveState } from '../lib/useCharacterDoc'
 
 // Detalhe da campanha (CampaignDetailView do iPad): nome, início, anotações,
 // ambientações em jogo, arquivar, o elenco com link para cada ficha
-// (personagem novo ou trazido do Sandbox) e apagar a campanha.
+// (personagem novo ou trazido do Sandbox), as sessões, o link para o
+// caderno e apagar a campanha.
 // Sessões (W3.2) e caderno (W3.3) entram nas próximas etapas.
 
 interface CastMember {
@@ -106,6 +107,7 @@ export function CampaignDetail() {
   const [cast, setCast] = useState<CastMember[] | null>(null)
   const [open, setOpen] = useState<{ dead: boolean; archived: boolean }>({ dead: false, archived: false })
   const [castVersion, setCastVersion] = useState(0)
+  const [notebookPages, setNotebookPages] = useState<number | null>(null)
   const [picking, setPicking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -128,6 +130,23 @@ export function CampaignDetail() {
       cancelled = true
     }
   }, [userID, id, castVersion])
+
+  // Quantas folhas tem o caderno (só as do próprio autor; RLS).
+  useEffect(() => {
+    if (!userID || !id) return
+    let cancelled = false
+    void supabase
+      .from('notebook_entry')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', id)
+      .is('deleted_at', null)
+      .then(({ count }) => {
+        if (!cancelled) setNotebookPages(count ?? 0)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userID, id])
 
   /** Roda uma ação do elenco, mostrando o erro se falhar. */
   async function run(action: () => Promise<void>) {
@@ -322,6 +341,15 @@ export function CampaignDetail() {
                 {open.archived && <CastList members={archived} />}
               </>
             )}
+          </section>
+
+          <section className="ember-card">
+            <h2 className="card-title">Notebook</h2>
+            <div className="btn-row">
+              <Link className="btn" to={`/campaigns/${id}/notebook`}>
+                Open campaign notebook{notebookPages !== null ? ` (${notebookPages} ${notebookPages === 1 ? 'page' : 'pages'})` : ''}
+              </Link>
+            </div>
           </section>
 
           {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} />}

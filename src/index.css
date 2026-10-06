@@ -2986,3 +2986,67 @@ button.slot-dot:hover {
 .session-saving {
   font-weight: 400;
 }
+
+/* ---- Caderno da campanha (NotebookView do iPad) ---- */
+
+.notebook-page {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notebook-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.notebook-title {
+  font-size: 1.6rem;
+  border-bottom: 1px dotted rgb(47 39 28 / 0.35);
+}
+
+/* Papel da folha: as linhas acompanham a altura da linha do texto (28 px, como no iPad). */
+.notebook-paper {
+  --notebook-line: rgb(107 92 70 / 0.28);
+  width: 100%;
+  min-height: 60vh;
+  padding: 0 6px;
+  border: 1px solid rgb(47 39 28 / 0.25);
+  background-color: rgb(255 255 255 / 0.25);
+  background-attachment: local;
+  font-family: var(--font-hand);
+  font-size: 1.25rem;
+  line-height: 28px;
+  color: var(--pen-ink);
+  resize: vertical;
+}
+
+.notebook-paper:focus {
+  outline: none;
+  border-color: var(--pen-ink);
+}
+
+.notebook-paper::placeholder {
+  color: rgb(107 92 70 / 0.45);
+}
+
+.notebook-lined {
+  background-image: linear-gradient(to bottom, transparent 27px, var(--notebook-line) 27px);
+  background-size: 100% 28px;
+}
+
+.notebook-grid {
+  background-image:
+    linear-gradient(to bottom, transparent 27px, var(--notebook-line) 27px),
+    linear-gradient(to right, transparent 27px, var(--notebook-line) 27px);
+  background-size: 28px 28px;
+}
+
+.notebook-drawing {
+  display: grid;
+  place-items: center;
+}
