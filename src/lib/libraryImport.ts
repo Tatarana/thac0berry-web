@@ -17,7 +17,8 @@ import { supabase } from './supabase'
 // importado (decisão do usuário: backups antigos podem ser descartados).
 
 /** CharacterLibrary.currentSchemaVersion do iPad. Backup mais novo é recusado. */
-export const SUPPORTED_SCHEMA_VERSION = 1
+// 2 (2026-10-06): caderno por personagem (PlayerCharacter.notebookEntries).
+export const SUPPORTED_SCHEMA_VERSION = 2
 
 export interface ImportItem<T> {
   value: T
