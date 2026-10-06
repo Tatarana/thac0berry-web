@@ -23,6 +23,7 @@ import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecializati
 import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
 import { CompendiumPicker } from './CompendiumPicker'
 import { KitPicker, RacePicker } from './RaceKitPickers'
+import { useConfirm } from '../lib/useConfirm'
 import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
 
@@ -590,6 +591,7 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) {
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState('')
+  const { confirm, dialog } = useConfirm()
   const commit = () => {
     const amount = Number(draft.trim())
     if (/^-?\d+$/.test(draft.trim()) && amount !== 0) edit((x) => recordWound(x, amount))
@@ -598,6 +600,7 @@ function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) 
   }
   return (
     <div className="wound-controls">
+      {dialog}
       {adding ? (
         <input
           className="ink-input wound-input"
@@ -626,8 +629,8 @@ function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) 
           className="counter-btn"
           aria-label="Clear the wound list"
           title="Clear the wound list (hit points stay as they are)"
-          onClick={() => {
-            if (window.confirm('Clear the wound list? Hit points stay as they are.')) edit((x) => clearWounds(x))
+          onClick={async () => {
+            if (await confirm('Clear the wound list? Hit points stay as they are.', 'Clear wounds')) edit((x) => clearWounds(x))
           }}
         >
           🗑
@@ -819,7 +822,8 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         <table className="rec-table rec-weapons">
           <thead>
             <tr>
-              <th className="rec-row-label">Weapon</th>
+              <th className="rec-row-label weapon-col-name">Weapon</th>
+              <th className="weapon-col-spec" title="Weapon specialization (Fighter only)">★</th>
               <th>#AT</th>
               <th>Size</th>
               <th>Type</th>
@@ -827,18 +831,21 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
               <th>Hit/Dmg Adj</th>
               <th>Damage</th>
               <th>Range/Special</th>
+              {edit && <th aria-label="Remove" />}
             </tr>
           </thead>
           <tbody>
             {c.weapons.length === 0 && (
               <tr>
-                <td className="rec-soft" colSpan={8}>No weapons.</td>
+                <td className="rec-soft" colSpan={9}>No weapons.</td>
               </tr>
             )}
             {c.weapons.map((w) => (
               <tr key={w.id}>
                 <td className="rec-value rec-left">
                   {edit ? field(w, 'name', 'name') : w.name || '…'}
+                </td>
+                <td className="weapon-col-spec">
                   {edit && isFighter ? (
                     // Só o Fighter especializa (CFH cap. 4); ligar preenche os ajustes do livro.
                     <button
@@ -846,10 +853,10 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                       title={w.isSpecialized ? 'specialized — click to undo' : 'specialize (costs extra slots)'}
                       onClick={() => edit((x) => void (x.weapons = x.weapons.map((y) => (y.id === w.id ? (toggleSpecialization(y), y) : y))))}
                     >
-                      {w.isSpecialized ? '★ spec' : '☆ spec'}
+                      {w.isSpecialized ? '★' : '☆'}
                     </button>
                   ) : (
-                    w.isSpecialized && <span className="rec-spec"> ★ spec</span>
+                    w.isSpecialized && <span className="rec-spec" title="specialized">★</span>
                   )}
                 </td>
                 <td className="rec-value">{field(w, 'attacks', 'attacks')}</td>

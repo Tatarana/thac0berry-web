@@ -8,9 +8,10 @@ import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
-import { ActiveEffectsPage } from '../components/ActiveEffects'
+import { ActiveEffectsPage, AttackNegationFloat } from '../components/ActiveEffects'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
+import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
@@ -163,6 +164,7 @@ export function CharacterSheet() {
 
   const character = doc?.character as PlayerCharacter | undefined
   const [sheetError, setSheetError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
 
   /** Slots de hoje e o atributo congelado na folha (Sabedoria, ou Inteligência para mago e bardo). */
   const sheetBasis = (c: PlayerCharacter, cls: CharacterClass = c.characterClass) => ({
@@ -189,7 +191,7 @@ export function CharacterSheet() {
   }
 
   async function deleteDay(sheetID: string, title: string) {
-    if (!window.confirm(`Delete "${title}"? The day is removed from the sheet (kept in the server history).`)) return
+    if (!(await confirm(`Delete "${title}"? The day is removed from the sheet (kept in the server history).`, 'Delete day'))) return
     try {
       setSheetError(null)
       await spellSheets.deleteSheet(sheetID)
@@ -236,6 +238,7 @@ export function CharacterSheet() {
 
   return (
     <div className="paper-page">
+      {dialog}
       <div className="paper-sheet">
         <div className="paper-top">
           <Link to="/characters" className="paper-link">‹ Characters</Link>
@@ -319,6 +322,7 @@ export function CharacterSheet() {
             </nav>
             {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
             {view === 'effects' && <ActiveEffectsPage c={character} edit={edit} />}
+            <AttackNegationFloat c={character} edit={edit} />
             {view === 'record' && (
               <>
                 <PageBeads

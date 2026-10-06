@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/context'
+import { useConfirm } from '../lib/useConfirm'
 import { PageHeader } from '../components/PageHeader'
 import {
   ImportError,
@@ -35,6 +36,7 @@ export function ImportBackup() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
+  const { confirm, dialog } = useConfirm()
 
   async function chooseFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -100,13 +102,16 @@ export function ImportBackup() {
     const replaced = plan.characters.filter((c) => c.differsFromServer && characterIDs.has(c.value.id))
     if (
       replaced.length > 0 &&
-      !window.confirm(
-        `Your account has a different version of: ${replaced.map((c) => c.value.name || 'Unnamed character').join(', ')}.
-
-` +
-          'It may have been edited on the web after the last import. Importing replaces it with the backup version ' +
-          '(the account version is kept in the history). Continue?',
-      )
+      !(await confirm(
+        <>
+          <p>Your account has a different version of: {replaced.map((c) => c.value.name || 'Unnamed character').join(', ')}.</p>
+          <p className="paper-soft">
+            It may have been edited on the web after the last import. Importing replaces it with the backup version (the account version is kept in the
+            history).
+          </p>
+        </>,
+        'Import anyway',
+      ))
     )
       return
     setError(null)
@@ -148,6 +153,7 @@ export function ImportBackup() {
 
   return (
     <div className="page">
+      {dialog}
       <PageHeader title="Import Backup" backTo="/characters" />
 
       <section className="ember-card">

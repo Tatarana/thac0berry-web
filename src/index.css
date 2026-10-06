@@ -2626,3 +2626,154 @@ button.slot-dot:hover {
   min-width: 6em;
   text-align: left;
 }
+
+/* Ajustes do teste (W2.5e) */
+.rec-ability-name {
+  width: 52px;
+}
+
+/* Weapon Combat: colunas curtas estreitas, o nome da arma com o espaço. */
+.rec-weapons {
+  table-layout: fixed;
+  min-width: 720px;
+}
+
+.rec-weapons th:nth-child(1) { width: 27%; }
+.rec-weapons th:nth-child(2) { width: 30px; }
+.rec-weapons th:nth-child(3),
+.rec-weapons th:nth-child(4),
+.rec-weapons th:nth-child(5),
+.rec-weapons th:nth-child(6) { width: 6%; }
+.rec-weapons th:nth-child(7) { width: 11%; }
+.rec-weapons th:nth-child(8) { width: 16%; }
+.rec-weapons th:nth-child(9) { width: 15%; }
+.rec-weapons th:nth-child(10) { width: 28px; }
+
+.rec-weapons td {
+  overflow: hidden;
+}
+
+.weapon-col-spec {
+  text-align: center;
+  padding: 0 !important;
+}
+
+.weapon-col-spec .spec-toggle {
+  margin: 0;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.weapon-col-spec .spec-on {
+  color: var(--brass-dim);
+}
+
+.confirm-body {
+  margin-bottom: 12px;
+}
+
+.kit-choice {
+  display: flex;
+  align-items: center;
+}
+
+.kit-choice .slot-choice {
+  flex: 1;
+}
+
+.info-btn {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.info-btn:hover {
+  background: rgb(30 53 87 / 0.1);
+  color: var(--pen-ink);
+}
+
+/* "Choose" flutuando sobre a descrição do kit */
+.kit-detail-choose {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+}
+
+/* Janela grande (editor de efeito) */
+.modal-sheet.modal-wide {
+  width: min(980px, 100%);
+  min-height: min(80vh, 760px);
+}
+
+.effect-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.effect-number.ink-input {
+  width: 4.5em;
+  font-size: 1.4rem;
+  text-align: center;
+  border-bottom: 1px solid var(--pen-ink);
+}
+
+/* Contador flutuante de ataques negados (sempre à vista na ficha) */
+.negation-float {
+  position: fixed;
+  z-index: 40;
+  right: 16px;
+  bottom: 16px;
+  max-width: min(320px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1.4px solid var(--ink);
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgb(255 255 255 / 0.45), transparent 70%),
+    var(--sheet);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
+  color: var(--ink);
+}
+
+.negation-float-title {
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.negation-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.negation-left {
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  color: var(--pen-ink);
+}
+
+.negation-done .negation-left {
+  color: var(--red-ink);
+}
+
+/* Os dois campos de "Hit/Dmg Adj" e "Damage" dividem a célula ao meio. */
+.rec-weapons .rec-pair .ink-input {
+  width: calc(50% - 6px);
+  padding: 1px 0;
+}

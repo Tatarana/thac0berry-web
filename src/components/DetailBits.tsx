@@ -27,11 +27,14 @@ export function PaperModal({
   subtitle,
   onClose,
   children,
+  wide = false,
 }: {
   title: string
   subtitle?: string
   onClose: () => void
   children: ReactNode
+  /** Janela grande (editores com muitos campos). */
+  wide?: boolean
 }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -44,7 +47,7 @@ export function PaperModal({
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="paper-sheet modal-sheet"
+        className={wide ? 'paper-sheet modal-sheet modal-wide' : 'paper-sheet modal-sheet'}
         role="dialog"
         aria-modal="true"
         aria-label={title}

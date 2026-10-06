@@ -3,6 +3,7 @@ import { loadSpellIndex, type SpellIndexEntry } from '../data/spells'
 import { normalize, similarity } from '../lib/search'
 import { canonicalClass, computedSpellSlotAllotments } from '../rules/rules'
 import { isOpposedBySchool, wizardSchools } from '../rules/spellSheets'
+import { useConfirm } from '../lib/useConfirm'
 import type { PlayerCharacter } from '../types/library'
 import type { Edit } from './RecordSheet'
 import { InkPicker, SectionTitle } from './SheetBits'
@@ -21,6 +22,7 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
   const [index, setIndex] = useState<SpellIndexEntry[] | null>(null)
   const [query, setQuery] = useState('')
   const [freeLevel, setFreeLevel] = useState(1)
+  const { confirm, dialog } = useConfirm()
 
   useEffect(() => {
     void loadSpellIndex().then((all) => setIndex(all.arcane))
@@ -82,6 +84,7 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
 
   return (
     <div className="rec-sheet spellbook">
+      {dialog}
       <SectionTitle>My Spellbook</SectionTitle>
       <p className="rec-soft">
         {c.wizardSpellbook.length} spell(s) known — can cast up to circle {maxCircle}
@@ -95,13 +98,13 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
               value={school ?? ''}
               label="Specialization"
               options={[{ value: '', label: 'Generalist (no school)' }, ...wizardSchools.map((s) => ({ value: s.name, label: s.name, hint: s.specialist }))]}
-              onChange={(name) => {
+              onChange={async (name) => {
                 if (name === (school ?? '')) return
                 const losing = name === '' ? 0 : c.wizardSpellbook.filter((e) => {
                   const spell = e.matchedSpellID ? byID.get(e.matchedSpellID) : undefined
                   return spell && isOpposedBySchool(name, spell.schools)
                 }).length
-                if (losing > 0 && !window.confirm(`${losing} spell(s) from opposition schools will leave your spellbook. Continue?`)) return
+                if (losing > 0 && !(await confirm(`${losing} spell(s) from opposition schools will leave your spellbook.`, 'Specialize'))) return
                 setSchool(name)
               }}
             />

@@ -5,6 +5,7 @@ import { normalize } from '../lib/search'
 import { hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, races, raceWarnings, type RaceName } from '../rules/raceKit'
 import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
+import { KitDetail } from './KitDetail'
 
 // Escolher raça (RacePickerSheet do iPad: lista das raças do PHB; se a ficha
 // fica fora da Tabela 7, mostra os avisos antes de confirmar) e kit
@@ -81,6 +82,8 @@ export function KitPicker({
 }) {
   const [kits, setKits] = useState<Kit[] | null>(null)
   const [query, setQuery] = useState('')
+  // Descrição do kit (KitDetailSheet do iPad, aberto pelo ⓘ da linha).
+  const [detail, setDetail] = useState<Kit | null>(null)
   useEffect(() => {
     void loadAllKits().then((all) => setKits(kitsAllowedFor(all, character.characterClass).sort((a, b) => a.name.localeCompare(b.name))))
   }, [character.characterClass])
@@ -105,16 +108,36 @@ export function KitPicker({
           </button>
         </li>
         {filtered.map((kit) => (
-          <li key={kit.id}>
+          <li key={kit.id} className="kit-choice">
             <button className="slot-choice" onClick={() => onChoose(kit)}>
               <span className="slot-choice-fav">{character.kit === kit.name ? '★' : ''}</span>
               <span className="rec-value">{kit.name}</span>
               <span className="rec-soft">{[kit.classEligibility.subclass, kit.deity].filter(Boolean).join(' · ')}</span>
             </button>
+            <button className="info-btn" aria-label={`About ${kit.name}`} title="Read the kit description" onClick={() => setDetail(kit)}>
+              ⓘ
+            </button>
           </li>
         ))}
         {kits !== null && filtered.length === 0 && <li className="paper-soft">No kit for this class matches.</li>}
       </ul>
+      {detail && (
+        <>
+          <KitDetail kit={detail} onClose={() => setDetail(null)} />
+          <div className="kit-detail-choose">
+            <button
+              className="consequence-apply"
+              onClick={() => {
+                const chosen = detail
+                setDetail(null)
+                onChoose(chosen)
+              }}
+            >
+              Choose {detail.name}
+            </button>
+          </div>
+        </>
+      )}
     </PaperModal>,
     document.body,
   )

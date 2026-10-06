@@ -16,6 +16,7 @@ import {
   saveEditedEffect,
   saveLabels,
 } from '../rules/effects'
+import { useConfirm } from '../lib/useConfirm'
 import type { ActiveEffect, EffectComponent, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import type { Edit } from './RecordSheet'
@@ -101,8 +102,16 @@ function ComponentEditor({ comp, onChange, onDelete }: { comp: EffectComponent; 
       {comp.kind === 'flatBonus' && (
         <>
           <div className="effect-editor-row">
-            <InkPicker value={comp.bonusTarget} options={targetOptions} label="Applies to" onChange={(v) => set({ bonusTarget: v as EffectComponent['bonusTarget'] })} />
-            <InkNumber className="ink-short" value={comp.bonusAmount} min={-99} max={99} label="Bonus" onChange={(v) => set({ bonusAmount: v })} />
+            <span className="effect-field">
+              <span className="rec-cell-label rec-left-label">Bonus (+/−)</span>
+              {/* Bônus somado ao valor da ficha (ex.: +3), diferente do Stat Override, que troca o valor. */}
+              <InkNumber className="effect-number" value={comp.bonusAmount} min={-99} max={99} label="Bonus" onChange={(v) => set({ bonusAmount: v })} />
+            </span>
+            <span className="effect-field">
+              <span className="rec-cell-label rec-left-label">Applies to</span>
+              <InkPicker value={comp.bonusTarget} options={targetOptions} label="Applies to" onChange={(v) => set({ bonusTarget: v as EffectComponent['bonusTarget'] })} />
+            </span>
+            <span className="rec-soft">= {componentSummary(comp)}</span>
           </div>
           {comp.bonusTarget === 'allSaves' && (
             <div className="chip-row">
@@ -129,22 +138,27 @@ function ComponentEditor({ comp, onChange, onDelete }: { comp: EffectComponent; 
       )}
       {comp.kind === 'statOverride' && (
         <div className="effect-editor-row">
-          <InkPicker value={comp.overrideStat} options={statOptions} label="Stat" onChange={(v) => set({ overrideStat: v as EffectComponent['overrideStat'] })} />
-          <span className="rec-soft">becomes</span>
-          <InkNumber className="ink-short" value={comp.overrideValue} min={-10} max={99} label="New value" onChange={(v) => set({ overrideValue: v })} />
+          <span className="effect-field">
+            <span className="rec-cell-label rec-left-label">Stat</span>
+            <InkPicker value={comp.overrideStat} options={statOptions} label="Stat" onChange={(v) => set({ overrideStat: v as EffectComponent['overrideStat'] })} />
+          </span>
+          <span className="effect-field">
+            <span className="rec-cell-label rec-left-label">Becomes</span>
+            <InkNumber className="effect-number" value={comp.overrideValue} min={-10} max={99} label="New value" onChange={(v) => set({ overrideValue: v })} />
+          </span>
         </div>
       )}
       {comp.kind === 'attackNegation' && (
         <div className="effect-editor-row">
           <span className="rec-soft">Attacks negated</span>
-          <InkNumber className="ink-short" value={comp.maxUses} min={1} max={99} label="Attacks negated" onChange={(v) => set({ maxUses: v })} />
+          <InkNumber className="effect-number" value={comp.maxUses} min={1} max={99} label="Attacks negated" onChange={(v) => set({ maxUses: v })} />
         </div>
       )}
       {comp.kind === 'bankedHeal' && (
         <>
           <div className="effect-editor-row">
             <span className="rec-soft">HP pool</span>
-            <InkNumber className="ink-short" value={comp.maxUses} min={1} max={999} label="HP pool" onChange={(v) => set({ maxUses: v })} />
+            <InkNumber className="effect-number" value={comp.maxUses} min={1} max={999} label="HP pool" onChange={(v) => set({ maxUses: v })} />
             <span className="rec-soft">window</span>
             <InkInput value={comp.healWindowLabel} label="Heal window" onChange={(v) => set({ healWindowLabel: v })} />
           </div>
@@ -157,7 +171,7 @@ function ComponentEditor({ comp, onChange, onDelete }: { comp: EffectComponent; 
         <>
           <div className="effect-editor-row">
             <span className="rec-soft">Temporary HP</span>
-            <InkNumber className="ink-short" value={comp.tempHPGranted} min={1} max={999} label="Temporary HP" onChange={(v) => set({ tempHPGranted: v })} />
+            <InkNumber className="effect-number" value={comp.tempHPGranted} min={1} max={999} label="Temporary HP" onChange={(v) => set({ tempHPGranted: v })} />
           </div>
           <p className="rec-soft">Added straight to Current HP when saved. Damage burns this first, and what's lost can never be healed back.</p>
         </>
@@ -170,7 +184,7 @@ function ComponentEditor({ comp, onChange, onDelete }: { comp: EffectComponent; 
 function EffectEditor({ initial, isNew, onSave, onClose }: { initial: ActiveEffect; isNew: boolean; onSave: (e: ActiveEffect) => void; onClose: () => void }) {
   const [draft, setDraft] = useState<ActiveEffect>(() => structuredClone(initial))
   return createPortal(
-    <PaperModal title={isNew ? 'New Effect' : 'Edit Effect'} onClose={onClose}>
+    <PaperModal title={isNew ? 'New Effect' : 'Edit Effect'} onClose={onClose} wide>
       <div className="effect-editor">
         <label className="slot-write">
           <span className="rec-cell-label rec-left-label">Name</span>
@@ -209,8 +223,10 @@ function EffectEditor({ initial, isNew, onSave, onClose }: { initial: ActiveEffe
 export function ActiveEffectsPage({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const [editing, setEditing] = useState<{ effect: ActiveEffect; isNew: boolean } | null>(null)
   const effects = c.activeEffects ?? []
+  const { confirm, dialog } = useConfirm()
   return (
     <div className="rec-sheet">
+      {dialog}
       <SectionTitle>Active Effects</SectionTitle>
       <p className="rec-soft">Spells, potions, and other effects with a finite duration — tracked here instead of the printed sheet, since they come and go mid-session.</p>
       {effects.length === 0 && (
@@ -228,8 +244,8 @@ export function ActiveEffectsPage({ c, edit }: { c: PlayerCharacter; edit?: Edit
                 </button>
                 <button
                   className="paper-link"
-                  onClick={() => {
-                    if (window.confirm(`End "${effect.name || 'this effect'}"? Its changes to the sheet are undone.`)) edit((x) => endEffect(x, effect.id))
+                  onClick={async () => {
+                    if (await confirm(`End "${effect.name || 'this effect'}"? Its changes to the sheet are undone.`, 'End effect')) edit((x) => endEffect(x, effect.id))
                   }}
                 >
                   End
@@ -268,5 +284,44 @@ export function ActiveEffectsPage({ c, edit }: { c: PlayerCharacter; edit?: Edit
         />
       )}
     </div>
+  )
+}
+
+/**
+ * Contador sempre à vista dos ataques negados (Stone Skin e afins): fica
+ * flutuando no canto da ficha, em qualquer aba, enquanto o efeito durar
+ * (activeAttackNegations do iPad). Cada ataque que bate conta um.
+ */
+export function AttackNegationFloat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const negations = (c.activeEffects ?? []).flatMap((effect) =>
+    effect.components.filter((comp) => comp.kind === 'attackNegation').map((comp) => ({ effect, comp })),
+  )
+  if (negations.length === 0) return null
+  return (
+    <aside className="negation-float" aria-label="Attacks negated">
+      <span className="negation-float-title">Attacks negated</span>
+      {negations.map(({ effect, comp }) => {
+        const left = Math.max(0, comp.maxUses - comp.usedCount)
+        return (
+          <div key={comp.id} className={left === 0 ? 'negation-row negation-done' : 'negation-row'}>
+            <span className="rec-soft">{effect.name || 'Effect'}</span>
+            <span className="effect-uses">
+              <span className="negation-left">
+                {left === 0 ? 'none left' : `${left} left`} <span className="rec-soft">of {comp.maxUses}</span>
+              </span>
+              {edit && (
+                <Counter
+                  count={comp.usedCount}
+                  max={comp.maxUses}
+                  exhausted={left === 0}
+                  label={`${effect.name || 'Effect'} attacks negated`}
+                  onChange={(d) => edit((x) => adjustUses(x, effect.id, comp.id, d))}
+                />
+              )}
+            </span>
+          </div>
+        )
+      })}
+    </aside>
   )
 }
