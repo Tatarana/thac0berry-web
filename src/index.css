@@ -364,7 +364,9 @@ button {
 
 .paper-top {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 4px 12px;
 }
 
 .paper-title {
@@ -1566,4 +1568,226 @@ button {
   color: var(--sheet);
   font-size: 0.95rem;
   box-shadow: 0 1.5px 3px rgb(47 39 28 / 0.3);
+}
+
+/* Abas de ícone da ficha (PaperTabIcon do iPad) */
+.paper-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.paper-tab {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.paper-tab:hover {
+  color: var(--ink);
+}
+
+.paper-tab-on {
+  background: var(--sheet-deep);
+  border-color: rgb(47 39 28 / 0.35);
+  color: var(--ink);
+}
+
+/* Folha de magias (SpellSheetView do iPad) */
+.spell-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-printed);
+}
+
+.spell-sheet-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 22px;
+  padding-bottom: 6px;
+  border-bottom: 2.2px solid var(--ink);
+}
+
+.spell-sheet-title {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.spell-sheet-day {
+  font-size: 2.1rem;
+  transform: rotate(-0.7deg);
+  transform-origin: left;
+}
+
+.spell-sheet-who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  border-bottom: 1px solid rgb(47 39 28 / 0.42);
+}
+
+/* Colunas equilibradas, como a distribuição por peso do iPad */
+.circle-grid {
+  columns: 320px;
+  column-gap: 14px;
+}
+
+.circle-block {
+  break-inside: avoid;
+  margin-bottom: 12px;
+  border: 1.3px solid var(--ink);
+  background: rgb(255 255 255 / 0.12);
+}
+
+.circle-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 9px;
+  background: var(--ink);
+  color: var(--sheet);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.circle-bar-wrap {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.turn-bar {
+  background: #5c2521;
+}
+
+.turn-cross {
+  font-family: var(--font-hand);
+  font-size: 0.9rem;
+  letter-spacing: 0;
+}
+
+.slot-dots {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* Bolinha do slot: vazia = pronto; com ✕ = gasto */
+.slot-dot {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border: 1.4px solid var(--sheet);
+  border-radius: 50%;
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  letter-spacing: 0;
+  color: #e2a79c;
+}
+
+.slot-dot-spent {
+  border-color: rgb(233 220 190 / 0.45);
+}
+
+.memorized {
+  width: calc(100% - 16px);
+  margin: 5px 8px;
+  border-collapse: collapse;
+}
+
+.memorized th {
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.memorized td {
+  padding: 2px 0;
+  border-bottom: 1px solid rgb(47 39 28 / 0.42);
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--pen-ink);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.memorized th.memorized-name,
+.memorized td.memorized-name {
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+}
+
+.memorized td.memorized-name {
+  font-size: 1.25rem;
+}
+
+.memorized-spent td.memorized-name,
+.memorized-spent .memorized-link {
+  color: rgb(140 47 34 / 0.8);
+  text-decoration: line-through;
+  text-decoration-color: var(--red-ink);
+}
+
+.memorized-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.memorized-link:hover {
+  text-decoration: underline dotted;
+}
+
+.turn-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgb(47 39 28 / 0.42);
+}
+
+.item-card-head {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-dmg {
+  width: 1%;
+  padding-left: 8px !important;
+  white-space: nowrap;
+}
+
+@media (width < 560px) {
+  .circle-grid {
+    columns: 1;
+  }
 }

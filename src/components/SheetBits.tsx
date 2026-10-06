@@ -81,14 +81,17 @@ export function PageBeads({
   titles,
   current,
   onSelect,
+  noun = 'Page',
 }: {
   /** Uma por página (dica ao passar o mouse e nome para leitor de tela). */
   titles: string[]
   current: number
   onSelect: (page: number) => void
+  /** Como cada bolinha se anuncia: "Page 2", "Day 3"… */
+  noun?: string
 }) {
   return (
-    <nav className="beads" aria-label="Sheet pages">
+    <nav className="beads" aria-label={`${noun}s`}>
       {titles.map((title, index) => {
         const page = index + 1
         const selected = page === current
@@ -97,7 +100,7 @@ export function PageBeads({
             key={page}
             className={selected ? 'bead bead-on' : 'bead'}
             title={title}
-            aria-label={`Page ${page}: ${title}`}
+            aria-label={`${noun} ${page}: ${title}`}
             aria-current={selected ? 'page' : undefined}
             onClick={() => onSelect(page)}
           >

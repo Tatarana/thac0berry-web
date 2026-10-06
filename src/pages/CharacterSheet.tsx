@@ -5,15 +5,19 @@ import { RecordPageThree } from '../components/RecordPageThree'
 import { RecordPageTwo } from '../components/RecordPageTwo'
 import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
+import { SpellSheetPage } from '../components/SpellSheetPage'
 import { supabase } from '../lib/supabase'
-import type { PlayerCharacter } from '../types/library'
+import type { PlayerCharacter, SpellSheet } from '../types/library'
 
-// Ficha de um personagem, só leitura: páginas 1 a 3 da ficha oficial do iPad
-// (a 4ª, de tabelas de referência da classe, vem junto com as regras). No
+// Ficha de um personagem, só leitura. Aba "Sheet": páginas 1 a 3 da ficha
+// oficial do iPad (a 4ª, de tabelas de referência da classe, vem junto com
+// as regras). Aba "Spell Sheets": uma folha de magia por dia de jogo. No
 // servidor, `character.data` é o PlayerCharacter do iPad sem `spellSheets`,
 // `portraitImageData`, `lastChangedField` e `recentAutoChanges`; o retrato
 // fica no Storage (`portrait_attachment`).
 type ServerCharacter = Omit<PlayerCharacter, 'spellSheets' | 'portraitImageData'>
+/** spell_sheet.data: o SpellSheet do iPad sem `inkNotes` (vira anexo). */
+type ServerSheet = Omit<SpellSheet, 'inkNotes'>
 
 interface Loaded {
   character: ServerCharacter
@@ -38,10 +42,33 @@ async function portraitURL(attachmentID: string): Promise<string | null> {
   return signed.data?.signedUrl ?? null
 }
 
+// Ícones das abas (PaperTabIcon do iPad: "person.text.rectangle" e um livro).
+function SheetIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="8.5" cy="10.5" r="2" fill="currentColor" />
+      <path d="M5.5 15.5c.6-1.6 1.7-2.3 3-2.3s2.4.7 3 2.3" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M14 10h4.5M14 13.5h4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SpellsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M12 6.5v13" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
   const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
+  const view = params.get('view') === 'spells' ? 'spells' : 'record'
+  const [sheets, setSheets] = useState<ServerSheet[] | null>(null)
   const { session, loading, signInWithGoogle } = useAuth()
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
@@ -66,6 +93,19 @@ export function CharacterSheet() {
         campaign_id: string | null
         portrait_attachment: string | null
         updated_at: string
+      }
+      // Folhas de magia em ordem de data (cada uma é um dia de jogo).
+      const sheetRows = await supabase
+        .from('spell_sheet')
+        .select('data')
+        .eq('character_id', id)
+        .is('deleted_at', null)
+      if (!cancelled && !sheetRows.error) {
+        setSheets(
+          (sheetRows.data as { data: ServerSheet }[])
+            .map((r) => r.data)
+            .sort((a, b) => a.date.localeCompare(b.date)),
+        )
       }
       let campaignName: string | null = null
       if (row.campaign_id) {
@@ -123,14 +163,64 @@ export function CharacterSheet() {
         {session && !loaded && !error && <p className="paper-soft">Loading the character…</p>}
         {loaded && character && (
           <>
-            <PageBeads
-              titles={pages.map((p) => p.label)}
-              current={Number(page)}
-              onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
-            />
-            {page === '1' && <RecordSheet character={character} campaignName={loaded.campaignName} />}
-            {page === '2' && <RecordPageTwo character={character} />}
-            {page === '3' && <RecordPageThree character={character} portraitURL={portrait} />}
+            <nav className="paper-tabs" aria-label="Sheet sections">
+              <button
+                className={view === 'record' ? 'paper-tab paper-tab-on' : 'paper-tab'}
+                title="Sheet"
+                aria-label="Sheet"
+                aria-current={view === 'record' ? 'page' : undefined}
+                onClick={() => setParams({}, { replace: true })}
+              >
+                <SheetIcon />
+              </button>
+              {sheets && sheets.length > 0 && (
+                <button
+                  className={view === 'spells' ? 'paper-tab paper-tab-on' : 'paper-tab'}
+                  title="Spell Sheets"
+                  aria-label="Spell Sheets"
+                  aria-current={view === 'spells' ? 'page' : undefined}
+                  onClick={() => setParams({ view: 'spells' }, { replace: true })}
+                >
+                  <SpellsIcon />
+                </button>
+              )}
+            </nav>
+            {view === 'record' && (
+              <>
+                <PageBeads
+                  titles={pages.map((p) => p.label)}
+                  current={Number(page)}
+                  onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
+                />
+                {page === '1' && <RecordSheet character={character} campaignName={loaded.campaignName} />}
+                {page === '2' && <RecordPageTwo character={character} />}
+                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} />}
+              </>
+            )}
+            {view === 'spells' && sheets && sheets.length > 0 && (() => {
+              // Uma bolinha por dia, como as da Priest Spell Sheet do iPad;
+              // sem escolha na URL, abre o dia mais recente.
+              const asked = Number(params.get('day'))
+              const day = asked >= 1 && asked <= sheets.length ? asked : sheets.length
+              const sheet = sheets[day - 1]
+              return (
+                <>
+                  <PageBeads
+                    titles={sheets.map((s) => s.title || new Date(s.date).toLocaleDateString('en-US', { dateStyle: 'medium' }))}
+                    current={day}
+                    noun="Day"
+                    onSelect={(next) => setParams({ view: 'spells', day: String(next) }, { replace: true })}
+                  />
+                  <SpellSheetPage
+                    key={sheet.id}
+                    sheet={sheet}
+                    characterName={character.name}
+                    characterClass={character.characterClass}
+                    level={character.level}
+                  />
+                </>
+              )
+            })()}
           </>
         )}
       </div>
