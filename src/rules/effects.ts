@@ -2,6 +2,14 @@
 // Models/ActiveEffect.swift e as funções de efeito do PlayerCharacter
 // (Models/Character.swift). Aplicar um efeito mexe nos números da ficha e
 // guarda o valor anterior em cada componente; terminar desfaz. Só funções puras.
+//
+// Bônus em atributo ("+3 STR", pedido do usuário): o formato do iPad só aceita
+// To Hit, Saves, AC e Damage como alvo do Flat Bonus. Para não quebrar a
+// leitura no iPad, o bônus em atributo é gravado como Stat Override calculado
+// (valor atual + bônus) e o "+3" fica em `bonusAmount`, que o iPad ignora
+// nesse tipo. A web reconhece pela combinação (statOverride de atributo com
+// bonusAmount ≠ 0), mostra e edita como "+3 Strength", e recalcula o valor ao
+// aplicar. No iPad, o mesmo efeito aparece como "Strength → 17".
 
 import type { ActiveEffect, EffectComponent, PlayerCharacter, SavingThrows } from '../types/library.ts'
 
@@ -78,8 +86,16 @@ export function newEffect(): ActiveEffect {
 /** effectiveSaveIDs: sem escolha, vale para todos os saves. */
 const effectiveSaveIDs = (c: EffectComponent) => new Set(c.savingThrowIDs ?? saveLabels.map((s) => s.id))
 
+export const abilityStats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] as const
+
+/** Bônus em atributo gravado como Stat Override calculado (ver o topo do arquivo). */
+export function isAbilityBonus(c: EffectComponent): boolean {
+  return c.kind === 'statOverride' && (abilityStats as readonly string[]).includes(c.overrideStat) && c.bonusAmount !== 0
+}
+
 /** EffectComponent.summary. */
 export function componentSummary(c: EffectComponent): string {
+  if (isAbilityBonus(c)) return `${c.bonusAmount >= 0 ? '+' : ''}${c.bonusAmount} ${overrideStatLabels[c.overrideStat]}`
   switch (c.kind) {
     case 'flatBonus': {
       const amount = c.bonusAmount >= 0 ? `+${c.bonusAmount}` : `${c.bonusAmount}`
@@ -157,6 +173,8 @@ function applyComponent(c: Character, comp: EffectComponent, itemName: string) {
       break
     case 'statOverride':
       comp.previousValue = readStat(c, comp.overrideStat)
+      // Bônus em atributo: o valor final é o atual mais o bônus.
+      if (isAbilityBonus(comp)) comp.overrideValue = comp.previousValue + comp.bonusAmount
       writeStat(c, comp.overrideStat, comp.overrideValue)
       break
     case 'tempHP':

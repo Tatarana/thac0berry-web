@@ -74,3 +74,18 @@ test('resumo como no iPad', () => {
   assert.equal(F.componentSummary({ ...F.newComponent(), bonusTarget: 'allSaves', bonusAmount: -1, savingThrowIDs: ['sp'] }), '-1 Saving Throws (Spell)')
   assert.equal(F.componentSummary({ ...F.newComponent(), kind: 'attackNegation', maxUses: 1 }), 'Negates 1 attack')
 })
+
+test('bônus em atributo: grava como Stat Override calculado (o iPad lê), mostra "+3 Strength"', () => {
+  const c = pc()
+  const fx = effect([{ kind: 'statOverride', overrideStat: 'strength', bonusAmount: 3 }])
+  F.addEffect(c, fx)
+  const comp = c.activeEffects![0].components[0]
+  assert.deepEqual([c.abilities.strength, comp.kind, comp.overrideValue, comp.previousValue], [15, 'statOverride', 15, 12])
+  assert.equal(F.componentSummary(comp), '+3 Strength')
+  const edited = structuredClone(c.activeEffects![0])
+  edited.components[0].bonusAmount = 5
+  F.saveEditedEffect(c, edited)
+  assert.equal(c.abilities.strength, 17)
+  F.endEffect(c, fx.id)
+  assert.equal(c.abilities.strength, 12)
+})

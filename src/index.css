@@ -2777,3 +2777,10 @@ button.slot-dot:hover {
   width: calc(50% - 6px);
   padding: 1px 0;
 }
+
+/* Janela de efeitos ativos */
+.effects-window {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

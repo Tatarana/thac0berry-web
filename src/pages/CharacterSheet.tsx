@@ -8,7 +8,7 @@ import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
-import { ActiveEffectsPage, AttackNegationFloat } from '../components/ActiveEffects'
+import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEffects'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { useConfirm } from '../lib/useConfirm'
@@ -116,7 +116,9 @@ function SpellbookIcon() {
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const view = (['spells', 'spellbook', 'effects'] as const).find((v) => v === params.get('view')) ?? 'record'
+  const view = (['spells', 'spellbook'] as const).find((v) => v === params.get('view')) ?? 'record'
+  // Efeitos ativos: janela por cima da ficha, não uma aba (pedido do usuário).
+  const [effectsOpen, setEffectsOpen] = useState(false)
   const { session, loading, signInWithGoogle } = useAuth()
   const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
@@ -299,11 +301,11 @@ export function CharacterSheet() {
                 </button>
               )}
               <button
-                className={[view === 'effects' ? 'paper-tab paper-tab-on' : 'paper-tab', (character.activeEffects ?? []).length > 0 ? 'paper-tab-glow' : ''].join(' ')}
+                className={[effectsOpen ? 'paper-tab paper-tab-on' : 'paper-tab', (character.activeEffects ?? []).length > 0 ? 'paper-tab-glow' : ''].join(' ')}
                 title="Active Effects"
                 aria-label="Active Effects"
-                aria-current={view === 'effects' ? 'page' : undefined}
-                onClick={() => setParams({ view: 'effects' }, { replace: true })}
+                aria-haspopup="dialog"
+                onClick={() => setEffectsOpen(true)}
               >
                 <EffectsIcon />
               </button>
@@ -321,7 +323,7 @@ export function CharacterSheet() {
               )}
             </nav>
             {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
-            {view === 'effects' && <ActiveEffectsPage c={character} edit={edit} />}
+            {effectsOpen && <ActiveEffectsWindow c={character} edit={edit} onClose={() => setEffectsOpen(false)} />}
             <AttackNegationFloat c={character} edit={edit} />
             {view === 'record' && (
               <>

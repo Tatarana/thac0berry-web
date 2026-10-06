@@ -5,8 +5,10 @@ import {
   addEffect,
   adjustUses,
   bonusTargetLabels,
+  abilityStats,
   componentSummary,
   endEffect,
+  isAbilityBonus,
   kindHints,
   kindLabels,
   logBankedHeal,
@@ -20,10 +22,12 @@ import { useConfirm } from '../lib/useConfirm'
 import type { ActiveEffect, EffectComponent, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import type { Edit } from './RecordSheet'
-import { InkInput, InkNumber, InkPicker, SectionTitle, TallyMarks } from './SheetBits'
+import { InkInput, InkNumber, InkPicker, TallyMarks } from './SheetBits'
 
 // Efeitos ativos (ActiveEffectsView do iPad): magias, poções e outros com
-// duração, que entram e saem no meio da sessão. Cada efeito já está aplicado
+// duração, que entram e saem no meio da sessão. Na web, uma janela que abre
+// pelo ícone de brilhos, por cima da ficha (pedido do usuário: normalmente há
+// 1 ou 2 efeitos, não precisa de uma tela inteira). Cada efeito já está aplicado
 // aos números da ficha; "End" desfaz. Editar um efeito em curso reaplica com
 // os valores novos. Regras em src/rules/effects.ts.
 
@@ -81,39 +85,73 @@ function ComponentLine({ effect, comp, edit }: { effect: ActiveEffect; comp: Eff
 }
 
 const kindOptions = (Object.keys(kindLabels) as EffectComponent['kind'][]).map((k) => ({ value: k, label: kindLabels[k] }))
-const targetOptions = (Object.keys(bonusTargetLabels) as EffectComponent['bonusTarget'][]).map((k) => ({ value: k, label: bonusTargetLabels[k] }))
+// Alvos do Flat Bonus: os do iPad e os seis atributos (estes gravados como
+// Stat Override calculado; ver src/rules/effects.ts).
+const targetOptions = [
+  ...(Object.keys(bonusTargetLabels) as EffectComponent['bonusTarget'][]).map((k) => ({ value: k, label: bonusTargetLabels[k] })),
+  ...abilityStats.map((k) => ({ value: k, label: overrideStatLabels[k], hint: k.slice(0, 3).toUpperCase() })),
+]
 const statOptions = (Object.keys(overrideStatLabels) as EffectComponent['overrideStat'][]).map((k) => ({ value: k, label: overrideStatLabels[k] }))
 
 /** Um componente no editor (EffectComponentEditor do iPad): tipo e os campos dele. */
 function ComponentEditor({ comp, onChange, onDelete }: { comp: EffectComponent; onChange: (c: EffectComponent) => void; onDelete?: () => void }) {
   const set = (patch: Partial<EffectComponent>) => onChange({ ...comp, ...patch })
   const saveIDs = new Set(comp.savingThrowIDs ?? saveLabels.map((s) => s.id))
+  // Bônus em atributo aparece e se edita como Flat Bonus.
+  const abilityBonus = isAbilityBonus(comp)
+  const shownKind = abilityBonus ? 'flatBonus' : comp.kind
   return (
     <div className="effect-editor-component">
       <div className="effect-editor-row">
-        <InkPicker value={comp.kind} options={kindOptions} label="Effect type" onChange={(v) => set({ kind: v as EffectComponent['kind'] })} />
+        <InkPicker
+          value={shownKind}
+          options={kindOptions}
+          label="Effect type"
+          onChange={(v) => {
+            if (v === shownKind) return
+            // Sair do bônus em atributo para um Stat Override "de verdade": zera o marcador.
+            set(abilityBonus ? { kind: v as EffectComponent['kind'], bonusAmount: 0 } : { kind: v as EffectComponent['kind'] })
+          }}
+        />
         {onDelete && (
           <button className="remove-btn" aria-label="Remove this part" title="Remove this part" onClick={onDelete}>
             ×
           </button>
         )}
       </div>
-      <p className="rec-soft">{kindHints[comp.kind]}</p>
-      {comp.kind === 'flatBonus' && (
+      <p className="rec-soft">{kindHints[shownKind]}</p>
+      {shownKind === 'flatBonus' && (
         <>
           <div className="effect-editor-row">
             <span className="effect-field">
               <span className="rec-cell-label rec-left-label">Bonus (+/−)</span>
               {/* Bônus somado ao valor da ficha (ex.: +3), diferente do Stat Override, que troca o valor. */}
-              <InkNumber className="effect-number" value={comp.bonusAmount} min={-99} max={99} label="Bonus" onChange={(v) => set({ bonusAmount: v })} />
+              <InkNumber
+                className="effect-number"
+                value={comp.bonusAmount}
+                min={-99}
+                max={99}
+                label="Bonus"
+                // Em atributo, o bônus é o que distingue do Stat Override: zero não vale.
+                onChange={(v) => (abilityBonus && v === 0 ? undefined : set({ bonusAmount: v }))}
+              />
             </span>
             <span className="effect-field">
               <span className="rec-cell-label rec-left-label">Applies to</span>
-              <InkPicker value={comp.bonusTarget} options={targetOptions} label="Applies to" onChange={(v) => set({ bonusTarget: v as EffectComponent['bonusTarget'] })} />
+              <InkPicker
+                value={abilityBonus ? comp.overrideStat : comp.bonusTarget}
+                options={targetOptions}
+                label="Applies to"
+                onChange={(v) =>
+                  (abilityStats as readonly string[]).includes(v)
+                    ? set({ kind: 'statOverride', overrideStat: v as EffectComponent['overrideStat'], bonusAmount: comp.bonusAmount || 1 })
+                    : set({ kind: 'flatBonus', bonusTarget: v as EffectComponent['bonusTarget'] })
+                }
+              />
             </span>
             <span className="rec-soft">= {componentSummary(comp)}</span>
           </div>
-          {comp.bonusTarget === 'allSaves' && (
+          {!abilityBonus && comp.bonusTarget === 'allSaves' && (
             <div className="chip-row">
               {saveLabels.map((s) => (
                 <button
@@ -131,12 +169,12 @@ function ComponentEditor({ comp, onChange, onDelete }: { comp: EffectComponent; 
               ))}
             </div>
           )}
-          {comp.bonusTarget === 'damage' && (
+          {!abilityBonus && comp.bonusTarget === 'damage' && (
             <p className="rec-soft">No single Damage number exists on the sheet — this only adds a reminder row to Damage Modifiers.</p>
           )}
         </>
       )}
-      {comp.kind === 'statOverride' && (
+      {shownKind === 'statOverride' && (
         <div className="effect-editor-row">
           <span className="effect-field">
             <span className="rec-cell-label rec-left-label">Stat</span>
@@ -220,15 +258,14 @@ function EffectEditor({ initial, isNew, onSave, onClose }: { initial: ActiveEffe
   )
 }
 
-export function ActiveEffectsPage({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+export function ActiveEffectsWindow({ c, edit, onClose }: { c: PlayerCharacter; edit?: Edit; onClose: () => void }) {
   const [editing, setEditing] = useState<{ effect: ActiveEffect; isNew: boolean } | null>(null)
   const effects = c.activeEffects ?? []
   const { confirm, dialog } = useConfirm()
-  return (
-    <div className="rec-sheet">
+  return createPortal(
+    <PaperModal title="Active Effects" subtitle="Spells, potions, and other effects with a finite duration." onClose={onClose}>
+      <div className="effects-window">
       {dialog}
-      <SectionTitle>Active Effects</SectionTitle>
-      <p className="rec-soft">Spells, potions, and other effects with a finite duration — tracked here instead of the printed sheet, since they come and go mid-session.</p>
       {effects.length === 0 && (
         <p className="rec-soft">No active effects. {edit ? 'Use “+ Add effect” when your character gets buffed, debuffed, or otherwise affected for a limited time.' : ''}</p>
       )}
@@ -283,7 +320,9 @@ export function ActiveEffectsPage({ c, edit }: { c: PlayerCharacter; edit?: Edit
           }}
         />
       )}
-    </div>
+      </div>
+    </PaperModal>,
+    document.body,
   )
 }
 

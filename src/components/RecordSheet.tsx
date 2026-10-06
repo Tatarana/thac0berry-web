@@ -23,7 +23,6 @@ import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecializati
 import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
 import { CompendiumPicker } from './CompendiumPicker'
 import { KitPicker, RacePicker } from './RaceKitPickers'
-import { useConfirm } from '../lib/useConfirm'
 import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
 
@@ -591,7 +590,6 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) {
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState('')
-  const { confirm, dialog } = useConfirm()
   const commit = () => {
     const amount = Number(draft.trim())
     if (/^-?\d+$/.test(draft.trim()) && amount !== 0) edit((x) => recordWound(x, amount))
@@ -600,7 +598,6 @@ function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) 
   }
   return (
     <div className="wound-controls">
-      {dialog}
       {adding ? (
         <input
           className="ink-input wound-input"
@@ -629,9 +626,8 @@ function WoundControls({ hasWounds, edit }: { hasWounds: boolean; edit: Edit }) 
           className="counter-btn"
           aria-label="Clear the wound list"
           title="Clear the wound list (hit points stay as they are)"
-          onClick={async () => {
-            if (await confirm('Clear the wound list? Hit points stay as they are.', 'Clear wounds')) edit((x) => clearWounds(x))
-          }}
+          // Sem confirmação (pedido do usuário: clicar errado não é problema).
+          onClick={() => edit((x) => clearWounds(x))}
         >
           🗑
         </button>
