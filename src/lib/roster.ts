@@ -70,6 +70,14 @@ async function checkCharacter(data: ServerCharacter) {
   if (problem) throw new Error(`the sheet would not open on the iPad (${problem})`)
 }
 
+/** Slots de hoje e o atributo congelado na folha (Sabedoria, ou Inteligência para mago e bardo). */
+export function spellSheetBasis(c: ServerCharacter) {
+  return {
+    allotments: computedSpellSlotAllotments(c as PlayerCharacter),
+    abilityScoreAtCreation: isArcaneCaster(c.characterClass) ? c.abilities.intelligence : c.abilities.wisdom,
+  }
+}
+
 /**
  * seedFirstSpellSheetIfNeeded do iPad: personagem com ficha de magia, sem
  * nenhuma folha e numa campanha ganha a "First day" na sessão ativa.
@@ -80,11 +88,7 @@ async function seedFirstSpellSheet(characterID: string, c: ServerCharacter, camp
   if (existing.error) throw new Error(existing.error.message)
   if (existing.data.length > 0) return
   const sessionID = await activeSessionID(campaignID)
-  const basis = {
-    allotments: computedSpellSlotAllotments(c as PlayerCharacter),
-    abilityScoreAtCreation: isArcaneCaster(c.characterClass) ? c.abilities.intelligence : c.abilities.wisdom,
-  }
-  const sheet = startSpellSheet(basis, [], { sessionID, title: 'First day' })
+  const sheet = startSpellSheet(spellSheetBasis(c), [], { sessionID, title: 'First day' })
   const { spellSheet } = await loadValidators()
   const problem = spellSheet(sheet)
   if (problem) throw new Error(`the first spell sheet would not open on the iPad (${problem})`)

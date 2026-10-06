@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/context'
+import { CampaignSessions } from '../components/CampaignSessions'
 import { PaperModal } from '../components/DetailBits'
 import { PageHeader } from '../components/PageHeader'
 import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, settingLogo, useCampaignDoc } from '../lib/campaigns'
@@ -322,6 +323,8 @@ export function CampaignDetail() {
               </>
             )}
           </section>
+
+          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} />}
 
           <div className="btn-row">
             <button className="btn btn-danger" disabled={busy} onClick={() => void removeCampaign()}>

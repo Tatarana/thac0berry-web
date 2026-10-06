@@ -2905,3 +2905,84 @@ button.slot-dot:hover {
 .btn-danger:hover:not(:disabled) {
   background: rgb(190 60 50 / 0.5);
 }
+
+/* ---- Sessões da campanha (CampaignIndexView do iPad) ---- */
+
+.session-new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-new .ember-input:not(.ember-date) {
+  flex: 1 1 220px;
+  width: auto;
+}
+
+.session-list {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-item {
+  padding: 8px 0 0 10px;
+  border-left: 3px solid var(--brass-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-date {
+  min-width: 52px;
+}
+
+.session-title {
+  flex: 1 1 200px;
+  width: auto;
+}
+
+.session-summary {
+  font-size: 1rem;
+}
+
+.session-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.session-day {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border: 1px solid rgb(201 162 39 / 0.45);
+  background: transparent;
+  color: var(--on-obsidian);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.session-day:hover {
+  color: var(--brass);
+}
+
+.session-day-new {
+  border-style: dashed;
+  color: var(--on-obsidian-soft);
+}
+
+.session-saving {
+  font-weight: 400;
+}

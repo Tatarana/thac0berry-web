@@ -340,8 +340,11 @@ export function CharacterSheet() {
             )}
             {view === 'spells' && sheets && sheets.length > 0 && (() => {
               // Uma bolinha por dia, como as da Priest Spell Sheet do iPad;
-              // sem escolha na URL, abre o dia mais recente.
-              const asked = Number(params.get('day'))
+              // sem escolha na URL, abre o dia mais recente. `sheet` (vindo das
+              // sessões da campanha) escolhe a folha pelo id (o banco devolve o uuid em
+              // minúsculas; a folha guarda em maiúsculas, como o iPad).
+              const bySheet = sheets.findIndex((s) => s.id.toUpperCase() === params.get('sheet')?.toUpperCase()) + 1
+              const asked = bySheet || Number(params.get('day'))
               const day = asked >= 1 && asked <= sheets.length ? asked : sheets.length
               const sheet = sheets[day - 1]
               return (
