@@ -27,6 +27,15 @@ export async function uploadAttachment(userID: string, bytes: Uint8Array, mime: 
   return id
 }
 
+/** Link temporário (1 h) de um anexo; o bucket é privado. */
+export async function attachmentURL(attachmentID: string): Promise<string | null> {
+  const { data } = await supabase.from('attachment').select('storage_path').eq('id', attachmentID).maybeSingle()
+  const path = (data as { storage_path: string } | null)?.storage_path
+  if (!path) return null
+  const signed = await supabase.storage.from('attachments').createSignedUrl(path, 3600)
+  return signed.data?.signedUrl ?? null
+}
+
 /**
  * resizedForSketch + jpegData(0.82) do iPad: a imagem escolhida vira JPEG
  * com no máximo 800 px no lado maior.

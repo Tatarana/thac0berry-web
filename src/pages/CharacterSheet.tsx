@@ -12,7 +12,7 @@ import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEf
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
-import { portraitJPEG, uploadAttachment } from '../lib/attachments'
+import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
@@ -63,14 +63,6 @@ const allPages = [
   { id: '4', label: 'Reference Tables' },
 ]
 
-/** Link temporário (1 h) do retrato; o bucket é privado. */
-async function portraitURL(attachmentID: string): Promise<string | null> {
-  const { data } = await supabase.from('attachment').select('storage_path').eq('id', attachmentID).maybeSingle()
-  const path = (data as { storage_path: string } | null)?.storage_path
-  if (!path) return null
-  const signed = await supabase.storage.from('attachments').createSignedUrl(path, 3600)
-  return signed.data?.signedUrl ?? null
-}
 
 // Ícones das abas (PaperTabIcon do iPad: "person.text.rectangle" e um livro).
 function SheetIcon() {
@@ -258,7 +250,7 @@ export function CharacterSheet() {
   useEffect(() => {
     if (page !== '3' || !attachment || portrait) return
     let cancelled = false
-    void portraitURL(attachment).then((url) => {
+    void attachmentURL(attachment).then((url) => {
       if (!cancelled) setPortrait(url)
     })
     return () => {
