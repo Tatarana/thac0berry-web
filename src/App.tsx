@@ -1,5 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
+import { CampaignDetail } from './pages/CampaignDetail'
+import { Campaigns } from './pages/Campaigns'
 import { Characters } from './pages/Characters'
 import { CharacterSheet } from './pages/CharacterSheet'
 import { CompendiumHub } from './pages/CompendiumHub'
@@ -45,7 +47,8 @@ export default function App() {
           <Route path="/characters" element={<Characters />} />
           <Route path="/characters/:id" element={<CharacterSheet />} />
           <Route path="/import" element={<ImportBackup />} />
-          <Route path="/campaigns" element={<ComingSoon title="Campaigns" note="Campaigns, sessions and the notebook arrive after the characters." />} />
+          <Route path="/campaigns" element={<Campaigns />} />
+          <Route path="/campaigns/:id" element={<CampaignDetail />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
         </Routes>
       </HashRouter>

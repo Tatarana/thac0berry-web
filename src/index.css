@@ -2784,3 +2784,103 @@ button.slot-dot:hover {
   flex-direction: column;
   gap: 10px;
 }
+
+/* ---- Campanhas (CampaignListView/CampaignDetailView do iPad) ---- */
+
+.btn-small {
+  padding: 3px 9px;
+  font-size: 0.74rem;
+}
+
+.disclosure {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--on-obsidian);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.disclosure:hover {
+  color: var(--brass);
+}
+
+/* Campos à caneta nas telas escuras: só o traço de baixo, como a ficha. */
+.ember-input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-bottom: 1px dotted rgb(239 228 211 / 0.25);
+  background: transparent;
+  font-family: var(--font-hand);
+  font-size: 1.2rem;
+  color: var(--on-obsidian);
+}
+
+.ember-input::placeholder {
+  color: rgb(184 166 144 / 0.5);
+}
+
+.ember-input:focus {
+  outline: none;
+  border-bottom-color: var(--brass);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.campaign-name {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.campaign-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.campaign-field {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ember-date {
+  width: auto;
+  color-scheme: dark;
+}
+
+.ember-notes {
+  resize: vertical;
+  line-height: 1.3;
+  border: 1px dotted rgb(239 228 211 / 0.2);
+}
+
+.setting-chip {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--on-obsidian-soft);
+  border: 1.1px solid rgb(201 162 39 / 0.45);
+  cursor: pointer;
+}
+
+.setting-chip:hover {
+  color: var(--on-obsidian);
+}
+
+.setting-chip-on {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: #2a2117;
+  font-weight: 700;
+}
+
+.setting-chip-on:hover {
+  color: #2a2117;
+}
