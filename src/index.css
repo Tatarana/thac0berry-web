@@ -3208,6 +3208,8 @@ button.slot-dot:hover {
 
 .danger-apply {
   background: #b23a2b;
+}
+
 /* Folha de desenho do iPad: a imagem fica no canto de cima, como na folha. */
 .notebook-drawing-image {
   display: block;
