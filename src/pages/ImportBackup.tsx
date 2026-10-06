@@ -17,6 +17,7 @@ import type { Campaign, PlayerCharacter } from '../types/library'
 
 function Tag({ item }: { item: ImportItem<unknown> }) {
   if (item.problem) return <span className="import-tag import-tag-bad">can't import</span>
+  if (item.differsFromServer) return <span className="import-tag import-tag-warn">replaces account version</span>
   return <span className="import-tag">{item.onServer ? 'update' : 'new'}</span>
 }
 
@@ -94,6 +95,20 @@ export function ImportBackup() {
 
   async function startImport() {
     if (!plan) return
+    // Decisão do usuário: avisar antes de substituir uma versão diferente na conta
+    // (por exemplo, editada na web depois do último import).
+    const replaced = plan.characters.filter((c) => c.differsFromServer && characterIDs.has(c.value.id))
+    if (
+      replaced.length > 0 &&
+      !window.confirm(
+        `Your account has a different version of: ${replaced.map((c) => c.value.name || 'Unnamed character').join(', ')}.
+
+` +
+          'It may have been edited on the web after the last import. Importing replaces it with the backup version ' +
+          '(the account version is kept in the history). Continue?',
+      )
+    )
+      return
     setError(null)
     try {
       const done = await runImport(plan, { campaignIDs, characterIDs, preferences }, ({ step }) =>
@@ -122,6 +137,7 @@ export function ImportBackup() {
       </label>
       <div className="soft import-detail">
         {item.problem ? `Saved by an older app version (${item.problem}).` : characterLine(item.value)}
+        {item.differsFromServer && ' · Different from the version on your account (maybe edited on the web).'}
       </div>
     </li>
   )

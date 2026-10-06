@@ -8,24 +8,35 @@ import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { supabase } from '../lib/supabase'
+import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { recordSheetPageCount } from '../rules/rules'
 import type { PlayerCharacter, SpellSheet } from '../types/library'
 
-// Ficha de um personagem, só leitura. Aba "Sheet": as páginas da ficha
-// oficial do iPad (3, ou 4 com as tabelas de referência da classe, conforme
-// recordSheetPageCount). Aba "Spell Sheets": uma folha de magia por dia. No
-// servidor, `character.data` é o PlayerCharacter do iPad sem `spellSheets`,
-// `portraitImageData`, `lastChangedField` e `recentAutoChanges`; o retrato
-// fica no Storage (`portrait_attachment`).
-type ServerCharacter = Omit<PlayerCharacter, 'spellSheets' | 'portraitImageData'>
+// Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
+// (3, ou 4 com as tabelas de referência da classe, conforme
+// recordSheetPageCount); os campos simples são editáveis e gravam sozinhos
+// (useCharacterDoc). Aba "Spell Sheets": uma folha de magia por dia, ainda só
+// leitura. No servidor, `character.data` é o PlayerCharacter do iPad sem
+// `spellSheets`, `portraitImageData`, `lastChangedField` e
+// `recentAutoChanges`; o retrato fica no Storage (`portrait_attachment`).
 /** spell_sheet.data: o SpellSheet do iPad sem `inkNotes` (vira anexo). */
 type ServerSheet = Omit<SpellSheet, 'inkNotes'>
 
-interface Loaded {
-  character: ServerCharacter
-  campaignName: string | null
-  portraitAttachment: string | null
-  updatedAt: string
+function SaveStatus({ save, onRetry }: { save: SaveState; onRetry: () => void }) {
+  switch (save.kind) {
+    case 'pending':
+    case 'saving':
+      return <span className="paper-soft">Saving…</span>
+    case 'error':
+      return (
+        <span className="paper-soft save-error">
+          Not saved: {save.message}{' '}
+          <button className="paper-link" onClick={onRetry}>Retry</button>
+        </span>
+      )
+    default:
+      return <span className="paper-soft">{save.at ? `Saved ${new Date(save.at).toLocaleString()}` : ''}</span>
+  }
 }
 
 // Bolinhas numeradas, como no iPad (lá não há rótulo, só o número).
@@ -72,68 +83,55 @@ export function CharacterSheet() {
   const view = params.get('view') === 'spells' ? 'spells' : 'record'
   const [sheets, setSheets] = useState<ServerSheet[] | null>(null)
   const { session, loading, signInWithGoogle } = useAuth()
-  const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const userID = session?.user.id ?? null
+  const { doc, loadError, save, conflict, dismissConflict, update, retry } = useCharacterDoc(id, userID)
+  const campaignID = doc?.campaignID ?? null
 
+  // Folhas de magia (cada uma é um dia de jogo), em ordem de data.
   useEffect(() => {
     if (!userID || !id) return
     let cancelled = false
-    void (async () => {
-      const { data, error: readError } = await supabase
-        .from('character')
-        .select('data, campaign_id, portrait_attachment, updated_at')
-        .eq('id', id)
-        .is('deleted_at', null)
-        .maybeSingle()
-      if (cancelled) return
-      if (readError) return setError(readError.message)
-      if (!data) return setError('This character is not on your account.')
-      const row = data as {
-        data: ServerCharacter
-        campaign_id: string | null
-        portrait_attachment: string | null
-        updated_at: string
-      }
-      // Folhas de magia em ordem de data (cada uma é um dia de jogo).
-      const sheetRows = await supabase
-        .from('spell_sheet')
-        .select('data')
-        .eq('character_id', id)
-        .is('deleted_at', null)
-      if (!cancelled && !sheetRows.error) {
-        setSheets(
-          (sheetRows.data as { data: ServerSheet }[])
-            .map((r) => r.data)
-            .sort((a, b) => a.date.localeCompare(b.date)),
-        )
-      }
-      let campaignName: string | null = null
-      if (row.campaign_id) {
-        const campaign = await supabase.from('campaign').select('name').eq('id', row.campaign_id).maybeSingle()
-        campaignName = (campaign.data as { name: string } | null)?.name ?? null
-      }
-      if (!cancelled) {
-        setLoaded({
-          character: row.data,
-          campaignName,
-          portraitAttachment: row.portrait_attachment,
-          updatedAt: row.updated_at,
-        })
-      }
-    })()
+    void supabase
+      .from('spell_sheet')
+      .select('data')
+      .eq('character_id', id)
+      .is('deleted_at', null)
+      .then(({ data, error }) => {
+        if (cancelled || error) return
+        setSheets((data as { data: ServerSheet }[]).map((r) => r.data).sort((a, b) => a.date.localeCompare(b.date)))
+      })
     return () => {
       cancelled = true
     }
   }, [userID, id])
 
-  const character = loaded?.character as PlayerCharacter | undefined
+  useEffect(() => {
+    if (!campaignID) return
+    let cancelled = false
+    void supabase
+      .from('campaign')
+      .select('name')
+      .eq('id', campaignID)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setCampaignName((data as { name: string } | null)?.name ?? null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [campaignID])
+
+  const character = doc?.character as PlayerCharacter | undefined
+  const loaded = doc
+  const error = loadError
+  const edit = update as (mutate: (c: PlayerCharacter) => void) => void
   const pages = allPages.slice(0, character ? recordSheetPageCount(character.characterClass) : 3)
   const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
 
   // O retrato só é buscado quando a página 3 abre.
-  const attachment = loaded?.portraitAttachment ?? null
+  const attachment = doc?.portraitAttachment ?? null
   useEffect(() => {
     if (page !== '3' || !attachment || portrait) return
     let cancelled = false
@@ -151,12 +149,14 @@ export function CharacterSheet() {
       <div className="paper-sheet">
         <div className="paper-top">
           <Link to="/characters" className="paper-link">‹ Characters</Link>
-          {loaded && (
-            <span className="paper-soft">
-              Read only · saved {new Date(loaded.updatedAt).toLocaleString()}
-            </span>
-          )}
+          {loaded && <SaveStatus save={save} onRetry={() => void retry()} />}
         </div>
+        {conflict && (
+          <div className="conflict-note" role="status">
+            This sheet was also changed somewhere else. Your version was saved; the other one is kept in the history.{' '}
+            <button className="paper-link" onClick={dismissConflict}>OK</button>
+          </div>
+        )}
         {loading && <p className="paper-soft">Checking your session…</p>}
         {!loading && !session && (
           <>
@@ -197,9 +197,9 @@ export function CharacterSheet() {
                   current={Number(page)}
                   onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
                 />
-                {page === '1' && <RecordSheet character={character} campaignName={loaded.campaignName} />}
-                {page === '2' && <RecordPageTwo character={character} />}
-                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} />}
+                {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} />}
+                {page === '2' && <RecordPageTwo character={character} edit={edit} />}
+                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} />}
                 {page === '4' && <RecordPageFour character={character} />}
               </>
             )}

@@ -24,6 +24,11 @@ export interface ImportItem<T> {
   problem: string | null
   /** O servidor já tem esse id (o import atualiza). */
   onServer: boolean
+  /**
+   * A versão da conta é diferente da do backup (por exemplo, editada na web
+   * depois do último import). Importar substitui; a tela pede confirmação.
+   */
+  differsFromServer?: boolean
 }
 
 export interface ImportPlan {
@@ -43,11 +48,12 @@ export interface ImportSelection {
 // Leitura e validação
 // ---------------------------------------------------------------------------
 
-type Validator = (value: unknown) => string | null
+export type Validator = (value: unknown) => string | null
 
 let validators: Promise<{ campaign: Validator; character: Validator }> | null = null
 
-function loadValidators() {
+/** Validadores do library.schema.json (campanha e personagem); null = válido, senão o motivo. */
+export function loadValidators() {
   validators ??= loadData<{ $id: string }>('library.schema.json').then((schema) => {
     const ajv = new Ajv2020({ allErrors: false, strict: false })
     ajv.addSchema(schema)
@@ -97,7 +103,7 @@ export async function planImport(text: string): Promise<ImportPlan> {
   const characterIDs = characters.map((c) => (c as PlayerCharacter).id).filter(Boolean)
   const [campaignsOnServer, charactersOnServer] = await Promise.all([
     existing('campaign', campaignIDs),
-    existing('character', characterIDs),
+    serverCharacterData(characterIDs),
   ])
 
   return {
@@ -110,6 +116,9 @@ export async function planImport(text: string): Promise<ImportPlan> {
       value: value as PlayerCharacter,
       problem: character(value),
       onServer: charactersOnServer.has((value as PlayerCharacter).id),
+      differsFromServer:
+        charactersOnServer.has((value as PlayerCharacter).id) &&
+        canonical(characterServerData(value as PlayerCharacter)) !== canonical(charactersOnServer.get((value as PlayerCharacter).id)),
     })),
     favoriteSpellIDs: library.favoriteSpellIDs ?? null,
     defaultNotebookPaperStyle: library.defaultNotebookPaperStyle ?? null,
@@ -141,6 +150,32 @@ async function existingVersions(table: Table, ids: string[]): Promise<Map<string
 
 async function existing(table: Table, ids: string[]): Promise<Set<string>> {
   return new Set((await existingVersions(table, ids)).keys())
+}
+
+/** `data` de cada personagem que a conta já tem (id → data). */
+async function serverCharacterData(ids: string[]): Promise<Map<string, unknown>> {
+  const found = new Map<string, unknown>()
+  for (let i = 0; i < ids.length; i += 50) {
+    const { data, error } = await supabase.from('character').select('id, data').in('id', ids.slice(i, i + 50))
+    if (error) throw new Error(`character: ${error.message}`)
+    for (const row of data as { id: string; data: unknown }[]) found.set(row.id, row.data)
+  }
+  return found
+}
+
+/** O que vai para `character.data`: a ficha sem folhas, retrato e estado de tela. */
+function characterServerData(c: PlayerCharacter) {
+  const { spellSheets: _sheets, portraitImageData: _portrait, lastChangedField: _field, recentAutoChanges: _changes, ...data } = c
+  return data
+}
+
+/** JSON com as chaves em ordem, para comparar fichas sem depender da ordem dos campos. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))
+      : v,
+  )
 }
 
 /** INSERT do que é novo; UPDATE (com o version conhecido) do que já existe. */
@@ -279,7 +314,8 @@ export async function runImport(
   onProgress({ step: 'Characters' })
   const characterRows = []
   for (const c of characters) {
-    const { spellSheets: _sheets, portraitImageData, lastChangedField: _field, recentAutoChanges: _changes, ...data } = c
+    const data = characterServerData(c)
+    const portraitImageData = c.portraitImageData
     characterRows.push({
       id: c.id,
       campaign_id: c.campaignID && knownCampaigns.has(c.campaignID) ? c.campaignID : null,

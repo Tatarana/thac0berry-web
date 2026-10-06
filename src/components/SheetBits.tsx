@@ -1,13 +1,108 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 // Peças comuns das páginas da ficha oficial (caixinhas com moldura fina,
 // rótulo impresso e valor à caneta, como os FormCell/FormSectionTitle do iPad).
+// As que aceitam `onChange` viram campo editável à caneta (EditableText /
+// EditableNumber do iPad); sem `onChange`, só mostram o valor.
 
-export function Cell({ label, value }: { label?: string; value: ReactNode }) {
+/** Campo de texto à caneta, sem moldura própria (a caixinha em volta é a moldura). */
+export function InkInput({
+  value,
+  onChange,
+  label,
+  placeholder = '—',
+  className,
+}: {
+  value: string | null | undefined
+  onChange: (text: string) => void
+  /** Nome para leitor de tela (o rótulo impresso nem sempre está colado). */
+  label?: string
+  placeholder?: string
+  className?: string
+}) {
+  return (
+    <input
+      className={className ? `ink-input ${className}` : 'ink-input'}
+      value={value ?? ''}
+      placeholder={placeholder}
+      aria-label={label}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  )
+}
+
+/**
+ * Número à caneta. Enquanto se digita, guarda o texto (para aceitar "-" no
+ * meio do caminho); só repassa valores inteiros dentro do intervalo.
+ */
+export function InkNumber({
+  value,
+  onChange,
+  label,
+  min = -9999999,
+  max = 999999999,
+  className,
+}: {
+  value: number
+  onChange: (value: number) => void
+  label?: string
+  min?: number
+  max?: number
+  className?: string
+}) {
+  const [text, setText] = useState(String(value))
+  const [focused, setFocused] = useState(false)
+  return (
+    <input
+      className={className ? `ink-input ink-number ${className}` : 'ink-input ink-number'}
+      inputMode="numeric"
+      value={focused ? text : String(value)}
+      aria-label={label}
+      onFocus={() => {
+        setText(String(value))
+        setFocused(true)
+      }}
+      onBlur={() => setFocused(false)}
+      onChange={(event) => {
+        const next = event.target.value.trim()
+        setText(next)
+        if (/^[+-]?\d+$/.test(next)) {
+          const number = Number(next)
+          if (number >= min && number <= max) onChange(number)
+        }
+      }}
+    />
+  )
+}
+
+export function Cell({
+  label,
+  value,
+  onChange,
+}: {
+  label?: string
+  /** Só leitura: o que mostrar. Editável: o texto cru (sem o "—"). */
+  value: ReactNode
+  onChange?: (text: string) => void
+}) {
   return (
     <div className="rec-cell">
       {label && <span className="rec-cell-label">{label}</span>}
-      <span className="rec-value">{value}</span>
+      {onChange ? (
+        <InkInput value={typeof value === 'string' ? value : String(value ?? '')} onChange={onChange} label={label} />
+      ) : (
+        <span className="rec-value">{value}</span>
+      )}
+    </div>
+  )
+}
+
+/** Caixinha com número editável (PV, CA, moedas…). */
+export function NumberCell({ label, value, onChange, min, max }: { label?: string; value: number; onChange: (v: number) => void; min?: number; max?: number }) {
+  return (
+    <div className="rec-cell">
+      {label && <span className="rec-cell-label">{label}</span>}
+      <InkNumber value={value} onChange={onChange} label={label} min={min} max={max} />
     </div>
   )
 }
@@ -16,21 +111,46 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   return <h2 className="rec-title">{children}</h2>
 }
 
-export function HeaderLine({ label, children }: { label: string; children: ReactNode }) {
+export function HeaderLine({
+  label,
+  children,
+  edit,
+}: {
+  label: string
+  children?: ReactNode
+  /** Linha editável: o texto e quem recebe a mudança. */
+  edit?: { value: string | null | undefined; onChange: (text: string) => void; className?: string }
+}) {
   return (
     <div className="rec-header-line">
-      <span className="rec-value rec-header-value">{children}</span>
+      {edit ? (
+        <InkInput value={edit.value} onChange={edit.onChange} label={label} placeholder="" className={edit.className} />
+      ) : (
+        <span className="rec-value rec-header-value">{children}</span>
+      )}
       <span className="rec-cell-label">{label}</span>
     </div>
   )
 }
 
 /** Texto longo à caneta (personalidade, histórico, habilidades raciais). */
-export function TextBox({ label, text }: { label: string; text: string | null | undefined }) {
+export function TextBox({
+  label,
+  text,
+  onChange,
+}: {
+  label: string
+  text: string | null | undefined
+  onChange?: (text: string) => void
+}) {
   return (
     <div className="rec-textbox">
       <span className="rec-cell-label rec-left-label">{label}</span>
-      <p className="rec-value rec-long">{text?.trim() ? text : '—'}</p>
+      {onChange ? (
+        <textarea className="ink-input ink-area" value={text ?? ''} aria-label={label} onChange={(event) => onChange(event.target.value)} />
+      ) : (
+        <p className="rec-value rec-long">{text?.trim() ? text : '—'}</p>
+      )}
     </div>
   )
 }

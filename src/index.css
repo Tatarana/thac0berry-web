@@ -1870,3 +1870,120 @@ button {
 .ref-spec dd {
   margin: 0;
 }
+
+/* Campos editáveis à caneta (EditableText/EditableNumber do iPad): sem
+   moldura própria, a caixinha da ficha em volta já é a moldura. */
+.ink-input {
+  width: 100%;
+  min-width: 0;
+  padding: 1px 2px;
+  border: 0;
+  border-bottom: 1px dotted transparent;
+  background: transparent;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  line-height: 1.1;
+  color: var(--pen-ink);
+  text-align: inherit;
+}
+
+.ink-input::placeholder {
+  color: rgb(107 92 70 / 0.45);
+}
+
+.ink-input:hover {
+  border-bottom-color: rgb(47 39 28 / 0.3);
+}
+
+.ink-input:focus {
+  outline: none;
+  border-bottom-color: var(--pen-ink);
+  background: rgb(255 255 255 / 0.35);
+}
+
+.rec-cell .ink-input,
+.rec-table td .ink-input {
+  text-align: center;
+}
+
+.rec-table td.rec-left .ink-input,
+.sheet-rows-name .ink-input,
+.rec-header-line .ink-input {
+  text-align: left;
+}
+
+.ink-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.ink-short {
+  width: 3.5em;
+  display: inline-block;
+}
+
+.ink-area {
+  flex: 1;
+  min-height: 60px;
+  resize: vertical;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+.rec-header-line .ink-input.rec-name {
+  font-size: 1.6rem;
+}
+
+.rec-shield-shape .ink-input {
+  width: 3em;
+  font-size: 1.9rem;
+  text-align: center;
+}
+
+.rec-hp-numbers .ink-input {
+  width: 2.6em;
+  text-align: center;
+}
+
+.rec-hp-numbers .ink-input.rec-hp-current {
+  font-size: 1.9rem;
+}
+
+.rec-inline-edit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.rec-inline-edit .ink-input {
+  width: 3.5em;
+  font-size: 0.95rem;
+}
+
+/* Hit/Dmg Adj e Damage: dois campos com "/" no meio */
+.rec-pair {
+  white-space: nowrap;
+}
+
+.rec-pair .ink-input {
+  width: 3.4em;
+}
+
+.rec-thac0 .ink-input {
+  width: 2.2em;
+}
+
+.save-error {
+  color: var(--red-ink);
+}
+
+.conflict-note {
+  padding: 6px 10px;
+  border: 1px solid var(--red-ink);
+  background: rgb(140 47 34 / 0.08);
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.import-tag-warn {
+  background: rgb(219 158 51 / 0.35);
+}
