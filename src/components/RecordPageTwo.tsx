@@ -1,5 +1,6 @@
 import type { EncumbranceRow, LevelChangeRow, Page2EquipmentEntry, PlayerCharacter, QuantifiedItem } from '../types/library'
 import { dash } from '../lib/format'
+import { defaultEncumbranceTable, levelChanges, xpNeededForNextLevel, xpNote } from '../rules/rules'
 import { Cell, SectionTitle, SheetBlock, TallyMarks } from './SheetBits'
 
 // Página 2 da ficha oficial (RecordSheetPageTwo do iPad): armadura,
@@ -86,7 +87,8 @@ function Movement({ c }: { c: PlayerCharacter }) {
 }
 
 function Encumbrance({ c }: { c: PlayerCharacter }) {
-  const t = c.page2EncumbranceTable
+  // Sem tabela gravada, o iPad grava a do livro ao abrir a página.
+  const t = c.page2EncumbranceTable ?? defaultEncumbranceTable()
   const rows: [string, EncumbranceRow | undefined][] = [
     ['Light', t?.light],
     ['Moderate', t?.moderate],
@@ -122,24 +124,37 @@ function Encumbrance({ c }: { c: PlayerCharacter }) {
   )
 }
 
+// O iPad recalcula "XPs Needed" ao abrir a página (até o nível 20; depois,
+// vale o que o jogador escreveu) e mostra a nota da classe, se houver.
 function Experience({ c }: { c: PlayerCharacter }) {
+  const note = xpNote(c.characterClass, c.level)
   return (
     <section className="rec-section">
       <SectionTitle>Experience</SectionTitle>
       <div className="rec-lines rec-lines-2">
         <Cell label="Total XPs" value={c.experience.toLocaleString('en-US')} />
-        <Cell label="XPs Needed for Next Level" value={dash(c.xpNeededNextLevel)} />
+        <Cell label="XPs Needed for Next Level" value={dash(xpNeededForNextLevel(c.level, c.characterClass) ?? c.xpNeededNextLevel)} />
         <Cell label="Kit Modifier" value={dash(c.xpKitModifier)} />
         <Cell label="Ability Bonus" value={dash(c.xpAbilityBonus)} />
         <Cell label="Subrace Modifier" value={dash(c.xpSubraceModifier)} />
         <Cell label="Level Limit" value={dash(c.xpLevelLimit)} />
       </div>
+      {note && <p className="rec-soft">{note}</p>}
     </section>
   )
 }
 
 function LevelChanges({ c }: { c: PlayerCharacter }) {
-  const t = c.levelChanges
+  // Linhas de THAC0 e saves vazias: o iPad as preenche ao abrir a ficha.
+  const computed = levelChanges(c.characterClass, c.abilities)
+  const stored = c.levelChanges
+  const filled = (row: LevelChangeRow | undefined) => !!row && (row.by !== '' || row.atLevels !== '')
+  const t = {
+    thac0: filled(stored?.thac0) ? stored!.thac0 : computed.thac0,
+    savingThrows: filled(stored?.savingThrows) ? stored!.savingThrows : computed.savingThrows,
+    weaponProficiencies: stored?.weaponProficiencies,
+    nonWeaponProficiencies: stored?.nonWeaponProficiencies,
+  }
   const rows: [string, LevelChangeRow | undefined][] = [
     ['THAC0', t?.thac0],
     ['Saving Throws', t?.savingThrows],

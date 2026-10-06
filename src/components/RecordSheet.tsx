@@ -1,5 +1,6 @@
 import type { EquipmentItem, PlayerCharacter, SavingThrows } from '../types/library'
 import { dash } from '../lib/format'
+import { backstabMultiplier, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { Cell, HeaderLine, SectionTitle } from './SheetBits'
 
 // Página 1 da ficha oficial (OfficialRecordSheet do iPad, a partir do PDF
@@ -202,7 +203,7 @@ function Combat({ c }: { c: PlayerCharacter }) {
             <span className="rec-soft">/</span>
             <span className="rec-value">{c.hitPointsMax}</span>
           </span>
-          <span className="rec-cell-label">Hit Dice: {dash(k.hitDiceType)}</span>
+          <span className="rec-cell-label">Hit Dice: {k.hitDiceType || hitDieType(c.characterClass)}</span>
         </div>
         <div className="rec-lines">
           <Cell label="Numbed #" value={dash(k.numbedNumber)} />
@@ -301,6 +302,18 @@ function CombatModifiers({ c }: { c: PlayerCharacter }) {
 
 // --- Armas -----------------------------------------------------------------
 
+// Cada arma listada já é uma proficiência; especializar custa mais (CFH cap. 4).
+// O total assume todo o bônus de Inteligência em armas, como no iPad.
+function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
+  const spent = c.weapons.reduce((sum, w) => sum + weaponSlotCost(w), 0)
+  const total = totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
+  return (
+    <p className={spent > total ? 'rec-soft rec-red' : 'rec-soft'}>
+      Weapon Proficiency Slots: {spent}/{total} used
+    </p>
+  )
+}
+
 function Weapons({ c }: { c: PlayerCharacter }) {
   return (
     <section className="rec-section">
@@ -347,6 +360,7 @@ function Weapons({ c }: { c: PlayerCharacter }) {
           </tbody>
         </table>
       </div>
+      <WeaponSlotsLine c={c} />
       {c.nonProficiencyPenalty && <p className="rec-soft">Non-proficiency penalty: {c.nonProficiencyPenalty}</p>}
     </section>
   )
@@ -391,19 +405,26 @@ function Proficiencies({ c }: { c: PlayerCharacter }) {
 }
 
 function ThievingSkills({ c }: { c: PlayerCharacter }) {
-  const skills = c.thievingSkills ?? []
-  if (skills.length === 0) return null
+  if (!hasThievingSkills(c.characterClass)) return null
+  // Como o iPad mostra: valor gravado ou, sem ele, o inicial (base + raça + Destreza).
+  const skills = thievingSkillsShown(c, c.thievingSkills)
+  const cls = canonicalClass(c.characterClass)
   return (
     <section className="rec-section">
       <SectionTitle>Thieving Skills</SectionTitle>
       <div className="rec-prof-grid">
         {skills.map((s) => (
-          <div key={s.id} className="rec-prof-row">
+          <div key={s.skill} className="rec-prof-row">
             <span className="rec-row-label">{s.skill}</span>
-            <span className="rec-value">{dash(s.value)}%</span>
+            <span className="rec-value">{dash(s.value)}</span>
           </div>
         ))}
       </div>
+      {(cls === 'Thief' || cls === 'Ninja') && (
+        <p className="rec-soft">
+          Backstab at level {c.level}: {backstabMultiplier(c.level)} damage
+        </p>
+      )}
     </section>
   )
 }

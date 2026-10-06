@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/context'
+import { RecordPageFour } from '../components/RecordPageFour'
 import { RecordPageThree } from '../components/RecordPageThree'
 import { RecordPageTwo } from '../components/RecordPageTwo'
 import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { supabase } from '../lib/supabase'
+import { recordSheetPageCount } from '../rules/rules'
 import type { PlayerCharacter, SpellSheet } from '../types/library'
 
-// Ficha de um personagem, só leitura. Aba "Sheet": páginas 1 a 3 da ficha
-// oficial do iPad (a 4ª, de tabelas de referência da classe, vem junto com
-// as regras). Aba "Spell Sheets": uma folha de magia por dia de jogo. No
+// Ficha de um personagem, só leitura. Aba "Sheet": as páginas da ficha
+// oficial do iPad (3, ou 4 com as tabelas de referência da classe, conforme
+// recordSheetPageCount). Aba "Spell Sheets": uma folha de magia por dia. No
 // servidor, `character.data` é o PlayerCharacter do iPad sem `spellSheets`,
 // `portraitImageData`, `lastChangedField` e `recentAutoChanges`; o retrato
 // fica no Storage (`portrait_attachment`).
@@ -26,11 +28,12 @@ interface Loaded {
   updatedAt: string
 }
 
-// Bolinhas 1, 2 e 3, como no iPad (lá não há rótulo, só o número).
-const pages = [
+// Bolinhas numeradas, como no iPad (lá não há rótulo, só o número).
+const allPages = [
   { id: '1', label: 'Record' },
   { id: '2', label: 'Equipment, Movement and Experience' },
   { id: '3', label: 'Character Description' },
+  { id: '4', label: 'Reference Tables' },
 ]
 
 /** Link temporário (1 h) do retrato; o bucket é privado. */
@@ -66,7 +69,6 @@ function SpellsIcon() {
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
   const view = params.get('view') === 'spells' ? 'spells' : 'record'
   const [sheets, setSheets] = useState<ServerSheet[] | null>(null)
   const { session, loading, signInWithGoogle } = useAuth()
@@ -126,6 +128,10 @@ export function CharacterSheet() {
     }
   }, [userID, id])
 
+  const character = loaded?.character as PlayerCharacter | undefined
+  const pages = allPages.slice(0, character ? recordSheetPageCount(character.characterClass) : 3)
+  const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
+
   // O retrato só é buscado quando a página 3 abre.
   const attachment = loaded?.portraitAttachment ?? null
   useEffect(() => {
@@ -139,7 +145,6 @@ export function CharacterSheet() {
     }
   }, [page, attachment, portrait])
 
-  const character = loaded?.character as PlayerCharacter | undefined
 
   return (
     <div className="paper-page">
@@ -195,6 +200,7 @@ export function CharacterSheet() {
                 {page === '1' && <RecordSheet character={character} campaignName={loaded.campaignName} />}
                 {page === '2' && <RecordPageTwo character={character} />}
                 {page === '3' && <RecordPageThree character={character} portraitURL={portrait} />}
+                {page === '4' && <RecordPageFour character={character} />}
               </>
             )}
             {view === 'spells' && sheets && sheets.length > 0 && (() => {

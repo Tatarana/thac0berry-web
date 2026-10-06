@@ -14,7 +14,7 @@
 // registrado no TODO.md de lá).
 
 import { normalize } from '../lib/search.ts'
-import type { AbilityScores, CharacterClass, LevelChangesTable, SavingThrows } from '../types/library.ts'
+import type { AbilityScores, CharacterClass, EncumbranceTable, LevelChangesTable, SavingThrows } from '../types/library.ts'
 import data from './generated/rules-data.json' with { type: 'json' }
 
 // --- Tipos dos dados -----------------------------------------------------------
@@ -504,4 +504,44 @@ export function levelChanges(characterClass: CharacterClass | string, abilities:
   const saves = levelChangeRow('savingThrows', ctx, false)
   if (saves) table.savingThrows = { by: table.savingThrows.by, atLevels: saves.atLevels }
   return table
+}
+
+// --- Regras que no iPad moram nas telas (sem valores de referência gerados) ---------
+// Portadas de Views/CharacterSheetView.swift. Ficam aqui, e não nos componentes,
+// para a web já nascer com a regra fora da tela (ver Docs/inventario-regras-nas-telas.md
+// do iPad, itens A4 e A6).
+
+/** Slots que uma arma da lista consome: 1, mais 1 (corpo a corpo/besta) ou 2 (arco) se especializada. */
+export function weaponSlotCost(weapon: { name: string; isSpecialized?: boolean | null }): number {
+  if (weapon.name.trim() === '') return 0
+  if (weapon.isSpecialized !== true) return 1
+  const name = weapon.name.toLowerCase()
+  const trueBow = name.includes('bow') && !name.includes('crossbow')
+  return 1 + (trueBow ? 2 : 1)
+}
+
+/** Tabela de carga que o iPad grava quando a ficha ainda não tem uma (EncumbranceForm). */
+export function defaultEncumbranceTable(): EncumbranceTable {
+  const row = (attackPenalty: string, acPenalty: string, moveRate = '') => ({ weightCarried: '', moveRate, attackPenalty, acPenalty })
+  return {
+    light: row('–', '–'),
+    moderate: row('-1', '–'),
+    heavy: row('-2', '+1'),
+    severe: row('-4', '+3', '1'),
+  }
+}
+
+/**
+ * Perícias de ladrão como o iPad as mostra (ThievingSkillsForm.seedIfNeeded):
+ * as da classe, na ordem da tabela; valor gravado quando existe, senão o
+ * inicial (base + raça + Destreza).
+ */
+export function thievingSkillsShown(
+  c: { characterClass: CharacterClass | string; race: string; abilities: AbilityScores },
+  stored: { skill: string; value: string }[] | null | undefined,
+): { skill: string; value: string }[] {
+  return thievingSkillsFor(c.characterClass).map((skill) => {
+    const existing = (stored ?? []).find((s) => s.skill === skill)
+    return { skill, value: existing ? existing.value : thievingSeedTotal(skill, c.characterClass, c.race, c.abilities.dexterity) }
+  })
 }

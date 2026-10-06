@@ -1791,3 +1791,82 @@ button {
     columns: 1;
   }
 }
+
+/* Página 4: tabelas de referência (RefCell/RefTableTitle do iPad) */
+.ref-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ref-title {
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ref-table {
+  border-collapse: collapse;
+  border: 1.2px solid var(--ink);
+  min-width: 100%;
+  font-size: 0.78rem;
+}
+
+.ref-table th,
+.ref-table td {
+  min-width: 30px;
+  height: 26px;
+  padding: 2px 6px;
+  border: 0.6px solid rgb(47 39 28 / 0.42);
+  text-align: center;
+}
+
+.ref-table th {
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  background: rgb(0 0 0 / 0.05);
+}
+
+.ref-table .ref-left {
+  text-align: left;
+}
+
+.ref-table .ref-hl {
+  color: var(--red-ink);
+  background: rgb(140 47 34 / 0.1);
+}
+
+.ref-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ref-spec {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.ref-spec div {
+  display: flex;
+  gap: 8px;
+}
+
+.ref-spec dt {
+  flex: 0 0 92px;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.ref-spec dd {
+  margin: 0;
+}

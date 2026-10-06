@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
+import { bonusSpellTotals } from '../rules/rules'
 import type { CharacterClass, SpellSheet, SpellSlot } from '../types/library'
 import { SheetBlock, TallyMarks } from './SheetBits'
 import { SpellDetail } from './SpellDetail'
@@ -9,9 +10,6 @@ import { SpellDetail } from './SpellDetail'
 // memorizadas com Cast e Dmg/Heal), Turn Undead (sacerdote), magias de
 // itens mágicos e magias adicionais. Clicar numa magia abre o detalhe do
 // compêndio. As anotações à caneta (inkNotes, PencilKit) não aparecem.
-// Diferença do iPad: o título do círculo não separa os slots de bônus de
-// Sabedoria ("3 Slots (2+1)"); isso depende da tabela de Sabedoria e entra
-// com as regras (W2.4).
 
 type ServerSheet = Omit<SpellSheet, 'inkNotes'>
 
@@ -66,18 +64,25 @@ function SlotDots({ slots }: { slots: SpellSlot[] }) {
 
 function CircleBlock({
   level,
+  bonus,
   slots,
   spells,
   casterLevel,
   onOpen,
 }: {
   level: number
+  /** Slots de bônus de Sabedoria neste círculo (sacerdote); 0 para arcano. */
+  bonus: number
   slots: SpellSlot[]
   spells: Map<string, Resolved>
   casterLevel: number
   onOpen: (entry: SpellIndexEntry) => void
 }) {
-  const title = `Level ${level} · ${slots.length} slots`
+  // Igual ao iPad: com bônus de Sabedoria, separa base e bônus.
+  const title =
+    bonus > 0
+      ? `Level ${level} - ${slots.length} Slots (${Math.max(slots.length - bonus, 0)}+${bonus})`
+      : `Level ${level} · ${slots.length} slots`
   return (
     <section className="circle-block">
       <header className={slots.length > 5 ? 'circle-bar circle-bar-wrap' : 'circle-bar'}>
@@ -165,6 +170,8 @@ export function SpellSheetPage({
     return levels.map((lvl) => ({
       key: `${caster}-${lvl}`,
       level: lvl,
+      // Bônus pela Sabedoria do dia em que a folha foi criada, como no iPad.
+      bonus: caster === 'divine' ? (bonusSpellTotals(sheet.wisdomAtCreation)?.[lvl] ?? 0) : 0,
       slots: sheet.slotBoard.slots.filter((s) => s.caster === caster && s.level === lvl),
     }))
   })
@@ -196,6 +203,7 @@ export function SpellSheetPage({
           <CircleBlock
             key={circle.key}
             level={circle.level}
+            bonus={circle.bonus}
             slots={circle.slots}
             spells={spells}
             casterLevel={level}
