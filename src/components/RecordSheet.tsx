@@ -20,7 +20,9 @@ import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
 import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
+import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
 import { CompendiumPicker } from './CompendiumPicker'
+import { KitPicker, RacePicker } from './RaceKitPickers'
 import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
 
@@ -116,6 +118,8 @@ function RecordHeader({
   onClassChanged?: (cls: CharacterClass) => void
   onApplied?: (keys: string[]) => void
 }) {
+  const [pickingRace, setPickingRace] = useState(false)
+  const [pickingKit, setPickingKit] = useState(false)
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
@@ -139,7 +143,11 @@ function RecordHeader({
                     onClassChanged?.(cls)
                   }}
                 />
-                {c.kit ? <span className="rec-value"> / {c.kit}</span> : null}
+                <span className="rec-soft"> / </span>
+                <button className="ink-picker-button" aria-label="Kit" onClick={() => setPickingKit(true)}>
+                  <span className="rec-value">{c.kit || 'None'}</span>
+                  <span className="ink-picker-caret" aria-hidden="true">▾</span>
+                </button>
               </span>
               <span className="rec-cell-label">Class / Kit</span>
             </div>
@@ -160,7 +168,47 @@ function RecordHeader({
         </div>
         {spheres.length > 0 && <HeaderLine label="Spheres">{spheres.join(', ')}</HeaderLine>}
         <div className="rec-header-row">
-          <HeaderLine label="Race">{dash(c.race)}</HeaderLine>
+          {edit ? (
+            <div className="rec-header-line">
+              <button className="ink-picker-button" aria-label="Race" onClick={() => setPickingRace(true)}>
+                <span className="rec-value">{c.race || '—'}</span>
+                <span className="ink-picker-caret" aria-hidden="true">▾</span>
+              </button>
+              <span className="rec-cell-label">Race</span>
+            </div>
+          ) : (
+            <HeaderLine label="Race">{dash(c.race)}</HeaderLine>
+          )}
+          {pickingRace && edit && (
+            <RacePicker
+              character={c}
+              onChoose={(race) => {
+                edit((x) => applyRace(x, race))
+                setPickingRace(false)
+              }}
+              onClose={() => setPickingRace(false)}
+            />
+          )}
+          {pickingKit && edit && (
+            <KitPicker
+              character={c}
+              onChoose={(kit) => {
+                setPickingKit(false)
+                if (!kit) {
+                  edit((x) => void (x.kit = null))
+                  return
+                }
+                // A1: as proficiências bônus do kit entram na ficha, casadas com o compêndio.
+                void loadData<Proficiency[]>('proficiencies.json').then((compendium) =>
+                  edit((x) => {
+                    x.kit = kit.name
+                    addKitBonusProficiencies(x, kit.mechanics.proficiencies?.bonus ?? [], compendium)
+                  }),
+                )
+              }}
+              onClose={() => setPickingKit(false)}
+            />
+          )}
           {edit ? (
             <div className="rec-header-line">
               <AlignmentSelect value={c.alignment} onChange={(v) => edit((x) => void (x.alignment = v))} />

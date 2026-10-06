@@ -26,6 +26,7 @@ export interface Kit {
     turnUndead: { capable: boolean; mode: string; notes: string }
     startingCash?: string | null
     weaponSlots?: { initial?: number | null; additional?: number | null; nonproficiencyPenalty?: string | null } | null
+    proficiencies?: { bonus?: string[] | null; recommended?: string[] | null; notes?: string | null } | null
   }
   deity?: string | null
   pantheon?: string | null
