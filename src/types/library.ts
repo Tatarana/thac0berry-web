@@ -89,7 +89,7 @@ export interface Campaign {
 export type CasterType = "arcane" | "divine"
 
 /** Gravar só os valores em inglês; os em português são de bibliotecas antigas. */
-export type CharacterClass = "Fighter" | "Paladin" | "Ranger" | "Mage" | "Cleric" | "Druid" | "Thief" | "Bard" | "Ninja" | "Guerreiro" | "Paladino" | "Patrulheiro" | "Mago" | "Clérigo" | "Druida" | "Ladino" | "Bardo"
+export type CharacterClass = "Fighter" | "Paladin" | "Ranger" | "Mage" | "Cleric" | "Druid" | "Thief" | "Bard" | "Ninja" | "Psionicist" | "Guerreiro" | "Paladino" | "Patrulheiro" | "Mago" | "Clérigo" | "Druida" | "Ladino" | "Bardo"
 
 export type CharacterStatus = "alive" | "dead" | "archived"
 

@@ -91,6 +91,8 @@ export const primeRequisites: Record<string, Ability[]> = {
   Druid: ['wisdom', 'charisma'],
   Thief: ['dexterity'],
   Bard: ['dexterity', 'charisma'],
+  // CPsiH: Constitution e Wisdom.
+  Psionicist: ['constitution', 'wisdom'],
 }
 
 /** XP por nível de magia lançada, por classe (nada = a classe não ganha por magia). */

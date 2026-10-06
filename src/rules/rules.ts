@@ -78,7 +78,7 @@ function swiftInt(text: string | undefined): number | null {
 
 // --- Classes -----------------------------------------------------------------------
 
-export type CanonicalClass = 'Fighter' | 'Paladin' | 'Ranger' | 'Mage' | 'Cleric' | 'Druid' | 'Thief' | 'Bard' | 'Ninja'
+export type CanonicalClass = 'Fighter' | 'Paladin' | 'Ranger' | 'Mage' | 'Cleric' | 'Druid' | 'Thief' | 'Bard' | 'Ninja' | 'Psionicist'
 
 const legacyClassNames: Record<string, CanonicalClass> = {
   Guerreiro: 'Fighter',
@@ -90,7 +90,7 @@ const legacyClassNames: Record<string, CanonicalClass> = {
   Ladino: 'Thief',
   Bardo: 'Bard',
 }
-const canonicalClasses: CanonicalClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja']
+const canonicalClasses: CanonicalClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist']
 
 /** Como o CharacterClass.init(from:) do iPad: nome antigo em português vira o atual; desconhecido vira Fighter. */
 export function canonicalClass(value: CharacterClass | string): CanonicalClass {
@@ -98,7 +98,7 @@ export function canonicalClass(value: CharacterClass | string): CanonicalClass {
   return legacyClassNames[value] ?? 'Fighter'
 }
 
-export type ClassGroup = 'Warrior' | 'Wizard' | 'Priest' | 'Rogue'
+export type ClassGroup = 'Warrior' | 'Wizard' | 'Priest' | 'Rogue' | 'Psionicist'
 
 /** CoreClassGroup / CharacterClass.proficiencyGroup. */
 export function classGroup(value: CharacterClass | string): ClassGroup {
@@ -112,13 +112,15 @@ export function classGroup(value: CharacterClass | string): ClassGroup {
     case 'Cleric':
     case 'Druid':
       return 'Priest'
+    case 'Psionicist':
+      return 'Psionicist'
     default:
       return 'Rogue'
   }
 }
 
 export function hitDieType(value: CharacterClass | string): string {
-  return { Warrior: 'd10', Wizard: 'd4', Priest: 'd8', Rogue: 'd6' }[classGroup(value)]
+  return { Warrior: 'd10', Wizard: 'd4', Priest: 'd8', Rogue: 'd6', Psionicist: 'd6' }[classGroup(value)]
 }
 
 export function hasSpellSheet(value: CharacterClass | string): boolean {
@@ -139,6 +141,49 @@ export function hasReferencePage(value: CharacterClass | string): boolean {
 
 export function recordSheetPageCount(value: CharacterClass | string): number {
   return hasReferencePage(value) ? 4 : 3
+}
+
+// --- Psionicist (Complete Psionics Handbook, cap. 1) ----------------------------------
+//
+// Classe feita primeiro na web (2026-10-06, decisão do usuário): as tabelas do
+// iPad (rules-data.json) ainda não têm o grupo, então ficam aqui, conferidas
+// com o texto do CPsiH no rules.json do thac0berry-data.
+
+/** Tabela 7: THAC0 por nível (mesma progressão do ladino). */
+const psionicistTHAC0 = [20, 20, 19, 19, 18, 18, 17, 17, 16, 16, 15, 15, 14, 14, 13, 13, 12, 12, 11, 11]
+
+const save = (paralyzationPoisonDeath: number, rodStaffWand: number, petrificationPolymorph: number, breathWeapon: number, spell: number) => ({
+  paralyzationPoisonDeath,
+  rodStaffWand,
+  petrificationPolymorph,
+  breathWeapon,
+  spell,
+})
+
+/** Tabela 8: saves por faixa de nível (mais +2 contra encantamento/charme, que fica como nota). */
+const psionicistSaves: { maxLevel: number | null; values: SaveValues }[] = [
+  { maxLevel: 4, values: save(13, 15, 10, 16, 15) },
+  { maxLevel: 8, values: save(12, 13, 9, 15, 14) },
+  { maxLevel: 12, values: save(11, 11, 8, 13, 12) },
+  { maxLevel: 16, values: save(10, 9, 7, 12, 11) },
+  { maxLevel: 20, values: save(9, 7, 6, 11, 9) },
+  { maxLevel: null, values: save(8, 5, 5, 9, 7) },
+]
+
+/** Tabela 2: XP por nível (d6 até o 9º; depois +2 PV por nível). */
+const psionicistXP = [
+  0, 2200, 4400, 8800, 16500, 30000, 55000, 100000, 200000, 400000,
+  600000, 800000, 1000000, 1200000, 1500000, 1800000, 2100000, 2400000, 2700000, 3000000,
+]
+
+/** Tabela 10: slots de proficiência. */
+const psionicistProficiencies: ProficiencyRow = {
+  group: 'Psionicist',
+  initialWeapon: '2',
+  levelsWeapon: '5',
+  penalty: '-4',
+  initialNonweapon: '3',
+  levelsNonweapon: '3',
 }
 
 // --- Atributos (Tabelas 1 a 6) -------------------------------------------------------
@@ -235,14 +280,16 @@ export function abilityDetail(key: AbilityDetailKey, abilities: AbilityScores): 
 // --- Por nível ---------------------------------------------------------------------
 
 export function thac0ForLevel(value: CharacterClass | string, level: number): number | null {
-  const row = rulesData.thac0.groups[classGroup(value)]
+  const group = classGroup(value)
+  const row = group === 'Psionicist' ? psionicistTHAC0 : rulesData.thac0.groups[group]
   const index = level - 1
   if (!row || index < 0 || index >= row.length) return null
   return row[index]
 }
 
 export function savingThrowsForLevel(value: CharacterClass | string, level: number): SavingThrows | null {
-  const rows = rulesData.savingThrows.groups[classGroup(value)]
+  const group = classGroup(value)
+  const rows = group === 'Psionicist' ? psionicistSaves : rulesData.savingThrows.groups[group]
   if (!rows || level < 1) return null
   const row = rows.find((r) => level <= (r.maxLevel ?? Number.MAX_SAFE_INTEGER))
   return row ? { ...row.values } : null
@@ -310,7 +357,8 @@ export function resolveRule(key: RuleKey, ctx: RuleContext): RuleValue | null {
 // --- Experiência -------------------------------------------------------------------
 
 export function xpRequired(level: number, value: CharacterClass | string): number | null {
-  const row = rulesData.experience.thresholds[canonicalClass(value)]
+  const cls = canonicalClass(value)
+  const row = cls === 'Psionicist' ? psionicistXP : rulesData.experience.thresholds[cls]
   if (level < 1 || level > 20 || !row || row.length < level) return null
   return row[level - 1]
 }
@@ -330,10 +378,11 @@ export function xpNote(value: CharacterClass | string, level: number): string | 
 
 /** Linha da tabela de proficiências usada pela classe (Fighter, Thief, Wizard, Cleric). */
 export function proficiencyTableGroup(value: CharacterClass | string): string {
-  return { Warrior: 'Fighter', Rogue: 'Thief', Wizard: 'Wizard', Priest: 'Cleric' }[classGroup(value)]
+  return { Warrior: 'Fighter', Rogue: 'Thief', Wizard: 'Wizard', Priest: 'Cleric', Psionicist: 'Psionicist' }[classGroup(value)]
 }
 
 export function proficiencyRow(value: CharacterClass | string): ProficiencyRow | null {
+  if (classGroup(value) === 'Psionicist') return psionicistProficiencies
   return T['ProficiencySlotsTable.rows'].find((r) => r.group === proficiencyTableGroup(value)) ?? null
 }
 

@@ -87,7 +87,11 @@ export function diffConsequences(old: RuleContext, next: RuleContext): Consequen
     const oldValue = resolveRule(rule.key, old)
     const newValue = resolveRule(rule.key, next)
     if (same(oldValue, newValue)) continue
-    items.push({ id: rule.key, label: rule.label, oldValue, newValue, sourceRuleID: rule.ruleID, kind: rule.kind })
+    // Psionicist (feito primeiro na web): THAC0 e saves vêm das Tabelas 7 e 8 do CPsiH.
+    const psionic = canonicalClass(next.characterClass) === 'Psionicist' && (rule.key === 'thac0' || rule.key === 'savingThrows')
+    const label = psionic ? (rule.key === 'thac0' ? 'THAC0 by Level (CPsiH Table 7)' : 'Saving Throws by Level (CPsiH Table 8)') : rule.label
+    const ruleID = psionic ? 'cpsih_ch01_special_abilities' : rule.ruleID
+    items.push({ id: rule.key, label, oldValue, newValue, sourceRuleID: ruleID, kind: rule.kind })
   }
   return items
 }

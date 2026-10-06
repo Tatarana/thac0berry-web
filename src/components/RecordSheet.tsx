@@ -60,7 +60,7 @@ const alignmentOptions: [string, string][] = [
   ['CE', 'Chaotic Evil'],
 ]
 
-const classOptions: CharacterClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja']
+const classOptions: CharacterClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist']
 
 /** "Read Magic" do compêndio (1º círculo arcano), para o grimório do mago novo. */
 async function findReadMagic(): Promise<{ id: string; name: string } | null> {

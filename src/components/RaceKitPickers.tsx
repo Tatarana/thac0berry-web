@@ -66,7 +66,7 @@ export function RacePicker({
 
 let allKits: Promise<Kit[]> | null = null
 const loadAllKits = () => {
-  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
+  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
   return allKits
 }
 

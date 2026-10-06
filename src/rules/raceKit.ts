@@ -70,11 +70,12 @@ export function levelLimit(race: RaceName, characterClass: CharacterClass | stri
   const cls = canonicalClass(characterClass)
   const table: Record<RaceName, Partial<Record<string, LevelLimit>>> = {
     Human: {},
-    Dwarf: { Cleric: 10, Fighter: 15, Thief: 12, Ninja: 'unlimited' },
-    Elf: { Cleric: 12, Fighter: 12, Mage: 15, Ranger: 15, Thief: 12 },
-    Gnome: { Cleric: 9, Fighter: 11, Thief: 13 },
-    'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12 },
-    Halfling: { Cleric: 8, Fighter: 9, Thief: 15, Ninja: 'unlimited' },
+    // Psionicist: CPsiH Tabela 1 (Psionicist Racial Level Limits).
+    Dwarf: { Cleric: 10, Fighter: 15, Thief: 12, Ninja: 'unlimited', Psionicist: 8 },
+    Elf: { Cleric: 12, Fighter: 12, Mage: 15, Ranger: 15, Thief: 12, Psionicist: 7 },
+    Gnome: { Cleric: 9, Fighter: 11, Thief: 13, Psionicist: 9 },
+    'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12, Psionicist: 7 },
+    Halfling: { Cleric: 8, Fighter: 9, Thief: 15, Ninja: 'unlimited', Psionicist: 10 },
   }
   if (race === 'Human') return 'unlimited'
   return table[race][cls] ?? 'forbidden'
