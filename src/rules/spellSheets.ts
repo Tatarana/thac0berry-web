@@ -246,3 +246,24 @@ export function logCast(sheet: Pick<SpellSheet, 'entries'>, name: string, spell:
     castCount: 1,
   })
 }
+
+// --- Escolas de magia (WizardSchool do iPad) ------------------------------------------
+
+export const wizardSchools: { name: string; specialist: string; opposition: string[] }[] = [
+  { name: 'Abjuration', specialist: 'Abjurer', opposition: ['Alteration', 'Illusion/Phantasm'] },
+  { name: 'Alteration', specialist: 'Transmuter', opposition: ['Abjuration', 'Necromancy'] },
+  { name: 'Conjuration/Summoning', specialist: 'Conjurer', opposition: ['Divination', 'Invocation/Evocation'] },
+  { name: 'Divination', specialist: 'Diviner', opposition: ['Conjuration/Summoning'] },
+  { name: 'Enchantment/Charm', specialist: 'Enchanter', opposition: ['Invocation/Evocation', 'Necromancy'] },
+  { name: 'Illusion/Phantasm', specialist: 'Illusionist', opposition: ['Necromancy', 'Invocation/Evocation', 'Abjuration'] },
+  { name: 'Invocation/Evocation', specialist: 'Invoker', opposition: ['Enchantment/Charm', 'Conjuration/Summoning'] },
+  { name: 'Necromancy', specialist: 'Necromancer', opposition: ['Illusion/Phantasm', 'Enchantment/Charm'] },
+]
+
+/** PlayerCharacter.isSpellOpposedBySchool: magia de escola oposta à especialização (magia "All" nunca é). */
+export function isOpposedBySchool(school: string | null | undefined, spellSchools: string[]): boolean {
+  if (!school) return false
+  if (spellSchools.includes('All') || spellSchools.includes('All Schools')) return false
+  const opposed = new Set(wizardSchools.find((s) => s.name === school)?.opposition ?? [])
+  return spellSchools.some((s) => opposed.has(s))
+}

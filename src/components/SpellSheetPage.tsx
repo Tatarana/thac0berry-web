@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { damageText, findSpellEntry, loadSpell, loadSpellIndex, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
+import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
 import type { ServerSheet } from '../lib/useSpellSheets'
 import { bonusSpellTotals } from '../rules/rules'
-import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent, type SpellChoice } from '../rules/spellSheets'
+import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent } from '../rules/spellSheets'
 import type { CharacterClass, PlayerCharacter, SpellSlot } from '../types/library'
 import { InkInput, InkNumber, SheetBlock, TallyMarks } from './SheetBits'
 import { SlotEditor } from './SlotEditor'
+import { useSpellChoices, type Caster } from '../lib/spellChoices'
+import { SpellNameField, SpellSuggestions } from './SpellAutocomplete'
 import { SpellDetail } from './SpellDetail'
 
 // Uma folha de magias (um dia de jogo): SpellSheetView do iPad. Cabeçalho,
@@ -81,29 +83,16 @@ function RemoveButton({ label, onClick }: { label: string; onClick: () => void }
   )
 }
 
-let allSpellChoices: Promise<(SpellChoice & { caster: 'arcane' | 'divine' })[]> | null = null
-
-/** Todas as magias do compêndio (sacerdote e mago), para registrar conjurações. */
-function loadAllSpellChoices() {
-  allSpellChoices ??= loadSpellIndex().then((index) => [
-    ...index.divine.map((e) => ({ id: e.id, name: e.name, level: e.level, spheres: e.spheres, caster: 'divine' as const })),
-    ...index.arcane.map((e) => ({ id: e.id, name: e.name, level: e.level, spheres: e.spheres, caster: 'arcane' as const })),
-  ])
-  return allSpellChoices
-}
-
 /**
  * Linha de escrever das magias adicionais (AdditionalSpellsBlock do iPad):
- * escreve a magia, escolhe entre as parecidas (ou registra como está) e ela
- * entra no registro do dia; Enter aceita a melhor quando ela é forte (≥ 0,72).
+ * escreve a magia, escolhe entre as parecidas ou registra o texto como magia
+ * livre ("custom"); Enter aceita a melhor quando ela é forte (≥ 0,72).
+ * Só as magias do tipo de conjurador da folha (pedido do usuário: na folha
+ * de sacerdote, só magias de sacerdote).
  */
-function CastLogger({ onLog }: { onLog: (name: string, spell: { id: string; level: number } | null, rawText: string) => void }) {
+function CastLogger({ casters, onLog }: { casters: Caster[]; onLog: (name: string, spell: { id: string; level: number } | null, rawText: string) => void }) {
   const [text, setText] = useState('')
-  const [choices, setChoices] = useState<SpellChoice[]>([])
-  useEffect(() => {
-    void loadAllSpellChoices().then(setChoices)
-  }, [])
-  const matches = spellMatches(text, choices, 5)
+  const choices = useSpellChoices(casters)
   const log = (name: string, spell: { id: string; level: number } | null) => {
     onLog(name, spell, text)
     setText('')
@@ -118,31 +107,17 @@ function CastLogger({ onLog }: { onLog: (name: string, spell: { id: string; leve
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
           if (e.key !== 'Enter' || text.trim() === '') return
-          const best = matches[0]
+          const best = spellMatches(text, choices, 1)[0]
           if (best && best.score >= 0.72) log(best.spell.name, best.spell)
         }}
       />
-      {text.trim() !== '' && (
-        <ul className="slot-choices">
-          {matches.length === 0 ? (
-            <li>
-              <button className="slot-choice" onClick={() => log(text.trim(), null)}>
-                <span className="rec-value">log "{text.trim()}" as-is</span>
-              </button>
-            </li>
-          ) : (
-            matches.map((m) => (
-              <li key={m.spell.id}>
-                <button className="slot-choice" onClick={() => log(m.spell.name, m.spell)}>
-                  <span className="rec-value">{m.spell.name}</span>
-                  <span className="rec-soft">level {m.spell.level}</span>
-                  <span className="rec-soft">{m.score >= 0.85 ? 'near match' : m.score >= 0.6 ? 'likely' : 'guess'}</span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
+      <SpellSuggestions
+        text={text}
+        choices={choices}
+        showCaster={casters.length > 1}
+        customLabel={(typed) => `log "${typed}" (custom spell)`}
+        onPick={(name, spell) => log(name, spell)}
+      />
     </div>
   )
 }
@@ -341,6 +316,9 @@ export function SpellSheetPage({
     }))
   })
   const hasDivine = sheet.slotBoard.slots.some((s) => s.caster === 'divine')
+  // Conjuradores da folha (pelos slots; sem slots, pela classe).
+  const slotCasters = casterOrder.filter((caster) => sheet.slotBoard.slots.some((s) => s.caster === caster))
+  const sheetCasters: Caster[] = slotCasters.length > 0 ? [...slotCasters] : ['Mage', 'Mago', 'Bard', 'Bardo'].includes(characterClass) ? ['arcane'] : ['divine']
   const isArcane = ['Mage', 'Mago', 'Bard', 'Bardo'].includes(characterClass)
   const dayTitle = sheet.title || new Date(sheet.date).toLocaleDateString('en-US', { dateStyle: 'medium' })
 
@@ -425,11 +403,13 @@ export function SpellSheetPage({
                     <tr key={use.id}>
                       <td className="rec-value sheet-rows-name">
                         {edit ? (
-                          <InkInput
+                          // Um item pode lançar qualquer magia: sacerdote e mago, ou livre.
+                          <SpellNameField
                             value={use.spellName}
                             placeholder="spell"
                             label={`${item.name || 'Item'} spell`}
-                            onChange={(v) => edit((s) => setItemSpell(s, item.id, use.id, { spellName: v, matchedSpellID: null }))}
+                            casters={['divine', 'arcane']}
+                            onChange={(name, spellID) => edit((s) => setItemSpell(s, item.id, use.id, { spellName: name, matchedSpellID: spellID }))}
                           />
                         ) : resolved ? (
                           <button className="memorized-link" onClick={() => setOpen(resolved.entry)}>
@@ -560,7 +540,7 @@ export function SpellSheetPage({
             </tbody>
           </table>
         )}
-        {edit && <CastLogger onLog={(name, spell, rawText) => edit((s) => logCast(s, name, spell, rawText))} />}
+        {edit && <CastLogger casters={sheetCasters} onLog={(name, spell, rawText) => edit((s) => logCast(s, name, spell, rawText))} />}
       </SheetBlock>
 
       {open && <SpellDetail entry={open} onClose={() => setOpen(null)} />}

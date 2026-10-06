@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CharacterClass, EquipmentItem, PlayerCharacter, SavingThrows } from '../types/library'
 import { loadSpellIndex } from '../data/spells'
@@ -17,7 +17,7 @@ import {
 } from '../rules/consequences'
 import { backstabMultiplier, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { PaperModal } from './DetailBits'
-import { Cell, HeaderLine, InkInput, InkNumber, SectionTitle } from './SheetBits'
+import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
 
 /** Aplica uma mudança na ficha (a página grava sozinha). Ausente = só leitura. */
 export type Edit = (mutate: (c: PlayerCharacter) => void) => void
@@ -62,41 +62,40 @@ async function findReadMagic(): Promise<{ id: string; name: string } | null> {
 }
 
 function ClassSelect({ value, onChange }: { value: CharacterClass; onChange: (cls: CharacterClass, readMagic: { id: string; name: string } | null) => void }) {
-  const known = classOptions.includes(value)
+  const options = classOptions.map((cls) => ({ value: cls, label: cls }))
+  if (!classOptions.includes(value)) options.unshift({ value, label: value })
   return (
-    <select
-      className="ink-input ink-select ink-class"
+    <InkPicker
       value={value}
-      aria-label="Class"
-      onChange={(event) => {
-        const cls = event.target.value as CharacterClass
+      options={options}
+      label="Class"
+      onChange={(next) => {
+        const cls = next as CharacterClass
+        if (cls === value) return
         // O mago novo ganha "Read Magic"; o id vem do compêndio (carregado sob demanda).
         if (cls === 'Mage') void findReadMagic().then((readMagic) => onChange(cls, readMagic))
         else onChange(cls, null)
       }}
-    >
-      {!known && <option value={value}>{value}</option>}
-      {classOptions.map((cls) => (
-        <option key={cls} value={cls}>
-          {cls}
-        </option>
-      ))}
-    </select>
+    />
   )
 }
 
 function AlignmentSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const known = alignmentOptions.some(([, name]) => name === value)
-  return (
-    <select className="ink-input ink-select" value={value} aria-label="Alignment" onChange={(event) => onChange(event.target.value)}>
-      {!known && <option value={value}>{value || '—'}</option>}
-      {alignmentOptions.map(([abbreviation, name]) => (
-        <option key={name} value={name}>
-          {name} ({abbreviation})
-        </option>
-      ))}
-    </select>
-  )
+  const options = alignmentOptions.map(([abbreviation, name]) => ({ value: name, label: name, hint: abbreviation }))
+  if (!alignmentOptions.some(([, name]) => name === value)) options.unshift({ value, label: value || '—', hint: '' })
+  return <InkPicker value={value} options={options} label="Alignment" onChange={onChange} />
+}
+
+// --- Destaque das consequências -----------------------------------------------------
+// Com consequência pendente, os campos que mudariam ganham o destaque verde do
+// iPad (PendingConsequenceHighlight); depois de aplicar, os que mudaram piscam
+// (changeFlash). A chave é a da regra: 'thac0', 'savingThrows', 'strengthHit'...
+
+const MarkContext = createContext<(key: string) => string>(() => '')
+
+/** Classe CSS de destaque para a regra `key` ('' quando nada a destacar). */
+function useMark(key: string) {
+  return useContext(MarkContext)(key)
 }
 
 function RecordHeader({
@@ -104,11 +103,13 @@ function RecordHeader({
   campaignName,
   edit,
   onClassChanged,
+  onApplied,
 }: {
   c: PlayerCharacter
   campaignName: string | null
   edit?: Edit
   onClassChanged?: (cls: CharacterClass) => void
+  onApplied?: (keys: string[]) => void
 }) {
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
@@ -188,7 +189,7 @@ function RecordHeader({
         {/* O dragão do canto (record_badge do iPad); com consequência pendente,
             dá lugar ao sinal verde, no mesmo lugar e tamanho. */}
         {edit && hasPendingConsequences(c) ? (
-          <ConsequenceSignal c={c} edit={edit} />
+          <ConsequenceSignal c={c} edit={edit} onApplied={onApplied ?? (() => {})} />
         ) : (
           <img className="rec-badge" src={`${import.meta.env.BASE_URL}images/record_badge.png`} alt="" />
         )}
@@ -199,7 +200,7 @@ function RecordHeader({
 
 // --- Consequências (ConsequenceSignalBadge / ConsequencePreviewSheet do iPad) ---
 
-function ConsequenceSignal({ c, edit }: { c: PlayerCharacter; edit: Edit }) {
+function ConsequenceSignal({ c, edit, onApplied }: { c: PlayerCharacter; edit: Edit; onApplied: (keys: string[]) => void }) {
   const [open, setOpen] = useState(false)
   const items = pendingConsequences(c)
   const hasAuto = items.some((i) => i.kind === 'autoApplicable')
@@ -241,6 +242,7 @@ function ConsequenceSignal({ c, edit }: { c: PlayerCharacter; edit: Edit }) {
               <button
                 className="consequence-apply"
                 onClick={() => {
+                  onApplied(items.filter((i) => i.kind === 'autoApplicable').map((i) => i.id))
                   edit((x) => {
                     applyAutomatic(pendingConsequences(x), x)
                     markConsequencesReviewed(x)
@@ -260,6 +262,11 @@ function ConsequenceSignal({ c, edit }: { c: PlayerCharacter; edit: Edit }) {
 }
 
 // --- Atributos -------------------------------------------------------------
+
+/** Célula de detalhe de atributo com o destaque da regra correspondente. */
+function MarkedCell({ rule, ...props }: { rule: string; label: string; value: string; onChange?: (text: string) => void }) {
+  return <Cell {...props} className={useMark(rule)} />
+}
 
 function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const d = c.details as unknown as Record<string, string | null | undefined>
@@ -325,14 +332,15 @@ function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
             <div className="rec-ability-cells">
               {cells.map(([label, key]) =>
                 edit ? (
-                  <Cell
+                  <MarkedCell
                     key={label}
+                    rule={key}
                     label={label}
                     value={d[key] ?? ''}
                     onChange={(v) => edit((x) => void ((x.details as unknown as Record<string, string>)[key] = v))}
                   />
                 ) : (
-                  <Cell key={label} label={label} value={dash(d[key])} />
+                  <MarkedCell key={label} rule={key} label={label} value={dash(d[key])} />
                 ),
               )}
             </div>
@@ -362,8 +370,9 @@ function setSaveModifier(saves: SavingThrows, id: string, value: number) {
 }
 
 function SavingThrowsBlock({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const mark = useMark('savingThrows')
   return (
-    <section className="rec-section rec-saves">
+    <section className={`rec-section rec-saves ${mark}`}>
       <SectionTitle>Saving Throws</SectionTitle>
       <table className="rec-table">
         <thead>
@@ -531,9 +540,10 @@ function setThac0Override(x: PlayerCharacter, ac: number, text: string) {
 }
 
 function Thac0Table({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const mark = useMark('thac0')
   return (
     <section className="rec-section">
-      <div className="rec-thac0-head">
+      <div className={`rec-thac0-head ${mark}`}>
         <span className="rec-title-inline">THAC0</span>
         {edit ? (
           <InkNumber className="ink-short rec-strong" value={c.thac0} min={-10} max={30} label="THAC0" onChange={(v) => edit((x) => void (x.thac0 = v))} />
@@ -855,9 +865,28 @@ export function RecordSheet({
   /** Depois de trocar a classe (a página cria a primeira folha de magia, se for o caso). */
   onClassChanged?: (cls: CharacterClass) => void
 }) {
+  // Destaque: pendentes (verde) e recém-aplicadas (piscam por 2,5 s).
+  const [flashed, setFlashed] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    if (flashed.size === 0) return
+    const timer = window.setTimeout(() => setFlashed(new Set()), 2500)
+    return () => window.clearTimeout(timer)
+  }, [flashed])
+  const pending = useMemo(
+    () => new Set(edit && hasPendingConsequences(character) ? pendingConsequences(character).map((i) => i.id as string) : []),
+    [character, edit],
+  )
+  const mark = (key: string) => (pending.has(key) ? 'pending-mark' : flashed.has(key) ? 'flash-mark' : '')
   return (
+    <MarkContext.Provider value={mark}>
     <div className="rec-sheet">
-      <RecordHeader c={character} campaignName={campaignName} edit={edit} onClassChanged={onClassChanged} />
+      <RecordHeader
+        c={character}
+        campaignName={campaignName}
+        edit={edit}
+        onClassChanged={onClassChanged}
+        onApplied={(keys) => setFlashed(new Set(keys))}
+      />
       <div className="rec-two">
         <AbilityScores c={character} edit={edit} />
         <SavingThrowsBlock c={character} edit={edit} />
@@ -870,5 +899,6 @@ export function RecordSheet({
       <ThievingSkills c={character} edit={edit} />
       <ActiveEffects c={character} />
     </div>
+    </MarkContext.Provider>
   )
 }

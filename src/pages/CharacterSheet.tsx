@@ -7,6 +7,7 @@ import { RecordPageTwo } from '../components/RecordPageTwo'
 import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
+import { WizardSpellbook } from '../components/WizardSpellbook'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { useSpellSheets } from '../lib/useSpellSheets'
@@ -88,10 +89,21 @@ function SpellsIcon() {
   )
 }
 
+// "My Spellbook" (text.book.closed do iPad): livro fechado com uma estrela.
+function SpellbookIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M6 3.5h11.5v17H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M4.5 18.5A1.5 1.5 0 0 1 6 17h11.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m11 7 1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3Z" fill="currentColor" />
+    </svg>
+  )
+}
+
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const view = params.get('view') === 'spells' ? 'spells' : 'record'
+  const view = params.get('view') === 'spells' ? 'spells' : params.get('view') === 'spellbook' ? 'spellbook' : 'record'
   const { session, loading, signInWithGoogle } = useAuth()
   const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
@@ -271,7 +283,20 @@ export function CharacterSheet() {
                   <SpellsIcon />
                 </button>
               )}
+              {/* Mago e bardo: o grimório sempre à vista (pedido do usuário). */}
+              {isArcaneCaster(character.characterClass) && (
+                <button
+                  className={view === 'spellbook' ? 'paper-tab paper-tab-on' : 'paper-tab'}
+                  title="My Spellbook"
+                  aria-label="My Spellbook"
+                  aria-current={view === 'spellbook' ? 'page' : undefined}
+                  onClick={() => setParams({ view: 'spellbook' }, { replace: true })}
+                >
+                  <SpellbookIcon />
+                </button>
+              )}
             </nav>
+            {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
             {view === 'record' && (
               <>
                 <PageBeads

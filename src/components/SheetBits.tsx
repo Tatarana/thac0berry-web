@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 // Peças comuns das páginas da ficha oficial (caixinhas com moldura fina,
 // rótulo impresso e valor à caneta, como os FormCell/FormSectionTitle do iPad).
@@ -79,14 +79,17 @@ export function Cell({
   label,
   value,
   onChange,
+  className,
 }: {
   label?: string
   /** Só leitura: o que mostrar. Editável: o texto cru (sem o "—"). */
   value: ReactNode
   onChange?: (text: string) => void
+  /** Classe extra (destaque de consequência, por exemplo). */
+  className?: string
 }) {
   return (
-    <div className="rec-cell">
+    <div className={className ? `rec-cell ${className}` : 'rec-cell'}>
       {label && <span className="rec-cell-label">{label}</span>}
       {onChange ? (
         <InkInput value={typeof value === 'string' ? value : String(value ?? '')} onChange={onChange} label={label} />
@@ -237,5 +240,93 @@ export function PageBeads({
         </button>
       )}
     </nav>
+  )
+}
+
+export interface PickerOption {
+  value: string
+  label: string
+  /** Texto menor à direita (sigla, título do especialista…). */
+  hint?: string
+}
+
+/**
+ * Seletor de opções fixas no traço da ficha (no iPad, um botão que abre a
+ * lista; aqui, uma lista em papel logo abaixo). Esc ou clique fora fecha;
+ * setas navegam. Valor fora da lista (ficha antiga) aparece como está.
+ */
+export function InkPicker({
+  value,
+  options,
+  onChange,
+  label,
+  className,
+}: {
+  value: string
+  options: PickerOption[]
+  onChange: (value: string) => void
+  label: string
+  className?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLSpanElement>(null)
+  const current = options.find((o) => o.value === value)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: MouseEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    // Abre com o foco na opção atual (ou na primeira).
+    root.current?.querySelector<HTMLButtonElement>('.ink-picker-option[aria-selected="true"], .ink-picker-option')?.focus()
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const move = (event: React.KeyboardEvent, delta: number) => {
+    event.preventDefault()
+    const items = [...(root.current?.querySelectorAll<HTMLButtonElement>('.ink-picker-option') ?? [])]
+    const index = items.indexOf(document.activeElement as HTMLButtonElement)
+    items[(index + delta + items.length) % items.length]?.focus()
+  }
+
+  return (
+    <span className={className ? `ink-picker ${className}` : 'ink-picker'} ref={root}>
+      <button type="button" className="ink-picker-button" aria-label={label} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span className="rec-value">{current?.label ?? (value || '—')}</span>
+        <span className="ink-picker-caret" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <span className="ink-picker-list" role="listbox" aria-label={label}>
+          {options.map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              role="option"
+              aria-selected={option.value === value}
+              className="ink-picker-option"
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown') move(event, 1)
+                if (event.key === 'ArrowUp') move(event, -1)
+              }}
+              onClick={() => {
+                onChange(option.value)
+                setOpen(false)
+              }}
+            >
+              <span>{option.label}</span>
+              {option.hint && <span className="ink-picker-hint">{option.hint}</span>}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   )
 }

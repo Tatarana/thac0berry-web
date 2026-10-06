@@ -140,3 +140,10 @@ test('registrar conjuração: soma na linha existente ou cria uma nova', () => {
     ['My Prayer', null, 2],
   ])
 })
+
+test('escolas opostas da especialização (magia "All" nunca é bloqueada)', () => {
+  assert.equal(S.isOpposedBySchool('Abjuration', ['Illusion/Phantasm']), true)
+  assert.equal(S.isOpposedBySchool('Abjuration', ['Evocation', 'All']), false)
+  assert.equal(S.isOpposedBySchool(null, ['Necromancy']), false)
+  assert.equal(S.isOpposedBySchool('Divination', ['Necromancy']), false)
+})
