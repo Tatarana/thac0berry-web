@@ -8,6 +8,7 @@ import { RecordSheet } from '../components/RecordSheet'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
+import { ActiveEffectsPage } from '../components/ActiveEffects'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { useSpellSheets } from '../lib/useSpellSheets'
@@ -89,6 +90,17 @@ function SpellsIcon() {
   )
 }
 
+// Efeitos ativos ("sparkles" do iPad): acende quando há algum efeito.
+function EffectsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M10 3.5 11.6 8.4 16.5 10 11.6 11.6 10 16.5 8.4 11.6 3.5 10 8.4 8.4Z" fill="currentColor" />
+      <path d="M17.5 13.5 18.3 15.7 20.5 16.5 18.3 17.3 17.5 19.5 16.7 17.3 14.5 16.5 16.7 15.7Z" fill="currentColor" />
+      <path d="M18 3 18.5 4.5 20 5 18.5 5.5 18 7 17.5 5.5 16 5 17.5 4.5Z" fill="currentColor" />
+    </svg>
+  )
+}
+
 // "My Spellbook" (text.book.closed do iPad): livro fechado com uma estrela.
 function SpellbookIcon() {
   return (
@@ -103,7 +115,7 @@ function SpellbookIcon() {
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const view = params.get('view') === 'spells' ? 'spells' : params.get('view') === 'spellbook' ? 'spellbook' : 'record'
+  const view = (['spells', 'spellbook', 'effects'] as const).find((v) => v === params.get('view')) ?? 'record'
   const { session, loading, signInWithGoogle } = useAuth()
   const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
@@ -283,6 +295,15 @@ export function CharacterSheet() {
                   <SpellsIcon />
                 </button>
               )}
+              <button
+                className={[view === 'effects' ? 'paper-tab paper-tab-on' : 'paper-tab', (character.activeEffects ?? []).length > 0 ? 'paper-tab-glow' : ''].join(' ')}
+                title="Active Effects"
+                aria-label="Active Effects"
+                aria-current={view === 'effects' ? 'page' : undefined}
+                onClick={() => setParams({ view: 'effects' }, { replace: true })}
+              >
+                <EffectsIcon />
+              </button>
               {/* Mago e bardo: o grimório sempre à vista (pedido do usuário). */}
               {isArcaneCaster(character.characterClass) && (
                 <button
@@ -297,6 +318,7 @@ export function CharacterSheet() {
               )}
             </nav>
             {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
+            {view === 'effects' && <ActiveEffectsPage c={character} edit={edit} />}
             {view === 'record' && (
               <>
                 <PageBeads

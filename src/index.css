@@ -2550,3 +2550,79 @@ button.slot-dot:hover {
 .row-with-remove .ink-input {
   text-align: left;
 }
+
+/* Efeitos ativos (W2.5d3) */
+.paper-tab-glow {
+  color: #33946b;
+  box-shadow: 0 0 8px rgb(148 224 163 / 0.8);
+}
+
+.effect-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1.3px solid var(--ink);
+  background: rgb(255 255 255 / 0.12);
+}
+
+.effect-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.effect-name {
+  font-size: 1.4rem;
+}
+
+.effect-card-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+}
+
+.effect-lines {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.effect-line {
+  padding: 2px 0;
+}
+
+.effect-uses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.effect-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.effect-editor-component {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid rgb(47 39 28 / 0.35);
+}
+
+.effect-editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.effect-editor-row .ink-input:not(.ink-short) {
+  width: auto;
+  flex: 1;
+  min-width: 6em;
+  text-align: left;
+}
