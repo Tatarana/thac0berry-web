@@ -134,6 +134,32 @@ export function useCharacterDoc(id: string | undefined, userID: string | null) {
     [flush],
   )
 
+  /**
+   * Troca (ou tira, com null) o retrato: coluna `portrait_attachment` da
+   * mesma linha, então grava antes o que estiver pendente e segue a mesma
+   * versão da ficha.
+   */
+  const setPortrait = useCallback(
+    async (attachmentID: string | null) => {
+      if (!id) return
+      await flush()
+      while (inFlight.current) await new Promise((resolve) => window.setTimeout(resolve, 100))
+      const { data, error } = await supabase
+        .from('character')
+        .update({ portrait_attachment: attachmentID, version: version.current })
+        .eq('id', id)
+        .select('version, updated_at, conflicted_at')
+        .single()
+      if (error) throw new Error(error.message)
+      const row = data as { version: number; updated_at: string; conflicted_at: string | null }
+      version.current = row.version
+      if (row.conflicted_at) setConflict(true)
+      setDoc((current) => (current ? { ...current, portraitAttachment: attachmentID } : current))
+      if (!draft.current) setSave({ kind: 'saved', at: row.updated_at })
+    },
+    [id, flush],
+  )
+
   // Ao sair da página ou fechar a aba, grava o que estiver pendente.
   useEffect(() => {
     const onHide = () => {
@@ -154,5 +180,5 @@ export function useCharacterDoc(id: string | undefined, userID: string | null) {
     }
   }, [flush])
 
-  return { doc, loadError, save, conflict, dismissConflict: () => setConflict(false), update, retry: flush }
+  return { doc, loadError, save, conflict, dismissConflict: () => setConflict(false), update, setPortrait, retry: flush }
 }

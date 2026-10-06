@@ -19,6 +19,7 @@ import { backstabMultiplier, canonicalClass, hasThievingSkills, hitDieType, thie
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
+import { abilityEffect } from '../rules/effects'
 import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
 import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
 import { CompendiumPicker } from './CompendiumPicker'
@@ -372,15 +373,20 @@ function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
     <section className="rec-section rec-abilities">
       <SectionTitle>Ability Scores</SectionTitle>
       <div className="rec-box">
-        {rows.map(([name, score, cells, ability]) => (
+        {rows.map(([name, score, cells, ability]) => {
+          // Mudado por efeito ativo: verde se subiu, vermelho se desceu, enquanto durar.
+          const changed = abilityEffect(c, ability)
+          const tone = changed ? ` effect-${changed.tone}` : ''
+          const hint = changed ? `${changed.tone === 'up' ? 'Raised' : 'Lowered'} by ${changed.effect} (normally ${changed.normal})` : undefined
+          return (
           <div key={name} className="rec-ability-row">
             <span className="rec-ability-name">{name}</span>
             {edit ? (
-              <span className="rec-ability-score">
+              <span className={`rec-ability-score${tone}`} title={hint}>
                 <InkNumber value={c.abilities[ability]} min={1} max={25} label={name} onChange={(v) => edit((x) => setAbility(x, ability, v))} />
               </span>
             ) : (
-              <span className="rec-ability-score rec-value">{score}</span>
+              <span className={`rec-ability-score rec-value${tone}`} title={hint}>{score}</span>
             )}
             <div className="rec-ability-cells">
               {cells.map(([label, key]) =>
@@ -398,7 +404,8 @@ function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
               )}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

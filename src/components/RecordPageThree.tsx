@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import type { PlayerCharacter } from '../types/library'
 import { dash } from '../lib/format'
 import type { Edit } from './RecordSheet'
@@ -20,12 +21,26 @@ export function RecordPageThree({
   character: c,
   portraitURL,
   edit,
+  onPortrait,
 }: {
   character: PlayerCharacter
   /** Link temporário do retrato no Storage; null = sem retrato. */
   portraitURL: string | null
   edit?: Edit
+  /** Trocar o retrato (arquivo de imagem) ou tirar (null). */
+  onPortrait?: (file: File | null) => Promise<void>
 }) {
+  const picker = useRef<HTMLInputElement>(null)
+  const [sending, setSending] = useState(false)
+  const portrait = async (file: File | null) => {
+    if (!onPortrait) return
+    setSending(true)
+    try {
+      await onPortrait(file)
+    } finally {
+      setSending(false)
+    }
+  }
   // Campos obrigatórios no iPad guardam "" quando vazios; os opcionais voltam a nil.
   const field = (label: string, key: RequiredText | OptionalText) =>
     edit ? (
@@ -83,6 +98,35 @@ export function RecordPageThree({
               <span className="rec-soft">No portrait</span>
             )}
           </div>
+          {edit && onPortrait && (
+            <div className="rec-sketch-actions">
+              <input
+                ref={picker}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null
+                  e.target.value = ''
+                  if (file) void portrait(file)
+                }}
+              />
+              {sending ? (
+                <span className="paper-soft">Saving the picture…</span>
+              ) : (
+                <>
+                  <button className="paper-link" onClick={() => picker.current?.click()}>
+                    {portraitURL ? 'change picture' : 'choose picture'}
+                  </button>
+                  {portraitURL && (
+                    <button className="paper-link" onClick={() => void portrait(null)}>
+                      remove
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </figure>
       </div>
       <div className="rec-inline-field">

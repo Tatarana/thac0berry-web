@@ -88,6 +88,26 @@ const effectiveSaveIDs = (c: EffectComponent) => new Set(c.savingThrowIDs ?? sav
 
 export const abilityStats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] as const
 
+/**
+ * Atributo mudado por um efeito ativo (Stat Override ou bônus em atributo):
+ * se subiu ou desceu em relação ao valor de antes do efeito, por qual efeito
+ * e qual era o valor. A ficha pinta o número (verde ou vermelho) enquanto o
+ * efeito durar, para mostrar que é temporário. Vale o último efeito aplicado.
+ */
+export function abilityEffect(
+  c: { activeEffects?: ActiveEffect[] | null },
+  ability: (typeof abilityStats)[number],
+): { tone: 'up' | 'down'; effect: string; normal: number } | null {
+  let found: { tone: 'up' | 'down'; effect: string; normal: number } | null = null
+  for (const effect of c.activeEffects ?? []) {
+    for (const comp of effect.components) {
+      if (comp.kind !== 'statOverride' || comp.overrideStat !== ability || comp.overrideValue === comp.previousValue) continue
+      found = { tone: comp.overrideValue > comp.previousValue ? 'up' : 'down', effect: effect.name || 'an active effect', normal: comp.previousValue }
+    }
+  }
+  return found
+}
+
 /** Bônus em atributo gravado como Stat Override calculado (ver o topo do arquivo). */
 export function isAbilityBonus(c: EffectComponent): boolean {
   return c.kind === 'statOverride' && (abilityStats as readonly string[]).includes(c.overrideStat) && c.bonusAmount !== 0

@@ -1,6 +1,7 @@
 import Ajv2020 from 'ajv/dist/2020'
 import { loadData } from '../data/load'
 import type { Campaign, Library, NotebookEntry, PlayerCharacter, SpellSheet } from '../types/library'
+import { uploadAttachment } from './attachments'
 import { supabase } from './supabase'
 
 // Import do backup do iPad (Settings → Backup, ou o próprio library.json)
@@ -218,29 +219,7 @@ function mimeOf(bytes: Uint8Array): string {
 async function attachment(userID: string, base64: string | null | undefined): Promise<string | null> {
   if (!base64) return null
   const bytes = base64ToBytes(base64)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  const sha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
-
-  const known = await supabase.from('attachment').select('id').eq('sha256', sha256).maybeSingle()
-  if (known.error) throw new Error(`attachment: ${known.error.message}`)
-  if (known.data) return (known.data as { id: string }).id
-
-  const mime = mimeOf(bytes)
-  const path = `${userID}/${sha256}`
-  const upload = await supabase.storage.from('attachments').upload(path, new Blob([bytes], { type: mime }), {
-    contentType: mime,
-    upsert: false,
-  })
-  // Arquivo já no bucket (envio anterior interrompido antes do registro): segue.
-  if (upload.error && !/exists|duplicate/i.test(upload.error.message)) {
-    throw new Error(`file upload: ${upload.error.message}`)
-  }
-  const id = crypto.randomUUID()
-  const { error } = await supabase
-    .from('attachment')
-    .insert({ id, sha256, mime, bytes: bytes.length, storage_path: path })
-  if (error) throw new Error(`attachment: ${error.message}`)
-  return id
+  return uploadAttachment(userID, bytes, mimeOf(bytes))
 }
 
 export interface ImportProgress {

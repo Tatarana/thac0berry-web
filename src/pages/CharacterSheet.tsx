@@ -11,6 +11,7 @@ import { WizardSpellbook } from '../components/WizardSpellbook'
 import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEffects'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
+import { portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
@@ -123,7 +124,7 @@ export function CharacterSheet() {
   const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
   const userID = session?.user.id ?? null
-  const { doc, loadError, save, conflict, dismissConflict, update, retry } = useCharacterDoc(id, userID)
+  const { doc, loadError, save, conflict, dismissConflict, update, setPortrait: savePortrait, retry } = useCharacterDoc(id, userID)
   const campaignID = doc?.campaignID ?? null
 
   const spellSheets = useSpellSheets(id, userID)
@@ -214,6 +215,23 @@ export function CharacterSheet() {
       setSheetError(null)
       const sessionID = await activeSessionID(campaignID)
       await spellSheets.createSheet(startSpellSheet(sheetBasis(character, cls), [], { sessionID, title: 'First day' }))
+    } catch (reason) {
+      setSheetError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
+  /** Retrato novo (ou null para tirar): reduz como o iPad, sobe para o Storage e liga na ficha. */
+  async function changePortrait(file: File | null) {
+    if (!userID) return
+    try {
+      setSheetError(null)
+      if (!file) {
+        await savePortrait(null)
+        setPortrait(null)
+        return
+      }
+      const bytes = await portraitJPEG(file)
+      await savePortrait(await uploadAttachment(userID, bytes, 'image/jpeg'))
+      setPortrait(URL.createObjectURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' })))
     } catch (reason) {
       setSheetError(reason instanceof Error ? reason.message : String(reason))
     }
@@ -334,7 +352,8 @@ export function CharacterSheet() {
                 />
                 {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} onClassChanged={(cls) => void afterClassChange(cls)} />}
                 {page === '2' && <RecordPageTwo character={character} edit={edit} />}
-                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} />}
+                {page === '3' && sheetError && <p className="paper-soft save-error">{sheetError}</p>}
+                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} onPortrait={changePortrait} />}
                 {page === '4' && <RecordPageFour character={character} />}
               </>
             )}

@@ -197,6 +197,40 @@ export function TallyMarks({ count, exhausted }: { count: number; exhausted: boo
 }
 
 /**
+ * TallyBoard do iPad: clicar na caixa soma um uso; clicar num grupo de
+ * pauzinhos tira um.
+ */
+export function TallyBoard({ count, exhausted, label, onChange }: { count: number; exhausted: boolean; label: string; onChange: (n: number) => void }) {
+  const groups: number[] = []
+  for (let left = count; left > 0; left -= 5) groups.push(Math.min(5, left))
+  return (
+    <button
+      type="button"
+      className={exhausted ? 'tally tally-board tally-exhausted' : 'tally tally-board'}
+      aria-label={`${label}: ${count} used. Click to add one; click a mark to remove one.`}
+      title="Click to add a use; click a mark to remove one"
+      onClick={() => onChange(count + 1)}
+    >
+      {groups.map((size, index) => (
+        <span
+          key={index}
+          className="tally-group tally-hit"
+          onClick={(event) => {
+            event.stopPropagation()
+            onChange(Math.max(0, count - 1))
+          }}
+        >
+          {Array.from({ length: Math.min(size, 4) }, (_, bar) => (
+            <span key={bar} className="tally-bar" />
+          ))}
+          {size === 5 && <span className="tally-cross" />}
+        </span>
+      ))}
+    </button>
+  )
+}
+
+/**
  * Bolinhas numeradas sobre uma linha pontilhada (RecordSheetBeadRow /
  * InkDayBead do iPad): uma por página da ficha; a atual fica cheia, maior.
  */

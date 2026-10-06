@@ -3050,3 +3050,69 @@ button.slot-dot:hover {
   display: grid;
   place-items: center;
 }
+
+/* ---- Ajustes W3.4 ---- */
+
+/* Barra de rolagem discreta nas tabelas largas da ficha (THAC0, tabelas da página 4). */
+.rec-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(107 92 70 / 0.35) transparent;
+}
+
+.rec-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.rec-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rec-scroll::-webkit-scrollbar-thumb {
+  background: rgb(107 92 70 / 0.35);
+  border-radius: 3px;
+}
+
+.rec-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(107 92 70 / 0.55);
+}
+
+/* Atributo mudado por efeito ativo: temporário, em outra cor. */
+.effect-up,
+.effect-up .ink-input {
+  color: #2e7d4f;
+  font-weight: 700;
+}
+
+.effect-down,
+.effect-down .ink-input {
+  color: #b23a2b;
+  font-weight: 700;
+}
+
+/* Caixa de pauzinhos clicável. */
+.tally-board {
+  font: inherit;
+  border: 1px dashed rgb(107 92 70 / 0.45);
+  background: transparent;
+  cursor: copy;
+}
+
+.tally-board:hover {
+  border-color: var(--pen-ink);
+}
+
+.tally-hit {
+  padding: 0 3px;
+  cursor: pointer;
+}
+
+.tally-hit:hover {
+  opacity: 0.55;
+}
+
+.rec-sketch-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+}

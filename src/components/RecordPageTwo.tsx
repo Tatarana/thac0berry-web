@@ -8,7 +8,7 @@ import { loadMagicIndex, type MagicItemIndexEntry } from '../data/magicItems'
 import { leastFilledColumn } from '../rules/sheetEdits'
 import { CompendiumPicker } from './CompendiumPicker'
 import type { Edit } from './RecordSheet'
-import { Cell, InkInput, InkNumber, NumberCell, SectionTitle, SheetBlock, TallyMarks } from './SheetBits'
+import { Cell, InkInput, InkNumber, NumberCell, SectionTitle, SheetBlock, TallyBoard, TallyMarks } from './SheetBits'
 
 // Página 2 da ficha oficial (RecordSheetPageTwo do iPad): armadura,
 // equipamento em duas colunas, movimento, carga, experiência, mudanças por
@@ -371,7 +371,11 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
                   )}
                 </td>
                 <td className="sheet-rows-tally">
-                  <TallyMarks count={used} exhausted={exhausted} />
+                  {edit ? (
+                    <TallyBoard count={used} exhausted={exhausted} label={item.name || title} onChange={(n) => set(item.id, { usedCount: n })} />
+                  ) : (
+                    <TallyMarks count={used} exhausted={exhausted} />
+                  )}
                 </td>
                 <td className="sheet-rows-count">
                   <span className={exhausted ? 'rec-value rec-red' : 'rec-value'}>{used}</span>
