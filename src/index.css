@@ -3308,3 +3308,12 @@ button.slot-dot:hover {
   text-align: left;
   margin-top: 4px;
 }
+
+.report-xp-total {
+  font-weight: 700;
+  border-bottom: 0;
+}
+
+.report-xp-note {
+  font-size: 0.75rem;
+}

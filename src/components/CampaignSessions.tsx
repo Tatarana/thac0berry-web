@@ -4,7 +4,6 @@ import { dateFromInput, dateInputValue } from '../lib/campaigns'
 import { startSessionDay, useCampaignSessions, type SessionRow, type SheetRef } from '../lib/campaignSessions'
 import { useConfirm } from '../lib/useConfirm'
 import { hasSpellSheet } from '../rules/rules'
-import { SessionReport } from './SessionReport'
 
 // Seção "Sessions" do detalhe da campanha (CampaignIndexView do iPad):
 // sessões ativas agrupadas por mês, as fechadas em "old sessions"; cada uma
@@ -69,11 +68,8 @@ function SessionItem({
   onDelete: () => void
   onStartDay: (characterID: string) => void
 }) {
-  // Relatório da sessão (ícone de lupa na linha da sessão no iPad).
-  const [reportOpen, setReportOpen] = useState(false)
   return (
     <li className="session-item">
-      {reportOpen && <SessionReport session={session} onClose={() => setReportOpen(false)} />}
       <div className="session-head">
         <span className="smallcaps session-date">{shortDate(session.date)}</span>
         <input
@@ -83,9 +79,6 @@ function SessionItem({
           aria-label="Session title"
           onChange={(e) => onChange({ title: e.target.value })}
         />
-        <button className="btn btn-small" onClick={() => setReportOpen(true)}>
-          Report
-        </button>
         <button className="btn btn-small" onClick={() => onChange({ is_archived: !session.is_archived }, true)}>
           {session.is_archived ? 'Reopen' : 'Close'}
         </button>

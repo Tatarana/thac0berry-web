@@ -12,6 +12,7 @@ import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEf
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
+import { SessionReport } from '../components/SessionReport'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
@@ -123,6 +124,8 @@ export function CharacterSheet() {
   const view = (['spells', 'spellbook', 'notebook'] as const).find((v) => v === params.get('view')) ?? 'record'
   // Efeitos ativos: janela por cima da ficha, não uma aba (pedido do usuário).
   const [effectsOpen, setEffectsOpen] = useState(false)
+  // Relatório da sessão do dia aberto (SessionReportView do iPad).
+  const [reportOpen, setReportOpen] = useState(false)
   const { session, loading, signInWithGoogle } = useAuth()
   const [campaignName, setCampaignName] = useState<string | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
@@ -390,12 +393,23 @@ export function CharacterSheet() {
                       onSelect={(next) => setParams({ view: 'spells', day: String(next) }, { replace: true })}
                       onAdd={() => void newDay(sheet)}
                     />
+                    <button className="paper-link" onClick={() => setReportOpen(true)}>
+                      session report
+                    </button>
                     {sheets.length > 1 && (
                       <button className="paper-link" onClick={() => void deleteDay(sheet.id, sheet.title || 'this day')}>
                         delete this day
                       </button>
                     )}
                   </div>
+                  {reportOpen && (
+                    <SessionReport
+                      character={character}
+                      sessionID={sheet.sessionID ?? null}
+                      sheets={sheets.filter((s) => (s.sessionID ?? null)?.toUpperCase() === (sheet.sessionID ?? null)?.toUpperCase())}
+                      onClose={() => setReportOpen(false)}
+                    />
+                  )}
                   {sheetError && <p className="paper-soft save-error">{sheetError}</p>}
                   <SpellSheetPage
                     key={sheet.id}
