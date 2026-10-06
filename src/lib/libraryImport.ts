@@ -347,6 +347,8 @@ export async function runImport(
       kind: entry.kind ?? null,
       paper_style: entry.paperStyle ?? null,
       drawing_attachment: await attachment(userID, entry.drawingData),
+      // PNG do desenho (iPad v1.101+): a web mostra a folha só para leitura.
+      drawing_image_attachment: await attachment(userID, entry.drawingImage),
     })
   }
   await write('notebook_entry', notebookRows)

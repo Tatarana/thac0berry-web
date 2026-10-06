@@ -3130,3 +3130,16 @@ button.slot-dot:hover {
   justify-content: space-between;
   align-items: baseline;
 }
+
+/* Folha de desenho do iPad: a imagem fica no canto de cima, como na folha. */
+.notebook-drawing-image {
+  display: block;
+  overflow: auto;
+  padding: 0;
+}
+
+.notebook-drawing-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { attachmentURL } from '../lib/attachments'
 import { useSearchParams } from 'react-router'
 import { paperStyles, useNotebook, type NotebookPage } from '../lib/notebook'
 import { useConfirm } from '../lib/useConfirm'
@@ -7,10 +8,39 @@ import { PageBeads } from './SheetBits'
 // Caderno do personagem (aba Notebook da ficha do iPad): uma folha por vez,
 // bolinhas numeradas em ordem de data, "+" para folha nova; cada folha com
 // título, texto e o papel (liso, pautado ou quadriculado). Folhas de desenho
-// do iPad aparecem só com o aviso (a imagem chega numa próxima etapa).
+// do iPad aparecem como imagem, só para leitura (o PencilKit não abre aqui).
 
 const longDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
+
+/** Folha de desenho do iPad: a imagem PNG que veio no backup, sobre o papel. */
+function DrawingImage({ page, style }: { page: NotebookPage; style: string }) {
+  const [url, setURL] = useState<string | null>(null)
+  const attachment = page.drawing_image_attachment
+  useEffect(() => {
+    if (!attachment) return
+    let cancelled = false
+    void attachmentURL(attachment).then((found) => {
+      if (!cancelled) setURL(found)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [attachment])
+  return (
+    <div className={`notebook-paper notebook-${style} notebook-drawing${url ? ' notebook-drawing-image' : ''}`}>
+      {url ? (
+        <img src={url} alt={page.title ? `Drawing: ${page.title}` : 'Drawing'} />
+      ) : attachment ? (
+        <p className="paper-soft">Loading the drawing…</p>
+      ) : (
+        <p className="paper-soft">
+          Drawing made on the iPad. To see it here, export a new backup from the iPad (version 1.101 or later) and import it.
+        </p>
+      )}
+    </div>
+  )
+}
 
 function NotebookSheet({
   page,
@@ -57,9 +87,7 @@ function NotebookSheet({
         onChange={(e) => onChange({ title: e.target.value })}
       />
       {freeform ? (
-        <div className={`notebook-paper notebook-${style} notebook-drawing`}>
-          <p className="paper-soft">Drawing (iPad only). Freehand pages open on the iPad.</p>
-        </div>
+        <DrawingImage page={page} style={style} />
       ) : (
         <textarea
           className={`notebook-paper notebook-${style} notebook-text`}

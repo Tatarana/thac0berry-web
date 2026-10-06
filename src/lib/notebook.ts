@@ -27,6 +27,8 @@ export interface NotebookPage {
   /** null = "plain". */
   paper_style: PaperStyle | null
   drawing_attachment: string | null
+  /** PNG do desenho (backup do iPad v1.101+), para mostrar só para leitura. */
+  drawing_image_attachment: string | null
 }
 
 type Editable = Partial<Pick<NotebookPage, 'title' | 'text' | 'paper_style'>>
@@ -50,7 +52,7 @@ export function useNotebook(characterID: string | undefined, userID: string | nu
     void Promise.all([
       supabase
         .from('notebook_entry')
-        .select('id, date, title, text, kind, paper_style, drawing_attachment, version')
+        .select('id, date, title, text, kind, paper_style, drawing_attachment, drawing_image_attachment, version')
         .eq('character_id', characterID)
         .is('deleted_at', null),
       supabase.from('user_preferences').select('default_notebook_paper_style').eq('user_id', userID).maybeSingle(),
@@ -135,8 +137,9 @@ export function useNotebook(characterID: string | undefined, userID: string | nu
       kind: 'transcribed',
       paper_style: defaultStyle,
       drawing_attachment: null,
+      drawing_image_attachment: null,
     }
-    const { drawing_attachment: _d, ...row } = page
+    const { drawing_attachment: _d, drawing_image_attachment: _i, ...row } = page
     // Sem campanha: a folha é do personagem e o acompanha se ele mudar de campanha.
     const { error } = await supabase.from('notebook_entry').insert({ ...row, character_id: characterID })
     if (error) throw new Error(error.message)
