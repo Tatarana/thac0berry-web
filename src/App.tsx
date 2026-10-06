@@ -36,6 +36,7 @@ export default function App() {
           <Route path="/compendium/kits/wizard" element={<KitCompendium key="Wizard" group="Wizard" />} />
           <Route path="/compendium/kits/warrior" element={<KitCompendium key="Warrior" group="Warrior" />} />
           <Route path="/compendium/kits/rogue" element={<KitCompendium key="Rogue" group="Rogue" />} />
+          <Route path="/compendium/kits/psionicist" element={<KitCompendium key="Psionicist" group="Psionicist" />} />
           <Route path="/compendium/deities" element={<DeityCompendium />} />
           <Route path="/compendium/proficiencies" element={<ProficiencyCompendium />} />
           <Route path="/compendium/rules" element={<RulesCompendium />} />

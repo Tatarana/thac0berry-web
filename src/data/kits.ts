@@ -2,7 +2,7 @@
 // Models/Kit.swift no app iPad). Um arquivo por grupo de classe, gerado por
 // scripts/build-data.mjs sem o texto bruto de wiki.
 
-export type ClassGroup = 'Priest' | 'Wizard' | 'Warrior' | 'Rogue'
+export type ClassGroup = 'Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist'
 
 export interface Kit {
   id: string
@@ -40,6 +40,8 @@ export const subclassOrder: Record<ClassGroup, string[]> = {
   Wizard: ['Wizard'],
   Warrior: ['Fighter', 'Paladin', 'Ranger', 'Barbarian'],
   Rogue: ['Thief', 'Bard', 'Ninja'],
+  // Kits de Psionicist (2026-10-06): The Will and the Way, Dragon Magazine etc.
+  Psionicist: ['Psionicist'],
 }
 
 const cache = new Map<ClassGroup, Promise<Kit[]>>()
