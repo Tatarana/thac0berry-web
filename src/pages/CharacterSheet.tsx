@@ -10,9 +10,10 @@ import { SpellSheetPage } from '../components/SpellSheetPage'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { useSpellSheets } from '../lib/useSpellSheets'
-import { spellUsageCounts } from '../rules/spellSheets'
-import { recordSheetPageCount } from '../rules/rules'
-import type { PlayerCharacter } from '../types/library'
+import { activeSessionID } from '../lib/sessions'
+import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
+import { computedSpellSlotAllotments, hasSpellSheet, isArcaneCaster, recordSheetPageCount } from '../rules/rules'
+import type { CharacterClass, PlayerCharacter } from '../types/library'
 
 // Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
 // (3, ou 4 com as tabelas de referência da classe, conforme
@@ -137,6 +138,58 @@ export function CharacterSheet() {
   }, [campaignID])
 
   const character = doc?.character as PlayerCharacter | undefined
+  const [sheetError, setSheetError] = useState<string | null>(null)
+
+  /** Slots de hoje e o atributo congelado na folha (Sabedoria, ou Inteligência para mago e bardo). */
+  const sheetBasis = (c: PlayerCharacter, cls: CharacterClass = c.characterClass) => ({
+    allotments: computedSpellSlotAllotments({ ...c, characterClass: cls }),
+    abilityScoreAtCreation: isArcaneCaster(cls) ? c.abilities.intelligence : c.abilities.wisdom,
+  })
+
+  /** "+" das bolinhas: "Day N" na mesma sessão da folha aberta, herdando a última dela. */
+  async function newDay(current: { sessionID?: string | null }) {
+    if (!character || !sheets) return
+    const sameSession = sheets.filter((s) => (s.sessionID ?? null) === (current.sessionID ?? null))
+    const sheet = startSpellSheet(sheetBasis(character), sheets, {
+      sessionID: current.sessionID ?? null,
+      title: `Day ${sameSession.length + 1}`,
+      continuingFrom: sameSession[sameSession.length - 1] ?? null,
+    })
+    try {
+      setSheetError(null)
+      await spellSheets.createSheet(sheet)
+      setParams({ view: 'spells', day: String([...sheets, sheet].sort((a, b) => a.date.localeCompare(b.date)).findIndex((s) => s.id === sheet.id) + 1) }, { replace: true })
+    } catch (reason) {
+      setSheetError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
+
+  async function deleteDay(sheetID: string, title: string) {
+    if (!window.confirm(`Delete "${title}"? The day is removed from the sheet (kept in the server history).`)) return
+    try {
+      setSheetError(null)
+      await spellSheets.deleteSheet(sheetID)
+      setParams({ view: 'spells' }, { replace: true })
+    } catch (reason) {
+      setSheetError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
+
+  /**
+   * Troca de classe (ClassPicker.select do iPad): quem passa a ter folha de
+   * magia, está numa campanha e ainda não tem nenhuma ganha a primeira
+   * ("First day"), na sessão ativa da campanha.
+   */
+  async function afterClassChange(cls: CharacterClass) {
+    if (!character || !sheets || sheets.length > 0 || !hasSpellSheet(cls) || !campaignID) return
+    try {
+      setSheetError(null)
+      const sessionID = await activeSessionID(campaignID)
+      await spellSheets.createSheet(startSpellSheet(sheetBasis(character, cls), [], { sessionID, title: 'First day' }))
+    } catch (reason) {
+      setSheetError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
   const loaded = doc
   const error = loadError
   const edit = update as (mutate: (c: PlayerCharacter) => void) => void
@@ -226,7 +279,7 @@ export function CharacterSheet() {
                   current={Number(page)}
                   onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
                 />
-                {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} />}
+                {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} onClassChanged={(cls) => void afterClassChange(cls)} />}
                 {page === '2' && <RecordPageTwo character={character} edit={edit} />}
                 {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} />}
                 {page === '4' && <RecordPageFour character={character} />}
@@ -240,12 +293,21 @@ export function CharacterSheet() {
               const sheet = sheets[day - 1]
               return (
                 <>
-                  <PageBeads
-                    titles={sheets.map((s) => s.title || new Date(s.date).toLocaleDateString('en-US', { dateStyle: 'medium' }))}
-                    current={day}
-                    noun="Day"
-                    onSelect={(next) => setParams({ view: 'spells', day: String(next) }, { replace: true })}
-                  />
+                  <div className="day-row">
+                    <PageBeads
+                      titles={sheets.map((s) => s.title || new Date(s.date).toLocaleDateString('en-US', { dateStyle: 'medium' }))}
+                      current={day}
+                      noun="Day"
+                      onSelect={(next) => setParams({ view: 'spells', day: String(next) }, { replace: true })}
+                      onAdd={() => void newDay(sheet)}
+                    />
+                    {sheets.length > 1 && (
+                      <button className="paper-link" onClick={() => void deleteDay(sheet.id, sheet.title || 'this day')}>
+                        delete this day
+                      </button>
+                    )}
+                  </div>
+                  {sheetError && <p className="paper-soft save-error">{sheetError}</p>}
                   <SpellSheetPage
                     key={sheet.id}
                     sheet={sheet}

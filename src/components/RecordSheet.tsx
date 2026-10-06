@@ -99,7 +99,17 @@ function AlignmentSelect({ value, onChange }: { value: string; onChange: (v: str
   )
 }
 
-function RecordHeader({ c, campaignName, edit }: { c: PlayerCharacter; campaignName: string | null; edit?: Edit }) {
+function RecordHeader({
+  c,
+  campaignName,
+  edit,
+  onClassChanged,
+}: {
+  c: PlayerCharacter
+  campaignName: string | null
+  edit?: Edit
+  onClassChanged?: (cls: CharacterClass) => void
+}) {
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
@@ -116,7 +126,13 @@ function RecordHeader({ c, campaignName, edit }: { c: PlayerCharacter; campaignN
           {edit ? (
             <div className="rec-header-line">
               <span className="rec-header-inline">
-                <ClassSelect value={c.characterClass} onChange={(cls, readMagic) => edit((x) => setClass(x, cls, readMagic))} />
+                <ClassSelect
+                  value={c.characterClass}
+                  onChange={(cls, readMagic) => {
+                    edit((x) => setClass(x, cls, readMagic))
+                    onClassChanged?.(cls)
+                  }}
+                />
                 {c.kit ? <span className="rec-value"> / {c.kit}</span> : null}
               </span>
               <span className="rec-cell-label">Class / Kit</span>
@@ -827,10 +843,21 @@ function ActiveEffects({ c }: { c: PlayerCharacter }) {
   )
 }
 
-export function RecordSheet({ character, campaignName, edit }: { character: PlayerCharacter; campaignName: string | null; edit?: Edit }) {
+export function RecordSheet({
+  character,
+  campaignName,
+  edit,
+  onClassChanged,
+}: {
+  character: PlayerCharacter
+  campaignName: string | null
+  edit?: Edit
+  /** Depois de trocar a classe (a página cria a primeira folha de magia, se for o caso). */
+  onClassChanged?: (cls: CharacterClass) => void
+}) {
   return (
     <div className="rec-sheet">
-      <RecordHeader c={character} campaignName={campaignName} edit={edit} />
+      <RecordHeader c={character} campaignName={campaignName} edit={edit} onClassChanged={onClassChanged} />
       <div className="rec-two">
         <AbilityScores c={character} edit={edit} />
         <SavingThrowsBlock c={character} edit={edit} />

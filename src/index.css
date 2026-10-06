@@ -2242,3 +2242,75 @@ button.slot-dot:hover {
   justify-content: space-between;
   margin-top: 12px;
 }
+
+/* Dia novo e linhas da folha (W2.5c2) */
+.day-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* "+" tracejado (AddBeadLabel do iPad) */
+.bead-add {
+  width: 22px;
+  height: 22px;
+  border: 1.3px dashed var(--ink-soft);
+  background: rgb(233 220 190 / 0.35);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.remove-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgb(140 47 34 / 0.55);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.remove-btn:hover {
+  color: var(--red-ink);
+  background: rgb(140 47 34 / 0.1);
+}
+
+.remove-cell {
+  width: 1%;
+  padding-left: 6px !important;
+}
+
+.add-line {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
+.cast-logger {
+  margin-top: 6px;
+  border-bottom: 1px solid rgb(47 39 28 / 0.42);
+}
+
+.cast-logger > .ink-input {
+  text-align: left;
+}
+
+.item-card-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.item-card-line .ink-input {
+  text-align: left;
+}
+
+.item-description {
+  min-height: 40px;
+  font-size: 0.95rem;
+}

@@ -62,3 +62,81 @@ test('grimório do mago: ids do compêndio e nomes livres por círculo', () => {
   assert.deepEqual([...S.wizardSpellbookIDs(c)], ['wizard-1-read-magic'])
   assert.deepEqual(S.wizardSpellbookFreeNames(c, 1).map((e) => e.name), ['Zap'])
 })
+
+// --- Dia novo e registro de conjuração ------------------------------------------
+
+const day = (over: Partial<Parameters<typeof S.startSpellSheet>[1][number]> = {}) => ({
+  id: 'D1',
+  date: '2026-10-01T22:00:00Z',
+  title: 'Day 1',
+  sessionID: 'S1',
+  slotBoard: {
+    slots: [
+      { id: 'a', level: 1, caster: 'divine' as const, isSpent: true, orderKey: 0, preparedSpellID: 'bless' },
+      { id: 'b', level: 1, caster: 'divine' as const, isSpent: false, orderKey: 1 },
+      { id: 'c', level: 2, caster: 'divine' as const, isSpent: false, orderKey: 0, preparedSpellName: 'Chant' },
+    ],
+  },
+  entries: [{ id: 'e', rawText: 'Bless', displayName: 'Bless', castCount: 2 }],
+  magicItems: [{ id: 'i', name: 'Wand', itemDescription: '', spells: [{ id: 'u', spellName: 'Zap', damageNote: '', maxUses: 10, usedCount: 4 }] }],
+  wisdomAtCreation: 15,
+  turnUndeadUsed: 3,
+  ...over,
+})
+
+test('dia novo herda as preparações, desmarca tudo, zera registro, Turn Undead e cargas', () => {
+  const next = S.startSpellSheet(
+    { allotments: [{ caster: 'divine', level: 1, count: 2 }, { caster: 'divine', level: 2, count: 1 }], abilityScoreAtCreation: 16 },
+    [day()],
+    { sessionID: 'S1', title: 'Day 2' },
+  )
+  assert.notEqual(next.id, 'D1')
+  assert.equal(next.title, 'Day 2')
+  assert.equal(next.wisdomAtCreation, 16)
+  assert.deepEqual(next.slotBoard.slots.map((s) => [s.level, s.preparedSpellID ?? s.preparedSpellName ?? null, s.isSpent]), [
+    [1, 'bless', false],
+    [1, null, false],
+    [2, 'Chant', false],
+  ])
+  assert.ok(next.slotBoard.slots.every((s) => !['a', 'b', 'c'].includes(s.id)))
+  assert.deepEqual(next.entries, [])
+  assert.equal(next.turnUndeadUsed, 0)
+  assert.equal(next.magicItems[0].spells[0].usedCount, 0)
+  assert.match(next.date, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+})
+
+test('dia novo ajusta a grade à tabela de hoje: encolhe preservando o preparado, cria círculo novo, tira o que saiu', () => {
+  const next = S.startSpellSheet(
+    { allotments: [{ caster: 'divine', level: 1, count: 1 }, { caster: 'divine', level: 3, count: 1 }], abilityScoreAtCreation: 16 },
+    [day()],
+    { sessionID: 'S1', title: 'Day 2' },
+  )
+  assert.deepEqual(next.slotBoard.slots.map((s) => [s.level, s.preparedSpellID ?? s.preparedSpellName ?? null]), [
+    [1, 'bless'],
+    [3, null],
+  ])
+})
+
+test('sem folha anterior, nasce em branco no tamanho da tabela', () => {
+  const first = S.startSpellSheet({ allotments: [{ caster: 'arcane', level: 1, count: 2 }], abilityScoreAtCreation: 17 }, [], {
+    sessionID: null,
+    title: 'First day',
+  })
+  assert.deepEqual(first.slotBoard.slots.map((s) => [s.caster, s.level, s.orderKey]), [
+    ['arcane', 1, 0],
+    ['arcane', 1, 1],
+  ])
+  assert.equal(first.wisdomAtCreation, 17)
+})
+
+test('registrar conjuração: soma na linha existente ou cria uma nova', () => {
+  const s = { entries: [] as ReturnType<typeof day>['entries'] }
+  S.logCast(s, 'Bless', { id: 'bless', level: 1 })
+  S.logCast(s, 'Bless', { id: 'bless', level: 1 })
+  S.logCast(s, 'My Prayer', null)
+  S.logCast(s, 'my prayer', null)
+  assert.deepEqual(s.entries.map((e) => [e.displayName, e.matchedSpellID ?? null, e.castCount]), [
+    ['Bless', 'bless', 2],
+    ['My Prayer', null, 2],
+  ])
+})

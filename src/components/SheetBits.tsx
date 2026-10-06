@@ -202,6 +202,7 @@ export function PageBeads({
   current,
   onSelect,
   noun = 'Page',
+  onAdd,
 }: {
   /** Uma por página (dica ao passar o mouse e nome para leitor de tela). */
   titles: string[]
@@ -209,6 +210,8 @@ export function PageBeads({
   onSelect: (page: number) => void
   /** Como cada bolinha se anuncia: "Page 2", "Day 3"… */
   noun?: string
+  /** Mostra o "+" tracejado no fim (AddBeadLabel do iPad): dia novo. */
+  onAdd?: () => void
 }) {
   return (
     <nav className="beads" aria-label={`${noun}s`}>
@@ -228,6 +231,11 @@ export function PageBeads({
           </button>
         )
       })}
+      {onAdd && (
+        <button className="bead bead-add" aria-label={`New ${noun.toLowerCase()}`} title={`New ${noun.toLowerCase()}`} onClick={onAdd}>
+          +
+        </button>
+      )}
     </nav>
   )
 }

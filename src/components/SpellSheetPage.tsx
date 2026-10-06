@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
+import { damageText, findSpellEntry, loadSpell, loadSpellIndex, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
 import type { ServerSheet } from '../lib/useSpellSheets'
 import { bonusSpellTotals } from '../rules/rules'
-import { assignSlot, clearSlot, toggleSpent } from '../rules/spellSheets'
+import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent, type SpellChoice } from '../rules/spellSheets'
 import type { CharacterClass, PlayerCharacter, SpellSlot } from '../types/library'
 import { InkInput, InkNumber, SheetBlock, TallyMarks } from './SheetBits'
 import { SlotEditor } from './SlotEditor'
@@ -17,7 +17,8 @@ import { SpellDetail } from './SpellDetail'
 // Com `edit` (W2.5c1): título do dia; bolinha do slot abre o seletor de magia
 // (SlotEditor); riscar a magia gasta (no iPad, um traço de caneta sobre a
 // linha; aqui, o botão ✕ da linha); contadores com − e + (no iPad, riscos de
-// caneta). Dia novo e incluir/remover linhas entram na W2.5c2.
+// caneta). W2.5c2: dia novo, registrar conjuração nas magias adicionais (com
+// sugestões), e incluir/remover magias adicionais, itens e magias de item.
 
 /** Aplica uma mudança nesta folha (a página grava sozinha). */
 export type SheetEdit = (mutate: (s: ServerSheet) => void) => void
@@ -69,8 +70,90 @@ function useSpells(ids: string[]) {
 
 const casterOrder = ['arcane', 'divine'] as const
 
+const newID = () => crypto.randomUUID().toUpperCase()
+
+/** Botão "×" de remover linha (RemoveRowButton do iPad). */
+function RemoveButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button className="remove-btn" aria-label={label} title={label} onClick={onClick}>
+      ×
+    </button>
+  )
+}
+
+let allSpellChoices: Promise<(SpellChoice & { caster: 'arcane' | 'divine' })[]> | null = null
+
+/** Todas as magias do compêndio (sacerdote e mago), para registrar conjurações. */
+function loadAllSpellChoices() {
+  allSpellChoices ??= loadSpellIndex().then((index) => [
+    ...index.divine.map((e) => ({ id: e.id, name: e.name, level: e.level, spheres: e.spheres, caster: 'divine' as const })),
+    ...index.arcane.map((e) => ({ id: e.id, name: e.name, level: e.level, spheres: e.spheres, caster: 'arcane' as const })),
+  ])
+  return allSpellChoices
+}
+
+/**
+ * Linha de escrever das magias adicionais (AdditionalSpellsBlock do iPad):
+ * escreve a magia, escolhe entre as parecidas (ou registra como está) e ela
+ * entra no registro do dia; Enter aceita a melhor quando ela é forte (≥ 0,72).
+ */
+function CastLogger({ onLog }: { onLog: (name: string, spell: { id: string; level: number } | null, rawText: string) => void }) {
+  const [text, setText] = useState('')
+  const [choices, setChoices] = useState<SpellChoice[]>([])
+  useEffect(() => {
+    void loadAllSpellChoices().then(setChoices)
+  }, [])
+  const matches = spellMatches(text, choices, 5)
+  const log = (name: string, spell: { id: string; level: number } | null) => {
+    onLog(name, spell, text)
+    setText('')
+  }
+  return (
+    <div className="cast-logger">
+      <input
+        className="ink-input"
+        value={text}
+        placeholder="cast…"
+        aria-label="Log a cast spell"
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || text.trim() === '') return
+          const best = matches[0]
+          if (best && best.score >= 0.72) log(best.spell.name, best.spell)
+        }}
+      />
+      {text.trim() !== '' && (
+        <ul className="slot-choices">
+          {matches.length === 0 ? (
+            <li>
+              <button className="slot-choice" onClick={() => log(text.trim(), null)}>
+                <span className="rec-value">log "{text.trim()}" as-is</span>
+              </button>
+            </li>
+          ) : (
+            matches.map((m) => (
+              <li key={m.spell.id}>
+                <button className="slot-choice" onClick={() => log(m.spell.name, m.spell)}>
+                  <span className="rec-value">{m.spell.name}</span>
+                  <span className="rec-soft">level {m.spell.level}</span>
+                  <span className="rec-soft">{m.score >= 0.85 ? 'near match' : m.score >= 0.6 ? 'likely' : 'guess'}</span>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /** Muda uma magia de item (usos, máximo, dano). */
-function setItemSpell(s: ServerSheet, itemID: string, useID: string, patch: { usedCount?: number; maxUses?: number; damageNote?: string }) {
+function setItemSpell(
+  s: ServerSheet,
+  itemID: string,
+  useID: string,
+  patch: { usedCount?: number; maxUses?: number; damageNote?: string; spellName?: string; matchedSpellID?: string | null },
+) {
   s.magicItems = s.magicItems.map((item) =>
     item.id === itemID ? { ...item, spells: item.spells.map((u) => (u.id === useID ? { ...u, ...patch } : u)) } : item,
   )
@@ -308,8 +391,30 @@ export function SpellSheetPage({
           <div key={item.id} className="item-card">
             <div className="item-card-head">
               <span className="rec-cell-label rec-left-label">Item</span>
-              <span className="rec-value">{item.name || 'item name'}</span>
-              {item.itemDescription && <p className="rec-soft">{item.itemDescription}</p>}
+              {edit ? (
+                <span className="item-card-line">
+                  <InkInput
+                    value={item.name}
+                    placeholder="item name"
+                    label="Magic item name"
+                    onChange={(v) => edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, name: v, matchedItemID: null } : m))))}
+                  />
+                  <RemoveButton label={`Remove ${item.name || 'this item'}`} onClick={() => edit((s) => void (s.magicItems = s.magicItems.filter((m) => m.id !== item.id)))} />
+                </span>
+              ) : (
+                <span className="rec-value">{item.name || 'item name'}</span>
+              )}
+              {edit ? (
+                <textarea
+                  className="ink-input ink-area item-description"
+                  value={item.itemDescription}
+                  placeholder="description"
+                  aria-label={`${item.name || 'Item'} description`}
+                  onChange={(e) => edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, itemDescription: e.target.value } : m))))}
+                />
+              ) : (
+                item.itemDescription && <p className="rec-soft">{item.itemDescription}</p>
+              )}
             </div>
             <table className="sheet-rows">
               <tbody>
@@ -319,7 +424,14 @@ export function SpellSheetPage({
                   return (
                     <tr key={use.id}>
                       <td className="rec-value sheet-rows-name">
-                        {resolved ? (
+                        {edit ? (
+                          <InkInput
+                            value={use.spellName}
+                            placeholder="spell"
+                            label={`${item.name || 'Item'} spell`}
+                            onChange={(v) => edit((s) => setItemSpell(s, item.id, use.id, { spellName: v, matchedSpellID: null }))}
+                          />
+                        ) : resolved ? (
                           <button className="memorized-link" onClick={() => setOpen(resolved.entry)}>
                             {use.spellName || resolved.entry.name}
                           </button>
@@ -363,17 +475,49 @@ export function SpellSheetPage({
                           use.damageNote || '—'
                         )}
                       </td>
+                      {edit && (
+                        <td className="remove-cell">
+                          <RemoveButton
+                            label={`Remove ${use.spellName || 'this spell'}`}
+                            onClick={() =>
+                              edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, spells: m.spells.filter((u) => u.id !== use.id) } : m))))
+                            }
+                          />
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
               </tbody>
             </table>
+            {edit && (
+              <button
+                className="paper-link add-line"
+                onClick={() =>
+                  edit((s) =>
+                    void (s.magicItems = s.magicItems.map((m) =>
+                      m.id === item.id ? { ...m, spells: [...m.spells, { id: newID(), spellName: '', damageNote: '', maxUses: 20, usedCount: 0 }] } : m,
+                    )),
+                  )
+                }
+              >
+                + add spell
+              </button>
+            )}
           </div>
         ))}
+        {edit && (
+          <button
+            className="paper-link add-line"
+            onClick={() => edit((s) => void (s.magicItems = [...s.magicItems, { id: newID(), name: '', itemDescription: '', spells: [] }]))}
+          >
+            + add magic item
+          </button>
+        )}
       </SheetBlock>
 
       <SheetBlock title="Additional Spells" trailing="write the spell with the pencil">
-        {sheet.entries.length === 0 ? (
+        {sheet.entries.length === 0 && !edit ? (
           <p className="rec-soft">—</p>
         ) : (
           <table className="sheet-rows">
@@ -405,12 +549,18 @@ export function SpellSheetPage({
                       />
                     </td>
                     <td className="sheet-rows-count rec-value">{entry.castCount}</td>
+                    {edit && (
+                      <td className="remove-cell">
+                        <RemoveButton label={`Remove ${entry.displayName}`} onClick={() => edit((s) => void (s.entries = s.entries.filter((e) => e.id !== entry.id)))} />
+                      </td>
+                    )}
                   </tr>
                 )
               })}
             </tbody>
           </table>
         )}
+        {edit && <CastLogger onLog={(name, spell, rawText) => edit((s) => logCast(s, name, spell, rawText))} />}
       </SheetBlock>
 
       {open && <SpellDetail entry={open} onClose={() => setOpen(null)} />}

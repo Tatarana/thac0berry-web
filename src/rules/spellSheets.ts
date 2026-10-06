@@ -116,3 +116,133 @@ export function wizardSpellbookIDs(c: Spellbook): Set<string> {
 export function wizardSpellbookFreeNames(c: Spellbook, level: number) {
   return c.wizardSpellbook.filter((e) => !e.matchedSpellID && e.level === level).sort((a, b) => (a.name < b.name ? -1 : 1))
 }
+
+// --- Dia novo (Store/SpellSheetRules.swift e SpellSheet.nextDay do iPad) ----------------
+
+/** Data no formato que o iPad lê: ISO-8601 sem fração de segundo. */
+export function isoNow(date = new Date()): string {
+  return date.toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
+const newID = () => crypto.randomUUID().toUpperCase()
+
+type Slot = SpellSheet['slotBoard']['slots'][number]
+type Caster = Slot['caster']
+
+/** SpellSlotBoard.keepRank: ao encolher um círculo, ficam primeiro os preparados, depois os gastos. */
+const keepRank = (slot: Slot) => (!slot.preparedSpellID && !slot.preparedSpellName ? 2 : slot.isSpent ? 1 : 0)
+
+/** SpellSlotBoard.sortSlots: conjurador, círculo e posição (orderKey). */
+function sortSlots(slots: Slot[]) {
+  slots.sort((a, b) => (a.caster !== b.caster ? (a.caster < b.caster ? -1 : 1) : a.level !== b.level ? a.level - b.level : a.orderKey - b.orderKey))
+}
+
+/** SpellSlotBoard.setCount: ajusta quantos slots um círculo tem, preservando o que estava preparado. */
+export function setSlotCount(board: SpellSheet['slotBoard'], count: number, level: number, caster: Caster) {
+  if (count < 0) return
+  let existing = board.slots.filter((s) => s.level === level && s.caster === caster)
+  board.slots = board.slots.filter((s) => !(s.level === level && s.caster === caster))
+  if (existing.length > count) {
+    existing = [...existing].sort((a, b) => keepRank(a) - keepRank(b)).slice(0, count)
+  } else {
+    let next = Math.max(-1, ...existing.map((s) => s.orderKey)) + 1
+    while (existing.length < count) existing.push({ id: newID(), level, caster, isSpent: false, orderKey: next++ })
+  }
+  board.slots.push(...existing)
+  sortSlots(board.slots)
+}
+
+export interface Allotment {
+  caster: Caster
+  level: number
+  count: number
+}
+
+/** SpellSlotBoard.reconciled: a grade herdada passa a bater com a tabela de slots de hoje. */
+export function reconcileBoard(board: SpellSheet['slotBoard'], allotments: Allotment[]): SpellSheet['slotBoard'] {
+  const result = structuredClone(board)
+  const covered = new Set<string>()
+  for (const a of allotments) {
+    covered.add(`${a.caster}|${a.level}`)
+    setSlotCount(result, a.count, a.level, a.caster)
+  }
+  const existing = new Set(result.slots.map((s) => `${s.caster}|${s.level}`))
+  for (const key of existing) {
+    if (covered.has(key)) continue
+    const [caster, level] = key.split('|')
+    setSlotCount(result, 0, Number(level), caster as Caster)
+  }
+  return result
+}
+
+/** PlayerCharacter.freshSlotBoard: grade em branco do tamanho da tabela de hoje. */
+export function freshSlotBoard(allotments: Allotment[]): SpellSheet['slotBoard'] {
+  const board: SpellSheet['slotBoard'] = { slots: [] }
+  for (const a of allotments) if (a.count > 0) setSlotCount(board, a.count, a.level, a.caster)
+  return board
+}
+
+type NewSheet = Omit<SpellSheet, 'inkNotes'>
+
+/** SpellSheet.nextDay(keepingPreparations: true): mesmas magias, slots desmarcados, registro vazio, cargas zeradas. */
+function nextDay(previous: NewSheet): NewSheet {
+  return {
+    id: newID(),
+    date: isoNow(),
+    title: '',
+    slotBoard: { slots: previous.slotBoard.slots.map((s) => ({ ...s, id: newID(), isSpent: false })) },
+    entries: [],
+    magicItems: previous.magicItems.map((item) => ({
+      ...item,
+      id: newID(),
+      spells: item.spells.map((use) => ({ ...use, id: newID(), usedCount: 0 })),
+    })),
+    wisdomAtCreation: previous.wisdomAtCreation,
+    turnUndeadUsed: 0,
+  }
+}
+
+/**
+ * PlayerCharacter.startSpellSheet: a folha de um dia novo. Herda do dia
+ * anterior (a mais recente até agora, ou `continuingFrom`), ajustada à tabela
+ * de slots de hoje; sem folha anterior, nasce em branco. Congela a Sabedoria
+ * (ou Inteligência, para mago e bardo) de hoje. Não altera as folhas existentes.
+ */
+export function startSpellSheet(
+  c: { allotments: Allotment[]; abilityScoreAtCreation: number },
+  sheets: NewSheet[],
+  options: { sessionID: string | null; title: string; continuingFrom?: NewSheet | null },
+): NewSheet {
+  const now = isoNow()
+  const source = options.continuingFrom ?? [...sheets].filter((s) => s.date <= now).sort((a, b) => a.date.localeCompare(b.date)).pop() ?? null
+  const inherited = source ? nextDay(source) : null
+  const sheet: NewSheet = inherited
+    ? { ...inherited, slotBoard: reconcileBoard(inherited.slotBoard, c.allotments) }
+    : { id: newID(), date: now, title: '', slotBoard: freshSlotBoard(c.allotments), entries: [], magicItems: [], wisdomAtCreation: 10, turnUndeadUsed: 0 }
+  sheet.sessionID = options.sessionID
+  sheet.title = options.title
+  sheet.wisdomAtCreation = c.abilityScoreAtCreation
+  return sheet
+}
+
+/**
+ * Registrar uma conjuração nas magias adicionais (AdditionalSpellsBlock.logCast,
+ * item A9): se a magia já está no registro do dia, soma 1; senão cria a linha.
+ */
+export function logCast(sheet: Pick<SpellSheet, 'entries'>, name: string, spell: { id: string; level: number } | null, rawText = name) {
+  const existing = spell
+    ? sheet.entries.find((e) => e.matchedSpellID === spell.id)
+    : sheet.entries.find((e) => !e.matchedSpellID && e.displayName.toLowerCase() === name.toLowerCase())
+  if (existing) {
+    existing.castCount += 1
+    return
+  }
+  sheet.entries.push({
+    id: newID(),
+    rawText,
+    displayName: name,
+    matchedSpellID: spell?.id ?? null,
+    spellLevel: spell?.level ?? null,
+    castCount: 1,
+  })
+}

@@ -107,6 +107,37 @@ export function useSpellSheets(characterID: string | undefined, userID: string |
     schedule(sheetID)
   }, [])
 
+  /** Folha nova (dia novo): INSERT, como manda o contrato para registro novo. */
+  const createSheet = useCallback(
+    async (sheet: ServerSheet) => {
+      if (!characterID) return
+      const { spellSheet } = await loadValidators()
+      const problem = spellSheet(sheet)
+      if (problem) throw new Error(`the new spell sheet would not open on the iPad (${problem})`)
+      const { error } = await supabase
+        .from('spell_sheet')
+        .insert({ id: sheet.id, character_id: characterID, session_id: sheet.sessionID ?? null, data: sheet })
+      if (error) throw new Error(error.message)
+      versions.current.set(sheet.id, 1)
+      setSheets((current) => [...(current ?? []), sheet].sort((a, b) => a.date.localeCompare(b.date)))
+    },
+    [characterID],
+  )
+
+  /** Apagar uma folha: marca `deleted_at` (o backend nunca apaga a linha; fica no histórico). */
+  const deleteSheet = useCallback(async (sheetID: string) => {
+    const timer = timers.current.get(sheetID)
+    if (timer !== undefined) window.clearTimeout(timer)
+    timers.current.delete(sheetID)
+    drafts.current.delete(sheetID)
+    const { error } = await supabase
+      .from('spell_sheet')
+      .update({ deleted_at: new Date().toISOString(), version: versions.current.get(sheetID) })
+      .eq('id', sheetID)
+    if (error) throw new Error(error.message)
+    setSheets((current) => (current ?? []).filter((s) => s.id !== sheetID))
+  }, [])
+
   const flushAll = useCallback(async () => {
     await Promise.all([...drafts.current.keys()].map((id) => flushRef.current(id)))
   }, [])
@@ -131,5 +162,5 @@ export function useSpellSheets(characterID: string | undefined, userID: string |
     }
   }, [flushAll])
 
-  return { sheets, save, conflict, dismissConflict: () => setConflict(false), update, retry: flushAll }
+  return { sheets, save, conflict, dismissConflict: () => setConflict(false), update, createSheet, deleteSheet, retry: flushAll }
 }
