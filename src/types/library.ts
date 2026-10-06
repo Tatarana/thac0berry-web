@@ -214,6 +214,8 @@ export interface NotebookEntry {
   drawingData?: string | null
   /** Optional pelo mesmo motivo de sempre — folha criada antes desta versão não tem essa chave; ausência é tratada como `.plain` na hora de exibir (ver `NotebookPageView.style`), igual a como toda folha já era antes deste pedido existir. Cada folha guarda a PRÓPRIA escolha (pode trocar depois de criada, ver `NotebookBeadRow`'s picker no cabeçalho); só a folha NOVA nasce com o padrão configurado em Settings (`CharacterLibrary.defaultNotebookPaperStyle`, item 3). */
   paperStyle?: NotebookPaperStyle | null
+  /** PNG do desenho (folha .freeform), para a versão web mostrar só para leitura. Preenchido apenas no backup exportado (`NotebookDrawingImage`); no arquivo do app fica vazio. */
+  drawingImage?: string | null
 }
 
 export type NotebookPageKind = "transcribed" | "freeform"
