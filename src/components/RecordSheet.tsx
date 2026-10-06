@@ -20,6 +20,35 @@ export type Edit = (mutate: (c: PlayerCharacter) => void) => void
 
 // --- Cabeçalho -------------------------------------------------------------
 
+// As 9 opções do PHB, com a sigla clássica (AlignmentOption do iPad). O campo
+// não é texto livre: só uma dessas. Ficha antiga com texto diferente continua
+// mostrando o que tem até alguém escolher outra opção.
+const alignmentOptions: [string, string][] = [
+  ['LG', 'Lawful Good'],
+  ['NG', 'Neutral Good'],
+  ['CG', 'Chaotic Good'],
+  ['LN', 'Lawful Neutral'],
+  ['TN', 'True Neutral'],
+  ['CN', 'Chaotic Neutral'],
+  ['LE', 'Lawful Evil'],
+  ['NE', 'Neutral Evil'],
+  ['CE', 'Chaotic Evil'],
+]
+
+function AlignmentSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const known = alignmentOptions.some(([, name]) => name === value)
+  return (
+    <select className="ink-input ink-select" value={value} aria-label="Alignment" onChange={(event) => onChange(event.target.value)}>
+      {!known && <option value={value}>{value || '—'}</option>}
+      {alignmentOptions.map(([abbreviation, name]) => (
+        <option key={name} value={name}>
+          {name} ({abbreviation})
+        </option>
+      ))}
+    </select>
+  )
+}
+
 function RecordHeader({ c, campaignName, edit }: { c: PlayerCharacter; campaignName: string | null; edit?: Edit }) {
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
@@ -43,9 +72,14 @@ function RecordHeader({ c, campaignName, edit }: { c: PlayerCharacter; campaignN
         {spheres.length > 0 && <HeaderLine label="Spheres">{spheres.join(', ')}</HeaderLine>}
         <div className="rec-header-row">
           <HeaderLine label="Race">{dash(c.race)}</HeaderLine>
-          <HeaderLine label="Alignment" edit={edit && { value: c.alignment, onChange: (v) => edit((x) => void (x.alignment = v)) }}>
-            {dash(c.alignment)}
-          </HeaderLine>
+          {edit ? (
+            <div className="rec-header-line">
+              <AlignmentSelect value={c.alignment} onChange={(v) => edit((x) => void (x.alignment = v))} />
+              <span className="rec-cell-label">Alignment</span>
+            </div>
+          ) : (
+            <HeaderLine label="Alignment">{dash(c.alignment)}</HeaderLine>
+          )}
         </div>
         <div className="rec-header-row">
           <HeaderLine label="Patron Deity / Religion" edit={edit && { value: c.deity, onChange: (v) => edit((x) => void (x.deity = v)) }}>
@@ -530,37 +564,52 @@ function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   // Pela posição na lista gravada: no schema, o id da proficiência é opcional.
   const set = (index: number, patch: { slots?: number; target?: string | null }) =>
     edit?.((x) => void (x.proficiencies = (x.proficiencies ?? []).map((p, i) => (i === index ? { ...p, ...patch } : p))))
-  const items = (c.proficiencies ?? []).map((p, index) => ({ ...p, index })).filter((p) => (p.name ?? '').trim() !== '')
+  // Como no iPad: o item i vai para a coluna i % 3 (pela posição na lista gravada).
+  const all = (c.proficiencies ?? []).map((p, index) => ({ ...p, index }))
+  const columns = [0, 1, 2].map((column) => all.filter((p) => p.index % 3 === column && (p.name ?? '').trim() !== ''))
   return (
     <section className="rec-section">
-      <SectionTitle>Nonweapon Proficiencies</SectionTitle>
-      {items.length === 0 ? (
-        <p className="rec-soft">No proficiencies.</p>
-      ) : (
-        <div className="rec-prof-grid">
-          {items.map((p) => (
-            <div key={p.id ?? p.index} className="rec-prof-row">
-              <span className="rec-value rec-left">{p.name}</span>
-              <span className="rec-prof-num">
-                <span className="rec-cell-label">Slots</span>
-                {edit ? (
-                  <InkNumber value={proficiencySlots(p.slots)} min={0} max={9} label={`${p.name} slots`} onChange={(v) => set(p.index, { slots: v })} />
-                ) : (
-                  <span className="rec-value">{proficiencySlots(p.slots)}</span>
-                )}
-              </span>
-              <span className="rec-prof-num">
-                <span className="rec-cell-label">Chk</span>
-                {edit ? (
-                  <InkInput value={p.target} label={`${p.name} check`} onChange={(v) => set(p.index, { target: v === '' ? null : v })} />
-                ) : (
-                  <span className="rec-value">{dash(p.target)}</span>
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <SectionTitle>Proficiencies</SectionTitle>
+      <p className="rec-soft">Nonweapon only — Weapon Proficiencies are the weapons listed above, in Weapon Combat.</p>
+      <div className="rec-prof-columns">
+        {columns.map((items, column) => (
+          <table key={column} className="rec-table rec-prof-table">
+            <thead>
+              <tr>
+                <th className="rec-row-label">Proficiency</th>
+                <th>Slots</th>
+                <th>Chk</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 && (
+                <tr>
+                  <td className="rec-soft" colSpan={3}>—</td>
+                </tr>
+              )}
+              {items.map((p) => (
+                <tr key={p.id ?? p.index}>
+                  <td className="rec-value rec-left">{p.name}</td>
+                  <td className="rec-value">
+                    {edit ? (
+                      <InkNumber value={proficiencySlots(p.slots)} min={0} max={9} label={`${p.name} slots`} onChange={(v) => set(p.index, { slots: v })} />
+                    ) : (
+                      proficiencySlots(p.slots)
+                    )}
+                  </td>
+                  <td className="rec-value">
+                    {edit ? (
+                      <InkInput value={p.target} label={`${p.name} check`} onChange={(v) => set(p.index, { target: v === '' ? null : v })} />
+                    ) : (
+                      dash(p.target)
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
+      </div>
     </section>
   )
 }

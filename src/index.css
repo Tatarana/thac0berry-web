@@ -1987,3 +1987,29 @@ button {
 .import-tag-warn {
   background: rgb(219 158 51 / 0.35);
 }
+
+/* Seletor de alinhamento, no mesmo traço de caneta */
+.ink-select {
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ink-select option {
+  font-family: var(--font-printed);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+/* Proficiências em três colunas, cada uma com cabeçalho (como no iPad) */
+.rec-prof-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.rec-prof-table td:nth-child(2),
+.rec-prof-table td:nth-child(3) {
+  width: 3.2em;
+}
