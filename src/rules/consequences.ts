@@ -19,6 +19,7 @@ import {
   resolveRule,
   rulesData,
   xpNeededForNextLevel,
+  xpRequired,
   type AbilityDetailKey,
   type RuleContext,
   type RuleKey,
@@ -112,11 +113,20 @@ export function displaySummary(value: RuleValue | null): string {
 
 type Snapshot = Pick<
   PlayerCharacter,
-  'level' | 'abilities' | 'characterClass' | 'lastAppliedLevel' | 'lastAppliedAbilities' | 'lastAppliedClass' | 'multiClasses' | 'lastAppliedMultiClasses'
+  | 'level'
+  | 'abilities'
+  | 'characterClass'
+  | 'lastAppliedLevel'
+  | 'lastAppliedAbilities'
+  | 'lastAppliedClass'
+  | 'multiClasses'
+  | 'lastAppliedMultiClasses'
+  | 'formerClasses'
+  | 'lastAppliedFormerClasses'
 >
 
 export function currentRuleContext(c: Snapshot): RuleContext {
-  return { level: c.level, characterClass: c.characterClass, abilities: c.abilities, multiClasses: c.multiClasses ?? null }
+  return { level: c.level, characterClass: c.characterClass, abilities: c.abilities, multiClasses: c.multiClasses ?? null, formerClasses: c.formerClasses ?? null }
 }
 
 export function lastAppliedRuleContext(c: Snapshot): RuleContext | null {
@@ -127,6 +137,7 @@ export function lastAppliedRuleContext(c: Snapshot): RuleContext | null {
     abilities: c.lastAppliedAbilities,
     // Retrato sem o campo (ficha de antes da multiclasse) = as classes de agora.
     multiClasses: c.lastAppliedMultiClasses === undefined ? (c.multiClasses ?? null) : c.lastAppliedMultiClasses,
+    formerClasses: c.lastAppliedFormerClasses === undefined ? (c.formerClasses ?? null) : c.lastAppliedFormerClasses,
   }
 }
 
@@ -148,7 +159,8 @@ export function hasPendingConsequences(c: Snapshot): boolean {
   if (c.lastAppliedLevel == null || !c.lastAppliedAbilities) return false
   const classChanged = c.lastAppliedClass != null && canonicalClass(c.lastAppliedClass) !== canonicalClass(c.characterClass)
   const multiChanged = c.lastAppliedMultiClasses !== undefined && !sameMultiClasses(c.lastAppliedMultiClasses, c.multiClasses)
-  return c.lastAppliedLevel !== c.level || !sameAbilities(c.lastAppliedAbilities, c.abilities) || classChanged || multiChanged
+  const formerChanged = c.lastAppliedFormerClasses !== undefined && !sameMultiClasses(c.lastAppliedFormerClasses, c.formerClasses)
+  return c.lastAppliedLevel !== c.level || !sameAbilities(c.lastAppliedAbilities, c.abilities) || classChanged || multiChanged || formerChanged
 }
 
 export function pendingConsequences(c: Snapshot): ConsequenceItem[] {
@@ -165,6 +177,9 @@ export function markConsequencesReviewed(c: Snapshot) {
   // única fica exatamente como antes).
   if ((c.multiClasses ?? []).length > 0 || c.lastAppliedMultiClasses != null) {
     c.lastAppliedMultiClasses = (c.multiClasses ?? []).map((k) => ({ ...k }))
+  }
+  if ((c.formerClasses ?? []).length > 0 || c.lastAppliedFormerClasses != null) {
+    c.lastAppliedFormerClasses = (c.formerClasses ?? []).map((k) => ({ ...k }))
   }
 }
 
@@ -256,4 +271,41 @@ export function setClass(c: PlayerCharacter, characterClass: CharacterClass, rea
         : { id: crypto.randomUUID().toUpperCase(), name: 'Read Magic', matchedSpellID: null, level: 1 },
     ]
   }
+}
+
+// --- Classe dupla (MC4, docs/multiclasse.md) ------------------------------------------
+
+/** Troca a lista de classes anteriores (edição à mão). Passa pelo motor de consequências. */
+export function setFormerClasses(c: PlayerCharacter, formerClasses: ClassLevel[]) {
+  ensureConsequenceSnapshot(c)
+  if (c.lastAppliedFormerClasses === undefined) c.lastAppliedFormerClasses = (c.formerClasses ?? []).map((k) => ({ ...k }))
+  c.formerClasses = formerClasses.length ? formerClasses.map((k) => ({ ...k })) : null
+}
+
+/**
+ * Troca de classe dupla (PHB cap. 3): a classe atual congela no nível dela e
+ * vai para as anteriores; a nova começa no nível 1 com 0 XP (decisão 14). HP
+ * fica como está. THAC0, saves e magia ficam pendentes até o jogador revisar.
+ */
+export function dualClassSwitch(c: PlayerCharacter, next: CharacterClass, readMagic: { id: string; name: string } | null) {
+  setFormerClasses(c, [...(c.formerClasses ?? []), { characterClass: c.characterClass, level: c.level }])
+  setClass(c, next, readMagic)
+  c.experience = 0
+  setLevel(c, 1)
+}
+
+/** "Undo dual-class" só enquanto a classe nova está no nível 1 com 0 XP. */
+export function canUndoDualClass(c: Pick<PlayerCharacter, 'level' | 'experience' | 'formerClasses'>): boolean {
+  return (c.formerClasses ?? []).length > 0 && c.level === 1 && c.experience === 0
+}
+
+/** Desfaz a última troca: volta à classe anterior, no nível dela, com o XP mínimo desse nível. */
+export function undoDualClass(c: PlayerCharacter) {
+  const former = c.formerClasses ?? []
+  const last = former[former.length - 1]
+  if (!last) return
+  setFormerClasses(c, former.slice(0, -1))
+  setClass(c, last.characterClass, null)
+  setLevel(c, last.level)
+  c.experience = xpRequired(last.level, last.characterClass) ?? 0
 }

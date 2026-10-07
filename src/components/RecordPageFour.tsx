@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { isMultiClass, multiClassThiefArmorRule, referenceSections, type ReferenceSection } from '../rules/multiclass'
+import { isDualClass, isMultiClass, multiClassThiefArmorRule, referenceSections, type ReferenceSection } from '../rules/multiclass'
 import { proficiencyTableGroup, rulesData, thievingBaseScore, thievingSkillsFor, type CanonicalClass } from '../rules/rules'
 import { RuleLink } from './RuleLink'
 import type { PlayerCharacter } from '../types/library'
@@ -396,7 +396,8 @@ function Section({ c, section, multiClass }: { c: PlayerCharacter; section: Refe
 export function RecordPageFour({ character: c }: { character: PlayerCharacter }) {
   const sections = referenceSections(c)
   const multi = isMultiClass(c)
-  if (!multi || sections.length === 1) {
+  // Classe dupla (MC4): as tabelas das classes anteriores também (uma seção por tipo).
+  if ((!multi && !isDualClass(c)) || sections.length === 1) {
     const section = sections[0]
     if (!section) return null
     return (

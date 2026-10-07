@@ -65,7 +65,9 @@ entregas e pendências. Atualizar a cada entrega.
 | MC3a | Magia por classe (slots, abas, folha de magia, grimório) e Psionicist no seletor (combinações do CPsiH, aba Psionics pelo nível dele) | feita (web v0.33.0) |
 | MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | feita (web v0.34.0) |
 | MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | feita (web v0.35.0) |
-| MC4 | Classe dupla (humanos) | adiada (decisão 1) |
+| MC4a | Classe dupla: formato (`formerClasses`), troca explícita, regras na ficha (DC1+DC2) | feita (web v0.37.0) |
+| MC4b | Classe dupla: relatório de XP (aviso) e dreno de nível com as classes antigas (DC3) | planejada |
+| MC4c | Classe dupla nos suplementos: bardo (CBH), psionicista (CPsiH), kits (DC4) | planejada |
 | MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, demi-bardos, ninja, sacerdotes do CPrH, dreno de nível | feita (web v0.36.0) |
 
 ## Pendências (2026-10-07, para quem continuar)
@@ -254,3 +256,54 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
   - Pendente fora do escopo: o seletor de raça ainda avisa "Elf cannot normally
     be a Bard (PHB Table 7)" para demi-bardo (é o aviso do PHB; o do CBH aparece
     na ficha). MC4 (classe dupla) continua adiada.
+- 2026-10-07: plano da MC4 (classe dupla) aprovado. Regra: PHB cap. 3,
+  "Dual-Class Benefits and Restrictions" (só humanos; 15+ nos atributos
+  principais da classe atual, 17+ nos da nova; nível 2+; a classe antiga congela;
+  a nova começa no nível 1 com 0 XP; mantém dados de vida e HP; restrição até o
+  nível da nova passar o maior das antigas). CBH: mesmos limiares para o bardo;
+  CPsiH: psionicista segue a regra normal.
+  Experiência do jogador (aprovada):
+  - o seletor de classe do cabeçalho continua livre (troca só a classe atual,
+    para experimentar); não congela nada nem zera XP;
+  - a classe dupla é uma ação explícita: o "+" abre a janela com as abas
+    Multi-class | Dual-class (abre na aba da raça: humano em Dual-class);
+  - "Switch to a new class…": escolhe a classe nova, mostra os requisitos (✓/⚠,
+    não bloqueia) e o que vai acontecer; confirma pelo useConfirm; "Undo
+    dual-class" enquanto a nova estiver no nível 1 com 0 XP;
+  - a aba lista as classes anteriores com nível editável e permite acrescentar
+    uma à mão (quem já joga com classe dupla);
+  - cabeçalho "Fighter ▾ · ex-Cleric 3"; selo "restricted until Fighter 4".
+  Decisões:
+  12. Campo novo `formerClasses` (lista de `ClassLevel`), extensão "web primeiro"
+      (não reaproveita `multiClasses`).
+  13. THAC0 e saves: durante a restrição, só a classe atual (com nota da
+      penalidade); depois, o melhor entre todas as classes.
+  14. Na troca, o XP volta a 0 (regra); a classe antiga guarda só o nível.
+  15. Penalidade por usar a classe antiga durante a restrição: só aviso.
+  16. DC1 e DC2 numa entrega só (MC4a).
+- 2026-10-07, MC4a feita (web v0.37.0):
+  - schema: `formerClasses` e `lastAppliedFormerClasses` (lista de `ClassLevel`),
+    extensões "web primeiro" (gerador do iPad, branch `n3`);
+  - regras: `allClasses` (ativas + anteriores) para os recursos de classe
+    (magia pelo nível congelado, perícias de ladrão, página 4, kits);
+    `dualClassRestriction`; THAC0 e saves no `resolveRule` só das ativas na
+    restrição e o melhor de todas depois (decisão 13); slots de magia contam as
+    anteriores; requisitos (`dualClassRequirements`, só aviso); avisos da ficha
+    (raça, volta a uma classe deixada, multi + dupla); regra de HP; restrição de
+    armadura do mago na página 1;
+  - motor de consequências: `dualClassSwitch` (congela a atual, nova no nível 1
+    com 0 XP), `undoDualClass` (só no nível 1 com 0 XP; volta com o XP mínimo
+    do nível), `setFormerClasses` (edição à mão); retrato
+    `lastAppliedFormerClasses`;
+  - tela: abas Multi-class | Dual-class na janela do "+" (humano abre em
+    Dual-class); cabeçalho "Fighter · ex-Cleric 3" (abre a aba); linha "Former
+    class abilities restricted until Fighter 4"; página 3 com as anteriores;
+  - testes: 87 (8 novos, `tests/dualclass.test.ts`). Conferido na tela com o
+    personagem novo "Teste DC" (Sandbox, humano): Cleric 3 → Fighter 1 com os
+    requisitos ✓ (Mage mostra ⚠ INT 10), pendentes só os saves de Fighter 1;
+    Fighter 4 → THAC0 17 e saves com o melhor das duas, restrição some; undo
+    volta a Cleric 3 com 3.000 XP; ex-Thief à mão + seletor livre em Thief →
+    aviso. Kelmonito sem mudança.
+  - Pendente (MC4b): relatório de XP da sessão (hoje usa só a classe atual) e
+    dreno de nível com as classes anteriores. Proficiências da classe dupla:
+    seguem a classe atual (o PHB não detalha; revisar se o usuário quiser).

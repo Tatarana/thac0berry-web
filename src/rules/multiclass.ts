@@ -4,9 +4,15 @@
 // A classe principal continua em characterClass/level; as outras ficam em
 // `multiClasses`. Sem esse campo (ou vazio), é classe única e tudo dá o mesmo
 // resultado de antes.
+//
+// Classe dupla (MC4): characterClass/level é a classe atual (a única que
+// avança); as anteriores ficam em `formerClasses`, congeladas. Os recursos de
+// classe (magia, perícias de ladrão, tabelas de referência) contam as
+// anteriores; XP, combinações e proficiências, não.
 
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library.ts'
 import { normalize } from '../lib/search.ts'
+import { primeRequisites } from './sessionReport.ts'
 import { levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
 import {
   bestSaves,
@@ -23,7 +29,7 @@ import {
   type ReferenceKind,
 } from './rules.ts'
 
-type WithClasses = Pick<PlayerCharacter, 'characterClass' | 'level'> & { multiClasses?: ClassLevel[] | null }
+type WithClasses = Pick<PlayerCharacter, 'characterClass' | 'level'> & { multiClasses?: ClassLevel[] | null; formerClasses?: ClassLevel[] | null }
 
 /** As classes de um personagem (principal, nível e as outras). */
 export type ClassChoice = WithClasses
@@ -34,6 +40,14 @@ export function classLevels(c: WithClasses): ClassLevel[] {
 }
 
 export const isMultiClass = (c: WithClasses) => (c.multiClasses ?? []).length > 0
+
+/** Classe dupla (MC4): tem classes anteriores. */
+export const isDualClass = (c: WithClasses) => (c.formerClasses ?? []).length > 0
+
+/** As classes ativas e as anteriores (classe dupla): para os recursos de classe. */
+export function allClasses(c: WithClasses): ClassLevel[] {
+  return [...classLevels(c), ...(c.formerClasses ?? [])]
+}
 
 /** "Fighter/Mage" e "5/4", como no cabeçalho da ficha. */
 export function classLabel(c: WithClasses): string {
@@ -47,19 +61,19 @@ export function levelLabel(c: WithClasses): string {
 
 /** Nível do personagem na classe pedida (null se não tem a classe). */
 export function levelOf(c: WithClasses, wanted: CanonicalClass): number | null {
-  return classLevels(c).find((k) => canonicalClass(k.characterClass) === wanted)?.level ?? null
+  return allClasses(c).find((k) => canonicalClass(k.characterClass) === wanted)?.level ?? null
 }
 
 export const hasClass = (c: WithClasses, wanted: CanonicalClass) => levelOf(c, wanted) !== null
 
 /** Alguma classe tem folha de magia (Cleric, Mage, Bard). */
-export const hasSpellSheetAny = (c: WithClasses) => classLevels(c).some((k) => hasSpellSheet(k.characterClass))
+export const hasSpellSheetAny = (c: WithClasses) => allClasses(c).some((k) => hasSpellSheet(k.characterClass))
 
 /** Alguma classe conjura magia arcana (Mage, Bard): grimório. */
-export const isArcaneCasterAny = (c: WithClasses) => classLevels(c).some((k) => isArcaneCaster(k.characterClass))
+export const isArcaneCasterAny = (c: WithClasses) => allClasses(c).some((k) => isArcaneCaster(k.characterClass))
 
 /** Alguma classe conjura magia divina com folha (Cleric). */
-export const isDivineCasterAny = (c: WithClasses) => classLevels(c).some((k) => hasSpellSheet(k.characterClass) && !isArcaneCaster(k.characterClass))
+export const isDivineCasterAny = (c: WithClasses) => allClasses(c).some((k) => hasSpellSheet(k.characterClass) && !isArcaneCaster(k.characterClass))
 
 /**
  * Atributo congelado na folha de magia: Sabedoria (dá slots extras ao
@@ -74,13 +88,13 @@ export function spellSheetAbility(c: WithClasses & Pick<PlayerCharacter, 'abilit
  * ou divina (Cleric). Sem classe desse tipo, o da principal.
  */
 export function casterLevel(c: WithClasses, caster: 'arcane' | 'divine'): number {
-  const k = classLevels(c).find((x) => hasSpellSheet(x.characterClass) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
+  const k = allClasses(c).find((x) => hasSpellSheet(x.characterClass) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
   return k?.level ?? c.level
 }
 
 /** A classe ladina do personagem (Thief, Bard, Ninja), com o nível dela; null se não tem. */
 export function rogueClass(c: WithClasses): { characterClass: CanonicalClass; level: number } | null {
-  const k = classLevels(c).find((x) => hasThievingSkills(x.characterClass))
+  const k = allClasses(c).find((x) => hasThievingSkills(x.characterClass))
   return k ? { characterClass: canonicalClass(k.characterClass), level: k.level } : null
 }
 
@@ -92,8 +106,13 @@ export const multiClassWizardArmorRule =
 export const multiClassPriestWeaponRule =
   "A multi-classed priest must abide by the weapon restrictions of his mythos — a fighter/cleric uses only bludgeoning weapons, though with the warrior's combat value (PHB, Chapter 3)."
 
-/** Avisos de restrição do multiclasse que valem para esta ficha (só texto). */
+/** PHB cap. 3: classe dupla segue as restrições da classe que está usando. */
+export const dualClassRestrictionRule =
+  'A dual-class character must abide by the restrictions of whichever class he is using at the moment — a dual-class fighter/mage cannot cast spells while wearing armor (PHB, Chapter 3).'
+
+/** Avisos de restrição do multiclasse (ou da classe dupla) que valem para esta ficha (só texto). */
 export function multiClassRestrictions(c: WithClasses): string[] {
+  if (isDualClass(c) && !isMultiClass(c)) return [dualClassRestrictionRule]
   if (!isMultiClass(c)) return []
   const rules: string[] = []
   if (hasClass(c, 'Mage') || hasClass(c, 'Bard')) rules.push(multiClassWizardArmorRule)
@@ -118,7 +137,7 @@ export interface ReferenceSection {
  */
 export function referenceSections(c: WithClasses): ReferenceSection[] {
   const sections: ReferenceSection[] = []
-  for (const k of classLevels(c)) {
+  for (const k of allClasses(c)) {
     const kind = referenceKind(k.characterClass)
     if (kind && !sections.some((s) => s.kind === kind)) sections.push({ kind, characterClass: canonicalClass(k.characterClass), level: k.level })
   }
@@ -349,7 +368,7 @@ export function demiBardWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' |
 
 /** Todos os avisos da ficha ligados a classe e kit (multiclasse, demi-bardo), sem repetir. */
 export function classWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' | 'wizardSchool' | 'kit'>): string[] {
-  return [...new Set([...multiClassWarnings(c), ...demiBardWarnings(c)])]
+  return [...new Set([...multiClassWarnings(c), ...demiBardWarnings(c), ...dualClassWarnings(c)])]
 }
 
 /** As raças aceitas pelo texto de requisitos do kit ("Any", "Half-elf, human", "Any except halfling"…). */
@@ -412,3 +431,97 @@ export function levelDrainTarget(c: WithClasses): { index: number; characterClas
 
 /** As classes que aparecem no seletor de multiclasse (as do PHB e o Psionicist do CPsiH). */
 export const multiClassOptions: CharacterClass[] = ['Fighter', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Paladin', 'Bard', 'Psionicist']
+
+// --- Classe dupla (MC4, PHB cap. 3, "Dual-Class Benefits and Restrictions") ----------
+
+/** "ex-Cleric 3, ex-Thief 4": as classes anteriores, para o cabeçalho. */
+export function formerLabel(c: WithClasses): string {
+  return (c.formerClasses ?? []).map((k) => `ex-${canonicalClass(k.characterClass)} ${k.level}`).join(', ')
+}
+
+export interface DualRestriction {
+  /** Classe atual e o nível em que a restrição acaba (passa o maior nível anterior). */
+  characterClass: CanonicalClass
+  untilLevel: number
+}
+
+/**
+ * Período de restrição: até o nível da classe atual passar o maior nível das
+ * anteriores, usar habilidade de classe antiga custa o XP do encontro e metade
+ * do da aventura, e a classe nova não dá dados de vida nem HP. null = sem
+ * restrição (ou sem classe dupla).
+ */
+export function dualClassRestriction(c: WithClasses): DualRestriction | null {
+  const former = c.formerClasses ?? []
+  if (former.length === 0) return null
+  const highest = Math.max(...former.map((k) => k.level))
+  return c.level > highest ? null : { characterClass: canonicalClass(c.characterClass), untilLevel: highest + 1 }
+}
+
+type Abilities = PlayerCharacter['abilities']
+
+export interface Requirement {
+  text: string
+  ok: boolean
+}
+
+const abilityShort: Record<string, string> = {
+  strength: 'STR',
+  dexterity: 'DEX',
+  constitution: 'CON',
+  intelligence: 'INT',
+  wisdom: 'WIS',
+  charisma: 'CHA',
+}
+
+/**
+ * Requisitos para trocar para `next` (PHB; o CBH repete os mesmos limiares para
+ * o bardo): humano, nível 2+ na classe atual, 15+ nos atributos principais
+ * dela e 17+ nos da nova. Só informam: a troca não é bloqueada.
+ */
+export function dualClassRequirements(
+  c: WithClasses & Pick<PlayerCharacter, 'race'> & { abilities: Abilities },
+  next: CharacterClass,
+): Requirement[] {
+  const current = canonicalClass(c.characterClass)
+  const target = canonicalClass(next)
+  const scores = (cls: string, min: number): Requirement => {
+    const prime = primeRequisites[cls]
+    if (!prime) return { text: `${cls}: no prime requisite on the PHB tables`, ok: true }
+    const values = prime.map((a) => `${abilityShort[a]} ${c.abilities[a]}`).join(', ')
+    return { text: `${min}+ in the ${cls} prime requisites (${values})`, ok: prime.every((a) => c.abilities[a] >= min) }
+  }
+  const taken = allClasses(c).map((k) => canonicalClass(k.characterClass))
+  return [
+    { text: 'Human (only humans can be dual-classed)', ok: matchRace(c.race) === 'Human' },
+    { text: `Level 2 or higher as ${current} (now ${c.level})`, ok: c.level >= 2 },
+    scores(current, 15),
+    scores(target, 17),
+    { text: `${target} is a new class for this character`, ok: !taken.includes(target) },
+    { text: 'Not multi-classed', ok: !isMultiClass(c) },
+  ]
+}
+
+/** Avisos da ficha de classe dupla (só aviso, como no multiclasse). */
+export function dualClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'>): string[] {
+  if (!isDualClass(c)) return []
+  const warnings: string[] = []
+  const race = matchRace(c.race)
+  if (race && race !== 'Human') warnings.push('Only humans can be dual-classed (PHB, Chapter 3).')
+  if (isMultiClass(c)) warnings.push('A character is either multi-class or dual-class, not both (PHB, Chapter 3).')
+  const current = canonicalClass(c.characterClass)
+  const names = (c.formerClasses ?? []).map((k) => canonicalClass(k.characterClass))
+  if (names.includes(current)) warnings.push(`${current} is already a former class: a dual-class character cannot go back to a class he left (PHB, Chapter 3).`)
+  if (new Set(names).size !== names.length) warnings.push('The same former class appears twice.')
+  return warnings
+}
+
+/** Regra de HP da classe dupla (o jogador calcula; decisão 2). */
+export function dualHitPointsRule(c: WithClasses): string {
+  const restriction = dualClassRestriction(c)
+  const die = hitDieType(c.characterClass)
+  const current = canonicalClass(c.characterClass)
+  return restriction
+    ? `The character keeps the Hit Dice and hit points of his former classes and gains none while advancing as ${current}, until level ${restriction.untilLevel}. From then on, roll ${die} for each new level (PHB, Chapter 3).`
+    : `The character keeps the Hit Dice and hit points of his former classes and rolls ${die} (${current}) for each new level (PHB, Chapter 3).`
+}

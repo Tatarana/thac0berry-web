@@ -339,6 +339,8 @@ export interface RuleContext {
   abilities: AbilityScores
   /** Multiclasse (docs/multiclasse.md): as outras classes; ausente = classe única. */
   multiClasses?: ClassLevel[] | null
+  /** Classe dupla (MC4): as classes anteriores, congeladas. */
+  formerClasses?: ClassLevel[] | null
 }
 
 export type RuleKey = 'thac0' | 'savingThrows' | 'priestSpellSlots' | 'wizardSpellSlots' | 'bardSpellSlots' | AbilityDetailKey
@@ -369,14 +371,20 @@ export function bestSaves(classes: ClassLevel[]): SavingThrows | null {
 
 /** RulesetRegistry.resolve do iPad (só o módulo Core), com as classes de um multiclasse. */
 export function resolveRule(key: RuleKey, ctx: RuleContext): RuleValue | null {
-  const classes: ClassLevel[] = [{ characterClass: ctx.characterClass as CharacterClass, level: ctx.level }, ...(ctx.multiClasses ?? [])]
+  const active: ClassLevel[] = [{ characterClass: ctx.characterClass as CharacterClass, level: ctx.level }, ...(ctx.multiClasses ?? [])]
+  const former = ctx.formerClasses ?? []
+  const classes = [...active, ...former]
+  // Classe dupla (decisão 13): na restrição (nível atual até o maior anterior),
+  // THAC0 e saves só das classes ativas; depois, o melhor entre todas.
+  const restricted = former.length > 0 && ctx.level <= Math.max(...former.map((k) => k.level))
+  const combat = restricted ? active : classes
   // Nível da classe pedida (as magias de cada classe seguem o nível dela).
   const levelOf = (wanted: CanonicalClass) => classes.find((k) => canonicalClass(k.characterClass) === wanted)?.level ?? null
   switch (key) {
     case 'thac0':
-      return bestTHAC0(classes)
+      return bestTHAC0(combat)
     case 'savingThrows':
-      return bestSaves(classes)
+      return bestSaves(combat)
     case 'priestSpellSlots': {
       const level = levelOf('Cleric')
       return level === null ? null : anySlot(priestSpellProgression(level, ctx.abilities.wisdom))
@@ -519,6 +527,7 @@ export function computedSpellSlotAllotments(c: {
   abilities: AbilityScores
   wizardSchool?: string | null
   multiClasses?: ClassLevel[] | null
+  formerClasses?: ClassLevel[] | null
 }): SlotAllotment[] {
   const toAllotments = (counts: number[], caster: SlotAllotment['caster'], bonus = 0) =>
     counts.flatMap((count, index) => (count > 0 ? [{ caster, level: index + 1, count: count + bonus }] : []))
@@ -536,7 +545,8 @@ export function computedSpellSlotAllotments(c: {
     }
   }
   const result: SlotAllotment[] = []
-  for (const k of [{ characterClass: c.characterClass, level: c.level }, ...(c.multiClasses ?? [])]) {
+  // Classe dupla: a classe anterior conjura pelo nível em que congelou.
+  for (const k of [{ characterClass: c.characterClass, level: c.level }, ...(c.multiClasses ?? []), ...(c.formerClasses ?? [])]) {
     for (const a of forClass(k.characterClass, k.level)) {
       // Duas classes do mesmo tipo (fora da tabela): fica o maior número do círculo.
       const same = result.find((r) => r.caster === a.caster && r.level === a.level)

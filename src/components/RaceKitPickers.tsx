@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
-import { classLevels, kitWarnings } from '../rules/multiclass'
+import { allClasses, kitWarnings } from '../rules/multiclass'
 import { hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, races, raceWarnings, type RaceName } from '../rules/raceKit'
 import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -76,7 +76,7 @@ export function KitPicker({
   onChoose,
   onClose,
 }: {
-  character: Pick<PlayerCharacter, 'kit' | 'characterClass' | 'level' | 'race' | 'multiClasses'>
+  character: Pick<PlayerCharacter, 'kit' | 'characterClass' | 'level' | 'race' | 'multiClasses' | 'formerClasses'>
   /** null = "None" (sem kit). */
   onChoose: (kit: Kit | null) => void
   onClose: () => void
@@ -87,14 +87,15 @@ export function KitPicker({
   const [detail, setDetail] = useState<Kit | null>(null)
   useEffect(() => {
     // Multiclasse (MC5): os kits de todas as classes do personagem (um kit no total).
-    const classes = classLevels(character).map((k) => k.characterClass)
+    // Classe dupla (CBH): o kit pode vir de qualquer classe, inclusive as anteriores.
+    const classes = allClasses(character).map((k) => k.characterClass)
     void loadAllKits().then((all) => {
       const seen = new Set<string>()
       const list = classes.flatMap((cls) => kitsAllowedFor(all, cls)).filter((k) => (seen.has(k.id) ? false : (seen.add(k.id), true)))
       setKits(list.sort((a, b) => a.name.localeCompare(b.name)))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character.characterClass, JSON.stringify(character.multiClasses ?? [])])
+  }, [character.characterClass, JSON.stringify(character.multiClasses ?? []), JSON.stringify(character.formerClasses ?? [])])
   const filtered = useMemo(() => {
     const target = normalize(query)
     return (kits ?? []).filter((k) => target === '' || normalize(k.name).includes(target) || normalize(k.deity ?? '').includes(target))

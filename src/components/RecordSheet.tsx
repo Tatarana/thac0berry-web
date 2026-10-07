@@ -7,6 +7,7 @@ import { normalize } from '../lib/search'
 import {
   applyAutomatic,
   displaySummary,
+  dualClassSwitch,
   hasPendingConsequences,
   markConsequencesReviewed,
   pendingConsequences,
@@ -14,12 +15,14 @@ import {
   setClass,
   setLevel,
   setMultiClassLevel,
+  setFormerClasses,
   setMultiClasses,
+  undoDualClass,
   type AbilityKey,
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -126,7 +129,9 @@ function RecordHeader({
 }) {
   const [pickingRace, setPickingRace] = useState(false)
   const [pickingKit, setPickingKit] = useState(false)
-  const [multiOpen, setMultiOpen] = useState(false)
+  // true = a aba padrão; 'dual' = abre direto na classe dupla.
+  const [multiOpen, setMultiOpen] = useState<boolean | 'dual'>(false)
+  const dualRestriction = dualClassRestriction(c)
   const extraClasses = c.multiClasses ?? []
   // Multiclasse e demi-bardo (MC5): todos os avisos de classe e kit.
   const multiWarnings = classWarnings(c)
@@ -150,9 +155,15 @@ function RecordHeader({
                   value={c.characterClass}
                   onChange={(cls, readMagic) => {
                     edit((x) => setClass(x, cls, readMagic))
-                    onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses })
+                    onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses })
                   }}
                 />
+                {/* Classe dupla (MC4): as anteriores; o clique abre a janela na aba Dual-class. */}
+                {isDualClass(c) && (
+                  <button className="mc-former" title="Dual-class" onClick={() => setMultiOpen('dual')}>
+                    · {formerLabel(c)}
+                  </button>
+                )}
                 {/* Multiclasse: as outras classes; o "+" abre a janela (MC2). */}
                 {extraClasses.map((k) => (
                   <span key={k.characterClass} className="rec-value mc-extra">
@@ -160,12 +171,12 @@ function RecordHeader({
                   </span>
                 ))}
                 <button
-                  className={extraClasses.length ? 'mc-add mc-add-on' : 'mc-add'}
-                  title="Multi-class"
-                  aria-label="Multi-class"
+                  className={extraClasses.length || isDualClass(c) ? 'mc-add mc-add-on' : 'mc-add'}
+                  title="Multi-class / Dual-class"
+                  aria-label="Multi-class / Dual-class"
                   onClick={() => setMultiOpen(true)}
                 >
-                  {extraClasses.length ? '✎' : '+'}
+                  {extraClasses.length || isDualClass(c) ? '✎' : '+'}
                 </button>
                 <span className="rec-soft"> / </span>
                 <button className="ink-picker-button" aria-label="Kit" onClick={() => setPickingKit(true)}>
@@ -178,6 +189,7 @@ function RecordHeader({
           ) : (
             <HeaderLine label="Class / Kit">
               {isMultiClass(c) ? classLabel(c) : c.characterClass}
+              {isDualClass(c) ? ` · ${formerLabel(c)}` : ''}
               {c.kit ? ` / ${c.kit}` : ''}
             </HeaderLine>
           )}
@@ -210,14 +222,34 @@ function RecordHeader({
             {multiWarnings.length > 1 ? ` (+${multiWarnings.length - 1} more)` : ''}
           </p>
         )}
+        {dualRestriction && (
+          <p className="mc-dual-line">
+            Former class abilities restricted until {dualRestriction.characterClass} {dualRestriction.untilLevel} (PHB, Chapter 3)
+          </p>
+        )}
         {multiOpen && edit && (
           <MultiClassWindow
             c={c}
+            initialTab={multiOpen === 'dual' ? 'dual' : undefined}
             onChange={(list) => {
               edit((x) => setMultiClasses(x, list))
-              onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: list })
+              onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: list, formerClasses: c.formerClasses })
             }}
             onDrain={(index) => edit((x) => (index < 0 ? setLevel(x, x.level - 1) : setMultiClassLevel(x, index, (x.multiClasses ?? [])[index].level - 1)))}
+            onDualSwitch={(next) => {
+              const former = [...(c.formerClasses ?? []), { characterClass: c.characterClass, level: c.level }]
+              const run = (readMagic: { id: string; name: string } | null) => {
+                edit((x) => dualClassSwitch(x, next, readMagic))
+                onClassChanged?.({ characterClass: next, level: 1, multiClasses: c.multiClasses, formerClasses: former })
+              }
+              if (next === 'Mage') void findReadMagic().then(run)
+              else run(null)
+            }}
+            onUndoDual={() => edit((x) => undoDualClass(x))}
+            onFormerChange={(list) => {
+              edit((x) => setFormerClasses(x, list))
+              onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: c.multiClasses, formerClasses: list })
+            }}
             onClose={() => setMultiOpen(false)}
           />
         )}

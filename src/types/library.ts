@@ -350,6 +350,10 @@ export interface PlayerCharacter {
   multiClasses?: ClassLevel[] | null
   /** Retrato do motor de consequências: as outras classes no último estado revisado. */
   lastAppliedMultiClasses?: ClassLevel[] | null
+  /** Classes anteriores de um personagem de classe dupla (humanos), na ordem em que foram deixadas, com o nível em que congelaram; ausente = sem classe dupla. */
+  formerClasses?: ClassLevel[] | null
+  /** Retrato do motor de consequências: as classes anteriores no último estado revisado. */
+  lastAppliedFormerClasses?: ClassLevel[] | null
   /** Bloco psiônico do Psionicist (feito primeiro na web, 2026-10-06; o iPad ainda não tem). */
   psionics?: Psionics | null
 }

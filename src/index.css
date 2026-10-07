@@ -3735,3 +3735,87 @@ button.slot-dot:hover {
 .mc-drain {
   justify-content: flex-start;
 }
+
+/* MC4: classe dupla (abas da janela, classes anteriores, requisitos, restrição). */
+.mc-tabs {
+  display: flex;
+  gap: 18px;
+  margin: 0 0 10px;
+  border-bottom: 1px solid rgb(47 39 28 / 0.2);
+}
+
+.mc-tab {
+  padding: 4px 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.mc-tab:hover {
+  color: var(--ink);
+}
+
+.mc-tab-on {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.mc-former {
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-style: italic;
+  cursor: pointer;
+}
+
+.mc-former:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.mc-former-level {
+  width: 3em;
+}
+
+.mc-chip-on {
+  background: var(--sheet-deep);
+  border-color: rgb(47 39 28 / 0.55);
+  color: var(--ink);
+}
+
+.mc-reqs {
+  margin: 8px 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 0.82rem;
+}
+
+.mc-req-ok {
+  color: var(--ink-soft);
+}
+
+.mc-req-bad {
+  color: #b23a2b;
+}
+
+.mc-dual-status {
+  margin: 8px 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: #8a5a12;
+}
+
+.mc-dual-line {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #8a5a12;
+}
