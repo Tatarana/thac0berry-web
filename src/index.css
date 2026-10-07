@@ -3521,7 +3521,7 @@ button.slot-dot:hover {
   }
 }
 
-/* Seletor do topo: Player ⇄ DM. */
+/* Botão do topo: mostra o modo e abre a tela das imagens. */
 .page-top {
   display: flex;
   justify-content: space-between;
@@ -3534,47 +3534,70 @@ button.slot-dot:hover {
   gap: 12px;
 }
 
-.mode-switch {
+.mode-button {
   display: inline-flex;
-  padding: 2px;
-  border: 1px solid rgb(201 162 39 / 0.5);
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border: 1px solid rgb(201 162 39 / 0.55);
   border-radius: 999px;
   background: rgb(0 0 0 / 0.25);
-}
-
-.mode-switch button {
-  font: inherit;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  padding: 4px 12px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--on-obsidian-soft);
-  cursor: pointer;
-}
-
-.mode-switch button:hover {
   color: var(--on-obsidian);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
 }
 
-.mode-switch .mode-switch-on {
-  background: var(--brass);
-  color: #2a2117;
-  font-weight: 700;
+.mode-button:hover {
+  border-color: var(--brass);
+  background: rgb(201 162 39 / 0.15);
+}
+
+.mode-button-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.mode-button-dot-player {
+  background: var(--mint-glow);
+}
+
+.mode-button-dot-dm {
+  background: var(--glow-bright);
+}
+
+.mode-button-arrows {
+  color: var(--brass);
 }
 
 /* No papel (ficha): tinta em vez de latão. */
-.paper-top .mode-switch {
+.paper-top .mode-button {
   border-color: rgb(47 39 28 / 0.4);
   background: rgb(255 255 255 / 0.25);
-}
-
-.paper-top .mode-switch button {
   color: var(--ink);
 }
 
-.paper-top .mode-switch .mode-switch-on {
-  background: var(--ink);
-  color: var(--sheet);
+.paper-top .mode-button-arrows {
+  color: var(--ink);
+}
+
+/* Na tela de escolha: o modo atual fica marcado. */
+.mode-card-current {
+  border-color: var(--brass);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.5), 0 0 0 2px rgb(201 162 39 / 0.6);
+}
+
+.mode-card-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--brass);
+  color: #2a2117;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

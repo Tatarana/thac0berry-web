@@ -12,6 +12,7 @@ import { ArmorCompendium, EquipmentCompendium, WeaponCompendium } from './pages/
 import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
 import { ImportBackup } from './pages/ImportBackup'
+import { ModePage } from './pages/ModePage'
 import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
 import { MagicItemCompendium } from './pages/MagicItemCompendium'
@@ -28,6 +29,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/mode" element={<ModePage />} />
           <Route path="/diagnostics" element={<Diagnostics />} />
           <Route path="/compendium" element={<CompendiumHub />} />
           <Route path="/compendium/priest" element={<Grimoire key="divine" caster="divine" />} />
