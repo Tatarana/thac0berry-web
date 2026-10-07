@@ -68,6 +68,51 @@ entregas e pendências. Atualizar a cada entrega.
 | MC4 | Classe dupla (humanos) | adiada (decisão 1) |
 | MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
 
+## Pendências (2026-10-07, para quem continuar)
+
+Em aberto, em ordem:
+
+1. **Merge dos PRs** (o site publica do `main`; nada da MC3 está no ar ainda):
+   - Tatarana/thac0berry-web#1, branch `claude/dreamy-thompson-fqoc3x`: MC3a,
+     v0.33.1 e MC3b (v0.34.0). CI local verde (lint, `types --check`, build,
+     72 testes).
+   - Tatarana/thac0berry-data#1, mesmo nome de branch: proficiências bônus de
+     4 kits (o "CRH)").
+2. **Depois do merge dos dados:** `python Scripts/sync_data.py` no repo do iPad.
+3. **Teste na tela pelo usuário** (personagem "Teste MC" no Sandbox e o
+   Fighter/Mage em campanha): MC3a, v0.33.1 e MC3b só foram conferidas por
+   testes e pela renderização da página 4, não no navegador logado. Conferir:
+   "?" do HP, abas Spells/Spellbook, "First day" criado ao abrir a ficha,
+   folha com círculos "Wizard"/"Priest", página 4 com as duas seções.
+4. **Ficha do usuário:** apagar à mão a proficiência "CRH)" já gravada no
+   Fighter/Mage (a correção dos dados não mexe em fichas salvas).
+5. **MC3c** (próxima entrega, plano aprovado):
+   - XP do relatório por tipo (decisão 6): `suggestedXP` em
+     `src/rules/sessionReport.ts` recebe uma classe só (`SessionReport.tsx`
+     passa a principal). Separar slots arcanos (tabela do Mage, bônus de INT)
+     e divinos + Turn Undead (tabela do Cleric, bônus de WIS); total
+     dividido entre as classes, como em `classProgress`.
+   - XP psiônico (`PsionicReport` em `src/components/PsionicsPanel.tsx`):
+     também dividido entre as classes num multiclasse.
+   - Avisos de restrição (só texto, como os outros): mago não conjura de
+     armadura, exceto elfo com elven chain; sacerdote só armas do culto
+     (Cleric multiclasse: só armas de concussão). Texto exato no PHB,
+     `phb_ch03_multi_class_and_dual_class_characters`.
+6. **Dados, listas `recommended`:** o mesmo corte nas vírgulas em 13 kits
+   (adviser, nobleman_priest, outlaw_druid, barbarian_jungle_dwarf,
+   barbarian_lythari, barbarian_wild_elf, forester,
+   gladiator_fugitive_hillsfar, mariner_of_evermeet, merchant_sea_elf,
+   exile_gray_dwarf, scout_faer_n, e um BOM no meio de "mountaineering" no
+   scout_faer_n). Só texto, não entra na ficha. Precisa de proposta e "ok"
+   (regra 1 do thac0berry-data); alguns pedaços não se juntam sozinhos
+   ("(Warrior" sem fechar no nobleman_priest).
+7. **MC4** (classe dupla) e **MC5** (kits, bardos do CBH, sacerdotes do CPrH,
+   dreno de nível): adiadas (decisões 1 e 4).
+
+Ambiente: build e testes da web pedem o thac0berry-data ao lado
+(`../thac0berry-data`) ou `DATA_DIR=<clone>/data`; o `types --check` pede
+`SCHEMA_DIR=<clone>/schemas`.
+
 ## Log
 
 - 2026-10-07: plano aprovado com as decisões acima. Início da MC1.
