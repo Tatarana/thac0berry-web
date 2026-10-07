@@ -17,7 +17,7 @@ export function RacePicker({
   onChoose,
   onClose,
 }: {
-  character: Pick<PlayerCharacter, 'race' | 'abilities' | 'characterClass' | 'level'>
+  character: Pick<PlayerCharacter, 'race' | 'abilities' | 'characterClass' | 'level' | 'kit'>
   onChoose: (race: RaceName) => void
   onClose: () => void
 }) {
@@ -28,7 +28,7 @@ export function RacePicker({
     <PaperModal title={pending ? `${pending}?` : 'Choose Race'} onClose={onClose}>
       {pending ? (
         <div className="race-warning">
-          <p className="paper-soft">This character doesn't fit the {pending} rules (PHB Table 7):</p>
+          <p className="paper-soft">This character doesn't fit the {pending} rules:</p>
           <ul>
             {warnings.map((w) => (
               <li key={w}>{w}</li>

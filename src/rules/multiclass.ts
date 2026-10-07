@@ -13,7 +13,7 @@
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library.ts'
 import { normalize } from '../lib/search.ts'
 import { primeRequisites } from './sessionReport.ts'
-import { levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
+import { demiBardKits, demiBardWarning, levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
 import {
   bestSaves,
   bestTHAC0,
@@ -343,27 +343,18 @@ export function bardCombosFor(race: string): { classes: string[]; kits: string[]
   return r ? (bardCombos[r] ?? []).map((combo) => ({ classes: combo.classes, kits: combo.kits.map(kitLabel) })) : []
 }
 
-/** CBH Tabela 13: demi-bardos (semi-humanos só são bardos com estes kits, até este nível). */
-const demiBardKits: Partial<Record<RaceName, Record<string, number>>> = {
-  Dwarf: { Chanter: 15, Herald: 6, Skald: 12 },
-  Elf: { Gypsy: 9, Herald: 6, Loremaster: 12, Meistersinger: 15, Minstrel: 15 },
-  Gnome: { Charlatan: 6, Herald: 6, Professor: 15, Jester: 15, Jongleur: 9, Riddlemaster: 8 },
-  Halfling: { Herald: 6, Jester: 8, Jongleur: 12, Riddlemaster: 9, Whistler: 15 },
-}
-
 /**
  * CBH ("Demihumans as Bards", Tabela 13): anão, elfo, gnomo e halfling só são
  * bardos com um kit da raça, e até o nível máximo dele. Vale também para
- * classe única (decisão do usuário); só aviso.
+ * classe única (decisão do usuário); só aviso. A tabela fica em raceKit.ts
+ * (o seletor de raça usa o mesmo aviso).
  */
 export function demiBardWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' | 'kit'>): string[] {
   const race = matchRace(c.race)
-  const table = race ? demiBardKits[race] : undefined
   const level = levelOf(c, 'Bard')
-  if (!race || !table || level === null) return []
-  const kit = Object.keys(table).find((name) => kitMatchesAny(c.kit, [name]))
-  if (!kit) return [`A ${race} can only be a bard with one of these kits: ${Object.keys(table).join(', ')} (CBH, Table 13).`]
-  return level > table[kit] ? [`${race} ${kit} bards are limited to level ${table[kit]} (CBH, Table 13) — this character is level ${level}.`] : []
+  if (!race || level === null) return []
+  const warning = demiBardWarning(race, c.kit, level)
+  return warning ? [warning] : []
 }
 
 /** Todos os avisos da ficha ligados a classe e kit (multiclasse, demi-bardo), sem repetir. */

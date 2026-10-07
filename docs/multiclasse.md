@@ -349,3 +349,9 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
   A nota da ficha deixou de dizer "interpretação" e cita as fontes, com a
   penalidade calculada. Conferido no "Teste DC" (Mage 1 · ex-Cleric 3): 0/5
   slots (2 + 1 + 2 de INT), penalidade −5 (Mage, na restrição). Testes: 93.
+- 2026-10-07: pendência pequena resolvida (web v0.38.2): o seletor de raça
+  deixou de dizer "Elf cannot normally be a Bard (PHB Table 7)" para bardo
+  semi-humano; mostra o aviso do CBH (kit da Tabela 13 e nível máximo dele).
+  A tabela de demi-bardos foi para `raceKit.ts` (`demiBardKits`,
+  `demiBardWarning`), usada pelo seletor e pela ficha. O título do quadro de
+  avisos não cita mais "(PHB Table 7)"; cada aviso cita a sua fonte. Testes: 94.

@@ -36,7 +36,7 @@ test('aplicar raça: ajustes de atributo, resistência a magia, habilidades e mo
 test('avisos: atributo fora da faixa e limite de nível da Tabela 7', () => {
   const c = base()
   assert.deepEqual(K.raceWarnings('Dwarf', c), [
-    'Constitution 9 is outside the 11–18 range Dwarf requires.',
+    'Constitution 9 is outside the 11–18 range Dwarf requires (PHB Table 7).',
     'Dwarf Thiefs are normally limited to level 12 (PHB Table 7) — this character is already level 14.',
   ])
   assert.equal(K.levelLimitWarning('Gnome', 'Mage', 1), 'Gnome cannot normally be a Mage (PHB Table 7).')
@@ -65,4 +65,15 @@ test('proficiências bônus do kit: casam com o compêndio, ocupam a linha vazia
   assert.equal(c.proficiencies![0].id, 'a')
   K.addKitBonusProficiencies(c, ['Etiquette'], compendium)
   assert.equal(c.proficiencies!.length, 3)
+})
+
+test('seletor de raça: bardo semi-humano recebe o aviso do CBH, não o "cannot normally" do PHB', () => {
+  const bard = { abilities: base().abilities, characterClass: 'Bard' as const, level: 3 }
+  const noKit = K.raceWarnings('Elf', bard)
+  assert.ok(noKit.some((w) => w.startsWith('An Elf can only be a bard')))
+  assert.ok(!noKit.some((w) => w.includes('cannot normally')))
+  assert.deepEqual(K.raceWarnings('Elf', { ...bard, kit: 'Minstrel' }), [])
+  assert.ok(K.raceWarnings('Elf', { ...bard, level: 10, kit: 'Gypsy' }).some((w) => w.includes('limited to level 9')))
+  // Meio-elfo continua pelo PHB (pode ser bardo sem kit).
+  assert.deepEqual(K.raceWarnings('Half-Elf', bard), [])
 })

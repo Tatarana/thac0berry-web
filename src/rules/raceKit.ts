@@ -59,7 +59,7 @@ export function abilityWarnings(race: RaceName, abilities: AbilityScores): strin
   return (Object.keys(abilityKey) as AbilityName[]).flatMap((name) => {
     const range = req[name]
     const score = abilities[abilityKey[name]] as number
-    return score < range.min || score > range.max ? [`${name} ${score} is outside the ${range.min}–${range.max} range ${race} requires.`] : []
+    return score < range.min || score > range.max ? [`${name} ${score} is outside the ${range.min}–${range.max} range ${race} requires (PHB Table 7).`] : []
   })
 }
 
@@ -90,9 +90,32 @@ export function levelLimitWarning(race: RaceName, characterClass: CharacterClass
   return level > limit ? `${race} ${cls}s are normally limited to level ${limit} (PHB Table 7) — this character is already level ${level}.` : null
 }
 
-/** As duas juntas, como o RacePickerSheet mostra antes de confirmar. */
-export function raceWarnings(race: RaceName, c: Pick<PlayerCharacter, 'abilities' | 'characterClass' | 'level'>): string[] {
-  const warning = levelLimitWarning(race, c.characterClass, c.level)
+/** CBH Tabela 13: demi-bardos (semi-humanos só são bardos com estes kits, até este nível). */
+export const demiBardKits: Partial<Record<RaceName, Record<string, number>>> = {
+  Dwarf: { Chanter: 15, Herald: 6, Skald: 12 },
+  Elf: { Gypsy: 9, Herald: 6, Loremaster: 12, Meistersinger: 15, Minstrel: 15 },
+  Gnome: { Charlatan: 6, Herald: 6, Professor: 15, Jester: 15, Jongleur: 9, Riddlemaster: 8 },
+  Halfling: { Herald: 6, Jester: 8, Jongleur: 12, Riddlemaster: 9, Whistler: 15 },
+}
+
+/** Aviso de demi-bardo (CBH Tabela 13): sem o kit da raça, ou acima do nível dele; null se nada a avisar. */
+export function demiBardWarning(race: RaceName, kit: string | null | undefined, level: number): string | null {
+  const table = demiBardKits[race]
+  if (!table) return null
+  const k = normalize(kit ?? '')
+  const name = Object.keys(table).find((n) => k !== '' && k.includes(normalize(n)))
+  if (!name) return `${/^[AEIOU]/.test(race) ? 'An' : 'A'} ${race} can only be a bard with one of these kits: ${Object.keys(table).join(', ')} (CBH, Table 13).`
+  return level > table[name] ? `${race} ${name} bards are limited to level ${table[name]} (CBH, Table 13) — this character is level ${level}.` : null
+}
+
+/**
+ * As duas juntas, como o RacePickerSheet mostra antes de confirmar. Bardo
+ * semi-humano: o aviso do CBH (demi-bardo, com o kit) no lugar do "cannot
+ * normally be a Bard" do PHB.
+ */
+export function raceWarnings(race: RaceName, c: Pick<PlayerCharacter, 'abilities' | 'characterClass' | 'level'> & { kit?: string | null }): string[] {
+  const demiBard = canonicalClass(c.characterClass) === 'Bard' && demiBardKits[race] !== undefined
+  const warning = demiBard ? demiBardWarning(race, c.kit, c.level) : levelLimitWarning(race, c.characterClass, c.level)
   return [...abilityWarnings(race, c.abilities), ...(warning ? [warning] : [])]
 }
 
