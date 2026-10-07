@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/context'
 import { RecordPageFour } from '../components/RecordPageFour'
@@ -22,7 +22,7 @@ import { activeSessionID } from '../lib/sessions'
 import { spellSheetBasis } from '../lib/roster'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
 import { recordSheetPageCount } from '../rules/rules'
-import { classLevels, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny } from '../rules/multiclass'
+import { classLevels, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny, isMultiClass } from '../rules/multiclass'
 import type { PlayerCharacter } from '../types/library'
 
 // Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
@@ -228,16 +228,38 @@ export function CharacterSheet() {
    * a ter folha de magia, está numa campanha e ainda não tem nenhuma ganha a
    * primeira ("First day"), na sessão ativa da campanha.
    */
+  // Trava: a troca de classe e a abertura da ficha não criam dois "First day".
+  const firstDayPending = useRef(false)
   async function afterClassChange(classes: ClassChoice) {
-    if (!character || !sheets || sheets.length > 0 || !hasSpellSheetAny(classes) || !campaignID) return
+    if (!character || !sheets || sheets.length > 0 || !hasSpellSheetAny(classes) || !campaignID || firstDayPending.current) return
+    firstDayPending.current = true
     try {
-      setSheetError(null)
       const sessionID = await activeSessionID(campaignID)
+      setSheetError(null)
       await spellSheets.createSheet(startSpellSheet(sheetBasis(character, classes), [], { sessionID, title: 'First day' }))
     } catch (reason) {
       setSheetError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      firstDayPending.current = false
     }
   }
+  /**
+   * Multiclasse que já tem classe conjuradora mas nenhuma folha (ficha de antes
+   * da MC3a, ou feita no iPad): ganha o "First day" ao abrir. Classe
+   * única segue o iPad (a folha só nasce na troca de classe ou na criação).
+   */
+  const needsFirstDay = !!character && isMultiClass(character) && hasSpellSheetAny(character) && sheets?.length === 0 && !!campaignID
+  const firstDayTried = useRef<string | null>(null)
+  const seedFirstDay = useEffectEvent(() => {
+    // Uma tentativa por ficha (se falhar, o erro aparece e não repete a cada render).
+    if (!character || firstDayTried.current === id) return
+    firstDayTried.current = id ?? null
+    void afterClassChange(character)
+  })
+  useEffect(() => {
+    if (needsFirstDay) seedFirstDay()
+  }, [needsFirstDay, id])
+
   /** Retrato novo (ou null para tirar): reduz como o iPad, sobe para o Storage e liga na ficha. */
   async function changePortrait(file: File | null) {
     if (!userID) return

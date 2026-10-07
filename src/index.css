@@ -3659,9 +3659,32 @@ button.slot-dot:hover {
   padding: 3px 0;
 }
 
-.mc-hp-rule {
-  margin: 4px 0 0;
-  font-size: 0.72rem;
+.mc-hp-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Atalho "?" da ficha (RuleLinkButton do iPad): abre a regra numa janela. */
+.rule-link {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  color: var(--sheet);
+  font-family: var(--font-printed);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.rule-link:hover {
+  background: var(--pen-ink);
 }
 
 /* Níveis de um multiclasse lado a lado: "5 / 4 / 3". */

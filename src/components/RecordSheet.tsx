@@ -18,6 +18,7 @@ import {
   type AbilityKey,
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassWarnings, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
@@ -589,7 +590,15 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           {line('Hearing Checks', 'hearingChecks')}
         </div>
         <div className="rec-hp">
-          <span className="rec-cell-label">Hit Points</span>
+          <span className="rec-cell-label mc-hp-label">
+            Hit Points
+            {/* Multiclasse: a regra de HP fica atrás do "?" (o jogador calcula). */}
+            {isMultiClass(c) && (
+              <RuleLink ruleID="phb_ch03_multi_class_and_dual_class_characters" title="Multi-class hit points">
+                <p>{hitPointsRule(classLevels(c))}</p>
+              </RuleLink>
+            )}
+          </span>
           <span className="rec-hp-numbers">
             {edit ? (
               <>
@@ -624,7 +633,6 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           ) : (
             <span className="rec-cell-label">Hit Dice: {k.hitDiceType || hitDieType(c.characterClass)}</span>
           )}
-          {isMultiClass(c) && <p className="rec-soft mc-hp-rule">{hitPointsRule(classLevels(c))}</p>}
         </div>
         <div className="rec-lines">
           {line('Numbed #', 'numbedNumber')}

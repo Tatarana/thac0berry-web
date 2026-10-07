@@ -116,3 +116,12 @@ entregas e pendências. Atualizar a cada entrega.
   - Psionicist: combinações do CPsiH no seletor (chips) e nos avisos; aba
     Psionics (PSPs, disciplinas, Tabela 4) pelo nível de Psionicist;
   - testes: os 67 de antes passam iguais e 3 novos.
+- 2026-10-07, correções do teste do usuário (web v0.33.1):
+  - a regra de HP do multiclasse quebrava o quadro de HP: agora fica atrás de
+    um "?" ao lado de "Hit Points" (`RuleLink`, o `RuleLinkButton` do iPad), que
+    abre a explicação e o link para a regra do PHB;
+  - multiclasse com classe conjuradora, em campanha e sem folha de magia (ficha
+    de antes da MC3a) ganha o "First day" ao abrir a ficha; trava contra dois
+    "First day" quando a troca de classe e a abertura acontecem juntas;
+  - "CRH)" nas proficiências: defeito em `kits.json` do thac0berry-data (listas
+    de bônus cortadas nas vírgulas de dentro dos parênteses), corrigido lá.
