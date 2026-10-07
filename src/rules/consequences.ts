@@ -11,7 +11,7 @@
 // e a resistência a magia digitados pelo jogador (no iPad, o bloco inteiro é
 // trocado e esses dois campos se perdem; bug registrado no TODO.md de lá).
 
-import type { AbilityScores, CharacterClass, PlayerCharacter, SavingThrows } from '../types/library.ts'
+import type { AbilityScores, CharacterClass, ClassLevel, PlayerCharacter, SavingThrows } from '../types/library.ts'
 import {
   canonicalClass,
   hitDieType,
@@ -196,6 +196,28 @@ export function applyAutomatic(items: ConsequenceItem[], c: PlayerCharacter) {
 function refreshXPNeeded(c: PlayerCharacter) {
   const text = xpNeededForNextLevel(c.level, c.characterClass)
   if (text !== null && c.xpNeededNextLevel !== text) c.xpNeededNextLevel = text
+}
+
+/**
+ * Multiclasse (MC2): troca as outras classes (lista nova). Passa pelo motor
+ * de consequências como uma troca de nível ou de classe: THAC0, saves e magia
+ * ficam pendentes até o jogador revisar. Lista vazia = volta a classe única.
+ */
+export function setMultiClasses(c: PlayerCharacter, multiClasses: ClassLevel[]) {
+  ensureConsequenceSnapshot(c)
+  // Primeiro multiclasse da ficha: o retrato guarda o estado de antes (classe única).
+  if (c.lastAppliedMultiClasses === undefined) c.lastAppliedMultiClasses = (c.multiClasses ?? []).map((k) => ({ ...k }))
+  c.multiClasses = multiClasses.length ? multiClasses.map((k) => ({ ...k })) : null
+  // Dado de vida "d10/d4" quando não foi escrito à mão (o padrão segue as classes).
+  const dice = [c.characterClass, ...multiClasses.map((k) => k.characterClass)].map((k) => hitDieType(k)).join('/')
+  const current = c.combat?.hitDiceType
+  if (!current || /^d\d+(\/d\d+)*$/.test(current)) c.combat = { ...(c.combat ?? {}), hitDiceType: dice }
+}
+
+/** Multiclasse: muda o nível de uma das outras classes. */
+export function setMultiClassLevel(c: PlayerCharacter, index: number, level: number) {
+  const list = (c.multiClasses ?? []).map((k, i) => (i === index ? { ...k, level } : { ...k }))
+  setMultiClasses(c, list)
 }
 
 /** Mudar o nível (onChange de `level` no cabeçalho do iPad). */

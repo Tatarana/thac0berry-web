@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { PlayerCharacter } from '../types/library'
 import { dash } from '../lib/format'
+import { classLabel, isMultiClass } from '../rules/multiclass'
 import type { Edit } from './RecordSheet'
 import { Cell, InkInput, SectionTitle, TextBox } from './SheetBits'
 
@@ -78,7 +79,7 @@ export function RecordPageThree({
             {field('Skin', 'skin')}
             {field('Vision', 'vision')}
             {field('Handedness', 'handedness')}
-            <Cell label="Class" value={c.characterClass} />
+            <Cell label="Class" value={isMultiClass(c) ? classLabel(c) : c.characterClass} />
             <div className="rec-span-2">
               {field('Origin', 'placeOfOrigin')}
             </div>

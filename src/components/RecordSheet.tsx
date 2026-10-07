@@ -13,9 +13,13 @@ import {
   setAbility,
   setClass,
   setLevel,
+  setMultiClassLevel,
+  setMultiClasses,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { backstabMultiplier, bonusLanguages, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassWarnings } from '../rules/multiclass'
+import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -121,6 +125,9 @@ function RecordHeader({
 }) {
   const [pickingRace, setPickingRace] = useState(false)
   const [pickingKit, setPickingKit] = useState(false)
+  const [multiOpen, setMultiOpen] = useState(false)
+  const extraClasses = c.multiClasses ?? []
+  const multiWarnings = multiClassWarnings(c)
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
@@ -144,6 +151,20 @@ function RecordHeader({
                     onClassChanged?.(cls)
                   }}
                 />
+                {/* Multiclasse: as outras classes; o "+" abre a janela (MC2). */}
+                {extraClasses.map((k) => (
+                  <span key={k.characterClass} className="rec-value mc-extra">
+                    /{canonicalClass(k.characterClass)}
+                  </span>
+                ))}
+                <button
+                  className={extraClasses.length ? 'mc-add mc-add-on' : 'mc-add'}
+                  title="Multi-class"
+                  aria-label="Multi-class"
+                  onClick={() => setMultiOpen(true)}
+                >
+                  {extraClasses.length ? '✎' : '+'}
+                </button>
                 <span className="rec-soft"> / </span>
                 <button className="ink-picker-button" aria-label="Kit" onClick={() => setPickingKit(true)}>
                   <span className="rec-value">{c.kit || 'None'}</span>
@@ -154,19 +175,42 @@ function RecordHeader({
             </div>
           ) : (
             <HeaderLine label="Class / Kit">
-              {c.characterClass}
+              {isMultiClass(c) ? classLabel(c) : c.characterClass}
               {c.kit ? ` / ${c.kit}` : ''}
             </HeaderLine>
           )}
           {edit ? (
             <div className="rec-header-line">
-              <InkNumber value={c.level} min={0} max={30} label="Level" onChange={(v) => edit((x) => setLevel(x, v))} />
+              <span className={extraClasses.length ? 'rec-header-inline mc-levels' : 'rec-header-inline'}>
+                <InkNumber value={c.level} min={0} max={30} label="Level" onChange={(v) => edit((x) => setLevel(x, v))} />
+                {extraClasses.map((k, index) => (
+                  <span key={k.characterClass} className="mc-level">
+                    <span className="rec-soft">/</span>
+                    <InkNumber
+                      value={k.level}
+                      min={1}
+                      max={30}
+                      label={`${canonicalClass(k.characterClass)} level`}
+                      onChange={(v) => edit((x) => setMultiClassLevel(x, index, v))}
+                    />
+                  </span>
+                ))}
+              </span>
               <span className="rec-cell-label">Level</span>
             </div>
           ) : (
-            <HeaderLine label="Level">{c.level}</HeaderLine>
+            <HeaderLine label="Level">{isMultiClass(c) ? levelLabel(c) : c.level}</HeaderLine>
           )}
         </div>
+        {multiWarnings.length > 0 && (
+          <p className="mc-warning-line" title={multiWarnings.join('\n')}>
+            ⚠ {multiWarnings[0]}
+            {multiWarnings.length > 1 ? ` (+${multiWarnings.length - 1} more)` : ''}
+          </p>
+        )}
+        {multiOpen && edit && (
+          <MultiClassWindow c={c} onChange={(list) => edit((x) => setMultiClasses(x, list))} onClose={() => setMultiOpen(false)} />
+        )}
         {spheres.length > 0 && <HeaderLine label="Spheres">{spheres.join(', ')}</HeaderLine>}
         <div className="rec-header-row">
           {edit ? (
@@ -271,7 +315,11 @@ function ConsequenceSignal({ c, edit, onApplied }: { c: PlayerCharacter; edit: E
       {/* No body, fora do cabeçalho da ficha (que é todo em caixa alta). */}
       {open &&
         createPortal(
-        <PaperModal title="What Changes" subtitle={`${c.name || 'This character'} — level ${c.level}, ${c.characterClass}`} onClose={close}>
+        <PaperModal
+          title="What Changes"
+          subtitle={`${c.name || 'This character'} — level ${isMultiClass(c) ? levelLabel(c) : c.level}, ${isMultiClass(c) ? classLabel(c) : c.characterClass}`}
+          onClose={close}
+        >
           {items.length === 0 ? (
             <p className="paper-soft">No tracked rule changed value for this edit.</p>
           ) : (
@@ -569,6 +617,7 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           ) : (
             <span className="rec-cell-label">Hit Dice: {k.hitDiceType || hitDieType(c.characterClass)}</span>
           )}
+          {isMultiClass(c) && <p className="rec-soft mc-hp-rule">{hitPointsRule(classLevels(c))}</p>}
         </div>
         <div className="rec-lines">
           {line('Numbed #', 'numbedNumber')}
@@ -778,7 +827,10 @@ function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 // O total assume todo o bônus de Inteligência em armas, como no iPad.
 function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
   const spent = c.weapons.reduce((sum, w) => sum + weaponSlotCost(w), 0)
-  const total = totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
+  // Multiclasse: maior número inicial e ritmo mais rápido (PHB cap. 3), mais o bônus de Inteligência.
+  const total = isMultiClass(c)
+    ? combinedProficiencySlots(classLevels(c), 'weapon') + bonusLanguages(c.abilities.intelligence)
+    : totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
   return (
     <p className={spent > total ? 'rec-soft rec-red' : 'rec-soft'}>
       Weapon Proficiency Slots: {spent}/{total} used

@@ -51,7 +51,7 @@ entregas e pendências. Atualizar a cada entrega.
 | # | Entrega | Estado |
 |---|---|---|
 | MC1 | Formato (`multiClasses`) e regras combinadas, sem tela | feita (web v0.31.0) |
-| MC2 | Ficha: seletor de multiclasse, cabeçalho "Fighter/Mage 5/4", XP por classe, consequências | a fazer |
+| MC2 | Ficha: seletor de multiclasse, cabeçalho "Fighter/Mage 5/4", XP por classe, consequências | feita (web v0.32.0) |
 | MC3 | Recursos por classe: magia (arcana e divina), Turn Undead, perícias de ladrão, psiônicos, XP do relatório | a fazer |
 | MC4 | Classe dupla (humanos) | adiada (decisão 1) |
 | MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, Psionicist do CPsiH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
@@ -70,3 +70,21 @@ entregas e pendências. Atualizar a cada entrega.
     de cada classe pelo nível dela. Motor de consequências guarda o retrato das
     outras classes só quando há multiclasse;
   - testes: os 59 de antes passam iguais (classe única não mudou) e 8 novos.
+- 2026-10-07, MC2 feita (web v0.32.0):
+  - ficha (página 1): "+" tracejado ao lado da classe abre a janela de
+    multiclasse (`src/components/MultiClass.tsx`): acrescentar/tirar classes,
+    combinações padrão da raça (um toque adota), avisos e regra de HP. Cabeçalho
+    mostra "Fighter /Mage /Thief" e os níveis "1 / 2 / 1", cada um editável;
+  - consequências: `setMultiClasses`/`setMultiClassLevel` passam pelo motor
+    (THAC0, saves e slots ficam pendentes até revisar); o retrato de antes do
+    primeiro multiclasse é guardado para o diff funcionar;
+  - dado de vida padrão vira "d10/d4/d6"; a regra de HP aparece no quadro de HP;
+  - slots de proficiência de arma: maior inicial + ritmo mais rápido + INT;
+  - página 2: "Each Class (XP divided equally)" com o próximo nível de cada
+    classe (✓ quando já dá para subir); página 3 e título das consequências com
+    "Fighter/Mage/Thief";
+  - aviso vermelho sob o cabeçalho quando a combinação está fora da tabela,
+    o personagem é humano, é especialista ou passa do limite racial;
+  - classe única: só aparece o "+" ao lado da classe; o resto igual.
+  - Teste com o personagem "Teste MC" (elfo Fighter/Mage/Thief, criado no
+    Sandbox da conta do usuário para os testes da multiclasse).

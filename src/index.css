@@ -3601,3 +3601,71 @@ button.slot-dot:hover {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* ---- Multiclasse (MC2) ---- */
+
+.mc-extra {
+  margin-left: 2px;
+}
+
+.mc-add {
+  margin-left: 6px;
+  width: 22px;
+  height: 22px;
+  border: 1px dashed rgb(47 39 28 / 0.5);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mc-add:hover,
+.mc-add-on {
+  border-style: solid;
+  color: var(--pen-ink);
+}
+
+.mc-level {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.mc-level .ink-input {
+  width: 2.2em;
+}
+
+.mc-warning-line {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #b23a2b;
+}
+
+.mc-warnings {
+  margin: 8px 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: #b23a2b;
+}
+
+.mc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.mc-hp-rule {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+}
+
+/* Níveis de um multiclasse lado a lado: "5 / 4 / 3". */
+.mc-levels .ink-input {
+  width: 2.2em;
+  flex: none;
+}

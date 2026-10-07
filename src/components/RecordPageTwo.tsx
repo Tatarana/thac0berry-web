@@ -1,6 +1,7 @@
 import type { EncumbranceRow, LevelChangeRow, LevelChangesTable, MovementRates, PlayerCharacter, QuantifiedItem } from '../types/library'
 import { dash } from '../lib/format'
 import { defaultEncumbranceTable, levelChanges, xpNeededForNextLevel, xpNote } from '../rules/rules'
+import { classProgress, isMultiClass } from '../rules/multiclass'
 import { useState } from 'react'
 import { loadData } from '../data/load'
 import type { MundaneItem } from '../data/gear'
@@ -260,7 +261,15 @@ function Experience({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         ) : (
           <Cell label="Total XPs" value={c.experience.toLocaleString('en-US')} />
         )}
-        {computedNeeded !== null ? (
+        {isMultiClass(c) ? (
+          // Multiclasse: XP dividido igualmente; o próximo nível de cada classe.
+          <Cell
+            label="Each Class (XP divided equally)"
+            value={classProgress(c)
+              .map((p) => `${p.characterClass} ${p.xp.toLocaleString('en-US')}${p.next !== null ? ` of ${p.next.toLocaleString('en-US')}` : ''}${p.ready ? ' ✓' : ''}`)
+              .join(' · ')}
+          />
+        ) : computedNeeded !== null ? (
           <Cell label="XPs Needed for Next Level" value={computedNeeded} />
         ) : (
           text('XPs Needed for Next Level', 'xpNeededNextLevel')
