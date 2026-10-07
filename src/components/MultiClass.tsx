@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { classLevels, combosFor, hitPointsRule, multiClassOptions, multiClassWarnings } from '../rules/multiclass'
+import { bardCombosFor, classLevels, classWarnings, combosFor, hitPointsRule, levelDrainTarget, multiClassOptions } from '../rules/multiclass'
 import { canonicalClass } from '../rules/rules'
 import type { CharacterClass, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -11,18 +11,23 @@ import { PaperModal } from './DetailBits'
 export function MultiClassWindow({
   c,
   onChange,
+  onDrain,
   onClose,
 }: {
   c: PlayerCharacter
   /** Lista nova das OUTRAS classes (a principal não muda aqui). */
   onChange: (multiClasses: { characterClass: CharacterClass; level: number }[]) => void
+  /** Dreno de nível (MC5): −1 na classe que a regra indica (índice -1 = principal). */
+  onDrain?: (index: number) => void
   onClose: () => void
 }) {
   const extra = c.multiClasses ?? []
   const all = classLevels(c)
   const taken = new Set(all.map((k) => canonicalClass(k.characterClass)))
   const combos = combosFor(c.race)
-  const warnings = multiClassWarnings(c)
+  const warnings = classWarnings(c)
+  const bardCombos = bardCombosFor(c.race)
+  const drain = levelDrainTarget(c)
   const primary = canonicalClass(c.characterClass)
 
   /** Adota uma combinação padrão: mantém a principal e acrescenta as que faltam. */
@@ -83,12 +88,40 @@ export function MultiClassWindow({
         </>
       )}
 
+      {bardCombos.length > 0 && (
+        <>
+          <div className="rec-cell-label rec-left-label">{c.race} bard combinations (CBH) — with the kit</div>
+          <div className="chip-row">
+            {bardCombos.map((combo) => (
+              <button key={combo.classes.join('/')} className="chip" title={`Kit: ${combo.kits.join(' or ')}`} onClick={() => adopt(combo.classes)}>
+                {combo.classes.join('/')} · {combo.kits.join(', ')}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       {warnings.length > 0 && (
         <ul className="mc-warnings">
           {warnings.map((w) => (
             <li key={w}>⚠ {w}</li>
           ))}
         </ul>
+      )}
+
+      {all.length > 1 && onDrain && (
+        <>
+          <div className="rec-cell-label rec-left-label">Level drain</div>
+          <p className="paper-soft">
+            A drained multi-class character loses a level in the class with the highest level first; when levels are equal, in the class that
+            needs the most experience (PHB, Chapter 3).
+          </p>
+          <div className="slot-actions mc-drain">
+            <button className="paper-link" disabled={!drain} onClick={() => drain && onDrain(drain.index)}>
+              {drain ? `Level drain (−1): ${drain.characterClass} ${drain.level} → ${drain.level - 1}` : 'Level drain (−1): every class is at level 1'}
+            </button>
+          </div>
+        </>
       )}
 
       {all.length > 1 && (

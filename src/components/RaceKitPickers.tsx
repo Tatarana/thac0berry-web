@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
+import { classLevels, kitWarnings } from '../rules/multiclass'
 import { hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, races, raceWarnings, type RaceName } from '../rules/raceKit'
 import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -75,7 +76,7 @@ export function KitPicker({
   onChoose,
   onClose,
 }: {
-  character: Pick<PlayerCharacter, 'kit' | 'characterClass'>
+  character: Pick<PlayerCharacter, 'kit' | 'characterClass' | 'level' | 'race' | 'multiClasses'>
   /** null = "None" (sem kit). */
   onChoose: (kit: Kit | null) => void
   onClose: () => void
@@ -85,8 +86,15 @@ export function KitPicker({
   // Descrição do kit (KitDetailSheet do iPad, aberto pelo ⓘ da linha).
   const [detail, setDetail] = useState<Kit | null>(null)
   useEffect(() => {
-    void loadAllKits().then((all) => setKits(kitsAllowedFor(all, character.characterClass).sort((a, b) => a.name.localeCompare(b.name))))
-  }, [character.characterClass])
+    // Multiclasse (MC5): os kits de todas as classes do personagem (um kit no total).
+    const classes = classLevels(character).map((k) => k.characterClass)
+    void loadAllKits().then((all) => {
+      const seen = new Set<string>()
+      const list = classes.flatMap((cls) => kitsAllowedFor(all, cls)).filter((k) => (seen.has(k.id) ? false : (seen.add(k.id), true)))
+      setKits(list.sort((a, b) => a.name.localeCompare(b.name)))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character.characterClass, JSON.stringify(character.multiClasses ?? [])])
   const filtered = useMemo(() => {
     const target = normalize(query)
     return (kits ?? []).filter((k) => target === '' || normalize(k.name).includes(target) || normalize(k.deity ?? '').includes(target))
@@ -113,6 +121,11 @@ export function KitPicker({
               <span className="slot-choice-fav">{character.kit === kit.name ? '★' : ''}</span>
               <span className="rec-value">{kit.name}</span>
               <span className="rec-soft">{[kit.classEligibility.subclass, kit.deity].filter(Boolean).join(' · ')}</span>
+              {kitWarnings(kit, character).map((w) => (
+                <span key={w} className="kit-warning">
+                  ⚠ {w}
+                </span>
+              ))}
             </button>
             <button className="info-btn" aria-label={`About ${kit.name}`} title="Read the kit description" onClick={() => setDetail(kit)}>
               ⓘ

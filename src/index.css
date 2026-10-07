@@ -3723,3 +3723,15 @@ button.slot-dot:hover {
   margin: 2px 0;
   font-size: 0.75rem;
 }
+
+/* MC5: avisos no seletor de kit e dreno de nível. */
+.kit-warning {
+  flex-basis: 100%;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: #b23a2b;
+}
+
+.mc-drain {
+  justify-content: flex-start;
+}

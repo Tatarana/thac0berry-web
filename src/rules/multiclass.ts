@@ -6,6 +6,7 @@
 // resultado de antes.
 
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library.ts'
+import { normalize } from '../lib/search.ts'
 import { levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
 import {
   bestSaves,
@@ -237,7 +238,7 @@ const sameSet = (a: string[], b: string[]) => a.length === b.length && [...a].so
  * fora da tabela da raça, especialista (só o ilusionista gnomo pode) e limite
  * racial de nível de cada classe.
  */
-export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' | 'wizardSchool'>): string[] {
+export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' | 'wizardSchool'> & { kit?: string | null }): string[] {
   if (!isMultiClass(c)) return []
   const classes = classLevels(c)
   const race = matchRace(c.race)
@@ -247,10 +248,19 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
     return cls === 'Mage' && c.wizardSchool === 'Illusion/Phantasm' && race === 'Gnome' ? 'Illusionist' : cls
   })
   if (new Set(names).size !== names.length) warnings.push('The same class appears twice.')
+  // CNH: ninja semi-humano não pode ser multiclasse.
+  if (names.includes('Ninja')) warnings.push('Demihuman ninja cannot be multi-classed (CNH, The Ninja Class).')
+  const bard = race ? bardCombo(race, names) : null
   if (!race) {
     warnings.push('Choose a race: multi-class combinations depend on it (PHB, Chapter 3).')
   } else if (race === 'Human') {
     warnings.push('Humans cannot be multi-class (they can be dual-class instead) — PHB, Chapter 3.')
+  } else if (names.includes('Bard')) {
+    // CBH cap. 3: o multiclasse de bardo vem ligado a kits.
+    if (!bard) warnings.push(`${names.join('/')} is not a standard ${race} bard multi-class (CBH, Chapter 3).`)
+    else if (!kitMatchesAny(c.kit, bard.kits)) {
+      warnings.push(`A ${race} ${names.join('/')} must take the ${bard.kits.map(kitLabel).join(' or ')} kit (CBH, Chapter 3).`)
+    }
   } else if (!(combos[race] ?? []).some((combo) => sameSet(combo, names))) {
     warnings.push(`${names.join('/')} is not a standard ${race} multi-class combination (${names.includes('Psionicist') ? 'CPsiH, Chapter 1' : 'PHB, Chapter 3'}).`)
   }
@@ -259,11 +269,145 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
   }
   if (race) {
     for (const k of classes) {
+      // Bardo semi-humano: limite pelo kit (CBH, Tabela 13), em demiBardWarnings.
+      if (canonicalClass(k.characterClass) === 'Bard' && demiBardKits[race]) continue
       const warning = levelLimitWarning(race, k.characterClass, k.level)
       if (warning) warnings.push(warning)
     }
   }
   return warnings
+}
+
+// --- MC5: bardos do CBH, kits, dreno de nível -----------------------------------------
+
+/** O kit da ficha bate com um dos nomes (por palavra: "Chanter" ~ "Dwarven Chanter"). "True" = True Bard ou sem kit. */
+function kitMatchesAny(kit: string | null | undefined, names: string[]): boolean {
+  const k = normalize(kit ?? '')
+  return names.some((n) => (n === 'True' ? k === '' || k.includes('true bard') : k.includes(normalize(n))))
+}
+const kitLabel = (n: string) => (n === 'True' ? 'True Bard (or no kit)' : n)
+
+interface BardCombo {
+  classes: string[]
+  kits: string[]
+}
+
+/** CBH cap. 3: multiclasse de bardo por raça, com os kits de cada combinação ("True" = True Bard). */
+const bardCombos: Partial<Record<RaceName, BardCombo[]>> = {
+  Dwarf: [{ classes: ['Fighter', 'Bard'], kits: ['Chanter', 'Skald'] }],
+  Elf: [
+    { classes: ['Mage', 'Bard'], kits: ['Minstrel'] },
+    { classes: ['Thief', 'Bard'], kits: ['Gypsy'] },
+  ],
+  Gnome: [
+    { classes: ['Illusionist', 'Bard'], kits: ['Professor'] },
+    { classes: ['Thief', 'Bard'], kits: ['Professor', 'Jongleur'] },
+  ],
+  'Half-Elf': [
+    { classes: ['Fighter', 'Bard'], kits: ['True', 'Blade', 'Gallant', 'Skald'] },
+    { classes: ['Ranger', 'Bard'], kits: ['True', 'Meistersinger'] },
+    { classes: ['Mage', 'Bard'], kits: ['Loremaster', 'Riddlemaster'] },
+    { classes: ['Cleric', 'Bard'], kits: ['True'] },
+    { classes: ['Druid', 'Bard'], kits: ['Meistersinger'] },
+    { classes: ['Thief', 'Bard'], kits: ['True', 'Gypsy', 'Jongleur', 'Thespian'] },
+  ],
+  Halfling: [{ classes: ['Thief', 'Bard'], kits: ['Jongleur'] }],
+}
+
+function bardCombo(race: RaceName, names: string[]): BardCombo | null {
+  return (bardCombos[race] ?? []).find((combo) => sameSet(combo.classes, names)) ?? null
+}
+
+/** As combinações de bardo da raça, para o seletor (classes e kits). */
+export function bardCombosFor(race: string): { classes: string[]; kits: string[] }[] {
+  const r = matchRace(race)
+  return r ? (bardCombos[r] ?? []).map((combo) => ({ classes: combo.classes, kits: combo.kits.map(kitLabel) })) : []
+}
+
+/** CBH Tabela 13: demi-bardos (semi-humanos só são bardos com estes kits, até este nível). */
+const demiBardKits: Partial<Record<RaceName, Record<string, number>>> = {
+  Dwarf: { Chanter: 15, Herald: 6, Skald: 12 },
+  Elf: { Gypsy: 9, Herald: 6, Loremaster: 12, Meistersinger: 15, Minstrel: 15 },
+  Gnome: { Charlatan: 6, Herald: 6, Professor: 15, Jester: 15, Jongleur: 9, Riddlemaster: 8 },
+  Halfling: { Herald: 6, Jester: 8, Jongleur: 12, Riddlemaster: 9, Whistler: 15 },
+}
+
+/**
+ * CBH ("Demihumans as Bards", Tabela 13): anão, elfo, gnomo e halfling só são
+ * bardos com um kit da raça, e até o nível máximo dele. Vale também para
+ * classe única (decisão do usuário); só aviso.
+ */
+export function demiBardWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' | 'kit'>): string[] {
+  const race = matchRace(c.race)
+  const table = race ? demiBardKits[race] : undefined
+  const level = levelOf(c, 'Bard')
+  if (!race || !table || level === null) return []
+  const kit = Object.keys(table).find((name) => kitMatchesAny(c.kit, [name]))
+  if (!kit) return [`A ${race} can only be a bard with one of these kits: ${Object.keys(table).join(', ')} (CBH, Table 13).`]
+  return level > table[kit] ? [`${race} ${kit} bards are limited to level ${table[kit]} (CBH, Table 13) — this character is level ${level}.`] : []
+}
+
+/** Todos os avisos da ficha ligados a classe e kit (multiclasse, demi-bardo), sem repetir. */
+export function classWarnings(c: WithClasses & Pick<PlayerCharacter, 'race' | 'wizardSchool' | 'kit'>): string[] {
+  return [...new Set([...multiClassWarnings(c), ...demiBardWarnings(c)])]
+}
+
+/** As raças aceitas pelo texto de requisitos do kit ("Any", "Half-elf, human", "Any except halfling"…). */
+export function kitAllowsRace(racesText: string | null | undefined, race: string): boolean {
+  const r = matchRace(race)
+  const text = normalize(racesText ?? '')
+  if (!r || text === '' || text === 'none' || text === 'any') return true
+  const forms: Record<RaceName, string[]> = {
+    Human: ['human', 'humans'],
+    Dwarf: ['dwarf', 'dwarves'],
+    Elf: ['elf', 'elves'],
+    Gnome: ['gnome', 'gnomes'],
+    'Half-Elf': ['halfelf'],
+    Halfling: ['halfling', 'halflings'],
+  }
+  // Palavras do texto; "half-elf(ves)" vira uma palavra só, para "elf" não casar dentro dela.
+  const words = (part: string) => part.replace(/half[\s-]?el(f|ves)/g, 'halfelf').split(/[^a-z]+/)
+  const mentions = (part: string) => forms[r].some((f) => words(part).includes(f))
+  if (text.startsWith('any except')) return !mentions(text.slice('any except'.length))
+  return mentions(text)
+}
+
+interface KitInfo {
+  name: string
+  classEligibility: { classGroup: string; subclass?: string | null }
+  mechanics?: { requirements?: { races?: string | null } | null } | null
+}
+
+/**
+ * Avisos de um kit para esta ficha (MC5): kits de guerreiro (CFH cap. 2) e de
+ * ladrão (CTH cap. 3) só para classe única; kit que não aceita a raça (CPrH:
+ * a ordem sacerdotal tem restrições raciais). Kits de sacerdote, de mago (o CWH
+ * não restringe) e de bardo (CBH) valem num multiclasse; um kit no total.
+ */
+export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>): string[] {
+  const warnings: string[] = []
+  if (isMultiClass(c)) {
+    if (kit.classEligibility.classGroup === 'Warrior') warnings.push('Only single-class warriors can take a warrior kit (CFH, Chapter 2).')
+    if (kit.classEligibility.classGroup === 'Rogue' && kit.classEligibility.subclass === 'Thief') {
+      warnings.push('Only single-class thieves can take a thief kit (CTH, Chapter 3).')
+    }
+  }
+  const races = kit.mechanics?.requirements?.races
+  if (c.race && !kitAllowsRace(races, c.race)) warnings.push(`This kit is limited to: ${races}.`)
+  return warnings
+}
+
+/**
+ * PHB cap. 3: o dreno de nível tira primeiro da classe de nível mais alto; em
+ * empate, da classe cujo nível exige mais XP. Devolve o índice (-1 = classe
+ * principal; 0… = posição em multiClasses) e a classe; null se nada a drenar.
+ */
+export function levelDrainTarget(c: WithClasses): { index: number; characterClass: CanonicalClass; level: number } | null {
+  const all = classLevels(c).map((k, i) => ({ index: i - 1, characterClass: canonicalClass(k.characterClass), level: k.level }))
+  const candidates = all.filter((k) => k.level > 1)
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => b.level - a.level || (xpRequired(b.level, b.characterClass) ?? 0) - (xpRequired(a.level, a.characterClass) ?? 0))
+  return candidates[0]
 }
 
 /** As classes que aparecem no seletor de multiclasse (as do PHB e o Psionicist do CPsiH). */

@@ -203,3 +203,53 @@ test('avisos de restrição: mago e sacerdote multiclasse (só texto)', () => {
   assert.deepEqual(M.multiClassRestrictions(fc), [M.multiClassPriestWeaponRule])
   assert.deepEqual(M.multiClassRestrictions({ characterClass: 'Mage', level: 3 }), [])
 })
+
+// --- MC5: bardos do CBH, demi-bardos, ninja, kits, dreno de nível ---
+
+test('bardo multiclasse (CBH): combinação com o kit certo; sem o kit, aviso', () => {
+  const fb = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Bard' as const, level: 3 }], wizardSchool: null }
+  assert.deepEqual(M.multiClassWarnings({ ...fb, race: 'Dwarf', kit: 'Dwarven Chanter' }), [])
+  assert.match(M.multiClassWarnings({ ...fb, race: 'Dwarf', kit: null }).join(' '), /must take the Chanter or Skald kit/)
+  // Meio-elfo Fighter/Bard aceita True Bard ou sem kit.
+  assert.deepEqual(M.multiClassWarnings({ ...fb, race: 'Half-Elf', kit: null }), [])
+  assert.match(M.multiClassWarnings({ ...fb, race: 'Halfling', kit: null }).join(' '), /not a standard Halfling bard multi-class/)
+  assert.deepEqual(M.bardCombosFor('Elf').map((b) => b.classes.join('/')), ['Mage/Bard', 'Thief/Bard'])
+})
+
+test('demi-bardo (CBH Tabela 13): kit da raça e nível máximo, também em classe única', () => {
+  assert.match(M.demiBardWarnings({ characterClass: 'Bard', level: 3, race: 'Elf', kit: null })[0], /only be a bard with one of these kits/)
+  assert.deepEqual(M.demiBardWarnings({ characterClass: 'Bard', level: 9, race: 'Elf', kit: 'Elven Minstrel' }), [])
+  assert.match(M.demiBardWarnings({ characterClass: 'Bard', level: 10, race: 'Elf', kit: 'Gypsy-bard' })[0], /limited to level 9/)
+  assert.deepEqual(M.demiBardWarnings({ characterClass: 'Bard', level: 10, race: 'Half-Elf', kit: null }), [])
+})
+
+test('ninja semi-humano não pode ser multiclasse (CNH)', () => {
+  const w = M.multiClassWarnings({ characterClass: 'Ninja', level: 2, multiClasses: [{ characterClass: 'Fighter', level: 2 }], race: 'Elf', wizardSchool: null })
+  assert.ok(w.some((x) => /ninja cannot be multi-classed/.test(x)))
+})
+
+test('kits: guerreiro e ladrão só classe única; raça do kit', () => {
+  const multi = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Thief' as const, level: 3 }], race: 'Dwarf' }
+  const single = { characterClass: 'Fighter' as const, level: 3, race: 'Dwarf' }
+  const warriorKit = { name: 'Gladiator', classEligibility: { classGroup: 'Warrior', subclass: 'Fighter' } }
+  const thiefKit = { name: 'Bandit', classEligibility: { classGroup: 'Rogue', subclass: 'Thief' } }
+  const priestKit = { name: 'Elven Priest', classEligibility: { classGroup: 'Priest', subclass: 'Cleric' }, mechanics: { requirements: { races: 'Elf' } } }
+  assert.match(M.kitWarnings(warriorKit, multi)[0], /single-class warriors/)
+  assert.deepEqual(M.kitWarnings(warriorKit, single), [])
+  assert.match(M.kitWarnings(thiefKit, multi)[0], /single-class thieves/)
+  assert.match(M.kitWarnings(priestKit, single)[0], /limited to: Elf/)
+  assert.equal(M.kitAllowsRace('Any except halfling', 'Dwarf'), true)
+  assert.equal(M.kitAllowsRace('Any except halfling', 'Halfling'), false)
+  assert.equal(M.kitAllowsRace('Half-elf, human', 'Elf'), false)
+  assert.equal(M.kitAllowsRace('Half-elf, human', 'Half-Elf'), true)
+  assert.equal(M.kitAllowsRace('Any except dwarves and halflings', 'Dwarf'), false)
+})
+
+test('dreno de nível (PHB): classe mais alta; empate, a que exige mais XP', () => {
+  assert.deepEqual(M.levelDrainTarget({ characterClass: 'Fighter', level: 3, multiClasses: [{ characterClass: 'Mage', level: 5 }] }), { index: 0, characterClass: 'Mage', level: 5 })
+  // Empate no 4: Mage (nível 4 exige mais XP que Fighter 4).
+  const tie = M.levelDrainTarget({ characterClass: 'Fighter', level: 4, multiClasses: [{ characterClass: 'Mage', level: 4 }] })
+  const expected = (R.xpRequired(4, 'Mage') ?? 0) > (R.xpRequired(4, 'Fighter') ?? 0) ? 'Mage' : 'Fighter'
+  assert.equal(tie?.characterClass, expected)
+  assert.equal(M.levelDrainTarget({ characterClass: 'Fighter', level: 1, multiClasses: [{ characterClass: 'Mage', level: 1 }] }), null)
+})

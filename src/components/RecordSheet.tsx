@@ -19,7 +19,7 @@ import {
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, multiClassWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -128,7 +128,8 @@ function RecordHeader({
   const [pickingKit, setPickingKit] = useState(false)
   const [multiOpen, setMultiOpen] = useState(false)
   const extraClasses = c.multiClasses ?? []
-  const multiWarnings = multiClassWarnings(c)
+  // Multiclasse e demi-bardo (MC5): todos os avisos de classe e kit.
+  const multiWarnings = classWarnings(c)
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
@@ -216,6 +217,7 @@ function RecordHeader({
               edit((x) => setMultiClasses(x, list))
               onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: list })
             }}
+            onDrain={(index) => edit((x) => (index < 0 ? setLevel(x, x.level - 1) : setMultiClassLevel(x, index, (x.multiClasses ?? [])[index].level - 1)))}
             onClose={() => setMultiOpen(false)}
           />
         )}

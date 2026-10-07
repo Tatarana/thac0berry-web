@@ -66,7 +66,7 @@ entregas e pendências. Atualizar a cada entrega.
 | MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | feita (web v0.34.0) |
 | MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | feita (web v0.35.0) |
 | MC4 | Classe dupla (humanos) | adiada (decisão 1) |
-| MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
+| MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, demi-bardos, ninja, sacerdotes do CPrH, dreno de nível | feita (web v0.36.0) |
 
 ## Pendências (2026-10-07, para quem continuar)
 
@@ -224,3 +224,33 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
     registrado: Mage 1 × 50 = 50 XP, 16 por classe).
   - Com isso a MC3 está completa. Seguem adiadas: MC4 (classe dupla) e MC5
     (kits, bardos do CBH, sacerdotes do CPrH, dreno de nível).
+- 2026-10-07: plano da MC5 aprovado. Decisões:
+  9. Kit de mago num multiclasse: permitido, sem aviso, um kit no total. O
+     Complete Wizard's Handbook (thac0berry-data-mining,
+     `rules_complete_wizards_handbook`) não restringe: o cap. 3 (kits) não fala de
+     multiclasse e o cap. 4 só diz que numa campanha de magos valem multiclasses
+     "as long as one of the class choices is wizard".
+  10. Dreno de nível: botão na janela de multiclasse (aplica a regra do PHB).
+  11. Demi-bardos do CBH (Tabela 13): aviso também em classe única.
+- 2026-10-07, MC5 feita (web v0.36.0):
+  - bardo multiclasse (CBH cap. 3): combinações por raça ligadas a kits ("True"
+    = True Bard ou sem kit), na janela ("Mage/Bard · Minstrel") e nos avisos
+    (fora da tabela, ou sem o kit exigido);
+  - demi-bardos (CBH Tabela 13): anão, elfo, gnomo e halfling só são bardos com
+    um kit da raça, até o nível máximo dele — aviso também em classe única;
+    nesses casos o limite racial do PHB não é repetido;
+  - ninja semi-humano em multiclasse: aviso (CNH);
+  - seletor de kit: num multiclasse lista os kits de todas as classes (um kit no
+    total); aviso em kit de guerreiro (CFH cap. 2) e de ladrão (CTH cap. 3), e em
+    kit que não aceita a raça (texto "Any", "Half-elf, human", "Any except…";
+    CPrH: ordens sacerdotais com restrição racial);
+  - dreno de nível: "Level drain (−1): Mage 2 → 1" na janela — classe mais alta
+    primeiro; empate, a que exige mais XP (PHB). Passa pelo motor de consequências;
+  - avisos da ficha (linha vermelha sob o cabeçalho) agora juntam multiclasse e
+    demi-bardo (`classWarnings`);
+  - testes: 79 (5 novos). Conferido na tela com o "Teste MC" (combinações de
+    bardo do elfo, dreno Mage 2→1 com consequências pendentes, 158 kits das 3
+    classes com os avisos) e o Kelmonito sem aviso novo.
+  - Pendente fora do escopo: o seletor de raça ainda avisa "Elf cannot normally
+    be a Bard (PHB Table 7)" para demi-bardo (é o aviso do PHB; o do CBH aparece
+    na ficha). MC4 (classe dupla) continua adiada.
