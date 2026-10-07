@@ -100,7 +100,7 @@ Em aberto, em ordem:
      armadura, exceto elfo com elven chain; sacerdote só armas do culto
      (Cleric multiclasse: só armas de concussão). Texto exato no PHB,
      `phb_ch03_multi_class_and_dual_class_characters`.
-6. **Dados, listas `recommended`:** o mesmo corte nas vírgulas em 13 kits
+6. ~~**Dados, listas `recommended`:**~~ — feito em 2026-10-07 (ver o log). Era: o mesmo corte nas vírgulas em 13 kits
    (adviser, nobleman_priest, outlaw_druid, barbarian_jungle_dwarf,
    barbarian_lythari, barbarian_wild_elf, forester,
    gladiator_fugitive_hillsfar, mariner_of_evermeet, merchant_sea_elf,
@@ -355,3 +355,16 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
   A tabela de demi-bardos foi para `raceKit.ts` (`demiBardKits`,
   `demiBardWarning`), usada pelo seletor e pela ficha. O título do quadro de
   avisos não cita mais "(PHB Table 7)"; cada aviso cita a sua fonte. Testes: 94.
+- 2026-10-07: listas dos kits consertadas (thac0berry-data `02f81e1`, web
+  v0.38.3 para o deploy pegar os dados). A varredura achou 83 de 351 kits com
+  problema (não 13): `proficiencies.bonus` sujo (entra na ficha: "Proficiency:
+  Endurance", "animal lore. ", "Riding "), cortes dentro de parênteses,
+  cabeçalho do Faerûn em `weapons.recommended` (já está em `weaponSlots`; o
+  texto "Initial/Additional Weapons" foi para `weapons.notes`), "Required:" e
+  "Optional:" dentro de `recommended`, notas truncadas ou "; None", slots de
+  arma ilegíveis por BOM (Old Empires, Lorefinder) e penalidade "3" → "-3"
+  (Lorefinder, Thug). Nomes com qualificador viram o nome do compêndio
+  ("Weaponsmithing, Crude", "Riding, Sea-based"). Script reproduzível:
+  `scripts/fix_kit_lists.py`. O Tunnel Rat tem a fonte deslocada; os valores
+  foram para os rótulos certos sem inventar o número de slots iniciais. O
+  iPad pega os dados novos no próximo `sync_data.py`.
