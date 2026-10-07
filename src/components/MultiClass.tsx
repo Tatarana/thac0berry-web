@@ -6,6 +6,7 @@ import {
   allClasses,
   bardCombosFor,
   classLevels,
+  dualClassOptions,
   classWarnings,
   combosFor,
   dualClassRequirements,
@@ -47,8 +48,8 @@ export function MultiClassWindow({
   initialTab?: Tab
   /** Lista nova das OUTRAS classes (a principal não muda aqui). */
   onChange: (multiClasses: { characterClass: CharacterClass; level: number }[]) => void
-  /** Dreno de nível (MC5): −1 na classe que a regra indica (índice -1 = principal). */
-  onDrain?: (index: number) => void
+  /** Dreno de nível (MC5): −1 na classe que a regra indica (índice -1 = principal; former = classe anterior). */
+  onDrain?: (index: number, former: boolean) => void
   /** Classe dupla (MC4): troca para a classe nova. */
   onDualSwitch: (next: CharacterClass) => void
   onUndoDual: () => void
@@ -73,7 +74,7 @@ export function MultiClassWindow({
       {tab === 'multi' ? (
         <MultiPanel c={c} onChange={onChange} onDrain={onDrain} />
       ) : (
-        <DualPanel c={c} onSwitch={onDualSwitch} onUndo={onUndoDual} onFormerChange={onFormerChange} />
+        <DualPanel c={c} onSwitch={onDualSwitch} onUndo={onUndoDual} onFormerChange={onFormerChange} onDrain={onDrain} />
       )}
     </PaperModal>,
     document.body,
@@ -87,7 +88,7 @@ function MultiPanel({
 }: {
   c: PlayerCharacter
   onChange: (multiClasses: { characterClass: CharacterClass; level: number }[]) => void
-  onDrain?: (index: number) => void
+  onDrain?: (index: number, former: boolean) => void
 }) {
   const extra = c.multiClasses ?? []
   const all = classLevels(c)
@@ -185,7 +186,7 @@ function MultiPanel({
             needs the most experience (PHB, Chapter 3).
           </p>
           <div className="slot-actions mc-drain">
-            <button className="paper-link" disabled={!drain} onClick={() => drain && onDrain(drain.index)}>
+            <button className="paper-link" disabled={!drain} onClick={() => drain && onDrain(drain.index, drain.former)}>
               {drain ? `Level drain (−1): ${drain.characterClass} ${drain.level} → ${drain.level - 1}` : 'Level drain (−1): every class is at level 1'}
             </button>
           </div>
@@ -212,11 +213,13 @@ function DualPanel({
   onSwitch,
   onUndo,
   onFormerChange,
+  onDrain,
 }: {
   c: PlayerCharacter
   onSwitch: (next: CharacterClass) => void
   onUndo: () => void
   onFormerChange: (formerClasses: ClassLevel[]) => void
+  onDrain?: (index: number, former: boolean) => void
 }) {
   const { confirm, dialog } = useConfirm()
   const [target, setTarget] = useState<CharacterClass | null>(null)
@@ -224,7 +227,8 @@ function DualPanel({
   const current = canonicalClass(c.characterClass)
   const restriction = dualClassRestriction(c)
   const taken = new Set(allClasses(c).map((k) => canonicalClass(k.characterClass)))
-  const options = multiClassOptions.filter((o) => !taken.has(canonicalClass(o)))
+  const options = dualClassOptions.filter((o) => !taken.has(canonicalClass(o)))
+  const drain = levelDrainTarget(c)
   const requirements = target ? dualClassRequirements(c, target) : []
   // Depois da troca, a restrição vai até passar o maior nível entre as anteriores e a atual.
   const untilAfter = Math.max(c.level, ...former.map((k) => k.level)) + 1
@@ -358,6 +362,24 @@ function DualPanel({
           </button>
         ))}
       </div>
+
+      {former.length > 0 && onDrain && (
+        <>
+          <div className="rec-cell-label rec-left-label">Level drain</div>
+          <p className="paper-soft">
+            A drained dual-class character loses a level in the class with the highest level first; when levels are equal, in the class that
+            needs the most experience. Until all lost levels are regained he must choose, before each adventure, which class he will use; a
+            former class can never go above the level at which he left it (PHB, Chapter 3).
+          </p>
+          <div className="slot-actions mc-drain">
+            <button className="paper-link" disabled={!drain} onClick={() => drain && onDrain(drain.index, drain.former)}>
+              {drain
+                ? `Level drain (−1): ${drain.former ? 'ex-' : ''}${drain.characterClass} ${drain.level} → ${drain.level - 1}`
+                : 'Level drain (−1): every class is at level 1'}
+            </button>
+          </div>
+        </>
+      )}
 
       {former.length > 0 && (
         <>

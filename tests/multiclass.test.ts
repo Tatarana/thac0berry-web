@@ -246,7 +246,7 @@ test('kits: guerreiro e ladrão só classe única; raça do kit', () => {
 })
 
 test('dreno de nível (PHB): classe mais alta; empate, a que exige mais XP', () => {
-  assert.deepEqual(M.levelDrainTarget({ characterClass: 'Fighter', level: 3, multiClasses: [{ characterClass: 'Mage', level: 5 }] }), { index: 0, characterClass: 'Mage', level: 5 })
+  assert.deepEqual(M.levelDrainTarget({ characterClass: 'Fighter', level: 3, multiClasses: [{ characterClass: 'Mage', level: 5 }] }), { index: 0, former: false, characterClass: 'Mage', level: 5 })
   // Empate no 4: Mage (nível 4 exige mais XP que Fighter 4).
   const tie = M.levelDrainTarget({ characterClass: 'Fighter', level: 4, multiClasses: [{ characterClass: 'Mage', level: 4 }] })
   const expected = (R.xpRequired(4, 'Mage') ?? 0) > (R.xpRequired(4, 'Fighter') ?? 0) ? 'Mage' : 'Fighter'

@@ -5,7 +5,8 @@ import { normalize } from '../lib/search'
 import { activeSessionID } from '../lib/sessions'
 import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
-import { classLevels, isMultiClass, levelOf } from '../rules/multiclass'
+import { classLevels, dualClassRestriction, isDualClass, isMultiClass, levelOf } from '../rules/multiclass'
+import { canonicalClass } from '../rules/rules'
 import { defenseModes, disciplines, initialCost, powerCounts, progression, psionicXP, pspMax, pspMaximum } from '../rules/psionics'
 import { primeRequisites } from '../rules/sessionReport'
 import { isoNow } from '../rules/spellSheets'
@@ -102,7 +103,11 @@ function PsionicReport({ c, sessionID, onClose }: { c: PlayerCharacter; sessionI
   const byPower = new Map<string, number>()
   for (const u of uses) byPower.set(u.power || 'unnamed power', (byPower.get(u.power || 'unnamed power') ?? 0) + u.psp)
   const { psp, xp } = psionicXP(uses)
-  const prime = primeRequisites.Psionicist
+  // Classe dupla (MC4b): psionicista anterior — o XP vai para a classe atual, com o bônus dela.
+  const current = canonicalClass(c.characterClass)
+  const formerPsionicist = isDualClass(c) && current !== 'Psionicist'
+  const restriction = formerPsionicist ? dualClassRestriction(c) : null
+  const prime = (formerPsionicist ? primeRequisites[current] : undefined) ?? primeRequisites.Psionicist
   const base = Object.fromEntries(abilityStats.map((a) => [a, abilityEffect(c, a)?.normal ?? c.abilities[a]])) as Record<string, number>
   const applies = prime.every((a) => base[a] >= 16)
   const bonus = applies ? Math.floor(xp / 10) : 0
@@ -155,6 +160,13 @@ function PsionicReport({ c, sessionID, onClose }: { c: PlayerCharacter; sessionI
             </li>
           )}
         </ul>
+        {formerPsionicist && (
+          <p className={restriction ? 'mc-dual-status report-xp-note' : 'paper-soft report-xp-note'}>
+            {restriction
+              ? `⚠ Psionicist is a former class: while the restriction lasts (until ${restriction.characterClass} ${restriction.untilLevel}), using its powers earns no XP for the encounter and only half for the adventure (PHB, Chapter 3). The total above is what the table would give.`
+              : `Psionicist is a former class: the XP goes to the ${current}, with the ${current} prime requisite bonus.`}
+          </p>
+        )}
         <p className="paper-soft report-xp-note">
           CPsiH Table 3, optional and up to the DM: 10 XP per PSP for a power used to overcome a foe or problem (the rate used here), 15 XP per
           PSP to avoid combat, nothing for trivial uses. Defeating a psionic opponent (100 XP per level) and creating psionic items are not

@@ -66,8 +66,8 @@ entregas e pendências. Atualizar a cada entrega.
 | MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | feita (web v0.34.0) |
 | MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | feita (web v0.35.0) |
 | MC4a | Classe dupla: formato (`formerClasses`), troca explícita, regras na ficha (DC1+DC2) | feita (web v0.37.0) |
-| MC4b | Classe dupla: relatório de XP (aviso) e dreno de nível com as classes antigas (DC3) | planejada |
-| MC4c | Classe dupla nos suplementos: bardo (CBH), psionicista (CPsiH), kits (DC4) | planejada |
+| MC4b | Classe dupla: relatório de XP (aviso) e dreno de nível com as classes antigas (DC3) | feita (web v0.38.0) |
+| MC4c | Classe dupla nos suplementos (CBH, CPsiH, CPH, CRH, CNH, CFH/CTH/CPrH kits) e proficiências | feita (web v0.38.0) |
 | MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, demi-bardos, ninja, sacerdotes do CPrH, dreno de nível | feita (web v0.36.0) |
 
 ## Pendências (2026-10-07, para quem continuar)
@@ -307,3 +307,32 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
   - Pendente (MC4b): relatório de XP da sessão (hoje usa só a classe atual) e
     dreno de nível com as classes anteriores. Proficiências da classe dupla:
     seguem a classe atual (o PHB não detalha; revisar se o usuário quiser).
+- 2026-10-07: o usuário pediu MC4b, MC4c e proficiências numa entrega só.
+  MC4b + MC4c feitas (web v0.38.0):
+  - relatório da sessão (`suggestedXPDual`): só a classe atual ganha XP. Na
+    restrição, magia e Turn Undead de classe anterior ficam fora da soma, com
+    aviso da penalidade e o XP que dariam pela tabela (decisão 15). Depois da
+    restrição, cada tipo de magia conta pela tabela da classe que a dá, com o
+    bônus de 10% da classe atual (interpretação: é ela que recebe o XP).
+    Relatório psiônico: psionicista anterior mostra o mesmo aviso e usa o bônus
+    da classe atual;
+  - dreno de nível: `levelDrainTarget` inclui as classes anteriores (`former`);
+    botão também na aba Dual-class, com o texto do PHB sobre recuperar níveis
+    (a classe anterior nunca passa do nível em que congelou — só texto: o nível
+    original não é guardado);
+  - suplementos: CBH (bardo) e CRH (ranger) repetem os limiares do PHB; CPsiH
+    segue a regra normal; CPH (paladino) tem limiares próprios (sair: 15 em
+    STR, CON, WIS; entrar: 17 em STR, DEX, WIS, CHA) e não troca com
+    guerreiros, ladrões nem magos; CNH: ninja de classe dupla "não
+    recomendado" (Ninja entra nas opções, com aviso), quem vira ninja só com
+    Stealer-In ou Shadow Warrior, só o Lone Wolf deixa de ser ninja; kits
+    (CFH, CTH, CPrH): a classe dupla mantém o kit da primeira classe, um kit no
+    total — o campo único já garante, e o aviso de kit de guerreiro/ladrão
+    continua só para multiclasse. Bárbaros (CBarH) não tratados;
+  - proficiências (sem regra escrita; interpretação, com nota na ficha): slots
+    de cada classe pelo nível dela, os iniciais só da primeira classe;
+  - folha de magia: "Mage 1 · ex-Cleric 3" no cabeçalho (antes "Mage/Cleric");
+  - testes: 92 (5 novos). Conferido na tela com o "Teste DC" (movido para a
+    campanha "Teste W3.1b B"): troca Cleric 3 → Mage 1, dreno ex-Cleric 3 → 2
+    (depois devolvido a 3), slots 0/4 com a nota, relatório com Turn Undead de
+    ex-Cleric na restrição → 0 XP e o aviso (100 XP pela tabela).

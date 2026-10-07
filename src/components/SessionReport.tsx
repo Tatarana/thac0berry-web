@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
 import { canonicalClass } from '../rules/rules'
-import { barFraction, itemCharges, spellBars, suggestedXP, suggestedXPMulti } from '../rules/sessionReport'
-import { classLevels, isMultiClass } from '../rules/multiclass'
+import { barFraction, itemCharges, spellBars, suggestedXP, suggestedXPDual, suggestedXPMulti } from '../rules/sessionReport'
+import { classLevels, dualClassRestriction, isDualClass, isMultiClass } from '../rules/multiclass'
 import type { PlayerCharacter, SpellSheet } from '../types/library'
 import { PaperModal } from './DetailBits'
 
@@ -24,7 +24,7 @@ const abilityShort: Record<string, string> = {
   charisma: 'CHA',
 }
 
-type Who = Pick<PlayerCharacter, 'name' | 'characterClass' | 'level' | 'abilities' | 'activeEffects' | 'multiClasses'>
+type Who = Pick<PlayerCharacter, 'name' | 'characterClass' | 'level' | 'abilities' | 'activeEffects' | 'multiClasses' | 'formerClasses'>
 
 function Experience({ character, sheets }: { character: Who; sheets: SpellSheet[] }) {
   // Atributos sem efeitos temporários (uma poção não conta para o bônus).
@@ -34,6 +34,7 @@ function Experience({ character, sheets }: { character: Who; sheets: SpellSheet[
   >
   const cls = canonicalClass(character.characterClass)
   if (isMultiClass(character)) return <MultiExperience character={character} base={base} sheets={sheets} />
+  if (isDualClass(character)) return <DualExperience character={character} base={base} sheets={sheets} />
   const xp = suggestedXP(cls, base, sheets)
   return (
     <>
@@ -72,6 +73,75 @@ function Experience({ character, sheets }: { character: Who; sheets: SpellSheet[
         Individual awards are optional and up to the DM: only significant uses count (spells cast to further the deity&apos;s ethos or to
         overcome foes or problems).
         {xp.countsAttempts ? ' Turn Undead counts every attempt; by the rule only successful ones earn XP.' : ''} Add the XP to the sheet yourself.
+      </p>
+    </>
+  )
+}
+
+/**
+ * Classe dupla (MC4b): só a classe atual ganha XP. Na restrição, a magia das
+ * classes anteriores fica fora da soma, com o aviso da penalidade (decisão 15).
+ */
+function DualExperience({ character, base, sheets }: { character: Who; base: Record<string, number>; sheets: SpellSheet[] }) {
+  const current = canonicalClass(character.characterClass)
+  const former = (character.formerClasses ?? []).map((k) => canonicalClass(k.characterClass))
+  const restriction = dualClassRestriction(character)
+  const xp = suggestedXPDual(current, former, restriction !== null, base as Parameters<typeof suggestedXPDual>[3], sheets)
+  const lines = xp.groups.flatMap((g) => g.lines)
+  return (
+    <>
+      <div className="rec-cell-label">Experience (suggested)</div>
+      <ul className="report-charges report-xp">
+        {lines.length === 0 && (
+          <li>
+            <span className="paper-soft">No spell or Turn Undead awards for the {current} in this session (DMG Table 34).</span>
+          </li>
+        )}
+        {lines.map((line) => (
+          <li key={line.label}>
+            <span>
+              {line.label} <span className="paper-soft">({line.detail})</span>
+            </span>
+            <span className="report-charge-count">{line.xp.toLocaleString('en-US')} XP</span>
+          </li>
+        ))}
+        {lines.length > 0 && xp.primeBonus && (
+          <li>
+            <span>
+              Prime requisite bonus ({current}){' '}
+              <span className="paper-soft">
+                ({xp.primeBonus.abilities.map((a) => `${abilityShort[a]} ${base[a]}`).join(', ')}; +10% needs 16+
+                {xp.primeBonus.applies ? '' : ', not met'})
+              </span>
+            </span>
+            <span className="report-charge-count">{xp.primeBonus.xp.toLocaleString('en-US')} XP</span>
+          </li>
+        )}
+        <li className="report-xp-total">
+          <span>Total ({current})</span>
+          <span className="report-charge-count">{xp.total.toLocaleString('en-US')} XP</span>
+        </li>
+      </ul>
+      {xp.penalized && restriction && (
+        <p className="mc-dual-status report-xp-note">
+          ⚠ {xp.penalized.classes.join(' and ')} abilities (spells, Turn Undead) were used during the restriction (until {restriction.characterClass}{' '}
+          {restriction.untilLevel}): they earn nothing ({xp.penalized.xp.toLocaleString('en-US')} XP by the table), and by the rule the encounter
+          where it was used earns no XP and the adventure only half (PHB, Chapter 3).
+        </p>
+      )}
+      {xp.unassigned > 0 && (
+        <p className="paper-soft report-xp-note">
+          {xp.unassigned} additional spell{xp.unassigned === 1 ? '' : 's'} written by hand could not be matched to divine or arcane magic and
+          earned no XP.
+        </p>
+      )}
+      <p className="paper-soft report-xp-note">
+        Individual awards are optional and up to the DM. A dual-class character earns experience only in the current class;
+        {restriction
+          ? ' while the restriction lasts, former class abilities earn nothing.'
+          : " spells of a former class count by that class's award, with the current class's prime requisite bonus."}
+        {xp.countsAttempts ? ' Turn Undead counts every attempt; by the rule only successful ones earn XP.' : ''} Add the XP to the sheet
+        yourself.
       </p>
     </>
   )

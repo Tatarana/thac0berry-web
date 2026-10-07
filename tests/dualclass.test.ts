@@ -7,7 +7,8 @@ import { test } from 'node:test'
 import * as C from '../src/rules/consequences.ts'
 import * as M from '../src/rules/multiclass.ts'
 import * as R from '../src/rules/rules.ts'
-import type { PlayerCharacter } from '../src/types/library.ts'
+import { suggestedXPDual } from '../src/rules/sessionReport.ts'
+import type { PlayerCharacter, SpellSheet } from '../src/types/library.ts'
 
 const abilities = { strength: 17, dexterity: 10, constitution: 14, intelligence: 10, wisdom: 16, charisma: 11 }
 
@@ -107,4 +108,66 @@ test('o seletor livre não congela nada', () => {
   assert.equal(c.formerClasses, undefined)
   assert.equal(c.level, 3)
   assert.equal(c.experience, 3500)
+})
+
+// --- MC4b/MC4c ---------------------------------------------------------------------
+
+type Sheet = Pick<SpellSheet, 'slotBoard' | 'entries' | 'magicItems' | 'turnUndeadUsed'>
+const day = (over: Partial<Sheet>): Sheet => ({ slotBoard: { slots: [] }, entries: [], magicItems: [], turnUndeadUsed: 0, ...over })
+const scores = { ...abilities, intelligence: 16 }
+// Mage atual, ex-Cleric: 1 slot divino de círculo 2, 1 arcano de círculo 1, 1 Turn Undead.
+const sheets = [
+  day({
+    slotBoard: {
+      slots: [
+        { id: 'a', level: 2, caster: 'divine', isSpent: true, orderKey: 0 },
+        { id: 'b', level: 1, caster: 'arcane', isSpent: true, orderKey: 1 },
+      ],
+    },
+    turnUndeadUsed: 1,
+  }),
+]
+
+test('XP da classe dupla na restrição: só a classe atual; a magia anterior vira aviso', () => {
+  const xp = suggestedXPDual('Mage', ['Cleric'], true, scores, sheets)
+  assert.equal(xp.subtotal, 50)
+  // INT 16: +10% do Mage.
+  assert.equal(xp.total, 55)
+  assert.deepEqual(xp.penalized, { classes: ['Cleric'], xp: 200 + 100 })
+})
+
+test('XP da classe dupla depois da restrição: cada tipo pela sua tabela; bônus da classe atual', () => {
+  const xp = suggestedXPDual('Mage', ['Cleric'], false, scores, sheets)
+  assert.equal(xp.subtotal, 50 + 200 + 100)
+  assert.equal(xp.primeBonus?.xp, 35)
+  assert.equal(xp.penalized, null)
+  assert.equal(xp.countsAttempts, true)
+})
+
+test('dreno de nível com as classes anteriores (mais alta primeiro)', () => {
+  const c = { characterClass: 'Fighter' as const, level: 4, formerClasses: [{ characterClass: 'Cleric' as const, level: 6 }] }
+  assert.deepEqual(M.levelDrainTarget(c), { index: 0, former: true, characterClass: 'Cleric', level: 6 })
+  const tie = { characterClass: 'Mage' as const, level: 3, formerClasses: [{ characterClass: 'Fighter' as const, level: 3 }] }
+  // Empate: a que exige mais XP no nível (Mage 3 = 5.000; Fighter 3 = 4.000).
+  assert.equal(M.levelDrainTarget(tie)?.characterClass, 'Mage')
+  assert.equal(M.levelDrainTarget(tie)?.former, false)
+})
+
+test('suplementos: limiares do paladino (CPH) e avisos de ninja (CNH)', () => {
+  const pal = { characterClass: 'Paladin' as const, level: 3, race: 'Human', abilities: { ...abilities, constitution: 15, wisdom: 15 } }
+  const leave = M.dualClassRequirements(pal, 'Cleric')
+  assert.ok(leave.some((r) => r.text.includes('to leave a Paladin (CPH)') && r.ok))
+  assert.ok(M.dualClassRequirements(pal, 'Thief').some((r) => r.text.startsWith('A paladin cannot dual-class') && !r.ok))
+  const toPal = M.dualClassRequirements(cleric(), 'Paladin')
+  assert.ok(toPal.some((r) => r.text.includes('to become a Paladin (CPH)') && !r.ok))
+  const ninja = { characterClass: 'Ninja' as const, level: 1, race: 'Human', kit: 'Lone Wolf', formerClasses: [{ characterClass: 'Thief' as const, level: 3 }] }
+  assert.ok(M.dualClassWarnings(ninja).some((w) => w.includes('Stealer-In')))
+  const exNinja = { characterClass: 'Thief' as const, level: 1, race: 'Human', kit: null, formerClasses: [{ characterClass: 'Ninja' as const, level: 3 }] }
+  assert.ok(M.dualClassWarnings(exNinja).some((w) => w.includes('Lone Wolf')))
+})
+
+test('slots de proficiência da classe dupla (interpretação): cada classe pelo seu nível, iniciais da primeira', () => {
+  const c = { characterClass: 'Fighter' as const, level: 4, formerClasses: [{ characterClass: 'Cleric' as const, level: 3 }] }
+  // Cleric: 2 iniciais + 1 a cada 4 níveis (3 → 0); Fighter: 1 a cada 3 níveis (4 → 1).
+  assert.equal(M.dualProficiencySlots(c, 'weapon'), 2 + 0 + 1)
 })

@@ -22,7 +22,7 @@ import {
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -235,7 +235,14 @@ function RecordHeader({
               edit((x) => setMultiClasses(x, list))
               onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: list, formerClasses: c.formerClasses })
             }}
-            onDrain={(index) => edit((x) => (index < 0 ? setLevel(x, x.level - 1) : setMultiClassLevel(x, index, (x.multiClasses ?? [])[index].level - 1)))}
+            onDrain={(index, former) =>
+              edit((x) => {
+                // Classe dupla (MC4b): a classe anterior perde o nível na lista dela.
+                if (former) setFormerClasses(x, (x.formerClasses ?? []).map((k, i) => (i === index ? { ...k, level: k.level - 1 } : k)))
+                else if (index < 0) setLevel(x, x.level - 1)
+                else setMultiClassLevel(x, index, (x.multiClasses ?? [])[index].level - 1)
+              })
+            }
             onDualSwitch={(next) => {
               const former = [...(c.formerClasses ?? []), { characterClass: c.characterClass, level: c.level }]
               const run = (readMagic: { id: string; name: string } | null) => {
@@ -877,9 +884,13 @@ function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
   const spent = c.weapons.reduce((sum, w) => sum + weaponSlotCost(w), 0)
   // Multiclasse: maior número inicial e ritmo mais rápido (PHB cap. 3), mais o bônus de Inteligência.
+  // Classe dupla (MC4c): cada classe pelo seu nível; iniciais só da primeira (interpretação).
+  const dual = isDualClass(c) && !isMultiClass(c)
   const total = isMultiClass(c)
     ? combinedProficiencySlots(classLevels(c), 'weapon') + bonusLanguages(c.abilities.intelligence)
-    : totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
+    : dual
+      ? dualProficiencySlots(c, 'weapon') + bonusLanguages(c.abilities.intelligence)
+      : totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
   return (
     <>
       {/* Multiclasse (MC3c): restrições de armadura do mago e de armas do sacerdote. */}
@@ -891,6 +902,7 @@ function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
     <p className={spent > total ? 'rec-soft rec-red' : 'rec-soft'}>
       Weapon Proficiency Slots: {spent}/{total} used
     </p>
+      {dual && <p className="rec-soft mc-restriction">{dualProficiencyNote}</p>}
     </>
   )
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
 import type { ServerSheet } from '../lib/useSpellSheets'
-import { casterLevel, classLabel, levelLabel } from '../rules/multiclass'
+import { casterLevel, classLabel, formerLabel, levelLabel } from '../rules/multiclass'
 import { bonusSpellTotals, canonicalClass, hasSpellSheet, isArcaneCaster } from '../rules/rules'
 import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent } from '../rules/spellSheets'
 import type { CharacterClass, ClassLevel, PlayerCharacter, SpellSlot } from '../types/library'
@@ -291,7 +291,7 @@ export function SpellSheetPage({
   classes: ClassLevel[]
   edit?: SheetEdit
   /** Esferas e grimório (para o seletor de magia). */
-  character?: Pick<PlayerCharacter, 'sphereAccess' | 'wizardSpellbook'>
+  character?: Pick<PlayerCharacter, 'sphereAccess' | 'wizardSpellbook' | 'formerClasses'>
   favorites?: Set<string>
   /** Quantas vezes cada magia foi memorizada, em todas as folhas. */
   usage?: Map<string, number>
@@ -353,7 +353,11 @@ export function SpellSheetPage({
         <div className="spell-sheet-who">
           <span className="rec-cell-label">Character</span>
           <span className="rec-value">
-            {characterName || 'Unnamed Character'} · {classes.length > 1 ? classLabel(who) : classes[0].characterClass} {levelLabel(who)}
+            {characterName || 'Unnamed Character'} ·{' '}
+            {(character?.formerClasses ?? []).length > 0
+              ? // Classe dupla (MC4b): "Mage 1 · ex-Cleric 3", não "Mage/Cleric 1/3".
+                `${classes[0].characterClass} ${classes[0].level} · ${formerLabel({ ...classes[0], formerClasses: character?.formerClasses })}`
+              : `${classes.length > 1 ? classLabel(who) : classes[0].characterClass} ${levelLabel(who)}`}
           </span>
         </div>
         <div className="spell-sheet-who">

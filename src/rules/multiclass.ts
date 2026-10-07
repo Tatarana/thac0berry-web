@@ -421,8 +421,12 @@ export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter,
  * empate, da classe cujo nível exige mais XP. Devolve o índice (-1 = classe
  * principal; 0… = posição em multiClasses) e a classe; null se nada a drenar.
  */
-export function levelDrainTarget(c: WithClasses): { index: number; characterClass: CanonicalClass; level: number } | null {
-  const all = classLevels(c).map((k, i) => ({ index: i - 1, characterClass: canonicalClass(k.characterClass), level: k.level }))
+export function levelDrainTarget(c: WithClasses): { index: number; former: boolean; characterClass: CanonicalClass; level: number } | null {
+  // Classe dupla (MC4b): as anteriores entram também (former = true; index na lista delas).
+  const all = [
+    ...classLevels(c).map((k, i) => ({ index: i - 1, former: false, characterClass: canonicalClass(k.characterClass), level: k.level })),
+    ...(c.formerClasses ?? []).map((k, i) => ({ index: i, former: true, characterClass: canonicalClass(k.characterClass), level: k.level })),
+  ]
   const candidates = all.filter((k) => k.level > 1)
   if (candidates.length === 0) return null
   candidates.sort((a, b) => b.level - a.level || (xpRequired(b.level, b.characterClass) ?? 0) - (xpRequired(a.level, a.characterClass) ?? 0))
@@ -485,25 +489,48 @@ export function dualClassRequirements(
 ): Requirement[] {
   const current = canonicalClass(c.characterClass)
   const target = canonicalClass(next)
-  const scores = (cls: string, min: number): Requirement => {
-    const prime = primeRequisites[cls]
+  const scores = (cls: string, min: number, special?: { abilities: Ability[]; source: string }): Requirement => {
+    const prime = special?.abilities ?? primeRequisites[cls]
     if (!prime) return { text: `${cls}: no prime requisite on the PHB tables`, ok: true }
     const values = prime.map((a) => `${abilityShort[a]} ${c.abilities[a]}`).join(', ')
-    return { text: `${min}+ in the ${cls} prime requisites (${values})`, ok: prime.every((a) => c.abilities[a] >= min) }
+    const what = special ? `${min}+ in ${prime.map((a) => abilityShort[a]).join(', ')} to ${min === 15 ? 'leave' : 'become'} a ${cls} (${special.source})` : `${min}+ in the ${cls} prime requisites`
+    return { text: `${what} (${values})`, ok: prime.every((a) => c.abilities[a] >= min) }
   }
   const taken = allClasses(c).map((k) => canonicalClass(k.characterClass))
-  return [
+  const list: Requirement[] = [
     { text: 'Human (only humans can be dual-classed)', ok: matchRace(c.race) === 'Human' },
     { text: `Level 2 or higher as ${current} (now ${c.level})`, ok: c.level >= 2 },
-    scores(current, 15),
-    scores(target, 17),
+    scores(current, 15, leaveRequirement[current]),
+    scores(target, 17, enterRequirement[target]),
     { text: `${target} is a new class for this character`, ok: !taken.includes(target) },
     { text: 'Not multi-classed', ok: !isMultiClass(c) },
   ]
+  // CPH cap. 4: o paladino não troca com guerreiros, ladrões nem magos.
+  const paladinBlocked = ['Fighter', 'Ranger', 'Thief', 'Mage']
+  if (current === 'Paladin' && paladinBlocked.includes(target)) list.push({ text: `A paladin cannot dual-class to ${target} (CPH, Chapter 4)`, ok: false })
+  if (target === 'Paladin' && taken.some((t) => ['Fighter', 'Ranger'].includes(t))) {
+    list.push({ text: 'A warrior cannot convert to a paladin (CPH, Chapter 4)', ok: false })
+  }
+  // CNH cap. 1: classe dupla com ninja não é recomendada.
+  if (target === 'Ninja' || current === 'Ninja') list.push({ text: 'Dual-class ninja are not recommended (CNH, Chapter 1) — only if the DM allows', ok: false })
+  return list
 }
 
+type Ability = 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma'
+
+/** CPH cap. 4: limiares próprios do paladino (os outros Complete repetem os do PHB). */
+const leaveRequirement: Partial<Record<CanonicalClass, { abilities: Ability[]; source: string }>> = {
+  Paladin: { abilities: ['strength', 'constitution', 'wisdom'], source: 'CPH' },
+}
+const enterRequirement: Partial<Record<CanonicalClass, { abilities: Ability[]; source: string }>> = {
+  Paladin: { abilities: ['strength', 'dexterity', 'wisdom', 'charisma'], source: 'CPH' },
+}
+
+/** As classes que aparecem na troca de classe dupla (as do multiclasse e o ninja do CNH). */
+export const dualClassOptions: CharacterClass[] = [...multiClassOptions, 'Ninja']
+
 /** Avisos da ficha de classe dupla (só aviso, como no multiclasse). */
-export function dualClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'>): string[] {
+export function dualClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'> & { kit?: string | null }): string[] {
   if (!isDualClass(c)) return []
   const warnings: string[] = []
   const race = matchRace(c.race)
@@ -513,6 +540,14 @@ export function dualClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'>
   const names = (c.formerClasses ?? []).map((k) => canonicalClass(k.characterClass))
   if (names.includes(current)) warnings.push(`${current} is already a former class: a dual-class character cannot go back to a class he left (PHB, Chapter 3).`)
   if (new Set(names).size !== names.length) warnings.push('The same former class appears twice.')
+  // CNH cap. 1: kits do ninja de classe dupla.
+  const kit = normalize(c.kit ?? '')
+  if (current === 'Ninja' && kit && !['stealer-in', 'stealer in', 'shadow warrior'].some((k) => kit.includes(k))) {
+    warnings.push('A character who switches to ninja can only take the Stealer-In or Shadow Warrior kit (CNH, Chapter 1).')
+  }
+  if (names.includes('Ninja') && current !== 'Ninja' && !kit.includes('lone wolf')) {
+    warnings.push('Only a Lone Wolf ninja can switch to another class (CNH, Chapter 1).')
+  }
   return warnings
 }
 
@@ -525,3 +560,22 @@ export function dualHitPointsRule(c: WithClasses): string {
     ? `The character keeps the Hit Dice and hit points of his former classes and gains none while advancing as ${current}, until level ${restriction.untilLevel}. From then on, roll ${die} for each new level (PHB, Chapter 3).`
     : `The character keeps the Hit Dice and hit points of his former classes and rolls ${die} (${current}) for each new level (PHB, Chapter 3).`
 }
+
+/**
+ * Slots de proficiência da classe dupla (MC4c). O PHB e os Complete não dizem
+ * como contar; interpretação: o personagem guarda os slots de cada classe pelo
+ * nível dela (a anterior, congelada), e os iniciais só vêm da primeira classe.
+ */
+export function dualProficiencySlots(c: WithClasses, kind: 'weapon' | 'nonweapon'): number {
+  const order = [...(c.formerClasses ?? []), { characterClass: c.characterClass, level: c.level }]
+  return order.reduce((sum, k, i) => {
+    const row = proficiencyRow(k.characterClass)
+    if (!row) return sum
+    const initial = i === 0 ? (num(kind === 'weapon' ? row.initialWeapon : row.initialNonweapon) ?? 0) : 0
+    const every = num(kind === 'weapon' ? row.levelsWeapon : row.levelsNonweapon) ?? 0
+    return sum + initial + (every > 0 ? Math.trunc(k.level / every) : 0)
+  }, 0)
+}
+
+export const dualProficiencyNote =
+  'Dual-class: the slots of each class at its own level, the initial slots only from the first class (the rules do not say; this is an interpretation).'

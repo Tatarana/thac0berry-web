@@ -251,6 +251,51 @@ export function suggestedXPMulti(classes: string[], abilities: Record<Ability, n
   return { groups, total, classCount, perClass: Math.floor(total / classCount), countsAttempts, unassigned }
 }
 
+// --- XP sugerido de uma classe dupla (MC4b, docs/multiclasse.md) -----------------------
+//
+// PHB cap. 3: só a classe atual ganha XP. Durante a restrição, usar magia (ou
+// Turn Undead) de uma classe anterior não dá XP ao encontro e só metade à
+// aventura (decisão 15: só aviso; esses usos ficam fora da soma). Depois da
+// restrição, a magia de cada tipo conta pela tabela da classe que a dá
+// (como no multiclasse), e o bônus de 10% é o da classe atual, que recebe o XP.
+
+export interface DualXpSuggestion {
+  groups: XpGroup[]
+  subtotal: number
+  primeBonus: { abilities: Ability[]; applies: boolean; xp: number } | null
+  total: number
+  countsAttempts: boolean
+  unassigned: number
+  /** Restrição: classes anteriores cuja magia foi usada e o XP que ela daria pela tabela. */
+  penalized: { classes: string[]; xp: number } | null
+}
+
+export function suggestedXPDual(
+  current: string,
+  former: string[],
+  restricted: boolean,
+  abilities: Record<Ability, number>,
+  sheets: Sheet[],
+): DualXpSuggestion {
+  const all = suggestedXPMulti([current, ...former], abilities, sheets)
+  const kept = restricted ? all.groups.filter((g) => g.characterClass === current) : all.groups
+  const dropped = restricted ? all.groups.filter((g) => g.characterClass !== current && g.lines.length > 0) : []
+  const groups = kept.map((g) => ({ ...g, primeBonus: null }))
+  const subtotal = groups.reduce((sum, g) => sum + g.subtotal, 0)
+  const prime = primeRequisites[current]
+  const applies = prime !== undefined && prime.every((a) => abilities[a] >= 16)
+  const bonus = applies ? Math.floor(subtotal / 10) : 0
+  return {
+    groups,
+    subtotal,
+    primeBonus: prime ? { abilities: prime, applies, xp: bonus } : null,
+    total: subtotal + bonus,
+    countsAttempts: groups.some((g) => g.lines.some((l) => l.label === 'Turn Undead')),
+    unassigned: all.unassigned,
+    penalized: dropped.length ? { classes: dropped.map((g) => g.characterClass), xp: dropped.reduce((sum, g) => sum + g.subtotal, 0) } : null,
+  }
+}
+
 /** barWidth do iPad: fração da maior barra; barra com valor nunca some (mínimo visível). */
 export function barFraction(count: number, maxCount: number): number {
   if (maxCount <= 0) return 0
