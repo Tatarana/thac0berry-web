@@ -12,13 +12,14 @@ import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEf
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
+import { PsionicsPanel } from '../components/PsionicsPanel'
 import { SessionReport } from '../components/SessionReport'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
-import { computedSpellSlotAllotments, hasSpellSheet, isArcaneCaster, recordSheetPageCount } from '../rules/rules'
+import { canonicalClass, computedSpellSlotAllotments, hasSpellSheet, isArcaneCaster, recordSheetPageCount } from '../rules/rules'
 import type { CharacterClass, PlayerCharacter } from '../types/library'
 
 // Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
@@ -96,6 +97,17 @@ function NotebookIcon() {
   )
 }
 
+// Psionics (Psionicist): uma cabeça com ondas.
+function PsionicsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <circle cx="12" cy="13" r="5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5.5 8.5a9 9 0 0 1 13 0M3 5.5a13 13 0 0 1 18 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="13" r="1.6" fill="currentColor" />
+    </svg>
+  )
+}
+
 // Efeitos ativos ("sparkles" do iPad): acende quando há algum efeito.
 function EffectsIcon() {
   return (
@@ -121,7 +133,7 @@ function SpellbookIcon() {
 export function CharacterSheet() {
   const { id } = useParams()
   const [params, setParams] = useSearchParams()
-  const view = (['spells', 'spellbook', 'notebook'] as const).find((v) => v === params.get('view')) ?? 'record'
+  const view = (['spells', 'spellbook', 'notebook', 'psionics'] as const).find((v) => v === params.get('view')) ?? 'record'
   // Efeitos ativos: janela por cima da ficha, não uma aba (pedido do usuário).
   const [effectsOpen, setEffectsOpen] = useState(false)
   // Relatório da sessão do dia aberto (SessionReportView do iPad).
@@ -343,6 +355,18 @@ export function CharacterSheet() {
               >
                 <EffectsIcon />
               </button>
+              {/* Psionicist: aba Psionics (PSPs, disciplinas, poderes, modos de defesa). */}
+              {canonicalClass(character.characterClass) === 'Psionicist' && (
+                <button
+                  className={view === 'psionics' ? 'paper-tab paper-tab-on' : 'paper-tab'}
+                  title="Psionics"
+                  aria-label="Psionics"
+                  aria-current={view === 'psionics' ? 'page' : undefined}
+                  onClick={() => setParams({ view: 'psionics' }, { replace: true })}
+                >
+                  <PsionicsIcon />
+                </button>
+              )}
               {/* Mago e bardo: o grimório sempre à vista (pedido do usuário). */}
               {isArcaneCaster(character.characterClass) && (
                 <button
@@ -358,6 +382,7 @@ export function CharacterSheet() {
             </nav>
             {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
             {view === 'notebook' && id && <Notebook characterID={id} userID={userID} />}
+            {view === 'psionics' && canonicalClass(character.characterClass) === 'Psionicist' && <PsionicsPanel c={character} edit={edit} campaignID={campaignID} />}
             {effectsOpen && <ActiveEffectsWindow c={character} edit={edit} onClose={() => setEffectsOpen(false)} />}
             <AttackNegationFloat c={character} edit={edit} />
             {view === 'record' && (

@@ -1,7 +1,7 @@
 {
   "name": "thac0berry-web",
   "private": true,
-  "version": "0.28.0",
+  "version": "0.29.0",
   "type": "module",
   "scripts": {
     "data": "node scripts/build-data.mjs",

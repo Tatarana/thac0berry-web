@@ -341,6 +341,8 @@ export interface PlayerCharacter {
   wizardSpellbook: WizardSpellbookEntry[]
   /** Especialização de escola (2026-09-30, Table 22) — `nil` é generalista (comportamento de sempre: nenhum bônus, nenhuma restrição). Fica opcional/`nil` de propósito pra fichas antigas (Mago criado antes desta versão) continuarem decodificando sem ficar preso a uma escola que nunca escolheu. */
   wizardSchool?: WizardSchool | null
+  /** Bloco psiônico do Psionicist (feito primeiro na web, 2026-10-06; o iPad ainda não tem). */
+  psionics?: Psionics | null
 }
 
 export interface ProficiencyEntry {
@@ -350,6 +352,39 @@ export interface ProficiencyEntry {
   checked?: boolean
   target?: string | null
   matchedProficiencyID?: string | null
+}
+
+export interface PsionicPowerEntry {
+  id: string
+  /** id em psionic_powers.json; null = poder escrito à mão. */
+  powerID?: string | null
+  name: string
+  discipline?: string | null
+  /** Science ou Devotion. */
+  tier?: string | null
+}
+
+export interface PsionicUse {
+  id: string
+  /** ISO-8601 sem fração de segundo. */
+  date: string
+  sessionID?: string | null
+  power?: string
+  psp: number
+}
+
+export interface Psionics {
+  /** PSPs máximos escritos à mão; null = calculado pela Tabela 5. */
+  pspMaxOverride?: number | null
+  /** PSPs atuais; null = cheio (igual ao máximo). */
+  pspCurrent?: number | null
+  primaryDiscipline?: string | null
+  /** Disciplinas com acesso (inclui a principal). */
+  disciplines?: string[]
+  powers?: PsionicPowerEntry[]
+  defenseModes?: string[]
+  /** Registro de usos (PSPs gastos), para o XP sugerido do relatório da sessão. */
+  uses?: PsionicUse[]
 }
 
 export interface QuantifiedItem {

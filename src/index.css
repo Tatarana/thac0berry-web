@@ -3317,3 +3317,85 @@ button.slot-dot:hover {
 .report-xp-note {
   font-size: 0.75rem;
 }
+
+/* ---- Aba Psionics (Psionicist, CPsiH) ---- */
+
+.psionics {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.psi-psp,
+.psi-use {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+}
+
+.psi-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.psi-field .ink-number {
+  width: 64px;
+}
+
+.psi-note {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+}
+
+.psi-uses,
+.psi-powers {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.psi-uses li,
+.psi-powers li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-bottom: 1px dotted rgb(47 39 28 / 0.3);
+}
+
+.psi-uses li span:nth-child(2) {
+  flex: 1;
+}
+
+.psi-powers li .rec-value {
+  flex: 1;
+}
+
+.psi-power-group {
+  margin-bottom: 8px;
+}
+
+.psi-discipline {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.psi-primary {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: rgb(107 92 70 / 0.5);
+  font-size: 0.9rem;
+}
+
+.psi-primary-on {
+  color: var(--amber);
+}
+
+.psi-over {
+  color: #b23a2b;
+}
