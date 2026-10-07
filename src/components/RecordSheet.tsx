@@ -19,7 +19,7 @@ import {
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassThiefArmorRule, multiClassWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, multiClassWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -847,9 +847,17 @@ function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
     ? combinedProficiencySlots(classLevels(c), 'weapon') + bonusLanguages(c.abilities.intelligence)
     : totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
   return (
+    <>
+      {/* Multiclasse (MC3c): restrições de armadura do mago e de armas do sacerdote. */}
+      {multiClassRestrictions(c).map((rule) => (
+        <p key={rule} className="rec-soft mc-restriction">
+          {rule}
+        </p>
+      ))}
     <p className={spent > total ? 'rec-soft rec-red' : 'rec-soft'}>
       Weapon Proficiency Slots: {spent}/{total} used
     </p>
+    </>
   )
 }
 

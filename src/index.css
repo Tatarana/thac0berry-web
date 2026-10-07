@@ -3708,3 +3708,18 @@ button.slot-dot:hover {
   width: 2.2em;
   flex: none;
 }
+
+/* MC3c: XP do relatório por tipo e avisos de restrição do multiclasse. */
+.report-xp-group {
+  display: block;
+  border-bottom: 0;
+}
+
+.report-xp-group > .report-charges {
+  width: 100%;
+}
+
+.mc-restriction {
+  margin: 2px 0;
+  font-size: 0.75rem;
+}

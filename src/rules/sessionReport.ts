@@ -161,6 +161,96 @@ export function suggestedXP(cls: string, abilities: Record<Ability, number>, she
   }
 }
 
+// --- XP sugerido de um multiclasse (MC3c, docs/multiclasse.md) -----------------------
+//
+// Decisão 6 do usuário: o XP vai pelo tipo. Magia divina (e Turn Undead) usa a
+// tabela da classe divina (Cleric/Druid, 100 XP por nível) e o bônus de 10%
+// dos atributos principais dela (WIS); magia arcana usa a da classe arcana
+// (Mage 50, Bard 25 por nível) e o bônus dela (INT). Magia adicional conta
+// pelo id do compêndio ("priest-…"/"wizard-…"); escrita à mão, com os dois
+// tipos na ficha, fica sem XP. O total é dividido igualmente entre as classes
+// (PHB), como em classProgress.
+
+type Kind = 'divine' | 'arcane'
+
+function entryKind(id: string | null | undefined): Kind | null {
+  if (!id) return null
+  if (id.startsWith('priest-')) return 'divine'
+  if (id.startsWith('wizard-')) return 'arcane'
+  return null
+}
+
+export interface XpGroup {
+  /** Classe cuja tabela e cujo bônus valem para este tipo de XP. */
+  characterClass: string
+  kind: Kind
+  lines: XpLine[]
+  subtotal: number
+  primeBonus: { abilities: Ability[]; applies: boolean; xp: number } | null
+}
+
+export interface MultiXpSuggestion {
+  groups: XpGroup[]
+  total: number
+  classCount: number
+  /** Parte de cada classe (o total dividido igualmente, para baixo). */
+  perClass: number
+  countsAttempts: boolean
+  /** Magias adicionais escritas à mão que não puderam ser atribuídas a um tipo. */
+  unassigned: number
+}
+
+export function suggestedXPMulti(classes: string[], abilities: Record<Ability, number>, sheets: Sheet[]): MultiXpSuggestion {
+  const kindOf = (cls: string): Kind => (cls === 'Mage' || cls === 'Bard' ? 'arcane' : 'divine')
+  // Uma classe por tipo (a primeira da ficha com tabela de magia).
+  const owners = new Map<Kind, string>()
+  for (const cls of classes) if (spellAward[cls] && !owners.has(kindOf(cls))) owners.set(kindOf(cls), cls)
+  const groups: XpGroup[] = []
+  let unassigned = 0
+  let countsAttempts = false
+
+  for (const [kind, cls] of owners) {
+    const award = spellAward[cls]
+    const byLevel = new Map<number, number>()
+    for (const sheet of sheets) {
+      for (const slot of sheet.slotBoard.slots) {
+        if (slot.isSpent && slot.level > 0 && slot.caster === kind) byLevel.set(slot.level, (byLevel.get(slot.level) ?? 0) + 1)
+      }
+      for (const entry of sheet.entries) {
+        if (entry.spellLevel == null || entry.spellLevel <= 0) continue
+        const found = entryKind(entry.matchedSpellID) ?? (owners.size === 1 ? kind : null)
+        if (found === null) {
+          if (kind === [...owners.keys()][0]) unassigned += Math.max(entry.castCount, 1)
+        } else if (found === kind) {
+          byLevel.set(entry.spellLevel, (byLevel.get(entry.spellLevel) ?? 0) + Math.max(entry.castCount, 1))
+        }
+      }
+    }
+    const lines: XpLine[] = [...byLevel.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([level, count]) => ({ label: `${cls}: level ${level} spells`, detail: `${count} × ${award.perLevel * level} XP`, xp: count * award.perLevel * level }))
+    const turnXP = turnUndeadAward[cls]
+    const attempts = sheets.reduce((sum, s) => sum + s.turnUndeadUsed, 0)
+    if (turnXP !== undefined && attempts > 0) {
+      lines.push({ label: 'Turn Undead', detail: `${attempts} × ${turnXP} XP`, xp: attempts * turnXP })
+      countsAttempts = true
+    }
+    const subtotal = lines.reduce((sum, l) => sum + l.xp, 0)
+    const prime = primeRequisites[cls]
+    const applies = prime !== undefined && prime.every((a) => abilities[a] >= 16)
+    groups.push({
+      characterClass: cls,
+      kind,
+      lines,
+      subtotal,
+      primeBonus: prime ? { abilities: prime, applies, xp: applies ? Math.floor(subtotal / 10) : 0 } : null,
+    })
+  }
+  const total = groups.reduce((sum, g) => sum + g.subtotal + (g.primeBonus?.xp ?? 0), 0)
+  const classCount = Math.max(1, classes.length)
+  return { groups, total, classCount, perClass: Math.floor(total / classCount), countsAttempts, unassigned }
+}
+
 /** barWidth do iPad: fração da maior barra; barra com valor nunca some (mínimo visível). */
 export function barFraction(count: number, maxCount: number): number {
   if (maxCount <= 0) return 0

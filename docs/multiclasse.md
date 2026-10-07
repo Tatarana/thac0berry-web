@@ -64,7 +64,7 @@ entregas e pendências. Atualizar a cada entrega.
 | MC2 | Ficha: seletor de multiclasse, cabeçalho "Fighter/Mage 5/4", XP por classe, consequências | feita (web v0.32.0) |
 | MC3a | Magia por classe (slots, abas, folha de magia, grimório) e Psionicist no seletor (combinações do CPsiH, aba Psionics pelo nível dele) | feita (web v0.33.0) |
 | MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | feita (web v0.34.0) |
-| MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | a fazer |
+| MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | feita (web v0.35.0) |
 | MC4 | Classe dupla (humanos) | adiada (decisão 1) |
 | MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
 
@@ -86,7 +86,7 @@ Em aberto, em ordem:
    folha com círculos "Wizard"/"Priest", página 4 com as duas seções.
 4. **Ficha do usuário:** apagar à mão a proficiência "CRH)" já gravada no
    Fighter/Mage (a correção dos dados não mexe em fichas salvas).
-5. **MC3c** (próxima entrega, plano aprovado):
+5. ~~**MC3c**~~ — feita em 2026-10-07 (ver o log). Era:
    - XP do relatório por tipo (decisão 6): `suggestedXP` em
      `src/rules/sessionReport.ts` recebe uma classe só (`SessionReport.tsx`
      passa a principal). Separar slots arcanos (tabela do Mage, bônus de INT)
@@ -206,3 +206,21 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
     agora mostra o título pelo tipo dos slots ("Wizard"). Avisado ao usuário;
   - merge no `main` (web v0.34.0) e publicação no GitHub Pages concluída.
   - Próximo: MC3c (pendência 5).
+- 2026-10-07, MC3c feita (web v0.35.0):
+  - `suggestedXPMulti` (`src/rules/sessionReport.ts`): XP pelo tipo (decisão 6).
+    Magia divina e Turn Undead usam a tabela e o bônus da classe divina
+    (Cleric/Druid, 100 por nível, WIS); magia arcana, os da arcana (Mage 50,
+    Bard 25 por nível, INT). Magia adicional pelo id do compêndio
+    ("priest-…"/"wizard-…"); escrita à mão com os dois tipos na ficha fica sem
+    XP, com aviso. Total dividido igualmente entre as classes ("Each class");
+  - relatório da folha de magia (`SessionReport.tsx`): um bloco por tipo, com o
+    bônus dele, o total e a parte de cada classe; classe única igual a antes;
+  - relatório psiônico: num multiclasse, mostra também a parte de cada classe;
+  - avisos de restrição, só texto, junto da tabela de armas (página 1):
+    `multiClassWizardArmorRule` (mago não conjura de armadura, exceto elfo de
+    elven chain) e `multiClassPriestWeaponRule` (sacerdote segue as armas do
+    culto: clérigo só de concussão, com o THAC0 de guerreiro);
+  - testes: 74 (2 novos). Conferido na tela com o "Teste MC" (Magic Missile
+    registrado: Mage 1 × 50 = 50 XP, 16 por classe).
+  - Com isso a MC3 está completa. Seguem adiadas: MC4 (classe dupla) e MC5
+    (kits, bardos do CBH, sacerdotes do CPrH, dreno de nível).

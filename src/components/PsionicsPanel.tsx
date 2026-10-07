@@ -5,7 +5,7 @@ import { normalize } from '../lib/search'
 import { activeSessionID } from '../lib/sessions'
 import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
-import { levelOf } from '../rules/multiclass'
+import { classLevels, isMultiClass, levelOf } from '../rules/multiclass'
 import { defenseModes, disciplines, initialCost, powerCounts, progression, psionicXP, pspMax, pspMaximum } from '../rules/psionics'
 import { primeRequisites } from '../rules/sessionReport'
 import { isoNow } from '../rules/spellSheets'
@@ -145,6 +145,15 @@ function PsionicReport({ c, sessionID, onClose }: { c: PlayerCharacter; sessionI
             <span>Total</span>
             <span className="report-charge-count">{(xp + bonus).toLocaleString('en-US')} XP</span>
           </li>
+          {isMultiClass(c) && (
+            // Multiclasse (MC3c): o XP é dividido igualmente entre as classes (PHB).
+            <li>
+              <span>
+                Each class <span className="paper-soft">(divided equally between {classLevels(c).length})</span>
+              </span>
+              <span className="report-charge-count">{Math.floor((xp + bonus) / classLevels(c).length).toLocaleString('en-US')} XP</span>
+            </li>
+          )}
         </ul>
         <p className="paper-soft report-xp-note">
           CPsiH Table 3, optional and up to the DM: 10 XP per PSP for a power used to overcome a foe or problem (the rate used here), 15 XP per

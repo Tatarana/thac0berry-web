@@ -163,3 +163,43 @@ test('ladrão: a classe ladina e o nível dela, mesmo sem ser a principal', () =
   assert.deepEqual(M.rogueClass({ characterClass: 'Fighter', level: 6, multiClasses: [{ characterClass: 'Thief', level: 7 }] }), { characterClass: 'Thief', level: 7 })
   assert.deepEqual(M.rogueClass({ characterClass: 'Thief', level: 3 }), { characterClass: 'Thief', level: 3 })
 })
+
+// --- MC3c: XP do relatório por tipo (decisão 6) e avisos de restrição ---
+
+import { suggestedXPMulti } from '../src/rules/sessionReport.ts'
+
+test('XP multiclasse por tipo: divina e Turn Undead pela WIS, arcana pela INT; total dividido', () => {
+  const day = {
+    slotBoard: {
+      slots: [
+        { id: 'a', level: 2, caster: 'divine' as const, isSpent: true, orderKey: 0 },
+        { id: 'b', level: 1, caster: 'arcane' as const, isSpent: true, orderKey: 1 },
+        { id: 'c', level: 1, caster: 'arcane' as const, isSpent: false, orderKey: 2 },
+      ],
+    },
+    entries: [
+      { id: 'e1', rawText: 'Bless', displayName: 'Bless', matchedSpellID: 'priest-1-bless', spellLevel: 1, castCount: 1 },
+      { id: 'e2', rawText: 'Homebrew', displayName: 'Homebrew', spellLevel: 1, castCount: 2 },
+    ],
+    magicItems: [],
+    turnUndeadUsed: 1,
+  }
+  const scores = { strength: 10, dexterity: 10, constitution: 10, intelligence: 15, wisdom: 16, charisma: 10 }
+  const xp = suggestedXPMulti(['Fighter', 'Cleric', 'Mage'], scores, [day])
+  const divine = xp.groups.find((g) => g.kind === 'divine')!
+  const arcane = xp.groups.find((g) => g.kind === 'arcane')!
+  // Divina: nível 1 (Bless) 100 + nível 2 200 + Turn Undead 100 = 400; WIS 16 → +40.
+  assert.deepEqual([divine.characterClass, divine.subtotal, divine.primeBonus?.applies, divine.primeBonus?.xp], ['Cleric', 400, true, 40])
+  // Arcana: nível 1 = 50; INT 15 → sem bônus.
+  assert.deepEqual([arcane.characterClass, arcane.subtotal, arcane.primeBonus?.applies, arcane.primeBonus?.xp], ['Mage', 50, false, 0])
+  assert.equal(xp.unassigned, 2)
+  assert.deepEqual([xp.total, xp.classCount, xp.perClass], [490, 3, 163])
+})
+
+test('avisos de restrição: mago e sacerdote multiclasse (só texto)', () => {
+  const fm = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Mage' as const, level: 3 }] }
+  const fc = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Cleric' as const, level: 3 }] }
+  assert.deepEqual(M.multiClassRestrictions(fm), [M.multiClassWizardArmorRule])
+  assert.deepEqual(M.multiClassRestrictions(fc), [M.multiClassPriestWeaponRule])
+  assert.deepEqual(M.multiClassRestrictions({ characterClass: 'Mage', level: 3 }), [])
+})

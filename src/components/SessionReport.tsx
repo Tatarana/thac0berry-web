@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
 import { canonicalClass } from '../rules/rules'
-import { barFraction, itemCharges, spellBars, suggestedXP } from '../rules/sessionReport'
+import { barFraction, itemCharges, spellBars, suggestedXP, suggestedXPMulti } from '../rules/sessionReport'
+import { classLevels, isMultiClass } from '../rules/multiclass'
 import type { PlayerCharacter, SpellSheet } from '../types/library'
 import { PaperModal } from './DetailBits'
 
@@ -23,7 +24,7 @@ const abilityShort: Record<string, string> = {
   charisma: 'CHA',
 }
 
-type Who = Pick<PlayerCharacter, 'name' | 'characterClass' | 'abilities' | 'activeEffects'>
+type Who = Pick<PlayerCharacter, 'name' | 'characterClass' | 'level' | 'abilities' | 'activeEffects' | 'multiClasses'>
 
 function Experience({ character, sheets }: { character: Who; sheets: SpellSheet[] }) {
   // Atributos sem efeitos temporários (uma poção não conta para o bônus).
@@ -32,6 +33,7 @@ function Experience({ character, sheets }: { character: Who; sheets: SpellSheet[
     number
   >
   const cls = canonicalClass(character.characterClass)
+  if (isMultiClass(character)) return <MultiExperience character={character} base={base} sheets={sheets} />
   const xp = suggestedXP(cls, base, sheets)
   return (
     <>
@@ -70,6 +72,75 @@ function Experience({ character, sheets }: { character: Who; sheets: SpellSheet[
         Individual awards are optional and up to the DM: only significant uses count (spells cast to further the deity&apos;s ethos or to
         overcome foes or problems).
         {xp.countsAttempts ? ' Turn Undead counts every attempt; by the rule only successful ones earn XP.' : ''} Add the XP to the sheet yourself.
+      </p>
+    </>
+  )
+}
+
+/**
+ * Multiclasse (MC3c, decisão 6): XP pelo tipo — magia divina e Turn Undead pela
+ * classe divina (bônus de WIS), magia arcana pela arcana (bônus de INT) — e o
+ * total dividido igualmente entre as classes.
+ */
+function MultiExperience({ character, base, sheets }: { character: Who; base: Record<string, number>; sheets: SpellSheet[] }) {
+  const classes = classLevels(character).map((k) => canonicalClass(k.characterClass))
+  const xp = suggestedXPMulti(classes, base as Parameters<typeof suggestedXPMulti>[1], sheets)
+  return (
+    <>
+      <div className="rec-cell-label">Experience (suggested)</div>
+      <ul className="report-charges report-xp">
+        {xp.groups.every((g) => g.lines.length === 0) && (
+          <li>
+            <span className="paper-soft">No spell or Turn Undead awards for {classes.join('/')} in this session (DMG Table 34).</span>
+          </li>
+        )}
+        {xp.groups.map((g) => (
+          <li key={g.kind} className="report-xp-group">
+            <ul className="report-charges">
+              {g.lines.map((line) => (
+                <li key={line.label}>
+                  <span>
+                    {line.label} <span className="paper-soft">({line.detail})</span>
+                  </span>
+                  <span className="report-charge-count">{line.xp.toLocaleString('en-US')} XP</span>
+                </li>
+              ))}
+              {g.lines.length > 0 && g.primeBonus && (
+                <li>
+                  <span>
+                    {g.kind === 'divine' ? 'Divine' : 'Arcane'} XP bonus ({g.characterClass}){' '}
+                    <span className="paper-soft">
+                      ({g.primeBonus.abilities.map((a) => `${abilityShort[a]} ${base[a]}`).join(', ')}; +10% needs 16+
+                      {g.primeBonus.applies ? '' : ', not met'})
+                    </span>
+                  </span>
+                  <span className="report-charge-count">{g.primeBonus.xp.toLocaleString('en-US')} XP</span>
+                </li>
+              )}
+            </ul>
+          </li>
+        ))}
+        <li className="report-xp-total">
+          <span>Total</span>
+          <span className="report-charge-count">{xp.total.toLocaleString('en-US')} XP</span>
+        </li>
+        <li>
+          <span>
+            Each class <span className="paper-soft">(divided equally between {xp.classCount}: {classes.join(', ')})</span>
+          </span>
+          <span className="report-charge-count">{xp.perClass.toLocaleString('en-US')} XP</span>
+        </li>
+      </ul>
+      {xp.unassigned > 0 && (
+        <p className="paper-soft report-xp-note">
+          {xp.unassigned} additional spell{xp.unassigned === 1 ? '' : 's'} written by hand could not be matched to divine or arcane magic and
+          earned no XP.
+        </p>
+      )}
+      <p className="paper-soft report-xp-note">
+        Individual awards are optional and up to the DM. Divine spells and Turn Undead use the priest award and bonus; arcane spells use the
+        wizard&apos;s.{xp.countsAttempts ? ' Turn Undead counts every attempt; by the rule only successful ones earn XP.' : ''} Add the XP to the
+        sheet yourself.
       </p>
     </>
   )

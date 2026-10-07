@@ -83,6 +83,23 @@ export function rogueClass(c: WithClasses): { characterClass: CanonicalClass; le
   return k ? { characterClass: canonicalClass(k.characterClass), level: k.level } : null
 }
 
+/** PHB cap. 3: mago multiclasse não conjura de armadura (exceto elfo de elven chain). */
+export const multiClassWizardArmorRule =
+  'A multi-classed wizard cannot cast spells while wearing armor — elves wearing elven chain can, as magic is part of their nature (PHB, Chapter 3).'
+
+/** PHB cap. 3: sacerdote multiclasse segue as armas do culto (clérigo: só de concussão). */
+export const multiClassPriestWeaponRule =
+  "A multi-classed priest must abide by the weapon restrictions of his mythos — a fighter/cleric uses only bludgeoning weapons, though with the warrior's combat value (PHB, Chapter 3)."
+
+/** Avisos de restrição do multiclasse que valem para esta ficha (só texto). */
+export function multiClassRestrictions(c: WithClasses): string[] {
+  if (!isMultiClass(c)) return []
+  const rules: string[] = []
+  if (hasClass(c, 'Mage') || hasClass(c, 'Bard')) rules.push(multiClassWizardArmorRule)
+  if (hasClass(c, 'Cleric') || hasClass(c, 'Druid')) rules.push(multiClassPriestWeaponRule)
+  return rules
+}
+
 /** PHB cap. 3: o que o ladrão multiclasse pode fazer de armadura que ladrão não usa. */
 export const multiClassThiefArmorRule =
   'A multi-classed thief cannot use any thieving abilities other than Open Locks or Detect Noise while wearing armor not normally allowed to thieves — and must remove gauntlets to open locks and the helmet to detect noise (PHB, Chapter 3).'
