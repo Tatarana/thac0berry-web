@@ -12,6 +12,7 @@ import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEf
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
+import { ModeSwitch } from '../components/ModeChooser'
 import { PsionicsPanel } from '../components/PsionicsPanel'
 import { SessionReport } from '../components/SessionReport'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
@@ -280,6 +281,7 @@ export function CharacterSheet() {
       <div className="paper-sheet">
         <div className="paper-top">
           <Link to="/characters" className="paper-link">‹ Characters</Link>
+          <ModeSwitch />
           {loaded && (
             <SaveStatus
               save={combineSave(save, spellSheets.save)}
