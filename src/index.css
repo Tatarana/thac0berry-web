@@ -1800,12 +1800,28 @@ button {
 }
 
 .ref-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin: 0;
   text-align: center;
   font-size: 0.75rem;
   font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+/* Multiclasse: uma seção de tabelas por classe, separadas por um traço. */
+.ref-section + .ref-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1.3px solid var(--ink);
+}
+
+.ref-section-title {
+  margin-bottom: 10px;
+  color: var(--pen-ink);
 }
 
 .ref-table {

@@ -139,6 +139,15 @@ export function hasReferencePage(value: CharacterClass | string): boolean {
   return hasSpellSheet(value) || classGroup(value) === 'Warrior' || classGroup(value) === 'Rogue'
 }
 
+export type ReferenceKind = 'Wizard' | 'Warrior' | 'Rogue' | 'Cleric'
+
+/** Qual página de referência a classe usa (como o iPad: Mago, Guerreiro, Ladino; Clérigo); null = sem página 4. */
+export function referenceKind(value: CharacterClass | string): ReferenceKind | null {
+  if (!hasReferencePage(value)) return null
+  const group = classGroup(value)
+  return canonicalClass(value) === 'Mage' ? 'Wizard' : group === 'Warrior' ? 'Warrior' : group === 'Rogue' ? 'Rogue' : 'Cleric'
+}
+
 export function recordSheetPageCount(value: CharacterClass | string): number {
   return hasReferencePage(value) ? 4 : 3
 }

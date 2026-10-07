@@ -137,3 +137,29 @@ test('Psionicist (CPsiH): anão e halfling com Fighter ou Thief; elfo não', () 
   assert.match(M.multiClassWarnings({ ...base, race: 'Elf' })[0], /not a standard Elf .*CPsiH/)
   assert.ok(M.multiClassOptions.includes('Psionicist'))
 })
+
+// --- MC3b: página 4, ladrão e Turn Undead por classe --------------------------------
+
+test('página 4: classe única igual a antes; multiclasse com uma seção por classe', () => {
+  for (const cls of ['Fighter', 'Mage', 'Cleric', 'Thief', 'Bard', 'Druid', 'Psionicist'] as const) {
+    const single = { characterClass: cls, level: 5 }
+    assert.equal(M.recordSheetPages(single), R.recordSheetPageCount(cls))
+    assert.deepEqual(M.referenceSections(single).map((s) => s.kind), R.referenceKind(cls) ? [R.referenceKind(cls)] : [])
+  }
+  const fmc = { characterClass: 'Fighter' as const, level: 6, multiClasses: [{ characterClass: 'Mage' as const, level: 5 }, { characterClass: 'Cleric' as const, level: 4 }] }
+  assert.deepEqual(M.referenceSections(fmc), [
+    { kind: 'Warrior', characterClass: 'Fighter', level: 6 },
+    { kind: 'Wizard', characterClass: 'Mage', level: 5 },
+    { kind: 'Cleric', characterClass: 'Cleric', level: 4 },
+  ])
+  // Psionicist principal (sem página 4) com Thief: ganha a página do ladino.
+  const pt = { characterClass: 'Psionicist' as const, level: 3, multiClasses: [{ characterClass: 'Thief' as const, level: 4 }] }
+  assert.equal(M.recordSheetPages(pt), 4)
+  assert.deepEqual(M.referenceSections(pt).map((s) => [s.kind, s.level]), [['Rogue', 4]])
+})
+
+test('ladrão: a classe ladina e o nível dela, mesmo sem ser a principal', () => {
+  assert.equal(M.rogueClass({ characterClass: 'Fighter', level: 6 }), null)
+  assert.deepEqual(M.rogueClass({ characterClass: 'Fighter', level: 6, multiClasses: [{ characterClass: 'Thief', level: 7 }] }), { characterClass: 'Thief', level: 7 })
+  assert.deepEqual(M.rogueClass({ characterClass: 'Thief', level: 3 }), { characterClass: 'Thief', level: 3 })
+})

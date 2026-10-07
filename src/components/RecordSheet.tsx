@@ -17,9 +17,9 @@ import {
   setMultiClasses,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, bonusLanguages, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { backstabMultiplier, bonusLanguages, canonicalClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassWarnings, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassThiefArmorRule, multiClassWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -872,7 +872,8 @@ function RowRemove({ label, onClick }: { label: string; onClick: () => void }) {
 
 function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const [picking, setPicking] = useState(false)
-  const isFighter = canonicalClass(c.characterClass) === 'Fighter'
+  // Especialização: só guerreiro de classe única (PHB cap. 5; multiclasse não especializa).
+  const isFighter = canonicalClass(c.characterClass) === 'Fighter' && !isMultiClass(c)
   const field = (w: PlayerCharacter['weapons'][number], key: WeaponKey, label: string) =>
     edit ? (
       <InkInput
@@ -1072,10 +1073,12 @@ function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 }
 
 function ThievingSkills({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
-  if (!hasThievingSkills(c.characterClass)) return null
+  // Multiclasse: a classe ladina pode não ser a principal; base e backstab vêm dela.
+  const rogue = rogueClass(c)
+  if (!rogue) return null
+  const cls = rogue.characterClass
   // Como o iPad mostra: valor gravado ou, sem ele, o inicial (base + raça + Destreza).
-  const skills = thievingSkillsShown(c, c.thievingSkills)
-  const cls = canonicalClass(c.characterClass)
+  const skills = thievingSkillsShown({ ...c, characterClass: cls }, c.thievingSkills)
   return (
     <section className="rec-section">
       <SectionTitle>Thieving Skills</SectionTitle>
@@ -1090,7 +1093,7 @@ function ThievingSkills({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                 onChange={(v) =>
                   edit((x) => {
                     // Grava a lista inteira como o iPad a mostra (valores iniciais incluídos).
-                    x.thievingSkills = thievingSkillsShown(x, x.thievingSkills).map((entry) => ({
+                    x.thievingSkills = thievingSkillsShown({ ...x, characterClass: cls }, x.thievingSkills).map((entry) => ({
                       id: x.thievingSkills?.find((t) => t.skill === entry.skill)?.id ?? crypto.randomUUID().toUpperCase(),
                       skill: entry.skill,
                       value: entry.skill === s.skill ? v : entry.value,
@@ -1106,9 +1109,10 @@ function ThievingSkills({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       </div>
       {(cls === 'Thief' || cls === 'Ninja') && (
         <p className="rec-soft">
-          Backstab at level {c.level}: {backstabMultiplier(c.level)} damage
+          Backstab at level {rogue.level}: {backstabMultiplier(rogue.level)} damage
         </p>
       )}
+      {isMultiClass(c) && <p className="rec-soft">{multiClassThiefArmorRule}</p>}
     </section>
   )
 }

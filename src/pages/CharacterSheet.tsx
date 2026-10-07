@@ -21,13 +21,12 @@ import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
 import { spellSheetBasis } from '../lib/roster'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
-import { recordSheetPageCount } from '../rules/rules'
-import { classLevels, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny, isMultiClass } from '../rules/multiclass'
+import { classLevels, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny, isMultiClass, recordSheetPages } from '../rules/multiclass'
 import type { PlayerCharacter } from '../types/library'
 
 // Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
 // (3, ou 4 com as tabelas de referência da classe, conforme
-// recordSheetPageCount); os campos são editáveis e gravam sozinhos
+// recordSheetPages); os campos são editáveis e gravam sozinhos
 // (useCharacterDoc). Aba "Spell Sheets": uma folha de magia por dia. No servidor, `character.data` é o PlayerCharacter do iPad sem
 // `spellSheets`, `portraitImageData`, `lastChangedField` e
 // `recentAutoChanges`; o retrato fica no Storage (`portrait_attachment`).
@@ -280,7 +279,7 @@ export function CharacterSheet() {
   const loaded = doc
   const error = loadError
   const edit = update as (mutate: (c: PlayerCharacter) => void) => void
-  const pages = allPages.slice(0, character ? recordSheetPageCount(character.characterClass) : 3)
+  const pages = allPages.slice(0, character ? recordSheetPages(character) : 3)
   const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
 
   // O retrato só é buscado quando a página 3 abre.

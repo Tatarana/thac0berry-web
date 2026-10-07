@@ -7,7 +7,20 @@
 
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library.ts'
 import { levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
-import { bestSaves, bestTHAC0, canonicalClass, hasSpellSheet, hitDieType, isArcaneCaster, proficiencyRow, xpRequired, type CanonicalClass } from './rules.ts'
+import {
+  bestSaves,
+  bestTHAC0,
+  canonicalClass,
+  hasSpellSheet,
+  hasThievingSkills,
+  hitDieType,
+  isArcaneCaster,
+  proficiencyRow,
+  referenceKind,
+  xpRequired,
+  type CanonicalClass,
+  type ReferenceKind,
+} from './rules.ts'
 
 type WithClasses = Pick<PlayerCharacter, 'characterClass' | 'level'> & { multiClasses?: ClassLevel[] | null }
 
@@ -63,6 +76,39 @@ export function casterLevel(c: WithClasses, caster: 'arcane' | 'divine'): number
   const k = classLevels(c).find((x) => hasSpellSheet(x.characterClass) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
   return k?.level ?? c.level
 }
+
+/** A classe ladina do personagem (Thief, Bard, Ninja), com o nível dela; null se não tem. */
+export function rogueClass(c: WithClasses): { characterClass: CanonicalClass; level: number } | null {
+  const k = classLevels(c).find((x) => hasThievingSkills(x.characterClass))
+  return k ? { characterClass: canonicalClass(k.characterClass), level: k.level } : null
+}
+
+/** PHB cap. 3: o que o ladrão multiclasse pode fazer de armadura que ladrão não usa. */
+export const multiClassThiefArmorRule =
+  'A multi-classed thief cannot use any thieving abilities other than Open Locks or Detect Noise while wearing armor not normally allowed to thieves — and must remove gauntlets to open locks and the helmet to detect noise (PHB, Chapter 3).'
+
+export interface ReferenceSection {
+  kind: ReferenceKind
+  characterClass: CanonicalClass
+  level: number
+}
+
+/**
+ * Seções da página 4 (tabelas de referência): uma por tipo de página, cada uma
+ * com a classe e o nível que ela destaca. Classe única = a mesma página de
+ * antes; vazio = a ficha não tem página 4.
+ */
+export function referenceSections(c: WithClasses): ReferenceSection[] {
+  const sections: ReferenceSection[] = []
+  for (const k of classLevels(c)) {
+    const kind = referenceKind(k.characterClass)
+    if (kind && !sections.some((s) => s.kind === kind)) sections.push({ kind, characterClass: canonicalClass(k.characterClass), level: k.level })
+  }
+  return sections
+}
+
+/** Páginas da ficha: 4 se alguma classe tem tabelas de referência, senão 3. */
+export const recordSheetPages = (c: WithClasses) => (referenceSections(c).length > 0 ? 4 : 3)
 
 // --- Combate: o melhor de cada classe ----------------------------------------------
 

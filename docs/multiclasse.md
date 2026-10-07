@@ -63,7 +63,7 @@ entregas e pendências. Atualizar a cada entrega.
 | MC1 | Formato (`multiClasses`) e regras combinadas, sem tela | feita (web v0.31.0) |
 | MC2 | Ficha: seletor de multiclasse, cabeçalho "Fighter/Mage 5/4", XP por classe, consequências | feita (web v0.32.0) |
 | MC3a | Magia por classe (slots, abas, folha de magia, grimório) e Psionicist no seletor (combinações do CPsiH, aba Psionics pelo nível dele) | feita (web v0.33.0) |
-| MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | a fazer |
+| MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | feita (web v0.34.0) |
 | MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | a fazer |
 | MC4 | Classe dupla (humanos) | adiada (decisão 1) |
 | MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
@@ -124,4 +124,25 @@ entregas e pendências. Atualizar a cada entrega.
     de antes da MC3a) ganha o "First day" ao abrir a ficha; trava contra dois
     "First day" quando a troca de classe e a abertura acontecem juntas;
   - "CRH)" nas proficiências: defeito em `kits.json` do thac0berry-data (listas
-    de bônus cortadas nas vírgulas de dentro dos parênteses), corrigido lá.
+    `bonus` cortadas nas vírgulas de dentro dos parênteses, 4 kits). Correção
+    em `scripts/fix_kit_bonus_proficiencies.py` daquele repo, entregue como
+    patch (esta sessão só lê o thac0berry-data); depois, `sync_data.py` no
+    iPad. As listas `recommended` têm o mesmo corte em 13 kits (só texto):
+    pendente.
+- 2026-10-07, MC3b feita (web v0.34.0):
+  - página 4: `referenceSections` dá uma seção por tipo de página (Warrior,
+    Wizard, Rogue, Cleric), cada uma com a classe e o nível que destaca;
+    multiclasse mostra "Reference Tables" com as seções em sequência; a ficha
+    tem página 4 se qualquer classe tem (`recordSheetPages`);
+  - Turning Undead e Priest Spell Progression destacam o nível de Cleric;
+    Wizard Spell Progression, o de Mage; backstab e Bard Spell Progression, o
+    da classe ladina;
+  - "?" (`RuleLink`) nos títulos das tabelas, como no iPad (proficiências,
+    especialização, perícias de ladrão, armadura, backstab) e também nas
+    progressões de magia de mago e sacerdote;
+  - página 1: perícias de ladrão aparecem se qualquer classe é ladina, com a
+    base e o backstab dela (`rogueClass`), e a regra da armadura do ladrão
+    multiclasse (PHB cap. 3);
+  - especialização em arma: só guerreiro de classe única (PHB cap. 5), no
+    botão da tabela de armas e no texto da página 4;
+  - testes: 72 (2 novos).

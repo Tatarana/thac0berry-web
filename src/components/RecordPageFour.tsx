@@ -1,18 +1,31 @@
 import type { ReactNode } from 'react'
-import { canonicalClass, classGroup, proficiencyTableGroup, rulesData, thievingBaseScore, thievingSkillsFor } from '../rules/rules'
+import { isMultiClass, multiClassThiefArmorRule, referenceSections, type ReferenceSection } from '../rules/multiclass'
+import { proficiencyTableGroup, rulesData, thievingBaseScore, thievingSkillsFor, type CanonicalClass } from '../rules/rules'
+import { RuleLink } from './RuleLink'
 import type { PlayerCharacter } from '../types/library'
 
 // Página 4 da ficha: tabelas de referência da classe (ClericReferencePage,
 // WizardReferencePage, WarriorReferencePage e RogueReferencePage do iPad).
 // Só consulta; a linha do personagem (nível, atributo ou grupo) fica em
 // vermelho. As tabelas vêm do código Swift (rules-data, ver src/rules).
+// Multiclasse (MC3b): as tabelas de cada classe, uma após a outra, cada uma
+// destacando o nível da sua classe.
 
 const T = rulesData.tables
 
-function RefTable({ title, children, footnotes }: { title: string; children: ReactNode; footnotes?: string[] }) {
+function RefTitle({ title, ruleID }: { title: string; ruleID?: string }) {
+  return (
+    <h3 className="ref-title">
+      {title}
+      {ruleID && <RuleLink ruleID={ruleID} />}
+    </h3>
+  )
+}
+
+function RefTable({ title, ruleID, children, footnotes }: { title: string; ruleID?: string; children: ReactNode; footnotes?: string[] }) {
   return (
     <section className="ref-block">
-      <h3 className="ref-title">{title}</h3>
+      <RefTitle title={title} ruleID={ruleID} />
       <div className="rec-scroll">
         <table className="ref-table">{children}</table>
       </div>
@@ -30,8 +43,9 @@ function RefTable({ title, children, footnotes }: { title: string; children: Rea
 const hl = (on: boolean, left = false) => [on ? 'ref-hl' : '', left ? 'ref-left' : ''].filter(Boolean).join(' ') || undefined
 const cell = (v: number | null) => (v === null ? '—' : String(v))
 
-function Progression({ title, rows, circles, level, footnotes, headers }: {
+function Progression({ title, ruleID, rows, circles, level, footnotes, headers }: {
   title: string
+  ruleID?: string
   rows: (number | null)[][]
   circles: number
   level: number
@@ -39,7 +53,7 @@ function Progression({ title, rows, circles, level, footnotes, headers }: {
   headers?: string[]
 }) {
   return (
-    <RefTable title={title} footnotes={footnotes}>
+    <RefTable title={title} ruleID={ruleID} footnotes={footnotes}>
       <thead>
         <tr>
           <th>Lvl</th>
@@ -71,15 +85,16 @@ function turningColumnMatches(column: string, level: number): boolean {
   return Number.isFinite(a) && Number.isFinite(b) && level >= a && level <= b
 }
 
-function ClericTables({ c }: { c: PlayerCharacter }) {
+function ClericTables({ c, level }: { c: PlayerCharacter; level: number }) {
   const levels = T['PriestTables.turningUndeadLevels']
   return (
     <>
       <Progression
         title="Priest Spell Progression"
+        ruleID="phb_ch03_priest_tables"
         rows={T['PriestTables.spellProgressionRows']}
         circles={7}
-        level={c.level}
+        level={level}
         headers={['1', '2', '3', '4', '5', '6*', '7**']}
         footnotes={['* Usable only by priests with 17 or greater Wisdom.', '** Usable only by priests with 18 or greater Wisdom.']}
       />
@@ -88,7 +103,7 @@ function ClericTables({ c }: { c: PlayerCharacter }) {
           <tr>
             <th className="ref-left">Type / HD</th>
             {levels.map((l) => (
-              <th key={l} className={hl(turningColumnMatches(l, c.level))}>{l}</th>
+              <th key={l} className={hl(turningColumnMatches(l, level))}>{l}</th>
             ))}
           </tr>
         </thead>
@@ -97,7 +112,7 @@ function ClericTables({ c }: { c: PlayerCharacter }) {
             <tr key={row.type}>
               <td className="ref-left">{row.type}</td>
               {row.results.map((value, i) => (
-                <td key={i} className={hl(turningColumnMatches(levels[i], c.level))}>{value}</td>
+                <td key={i} className={hl(turningColumnMatches(levels[i], level))}>{value}</td>
               ))}
             </tr>
           ))}
@@ -134,7 +149,7 @@ function ClericTables({ c }: { c: PlayerCharacter }) {
 
 // --- Mago --------------------------------------------------------------------------
 
-function WizardTablesPage({ c }: { c: PlayerCharacter }) {
+function WizardTablesPage({ c, level }: { c: PlayerCharacter; level: number }) {
   const intelligence = c.abilities.intelligence
   const scores = Object.keys(T['IntelligenceTable.byScore']).map(Number).sort((a, b) => a - b)
   const cap = T['IntelligenceTable.byScore'][intelligence]?.maxSpellLevel ?? '—'
@@ -142,9 +157,10 @@ function WizardTablesPage({ c }: { c: PlayerCharacter }) {
     <>
       <Progression
         title="Wizard Spell Progression"
+        ruleID="phb_ch03_wizard_tables"
         rows={T['WizardTables.spellProgressionRows']}
         circles={9}
-        level={c.level}
+        level={level}
         footnotes={[
           `A wizard can never learn or cast a spell of a circle higher than Intelligence allows — see the Intelligence table below ("Max Spell Level", currently ${cap} for Intelligence ${intelligence}).`,
         ]}
@@ -181,11 +197,18 @@ function WizardTablesPage({ c }: { c: PlayerCharacter }) {
 
 // --- Guerreiro -------------------------------------------------------------------------
 
-function WarriorTablesPage({ c }: { c: PlayerCharacter }) {
-  const group = proficiencyTableGroup(c.characterClass)
-  const isFighter = canonicalClass(c.characterClass) === 'Fighter'
+function WarriorTablesPage({ cls, multiClass }: { cls: CanonicalClass; multiClass: boolean }) {
+  const group = proficiencyTableGroup(cls)
+  const isFighter = cls === 'Fighter'
   const spec: [string, string][] = [
-    ['Who', isFighter ? 'Your class (Fighter) — eligible.' : 'Fighters only — never Paladins or Rangers, even though they share this page.'],
+    [
+      'Who',
+      multiClass
+        ? 'Single-class fighters only — a multi-class character cannot specialize (PHB, Chapter 5).'
+        : isFighter
+          ? 'Your class (Fighter) — eligible.'
+          : 'Fighters only — never Paladins or Rangers, even though they share this page.',
+    ],
     ['Melee', '1 extra proficiency slot → +1 to hit, +2 damage.'],
     [
       'Bow / crossbow',
@@ -197,6 +220,7 @@ function WarriorTablesPage({ c }: { c: PlayerCharacter }) {
     <>
       <RefTable
         title="Proficiency Slots (Table 34)"
+        ruleID="phb_ch05_proficiencies"
         footnotes={[
           '"Group" bundles the 8 classes into the 4 archetypes the table uses — Paladin/Ranger read the Fighter row, Druid reads Cleric, Bard reads Thief.',
           "Related weapon (same family, e.g. long sword/broad sword): penalty is halved, rounded up — a Fighter's -2 becomes -1, a Wizard's -5 becomes -3.",
@@ -229,7 +253,7 @@ function WarriorTablesPage({ c }: { c: PlayerCharacter }) {
         </tbody>
       </RefTable>
       <section className="ref-block">
-        <h3 className="ref-title">Weapon Specialization</h3>
+        <RefTitle title="Weapon Specialization" ruleID="cfh_ch04_weapon_proficiency_slots" />
         <dl className="ref-spec">
           {spec.map(([label, value]) => (
             <div key={label}>
@@ -252,8 +276,7 @@ const backstabRows: [string, string, number, number][] = [
   ['13+', 'x5', 13, 999],
 ]
 
-function RogueTablesPage({ c }: { c: PlayerCharacter }) {
-  const cls = canonicalClass(c.characterClass)
+function RogueTablesPage({ cls, level, multiClass }: { cls: CanonicalClass; level: number; multiClass: boolean }) {
   const skills = thievingSkillsFor(cls)
   const isNinja = cls === 'Ninja'
   const columns = isNinja ? T['ThievingSkillsTable.ninjaArmorColumns'] : T['ThievingSkillsTable.thiefArmorColumns']
@@ -270,7 +293,7 @@ function RogueTablesPage({ c }: { c: PlayerCharacter }) {
         : ['Race adjustment: Table 27. Dexterity adjustment: Table 28. Both already folded into the seeded value on the Sheet page.']
   return (
     <>
-      <RefTable title="Thieving Skills — Base Score" footnotes={baseNotes}>
+      <RefTable title="Thieving Skills — Base Score" ruleID={isNinja ? 'cnh_ch01_the_ninja_class' : 'phb_ch03_rogue_tables'} footnotes={baseNotes}>
         <thead>
           <tr>
             <th className="ref-left">Skill</th>
@@ -288,8 +311,10 @@ function RogueTablesPage({ c }: { c: PlayerCharacter }) {
       </RefTable>
       <RefTable
         title="Armor Adjustment"
+        ruleID={isNinja ? 'cnh_ch01_the_ninja_class' : 'phb_ch03_rogue_tables'}
         footnotes={[
           "Not folded into the seeded % on the Sheet page — the app only stores your AC number, not the armor TYPE, so there's no reliable way to pick the right column automatically. Apply it by hand.",
+          ...(multiClass ? [multiClassThiefArmorRule] : []),
         ]}
       >
         <thead>
@@ -314,6 +339,7 @@ function RogueTablesPage({ c }: { c: PlayerCharacter }) {
       {(cls === 'Thief' || cls === 'Ninja') && (
         <RefTable
           title="Backstab Damage Multiplier"
+          ruleID="phb_ch03_rogue_tables"
           footnotes={['Backstab requires surprise/being unseen — a successful attack from behind gets +4 to hit and this damage multiplier.']}
         >
           <thead>
@@ -324,7 +350,7 @@ function RogueTablesPage({ c }: { c: PlayerCharacter }) {
           </thead>
           <tbody>
             {backstabRows.map(([range, multiplier, lower, upper]) => {
-              const on = c.level >= lower && c.level <= upper
+              const on = level >= lower && level <= upper
               return (
                 <tr key={range}>
                   <td className={hl(on)}>{range}</td>
@@ -338,9 +364,10 @@ function RogueTablesPage({ c }: { c: PlayerCharacter }) {
       {cls === 'Bard' && (
         <Progression
           title="Bard Spell Progression"
+          ruleID="phb_ch03_rogue_tables"
           rows={T['BardTables.spellProgressionRows']}
           circles={6}
-          level={c.level}
+          level={level}
           footnotes={[
             'Bards learn wizard spells by chance, not free choice, and never gain new ones automatically on level-up — see the Bard description (PHB ch. 3) for how spells are found. Add what your character finds in play to “My Spellbook” (menu ☰) by hand — same manual grimoire as the Mage, no dice roll simulated.',
             'This table already drives your actual spell slots — see the Sheet page and “My Spellbook.”',
@@ -351,18 +378,45 @@ function RogueTablesPage({ c }: { c: PlayerCharacter }) {
   )
 }
 
-/** Mesma escolha do iPad: Mago, grupo Guerreiro, grupo Ladino; o resto (Clérigo), as do Clérigo. */
+function Section({ c, section, multiClass }: { c: PlayerCharacter; section: ReferenceSection; multiClass: boolean }) {
+  return (
+    <>
+      {section.kind === 'Wizard' && <WizardTablesPage c={c} level={section.level} />}
+      {section.kind === 'Warrior' && <WarriorTablesPage cls={section.characterClass} multiClass={multiClass} />}
+      {section.kind === 'Rogue' && <RogueTablesPage cls={section.characterClass} level={section.level} multiClass={multiClass} />}
+      {section.kind === 'Cleric' && <ClericTables c={c} level={section.level} />}
+    </>
+  )
+}
+
+/**
+ * Mesma escolha do iPad: Mago, grupo Guerreiro, grupo Ladino; o resto
+ * (Clérigo), as do Clérigo. Multiclasse: uma seção por classe, na ordem delas.
+ */
 export function RecordPageFour({ character: c }: { character: PlayerCharacter }) {
-  const cls = canonicalClass(c.characterClass)
-  const group = classGroup(cls)
-  const kind = cls === 'Mage' ? 'Wizard' : group === 'Warrior' ? 'Warrior' : group === 'Rogue' ? 'Rogue' : 'Cleric'
+  const sections = referenceSections(c)
+  const multi = isMultiClass(c)
+  if (!multi || sections.length === 1) {
+    const section = sections[0]
+    if (!section) return null
+    return (
+      <div className="rec-sheet">
+        <h2 className="rec-title">{section.kind} Reference Tables</h2>
+        <Section c={c} section={section} multiClass={multi} />
+      </div>
+    )
+  }
   return (
     <div className="rec-sheet">
-      <h2 className="rec-title">{kind} Reference Tables</h2>
-      {kind === 'Wizard' && <WizardTablesPage c={c} />}
-      {kind === 'Warrior' && <WarriorTablesPage c={c} />}
-      {kind === 'Rogue' && <RogueTablesPage c={c} />}
-      {kind === 'Cleric' && <ClericTables c={c} />}
+      <h2 className="rec-title">Reference Tables</h2>
+      {sections.map((section) => (
+        <div key={section.kind} className="ref-section">
+          <h2 className="rec-title ref-section-title">
+            {section.kind} — {section.characterClass} level {section.level}
+          </h2>
+          <Section c={c} section={section} multiClass={multi} />
+        </div>
+      ))}
     </div>
   )
 }
