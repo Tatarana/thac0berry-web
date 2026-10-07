@@ -93,6 +93,11 @@ export type CharacterClass = "Fighter" | "Paladin" | "Ranger" | "Mage" | "Cleric
 
 export type CharacterStatus = "alive" | "dead" | "archived"
 
+export interface ClassLevel {
+  characterClass: CharacterClass
+  level: number
+}
+
 export interface CombatDetails {
   surprisedAC?: string | null
   shieldlessAC?: string | null
@@ -341,6 +346,10 @@ export interface PlayerCharacter {
   wizardSpellbook: WizardSpellbookEntry[]
   /** Especialização de escola (2026-09-30, Table 22) — `nil` é generalista (comportamento de sempre: nenhum bônus, nenhuma restrição). Fica opcional/`nil` de propósito pra fichas antigas (Mago criado antes desta versão) continuarem decodificando sem ficar preso a uma escola que nunca escolheu. */
   wizardSchool?: WizardSchool | null
+  /** Outras classes de um multiclasse (semi-humanos), com o nível de cada uma; ausente = classe única. */
+  multiClasses?: ClassLevel[] | null
+  /** Retrato do motor de consequências: as outras classes no último estado revisado. */
+  lastAppliedMultiClasses?: ClassLevel[] | null
   /** Bloco psiônico do Psionicist (feito primeiro na web, 2026-10-06; o iPad ainda não tem). */
   psionics?: Psionics | null
 }

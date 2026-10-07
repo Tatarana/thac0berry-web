@@ -110,16 +110,30 @@ export function displaySummary(value: RuleValue | null): string {
 
 // --- Retrato do último estado revisado -------------------------------------------
 
-type Snapshot = Pick<PlayerCharacter, 'level' | 'abilities' | 'characterClass' | 'lastAppliedLevel' | 'lastAppliedAbilities' | 'lastAppliedClass'>
+type Snapshot = Pick<
+  PlayerCharacter,
+  'level' | 'abilities' | 'characterClass' | 'lastAppliedLevel' | 'lastAppliedAbilities' | 'lastAppliedClass' | 'multiClasses' | 'lastAppliedMultiClasses'
+>
 
 export function currentRuleContext(c: Snapshot): RuleContext {
-  return { level: c.level, characterClass: c.characterClass, abilities: c.abilities }
+  return { level: c.level, characterClass: c.characterClass, abilities: c.abilities, multiClasses: c.multiClasses ?? null }
 }
 
 export function lastAppliedRuleContext(c: Snapshot): RuleContext | null {
   if (c.lastAppliedLevel == null || !c.lastAppliedAbilities) return null
-  return { level: c.lastAppliedLevel, characterClass: c.lastAppliedClass ?? c.characterClass, abilities: c.lastAppliedAbilities }
+  return {
+    level: c.lastAppliedLevel,
+    characterClass: c.lastAppliedClass ?? c.characterClass,
+    abilities: c.lastAppliedAbilities,
+    // Retrato sem o campo (ficha de antes da multiclasse) = as classes de agora.
+    multiClasses: c.lastAppliedMultiClasses === undefined ? (c.multiClasses ?? null) : c.lastAppliedMultiClasses,
+  }
 }
+
+/** As outras classes de um multiclasse, comparáveis (ausente e vazio contam igual). */
+const sameMultiClasses = (a: Snapshot['multiClasses'], b: Snapshot['multiClasses']) =>
+  JSON.stringify((a ?? []).map((k) => [canonicalClass(k.characterClass), k.level])) ===
+  JSON.stringify((b ?? []).map((k) => [canonicalClass(k.characterClass), k.level]))
 
 const sameAbilities = (a: AbilityScores, b: AbilityScores) =>
   a.strength === b.strength &&
@@ -133,7 +147,8 @@ const sameAbilities = (a: AbilityScores, b: AbilityScores) =>
 export function hasPendingConsequences(c: Snapshot): boolean {
   if (c.lastAppliedLevel == null || !c.lastAppliedAbilities) return false
   const classChanged = c.lastAppliedClass != null && canonicalClass(c.lastAppliedClass) !== canonicalClass(c.characterClass)
-  return c.lastAppliedLevel !== c.level || !sameAbilities(c.lastAppliedAbilities, c.abilities) || classChanged
+  const multiChanged = c.lastAppliedMultiClasses !== undefined && !sameMultiClasses(c.lastAppliedMultiClasses, c.multiClasses)
+  return c.lastAppliedLevel !== c.level || !sameAbilities(c.lastAppliedAbilities, c.abilities) || classChanged || multiChanged
 }
 
 export function pendingConsequences(c: Snapshot): ConsequenceItem[] {
@@ -146,6 +161,11 @@ export function markConsequencesReviewed(c: Snapshot) {
   c.lastAppliedLevel = c.level
   c.lastAppliedAbilities = { ...c.abilities }
   c.lastAppliedClass = c.characterClass
+  // Só grava o retrato de multiclasse quando há multiclasse (ficha de classe
+  // única fica exatamente como antes).
+  if ((c.multiClasses ?? []).length > 0 || c.lastAppliedMultiClasses != null) {
+    c.lastAppliedMultiClasses = (c.multiClasses ?? []).map((k) => ({ ...k }))
+  }
 }
 
 /** ensureConsequenceSnapshotInitialized: ficha sem retrato ganha um com o estado atual. */

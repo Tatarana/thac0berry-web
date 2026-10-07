@@ -14,7 +14,7 @@
 // registrado no TODO.md de lá).
 
 import { normalize } from '../lib/search.ts'
-import type { AbilityScores, CharacterClass, EncumbranceTable, LevelChangesTable, SavingThrows } from '../types/library.ts'
+import type { AbilityScores, CharacterClass, ClassLevel, EncumbranceTable, LevelChangesTable, SavingThrows } from '../types/library.ts'
 import data from './generated/rules-data.json' with { type: 'json' }
 
 // --- Tipos dos dados -----------------------------------------------------------
@@ -328,6 +328,8 @@ export interface RuleContext {
   level: number
   characterClass: CharacterClass | string
   abilities: AbilityScores
+  /** Multiclasse (docs/multiclasse.md): as outras classes; ausente = classe única. */
+  multiClasses?: ClassLevel[] | null
 }
 
 export type RuleKey = 'thac0' | 'savingThrows' | 'priestSpellSlots' | 'wizardSpellSlots' | 'bardSpellSlots' | AbilityDetailKey
@@ -335,20 +337,49 @@ export type RuleValue = number | number[] | SavingThrows | string
 
 const anySlot = (counts: number[]) => (counts.some((c) => c > 0) ? counts : null)
 
-/** RulesetRegistry.resolve do iPad (só o módulo Core). */
+/** Melhor THAC0 entre as classes (multiclasse, PHB cap. 3); classe única = o dela. */
+export function bestTHAC0(classes: ClassLevel[]): number | null {
+  const values = classes.map((k) => thac0ForLevel(k.characterClass, k.level)).filter((v): v is number => v !== null)
+  return values.length ? Math.min(...values) : null
+}
+
+/** Melhor save de cada categoria entre as classes (multiclasse, PHB cap. 3). */
+export function bestSaves(classes: ClassLevel[]): SavingThrows | null {
+  const rows = classes.map((k) => savingThrowsForLevel(k.characterClass, k.level)).filter((r): r is SavingThrows => r !== null)
+  if (rows.length === 0) return null
+  if (rows.length === 1) return rows[0]
+  const best = (key: 'paralyzationPoisonDeath' | 'rodStaffWand' | 'petrificationPolymorph' | 'breathWeapon' | 'spell') => Math.min(...rows.map((r) => r[key]))
+  return {
+    paralyzationPoisonDeath: best('paralyzationPoisonDeath'),
+    rodStaffWand: best('rodStaffWand'),
+    petrificationPolymorph: best('petrificationPolymorph'),
+    breathWeapon: best('breathWeapon'),
+    spell: best('spell'),
+  }
+}
+
+/** RulesetRegistry.resolve do iPad (só o módulo Core), com as classes de um multiclasse. */
 export function resolveRule(key: RuleKey, ctx: RuleContext): RuleValue | null {
-  const cls = canonicalClass(ctx.characterClass)
+  const classes: ClassLevel[] = [{ characterClass: ctx.characterClass as CharacterClass, level: ctx.level }, ...(ctx.multiClasses ?? [])]
+  // Nível da classe pedida (as magias de cada classe seguem o nível dela).
+  const levelOf = (wanted: CanonicalClass) => classes.find((k) => canonicalClass(k.characterClass) === wanted)?.level ?? null
   switch (key) {
     case 'thac0':
-      return thac0ForLevel(cls, ctx.level)
+      return bestTHAC0(classes)
     case 'savingThrows':
-      return savingThrowsForLevel(cls, ctx.level)
-    case 'priestSpellSlots':
-      return cls === 'Cleric' ? anySlot(priestSpellProgression(ctx.level, ctx.abilities.wisdom)) : null
-    case 'wizardSpellSlots':
-      return cls === 'Mage' ? anySlot(wizardSpellProgression(ctx.level, ctx.abilities.intelligence)) : null
-    case 'bardSpellSlots':
-      return cls === 'Bard' ? anySlot(bardSpellProgression(ctx.level, ctx.abilities.intelligence)) : null
+      return bestSaves(classes)
+    case 'priestSpellSlots': {
+      const level = levelOf('Cleric')
+      return level === null ? null : anySlot(priestSpellProgression(level, ctx.abilities.wisdom))
+    }
+    case 'wizardSpellSlots': {
+      const level = levelOf('Mage')
+      return level === null ? null : anySlot(wizardSpellProgression(level, ctx.abilities.intelligence))
+    }
+    case 'bardSpellSlots': {
+      const level = levelOf('Bard')
+      return level === null ? null : anySlot(bardSpellProgression(level, ctx.abilities.intelligence))
+    }
     default:
       return abilityDetail(key, ctx.abilities)
   }
