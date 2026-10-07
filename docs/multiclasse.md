@@ -125,9 +125,8 @@ entregas e pendências. Atualizar a cada entrega.
     "First day" quando a troca de classe e a abertura acontecem juntas;
   - "CRH)" nas proficiências: defeito em `kits.json` do thac0berry-data (listas
     `bonus` cortadas nas vírgulas de dentro dos parênteses, 4 kits). Correção
-    em `scripts/fix_kit_bonus_proficiencies.py` daquele repo, entregue como
-    patch (esta sessão só lê o thac0berry-data); depois, `sync_data.py` no
-    iPad. As listas `recommended` têm o mesmo corte em 13 kits (só texto):
+    em `scripts/fix_kit_bonus_proficiencies.py` daquele repo
+    (Tatarana/thac0berry-data#1); depois do merge, `sync_data.py` no iPad. As listas `recommended` têm o mesmo corte em 13 kits (só texto):
     pendente.
 - 2026-10-07, MC3b feita (web v0.34.0):
   - página 4: `referenceSections` dá uma seção por tipo de página (Warrior,
