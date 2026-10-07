@@ -15,6 +15,8 @@
 //   public/data/magic-index.json         índice dos itens mágicos (com resumo)
 //   public/data/magic/magic_*.json       itens mágicos completos, por categoria
 //   public/data/psionic-powers.json      poderes psiônicos, sem o texto bruto de wiki
+//   public/data/monsters-index.json      índice leve dos monstros (ferramenta do DM), com apelidos
+//   public/data/monsters/monsters_*.json monstros completos, por coleção (detalhe ao abrir)
 //   public/data/library.schema.json      schema da ficha (de ../schemas), para o import
 //
 // Magias: priest_* e wizard_* em ordem alfabética; id repetido é descartado.
@@ -132,6 +134,28 @@ const powers = JSON.parse(readFileSync(join(source, 'psionic_powers.json'), 'utf
 })
 writeFileSync(join(out, 'psionic-powers.json'), JSON.stringify(powers))
 console.log(`data: ${powers.length} poderes psiônicos`)
+
+// Monstros (ferramenta do DM; data/monsters/ no thac0berry-data, gerado por
+// scripts/build_monsters.py): índice leve com os apelidos (para a busca) e o
+// resumo encurtado; os arquivos por coleção vão sem espaços (detalhe ao abrir).
+const monsterSource = join(source, 'monsters')
+if (existsSync(monsterSource)) {
+  mkdirSync(join(out, 'monsters'), { recursive: true })
+  const aliases = new Map()
+  for (const file of readdirSync(monsterSource).filter((f) => f.endsWith('.json') && f !== 'monsters_index.json')) {
+    const list = JSON.parse(readFileSync(join(monsterSource, file), 'utf8'))
+    for (const monster of list) aliases.set(monster.id, monster.aliases ?? [])
+    writeFileSync(join(out, 'monsters', file), JSON.stringify(list))
+  }
+  const shorten = (text) => (text && text.length > 220 ? `${text.slice(0, 217).trimEnd()}…` : text)
+  const monsterIndex = JSON.parse(readFileSync(join(monsterSource, 'monsters_index.json'), 'utf8')).map((entry) => ({
+    ...entry,
+    summary: shorten(entry.summary),
+    aliases: aliases.get(entry.id) ?? [],
+  }))
+  writeFileSync(join(out, 'monsters-index.json'), JSON.stringify(monsterIndex))
+  console.log(`data: ${monsterIndex.length} monstros`)
+}
 
 for (const file of ['deities.json', 'proficiencies.json', 'weapons.json', 'armor.json', 'mundane_items.json']) {
   copyFileSync(join(source, file), join(out, file))

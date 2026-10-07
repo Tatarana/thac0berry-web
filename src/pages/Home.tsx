@@ -39,6 +39,8 @@ export function Home() {
         <HomeTile to="/campaigns" image="icon_campaigns" title="Campaigns" subtitle="Coming soon" accent="var(--amber)" />
         <HomeTile to="/characters" image="icon_characters" title="Characters" subtitle="Coming soon" accent="var(--crimson)" />
         <HomeTile to="/compendium" image="icon_compendium" title="Compendium" subtitle="Grimoires & references" accent="var(--teal)" />
+        {/* Ferramentas do DM: só no modo DM (o jogador não as vê no app). */}
+        {mode === 'dm' && <HomeTile to="/dm" title="DM Tools" subtitle="Monsters & more" accent="var(--crimson)" />}
       </div>
     </div>
   )

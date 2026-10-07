@@ -3819,3 +3819,93 @@ button.slot-dot:hover {
   font-style: italic;
   color: #8a5a12;
 }
+
+/* DM Tools (2026-10-07): cartão sem arte, aviso do modo, catálogo de monstros. */
+.tile-placeholder {
+  display: grid;
+  place-items: center;
+  width: 108px;
+  height: 108px;
+  font-size: 3.4rem;
+  color: var(--accent);
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.45));
+}
+
+.dm-only-actions {
+  justify-content: flex-start;
+}
+
+.monster-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monster-variants,
+.monster-collection {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.monster-variants {
+  font-size: 0.8em;
+}
+
+.monster-tabs {
+  margin-bottom: 8px;
+}
+
+.monster-stats-wrap {
+  overflow-x: auto;
+  margin: 4px 0 12px;
+}
+
+.monster-stats {
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.monster-stats th,
+.monster-stats td {
+  padding: 3px 10px 3px 0;
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-line;
+}
+
+.monster-stats thead th {
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgb(47 39 28 / 0.25);
+}
+
+.monster-stats tbody th {
+  font-variant: small-caps;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: var(--ink-soft);
+}
+
+.monster-stats td {
+  min-width: 9em;
+  max-width: 22em;
+}
+
+.monster-stats tbody tr:nth-child(8) th,
+.monster-stats tbody tr:nth-child(8) td {
+  padding-bottom: 10px;
+}
+
+.monster-summary {
+  margin: 8px 0 12px;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.monster-source {
+  margin-top: 14px;
+  font-size: 0.8rem;
+}

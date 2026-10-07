@@ -6,6 +6,7 @@ import { Characters } from './pages/Characters'
 import { CharacterSheet } from './pages/CharacterSheet'
 import { CompendiumHub } from './pages/CompendiumHub'
 import { DeityCompendium } from './pages/DeityCompendium'
+import { DmTools } from './pages/DmTools'
 import { ComingSoon } from './pages/ComingSoon'
 import { Diagnostics } from './pages/Diagnostics'
 import { ArmorCompendium, EquipmentCompendium, WeaponCompendium } from './pages/GearCompendiums'
@@ -16,6 +17,7 @@ import { ModePage } from './pages/ModePage'
 import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
 import { MagicItemCompendium } from './pages/MagicItemCompendium'
+import { MonsterCompendium } from './pages/MonsterCompendium'
 import { PsionicCompendium } from './pages/PsionicCompendium'
 import { RulesCompendium } from './pages/RulesCompendium'
 import { Settings } from './pages/Settings'
@@ -47,6 +49,8 @@ export default function App() {
           <Route path="/compendium/weapons" element={<WeaponCompendium />} />
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
+          <Route path="/dm" element={<DmTools />} />
+          <Route path="/dm/monsters" element={<MonsterCompendium />} />
           <Route path="/characters" element={<Characters />} />
           <Route path="/characters/:id" element={<CharacterSheet />} />
           <Route path="/import" element={<ImportBackup />} />

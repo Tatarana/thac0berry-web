@@ -3,7 +3,8 @@ import type { CSSProperties } from 'react'
 
 interface HomeTileProps {
   to: string
-  image: string
+  /** Sem imagem: o ✦ dos itens ainda sem arte. */
+  image?: string
   title: string
   subtitle: string
   accent: string
@@ -14,7 +15,13 @@ export function HomeTile({ to, image, title, subtitle, accent }: HomeTileProps) 
   const style = { '--accent': accent } as CSSProperties
   return (
     <Link to={to} className="ember-card tile" style={style}>
-      <img src={`${import.meta.env.BASE_URL}images/${image}.png`} alt="" />
+      {image ? (
+        <img src={`${import.meta.env.BASE_URL}images/${image}.png`} alt="" />
+      ) : (
+        <span className="tile-placeholder" aria-hidden="true">
+          ✦
+        </span>
+      )}
       <div className="tile-title">{title}</div>
       <p className="soft">{subtitle}</p>
     </Link>
