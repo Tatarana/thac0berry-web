@@ -72,7 +72,7 @@ entregas e pendências. Atualizar a cada entrega.
 
 Em aberto, em ordem:
 
-1. **Merge dos PRs** (o site publica do `main`; nada da MC3 está no ar ainda):
+1. ~~**Merge dos PRs**~~ — feito em 2026-10-07 (ver o log). Era:
    - Tatarana/thac0berry-web#1, branch `claude/dreamy-thompson-fqoc3x`: MC3a,
      v0.33.1 e MC3b (v0.34.0). CI local verde (lint, `types --check`, build,
      72 testes).
@@ -190,3 +190,19 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
   - especialização em arma: só guerreiro de classe única (PHB cap. 5), no
     botão da tabela de armas e no texto da página 4;
   - testes: 72 (2 novos).
+- 2026-10-07, merge e publicação (sessão principal):
+  - Tatarana/thac0berry-data#1 validado (`validate_schemas.py` e CI "Validar
+    dados" verdes; os 4 nomes novos existem no compêndio) e incorporado ao `main`;
+  - Tatarana/thac0berry-web#1 testado no navegador logado: "Teste MC" (elfo
+    Fighter/Mage/Thief 1/2/1, campanha "Teste W3.1b B"): "?" da regra de HP,
+    abas Spell Sheets e My Spellbook, folha "Wizard Spell Sheet" com
+    Intelligence e "Fighter/Mage/Thief 1/2/1", página 4 com as seções Warrior
+    (Fighter 1), Wizard (Mage 2) e Rogue (Thief 1), perícias de ladrão com os
+    valores do elfo e as notas de backstab e armadura. Classe única (Kelmonito,
+    Cleric 12, só leitura): sem "+" de aviso, página 4 "Cleric Reference
+    Tables";
+  - observação: a folha "Day 3" (2026-10-06 12:21) do Kelmonito foi gravada com
+    slots arcanos (INT 11), provavelmente numa troca de classe temporária; a folha
+    agora mostra o título pelo tipo dos slots ("Wizard"). Avisado ao usuário;
+  - merge no `main` (web v0.34.0) e publicação no GitHub Pages concluída.
+  - Próximo: MC3c (pendência 5).
