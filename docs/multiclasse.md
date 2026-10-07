@@ -336,3 +336,16 @@ Ambiente: build e testes da web pedem o thac0berry-data ao lado
     campanha "Teste W3.1b B"): troca Cleric 3 → Mage 1, dreno ex-Cleric 3 → 2
     (depois devolvido a 3), slots 0/4 com a nota, relatório com Turn Undead de
     ex-Cleric na restrição → 0 XP e o aviso (100 XP pela tabela).
+- 2026-10-07: proficiências da classe dupla revistas com o usuário (MC4d, web
+  v0.38.1). Fontes: PHB Tabela 34 e cap. 5 (multiclasse usa a linha mais
+  vantajosa), PHB cap. 3 (a classe dupla mantém as proficiências da anterior e
+  "starts over" no nível 1), Skills & Powers cap. 4 (a classe nova gasta os
+  pontos "as if he were adventuring from scratch"). Nenhuma fonte dá a conta
+  dos slots da classe dupla; decisão do usuário:
+  17. Cada classe dá os slots dela pela Tabela 34: os iniciais (inclusive a
+      nova) e um a cada N níveis da própria classe (a anterior pelo nível
+      congelado; a nova desde o 1). Penalidade sem proficiência: a da classe
+      atual na restrição, a melhor entre as classes depois (como THAC0/saves).
+  A nota da ficha deixou de dizer "interpretação" e cita as fontes, com a
+  penalidade calculada. Conferido no "Teste DC" (Mage 1 · ex-Cleric 3): 0/5
+  slots (2 + 1 + 2 de INT), penalidade −5 (Mage, na restrição). Testes: 93.

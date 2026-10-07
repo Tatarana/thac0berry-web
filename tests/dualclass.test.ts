@@ -166,8 +166,17 @@ test('suplementos: limiares do paladino (CPH) e avisos de ninja (CNH)', () => {
   assert.ok(M.dualClassWarnings(exNinja).some((w) => w.includes('Lone Wolf')))
 })
 
-test('slots de proficiência da classe dupla (interpretação): cada classe pelo seu nível, iniciais da primeira', () => {
+test('slots de proficiência da classe dupla (decisão 17): iniciais e slots por nível de cada classe', () => {
   const c = { characterClass: 'Fighter' as const, level: 4, formerClasses: [{ characterClass: 'Cleric' as const, level: 3 }] }
-  // Cleric: 2 iniciais + 1 a cada 4 níveis (3 → 0); Fighter: 1 a cada 3 níveis (4 → 1).
-  assert.equal(M.dualProficiencySlots(c, 'weapon'), 2 + 0 + 1)
+  // Cleric: 2 iniciais + 1 a cada 4 níveis (3 → 0); Fighter: 4 iniciais + 1 a cada 3 níveis (4 → 1).
+  assert.equal(M.dualProficiencySlots(c, 'weapon'), 2 + 0 + 4 + 1)
+  // Cleric 3 + Fighter 4: nonweapon 4 + 1 (Cleric) e 3 + 1 (Fighter).
+  assert.equal(M.dualProficiencySlots(c, 'nonweapon'), 4 + 1 + 3 + 1)
+})
+
+test('penalidade sem proficiência da classe dupla: atual na restrição, a melhor depois', () => {
+  const restricted = { characterClass: 'Mage' as const, level: 2, formerClasses: [{ characterClass: 'Fighter' as const, level: 3 }] }
+  assert.equal(M.dualNonProficiencyPenalty(restricted).penalty, '-5')
+  assert.equal(M.dualNonProficiencyPenalty({ ...restricted, level: 4 }).penalty, '-2')
+  assert.ok(M.dualProficiencyNote({ ...restricted, level: 4 }).includes('best of Mage, Fighter'))
 })

@@ -884,7 +884,7 @@ function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
   const spent = c.weapons.reduce((sum, w) => sum + weaponSlotCost(w), 0)
   // Multiclasse: maior número inicial e ritmo mais rápido (PHB cap. 3), mais o bônus de Inteligência.
-  // Classe dupla (MC4c): cada classe pelo seu nível; iniciais só da primeira (interpretação).
+  // Classe dupla (MC4d, decisão 17): iniciais e slots por nível de cada classe (Tabela 34).
   const dual = isDualClass(c) && !isMultiClass(c)
   const total = isMultiClass(c)
     ? combinedProficiencySlots(classLevels(c), 'weapon') + bonusLanguages(c.abilities.intelligence)
@@ -902,7 +902,7 @@ function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
     <p className={spent > total ? 'rec-soft rec-red' : 'rec-soft'}>
       Weapon Proficiency Slots: {spent}/{total} used
     </p>
-      {dual && <p className="rec-soft mc-restriction">{dualProficiencyNote}</p>}
+      {dual && <p className="rec-soft mc-restriction">{dualProficiencyNote(c)}</p>}
     </>
   )
 }

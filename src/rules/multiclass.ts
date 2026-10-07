@@ -562,20 +562,42 @@ export function dualHitPointsRule(c: WithClasses): string {
 }
 
 /**
- * Slots de proficiência da classe dupla (MC4c). O PHB e os Complete não dizem
- * como contar; interpretação: o personagem guarda os slots de cada classe pelo
- * nível dela (a anterior, congelada), e os iniciais só vêm da primeira classe.
+ * Slots de proficiência da classe dupla (MC4d, decisão 17). Cada classe dá os
+ * slots dela pela Tabela 34: os iniciais (a classe nova começa "from scratch",
+ * Skills & Powers cap. 4) mais um a cada N níveis da própria classe (a anterior
+ * pelo nível congelado; a nova recomeça no 1, PHB cap. 3). O personagem mantém
+ * as proficiências da classe anterior (PHB cap. 3).
  */
 export function dualProficiencySlots(c: WithClasses, kind: 'weapon' | 'nonweapon'): number {
   const order = [...(c.formerClasses ?? []), { characterClass: c.characterClass, level: c.level }]
-  return order.reduce((sum, k, i) => {
+  return order.reduce((sum, k) => {
     const row = proficiencyRow(k.characterClass)
     if (!row) return sum
-    const initial = i === 0 ? (num(kind === 'weapon' ? row.initialWeapon : row.initialNonweapon) ?? 0) : 0
+    const initial = num(kind === 'weapon' ? row.initialWeapon : row.initialNonweapon) ?? 0
     const every = num(kind === 'weapon' ? row.levelsWeapon : row.levelsNonweapon) ?? 0
     return sum + initial + (every > 0 ? Math.trunc(k.level / every) : 0)
   }, 0)
 }
 
-export const dualProficiencyNote =
-  'Dual-class: the slots of each class at its own level, the initial slots only from the first class (the rules do not say; this is an interpretation).'
+/**
+ * Penalidade sem proficiência da classe dupla (decisão 17): na restrição, a da
+ * classe atual; depois, a melhor entre as classes (como THAC0 e saves).
+ */
+export function dualNonProficiencyPenalty(c: WithClasses): { penalty: string; from: string } {
+  if (dualClassRestriction(c)) {
+    return { penalty: combinedNonProficiencyPenalty(classLevels(c)), from: `${canonicalClass(c.characterClass)}, while restricted` }
+  }
+  return {
+    penalty: combinedNonProficiencyPenalty(allClasses(c)),
+    from: `best of ${allClasses(c).map((k) => canonicalClass(k.characterClass)).join(', ')}`,
+  }
+}
+
+/** Nota da ficha: de onde vêm os slots e a penalidade da classe dupla. */
+export function dualProficiencyNote(c: WithClasses): string {
+  const { penalty, from } = dualNonProficiencyPenalty(c)
+  const parts = [...(c.formerClasses ?? []), { characterClass: c.characterClass, level: c.level }]
+    .map((k) => `${canonicalClass(k.characterClass)} ${k.level}`)
+    .join(' + ')
+  return `Dual-class: initial slots and level slots of each class on Table 34 (${parts}) — PHB Chapter 3, Skills & Powers Chapter 4. Non-proficiency penalty ${penalty} (${from}).`
+}
