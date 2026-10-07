@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
 import type { ServerSheet } from '../lib/useSpellSheets'
-import { bonusSpellTotals } from '../rules/rules'
+import { casterLevel, classLabel, levelLabel } from '../rules/multiclass'
+import { bonusSpellTotals, canonicalClass, hasSpellSheet, isArcaneCaster } from '../rules/rules'
 import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent } from '../rules/spellSheets'
-import type { CharacterClass, PlayerCharacter, SpellSlot } from '../types/library'
+import type { CharacterClass, ClassLevel, PlayerCharacter, SpellSlot } from '../types/library'
 import { InkInput, InkNumber, SheetBlock, TallyMarks } from './SheetBits'
 import { SlotEditor } from './SlotEditor'
 import { useSpellChoices, type Caster } from '../lib/spellChoices'
@@ -135,8 +136,9 @@ function setItemSpell(
 }
 
 function casterTitle(characterClass: CharacterClass): string {
-  if (characterClass === 'Mage' || characterClass === 'Mago') return 'Wizard'
-  if (characterClass === 'Bard' || characterClass === 'Bardo') return 'Bard'
+  const cls = canonicalClass(characterClass)
+  if (cls === 'Mage') return 'Wizard'
+  if (cls === 'Bard') return 'Bard'
   return 'Priest'
 }
 
@@ -165,6 +167,7 @@ function SlotDots({ slots, onPick }: { slots: SpellSlot[]; onPick?: (slot: Spell
 
 function CircleBlock({
   level,
+  casterName,
   bonus,
   slots,
   spells,
@@ -174,6 +177,8 @@ function CircleBlock({
   onStrike,
 }: {
   level: number
+  /** Multiclasse com magia arcana e divina na mesma folha: "Wizard" ou "Priest" antes do círculo. */
+  casterName?: string
   /** Slots de bônus de Sabedoria neste círculo (sacerdote); 0 para arcano. */
   bonus: number
   slots: SpellSlot[]
@@ -186,10 +191,11 @@ function CircleBlock({
   onStrike?: (slot: SpellSlot) => void
 }) {
   // Igual ao iPad: com bônus de Sabedoria, separa base e bônus.
+  const prefix = casterName ? `${casterName} ` : ''
   const title =
     bonus > 0
-      ? `Level ${level} - ${slots.length} Slots (${Math.max(slots.length - bonus, 0)}+${bonus})`
-      : `Level ${level} · ${slots.length} slots`
+      ? `${prefix}Level ${level} - ${slots.length} Slots (${Math.max(slots.length - bonus, 0)}+${bonus})`
+      : `${prefix}Level ${level} · ${slots.length} slots`
   return (
     <section className="circle-block">
       <header className={slots.length > 5 ? 'circle-bar circle-bar-wrap' : 'circle-bar'}>
@@ -273,8 +279,7 @@ function TurnUndead({ used, onChange }: { used: number; onChange?: (n: number) =
 export function SpellSheetPage({
   sheet,
   characterName,
-  characterClass,
-  level,
+  classes,
   edit,
   character,
   favorites,
@@ -282,8 +287,8 @@ export function SpellSheetPage({
 }: {
   sheet: ServerSheet
   characterName: string
-  characterClass: CharacterClass
-  level: number
+  /** As classes do personagem (a principal primeiro); multiclasse tem mais de uma. */
+  classes: ClassLevel[]
   edit?: SheetEdit
   /** Esferas e grimório (para o seletor de magia). */
   character?: Pick<PlayerCharacter, 'sphereAccess' | 'wizardSpellbook'>
@@ -309,6 +314,7 @@ export function SpellSheetPage({
     const levels = [...new Set(sheet.slotBoard.slots.filter((s) => s.caster === caster).map((s) => s.level))].sort((a, b) => a - b)
     return levels.map((lvl) => ({
       key: `${caster}-${lvl}`,
+      caster,
       level: lvl,
       // Bônus pela Sabedoria do dia em que a folha foi criada, como no iPad.
       bonus: caster === 'divine' ? (bonusSpellTotals(sheet.wisdomAtCreation)?.[lvl] ?? 0) : 0,
@@ -316,17 +322,28 @@ export function SpellSheetPage({
     }))
   })
   const hasDivine = sheet.slotBoard.slots.some((s) => s.caster === 'divine')
+  // Classes que conjuram (multiclasse: cada tipo de magia pelo nível da sua classe).
+  const who = { characterClass: classes[0].characterClass, level: classes[0].level, multiClasses: classes.slice(1) }
+  const casters = classes.filter((k) => hasSpellSheet(k.characterClass))
+  const casterOf = (caster: Caster) => casters.find((k) => isArcaneCaster(k.characterClass) === (caster === 'arcane'))
   // Conjuradores da folha (pelos slots; sem slots, pela classe).
   const slotCasters = casterOrder.filter((caster) => sheet.slotBoard.slots.some((s) => s.caster === caster))
-  const sheetCasters: Caster[] = slotCasters.length > 0 ? [...slotCasters] : ['Mage', 'Mago', 'Bard', 'Bardo'].includes(characterClass) ? ['arcane'] : ['divine']
-  const isArcane = ['Mage', 'Mago', 'Bard', 'Bardo'].includes(characterClass)
+  const sheetCasters: Caster[] =
+    slotCasters.length > 0 ? [...slotCasters] : casters.length > 0 ? [...new Set(casters.map((k) => (isArcaneCaster(k.characterClass) ? 'arcane' : 'divine') as Caster))] : ['divine']
+  const both = sheetCasters.length > 1
+  const titleOf = (caster: Caster) => {
+    const k = casterOf(caster)
+    return k ? casterTitle(k.characterClass) : caster === 'arcane' ? 'Wizard' : 'Priest'
+  }
+  // O atributo gravado na folha: Sabedoria se há magia divina, senão Inteligência.
+  const isArcane = !sheetCasters.includes('divine')
   const dayTitle = sheet.title || new Date(sheet.date).toLocaleDateString('en-US', { dateStyle: 'medium' })
 
   return (
     <div className="spell-sheet">
       <header className="spell-sheet-header">
         <div className="spell-sheet-title">
-          <span className="rec-cell-label rec-left-label">{casterTitle(characterClass)} Spell Sheet — Game Day</span>
+          <span className="rec-cell-label rec-left-label">{sheetCasters.map(titleOf).join('/')} Spell Sheet — Game Day</span>
           {edit ? (
             <InkInput className="spell-sheet-day" value={sheet.title} placeholder={dayTitle} label="Game day" onChange={(v) => edit((s) => void (s.title = v))} />
           ) : (
@@ -336,7 +353,7 @@ export function SpellSheetPage({
         <div className="spell-sheet-who">
           <span className="rec-cell-label">Character</span>
           <span className="rec-value">
-            {characterName || 'Unnamed Character'} · {characterClass} {level}
+            {characterName || 'Unnamed Character'} · {classes.length > 1 ? classLabel(who) : classes[0].characterClass} {levelLabel(who)}
           </span>
         </div>
         <div className="spell-sheet-who">
@@ -350,10 +367,11 @@ export function SpellSheetPage({
           <CircleBlock
             key={circle.key}
             level={circle.level}
+            casterName={both ? titleOf(circle.caster) : undefined}
             bonus={circle.bonus}
             slots={circle.slots}
             spells={spells}
-            casterLevel={level}
+            casterLevel={casterLevel(who, circle.caster)}
             onOpen={setOpen}
             onPick={edit && ((slot) => setPicking(slot.id))}
             onStrike={edit && ((slot) => edit((s) => toggleSpent(s, slot.id)))}

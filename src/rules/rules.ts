@@ -499,26 +499,43 @@ export interface SlotAllotment {
   count: number
 }
 
-/** PlayerCharacter.computedSpellSlotAllotments: slots por círculo que a ficha deveria ter. */
+/**
+ * PlayerCharacter.computedSpellSlotAllotments: slots por círculo que a ficha
+ * deveria ter. Multiclasse: cada classe conjuradora pelo nível dela (divina do
+ * Cleric, arcana do Mage/Bard); classe única dá o mesmo de antes.
+ */
 export function computedSpellSlotAllotments(c: {
   characterClass: CharacterClass | string
   level: number
   abilities: AbilityScores
   wizardSchool?: string | null
+  multiClasses?: ClassLevel[] | null
 }): SlotAllotment[] {
   const toAllotments = (counts: number[], caster: SlotAllotment['caster'], bonus = 0) =>
     counts.flatMap((count, index) => (count > 0 ? [{ caster, level: index + 1, count: count + bonus }] : []))
-  switch (canonicalClass(c.characterClass)) {
-    case 'Cleric':
-      return toAllotments(priestSpellProgression(c.level, c.abilities.wisdom), 'divine')
-    case 'Mage':
-      // Especialista: +1 slot em todo círculo que já tem magia (Tabela 22).
-      return toAllotments(wizardSpellProgression(c.level, c.abilities.intelligence), 'arcane', c.wizardSchool ? 1 : 0)
-    case 'Bard':
-      return toAllotments(bardSpellProgression(c.level, c.abilities.intelligence), 'arcane')
-    default:
-      return []
+  const forClass = (cls: CharacterClass | string, level: number): SlotAllotment[] => {
+    switch (canonicalClass(cls)) {
+      case 'Cleric':
+        return toAllotments(priestSpellProgression(level, c.abilities.wisdom), 'divine')
+      case 'Mage':
+        // Especialista: +1 slot em todo círculo que já tem magia (Tabela 22).
+        return toAllotments(wizardSpellProgression(level, c.abilities.intelligence), 'arcane', c.wizardSchool ? 1 : 0)
+      case 'Bard':
+        return toAllotments(bardSpellProgression(level, c.abilities.intelligence), 'arcane')
+      default:
+        return []
+    }
   }
+  const result: SlotAllotment[] = []
+  for (const k of [{ characterClass: c.characterClass, level: c.level }, ...(c.multiClasses ?? [])]) {
+    for (const a of forClass(k.characterClass, k.level)) {
+      // Duas classes do mesmo tipo (fora da tabela): fica o maior número do círculo.
+      const same = result.find((r) => r.caster === a.caster && r.level === a.level)
+      if (same) same.count = Math.max(same.count, a.count)
+      else result.push(a)
+    }
+  }
+  return result
 }
 
 // --- Level Changes -------------------------------------------------------------------

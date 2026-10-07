@@ -19,9 +19,11 @@ import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachment
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
+import { spellSheetBasis } from '../lib/roster'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
-import { canonicalClass, computedSpellSlotAllotments, hasSpellSheet, isArcaneCaster, recordSheetPageCount } from '../rules/rules'
-import type { CharacterClass, PlayerCharacter } from '../types/library'
+import { recordSheetPageCount } from '../rules/rules'
+import { classLevels, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny } from '../rules/multiclass'
+import type { PlayerCharacter } from '../types/library'
 
 // Ficha de um personagem. Aba "Sheet": as páginas da ficha oficial do iPad
 // (3, ou 4 com as tabelas de referência da classe, conforme
@@ -188,11 +190,9 @@ export function CharacterSheet() {
   const [sheetError, setSheetError] = useState<string | null>(null)
   const { confirm, dialog } = useConfirm()
 
-  /** Slots de hoje e o atributo congelado na folha (Sabedoria, ou Inteligência para mago e bardo). */
-  const sheetBasis = (c: PlayerCharacter, cls: CharacterClass = c.characterClass) => ({
-    allotments: computedSpellSlotAllotments({ ...c, characterClass: cls }),
-    abilityScoreAtCreation: isArcaneCaster(cls) ? c.abilities.intelligence : c.abilities.wisdom,
-  })
+  /** Slots de hoje e o atributo da folha; `classes` troca as classes (logo depois de uma troca, antes de gravar). */
+  const sheetBasis = (c: PlayerCharacter, classes: ClassChoice = c) =>
+    spellSheetBasis({ ...c, characterClass: classes.characterClass, level: classes.level, multiClasses: classes.multiClasses ?? null })
 
   /** "+" das bolinhas: "Day N" na mesma sessão da folha aberta, herdando a última dela. */
   async function newDay(current: { sessionID?: string | null }) {
@@ -224,16 +224,16 @@ export function CharacterSheet() {
   }
 
   /**
-   * Troca de classe (ClassPicker.select do iPad): quem passa a ter folha de
-   * magia, está numa campanha e ainda não tem nenhuma ganha a primeira
-   * ("First day"), na sessão ativa da campanha.
+   * Troca de classe (ClassPicker.select do iPad) ou de multiclasse: quem passa
+   * a ter folha de magia, está numa campanha e ainda não tem nenhuma ganha a
+   * primeira ("First day"), na sessão ativa da campanha.
    */
-  async function afterClassChange(cls: CharacterClass) {
-    if (!character || !sheets || sheets.length > 0 || !hasSpellSheet(cls) || !campaignID) return
+  async function afterClassChange(classes: ClassChoice) {
+    if (!character || !sheets || sheets.length > 0 || !hasSpellSheetAny(classes) || !campaignID) return
     try {
       setSheetError(null)
       const sessionID = await activeSessionID(campaignID)
-      await spellSheets.createSheet(startSpellSheet(sheetBasis(character, cls), [], { sessionID, title: 'First day' }))
+      await spellSheets.createSheet(startSpellSheet(sheetBasis(character, classes), [], { sessionID, title: 'First day' }))
     } catch (reason) {
       setSheetError(reason instanceof Error ? reason.message : String(reason))
     }
@@ -358,7 +358,7 @@ export function CharacterSheet() {
                 <EffectsIcon />
               </button>
               {/* Psionicist: aba Psionics (PSPs, disciplinas, poderes, modos de defesa). */}
-              {canonicalClass(character.characterClass) === 'Psionicist' && (
+              {hasClass(character, 'Psionicist') && (
                 <button
                   className={view === 'psionics' ? 'paper-tab paper-tab-on' : 'paper-tab'}
                   title="Psionics"
@@ -370,7 +370,7 @@ export function CharacterSheet() {
                 </button>
               )}
               {/* Mago e bardo: o grimório sempre à vista (pedido do usuário). */}
-              {isArcaneCaster(character.characterClass) && (
+              {isArcaneCasterAny(character) && (
                 <button
                   className={view === 'spellbook' ? 'paper-tab paper-tab-on' : 'paper-tab'}
                   title="My Spellbook"
@@ -382,9 +382,9 @@ export function CharacterSheet() {
                 </button>
               )}
             </nav>
-            {view === 'spellbook' && isArcaneCaster(character.characterClass) && <WizardSpellbook c={character} edit={edit} />}
+            {view === 'spellbook' && isArcaneCasterAny(character) && <WizardSpellbook c={character} edit={edit} />}
             {view === 'notebook' && id && <Notebook characterID={id} userID={userID} />}
-            {view === 'psionics' && canonicalClass(character.characterClass) === 'Psionicist' && <PsionicsPanel c={character} edit={edit} campaignID={campaignID} />}
+            {view === 'psionics' && hasClass(character, 'Psionicist') && <PsionicsPanel c={character} edit={edit} campaignID={campaignID} />}
             {effectsOpen && <ActiveEffectsWindow c={character} edit={edit} onClose={() => setEffectsOpen(false)} />}
             <AttackNegationFloat c={character} edit={edit} />
             {view === 'record' && (
@@ -394,7 +394,7 @@ export function CharacterSheet() {
                   current={Number(page)}
                   onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
                 />
-                {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} onClassChanged={(cls) => void afterClassChange(cls)} />}
+                {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} onClassChanged={(classes) => void afterClassChange(classes)} />}
                 {page === '2' && <RecordPageTwo character={character} edit={edit} />}
                 {page === '3' && sheetError && <p className="paper-soft save-error">{sheetError}</p>}
                 {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} onPortrait={changePortrait} />}
@@ -442,8 +442,7 @@ export function CharacterSheet() {
                     key={sheet.id}
                     sheet={sheet}
                     characterName={character.name}
-                    characterClass={character.characterClass}
-                    level={character.level}
+                    classes={classLevels(character)}
                     edit={(mutate) => spellSheets.update(sheet.id, mutate)}
                     character={character}
                     favorites={favorites}

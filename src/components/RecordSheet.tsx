@@ -18,7 +18,7 @@ import {
   type AbilityKey,
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, hasThievingSkills, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
-import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassWarnings } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, hitPointsRule, isMultiClass, levelLabel, multiClassWarnings, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -120,7 +120,7 @@ function RecordHeader({
   c: PlayerCharacter
   campaignName: string | null
   edit?: Edit
-  onClassChanged?: (cls: CharacterClass) => void
+  onClassChanged?: (classes: ClassChoice) => void
   onApplied?: (keys: string[]) => void
 }) {
   const [pickingRace, setPickingRace] = useState(false)
@@ -148,7 +148,7 @@ function RecordHeader({
                   value={c.characterClass}
                   onChange={(cls, readMagic) => {
                     edit((x) => setClass(x, cls, readMagic))
-                    onClassChanged?.(cls)
+                    onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses })
                   }}
                 />
                 {/* Multiclasse: as outras classes; o "+" abre a janela (MC2). */}
@@ -209,7 +209,14 @@ function RecordHeader({
           </p>
         )}
         {multiOpen && edit && (
-          <MultiClassWindow c={c} onChange={(list) => edit((x) => setMultiClasses(x, list))} onClose={() => setMultiOpen(false)} />
+          <MultiClassWindow
+            c={c}
+            onChange={(list) => {
+              edit((x) => setMultiClasses(x, list))
+              onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: list })
+            }}
+            onClose={() => setMultiOpen(false)}
+          />
         )}
         {spheres.length > 0 && <HeaderLine label="Spheres">{spheres.join(', ')}</HeaderLine>}
         <div className="rec-header-row">
@@ -1130,7 +1137,7 @@ export function RecordSheet({
   campaignName: string | null
   edit?: Edit
   /** Depois de trocar a classe (a página cria a primeira folha de magia, se for o caso). */
-  onClassChanged?: (cls: CharacterClass) => void
+  onClassChanged?: (classes: ClassChoice) => void
 }) {
   // Destaque: pendentes (verde) e recém-aplicadas (piscam por 2,5 s).
   const [flashed, setFlashed] = useState<Set<string>>(new Set())

@@ -7,9 +7,12 @@
 
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library.ts'
 import { levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
-import { bestSaves, bestTHAC0, canonicalClass, hitDieType, proficiencyRow, xpRequired, type CanonicalClass } from './rules.ts'
+import { bestSaves, bestTHAC0, canonicalClass, hasSpellSheet, hitDieType, isArcaneCaster, proficiencyRow, xpRequired, type CanonicalClass } from './rules.ts'
 
 type WithClasses = Pick<PlayerCharacter, 'characterClass' | 'level'> & { multiClasses?: ClassLevel[] | null }
+
+/** As classes de um personagem (principal, nível e as outras). */
+export type ClassChoice = WithClasses
 
 /** Todas as classes do personagem, a principal primeiro (classe única = uma só). */
 export function classLevels(c: WithClasses): ClassLevel[] {
@@ -24,6 +27,41 @@ export function classLabel(c: WithClasses): string {
 }
 export function levelLabel(c: WithClasses): string {
   return classLevels(c).map((k) => k.level).join('/')
+}
+
+// --- Recursos por classe (MC3): cada um pelo nível da classe que o dá --------------
+
+/** Nível do personagem na classe pedida (null se não tem a classe). */
+export function levelOf(c: WithClasses, wanted: CanonicalClass): number | null {
+  return classLevels(c).find((k) => canonicalClass(k.characterClass) === wanted)?.level ?? null
+}
+
+export const hasClass = (c: WithClasses, wanted: CanonicalClass) => levelOf(c, wanted) !== null
+
+/** Alguma classe tem folha de magia (Cleric, Mage, Bard). */
+export const hasSpellSheetAny = (c: WithClasses) => classLevels(c).some((k) => hasSpellSheet(k.characterClass))
+
+/** Alguma classe conjura magia arcana (Mage, Bard): grimório. */
+export const isArcaneCasterAny = (c: WithClasses) => classLevels(c).some((k) => isArcaneCaster(k.characterClass))
+
+/** Alguma classe conjura magia divina com folha (Cleric). */
+export const isDivineCasterAny = (c: WithClasses) => classLevels(c).some((k) => hasSpellSheet(k.characterClass) && !isArcaneCaster(k.characterClass))
+
+/**
+ * Atributo congelado na folha de magia: Sabedoria (dá slots extras ao
+ * sacerdote), ou Inteligência quando só há classe arcana (mago, bardo).
+ */
+export function spellSheetAbility(c: WithClasses & Pick<PlayerCharacter, 'abilities'>): number {
+  return isArcaneCasterAny(c) && !isDivineCasterAny(c) ? c.abilities.intelligence : c.abilities.wisdom
+}
+
+/**
+ * Nível de conjurador para os slots de um tipo: o da classe arcana (Mage, Bard)
+ * ou divina (Cleric). Sem classe desse tipo, o da principal.
+ */
+export function casterLevel(c: WithClasses, caster: 'arcane' | 'divine'): number {
+  const k = classLevels(c).find((x) => hasSpellSheet(x.characterClass) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
+  return k?.level ?? c.level
 }
 
 // --- Combate: o melhor de cada classe ----------------------------------------------
@@ -103,15 +141,18 @@ export function hitPointsRule(classes: ClassLevel[]): string {
 
 type Combo = string[]
 
-/** PHB: combinações por raça. Illusionist = Mage com escola Illusion/Phantasm. */
+/**
+ * PHB: combinações por raça. Illusionist = Mage com escola Illusion/Phantasm.
+ * Psionicist (CPsiH, cap. 1): só anões e halflings, com Fighter ou Thief.
+ */
 const combos: Partial<Record<RaceName, Combo[]>> = {
-  Dwarf: [['Fighter', 'Thief'], ['Fighter', 'Cleric']],
+  Dwarf: [['Fighter', 'Thief'], ['Fighter', 'Cleric'], ['Fighter', 'Psionicist'], ['Thief', 'Psionicist']],
   Elf: [['Fighter', 'Mage'], ['Fighter', 'Thief'], ['Mage', 'Thief'], ['Fighter', 'Mage', 'Thief']],
   Gnome: [
     ['Fighter', 'Cleric'], ['Fighter', 'Illusionist'], ['Fighter', 'Thief'],
     ['Cleric', 'Illusionist'], ['Cleric', 'Thief'], ['Illusionist', 'Thief'],
   ],
-  Halfling: [['Fighter', 'Thief']],
+  Halfling: [['Fighter', 'Thief'], ['Fighter', 'Psionicist'], ['Thief', 'Psionicist']],
   'Half-Elf': [
     ['Fighter', 'Cleric'], ['Fighter', 'Thief'], ['Fighter', 'Mage'], ['Cleric', 'Ranger'],
     ['Cleric', 'Mage'], ['Thief', 'Mage'], ['Fighter', 'Mage', 'Cleric'],
@@ -148,7 +189,7 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
   } else if (race === 'Human') {
     warnings.push('Humans cannot be multi-class (they can be dual-class instead) — PHB, Chapter 3.')
   } else if (!(combos[race] ?? []).some((combo) => sameSet(combo, names))) {
-    warnings.push(`${names.join('/')} is not a standard ${race} multi-class combination (PHB, Chapter 3).`)
+    warnings.push(`${names.join('/')} is not a standard ${race} multi-class combination (${names.includes('Psionicist') ? 'CPsiH, Chapter 1' : 'PHB, Chapter 3'}).`)
   }
   if (c.wizardSchool && names.includes('Mage')) {
     warnings.push('Specialist wizards cannot be multi-class (the gnome illusionist is the only exception).')
@@ -162,5 +203,5 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
   return warnings
 }
 
-/** As classes que aparecem no seletor de multiclasse (as do PHB). */
-export const multiClassOptions: CharacterClass[] = ['Fighter', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief']
+/** As classes que aparecem no seletor de multiclasse (as do PHB e o Psionicist do CPsiH). */
+export const multiClassOptions: CharacterClass[] = ['Fighter', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Paladin', 'Bard', 'Psionicist']

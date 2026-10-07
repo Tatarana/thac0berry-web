@@ -5,6 +5,7 @@ import { normalize } from '../lib/search'
 import { activeSessionID } from '../lib/sessions'
 import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
+import { levelOf } from '../rules/multiclass'
 import { defenseModes, disciplines, initialCost, powerCounts, progression, psionicXP, pspMax, pspMaximum } from '../rules/psionics'
 import { primeRequisites } from '../rules/sessionReport'
 import { isoNow } from '../rules/spellSheets'
@@ -172,9 +173,11 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
   const p = c.psionics ?? emptyPsionics()
   const owned = p.disciplines ?? []
   const known = p.powers ?? []
-  const limits = progression(c.level)
+  // Multiclasse: tudo pelo nível de Psionicist (a principal pode ser outra classe).
+  const level = levelOf(c, 'Psionicist') ?? c.level
+  const limits = progression(level)
   const counts = powerCounts(known)
-  const calculated = pspMaximum(c.level, c.abilities)
+  const calculated = pspMaximum(level, c.abilities)
   const max = pspMax(p, calculated)
   const current = p.pspCurrent ?? max ?? 0
 
@@ -326,7 +329,7 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         )}
       </SheetBlock>
 
-      <SheetBlock title="Disciplines" trailing={`${owned.length} of ${limits.disciplines} at level ${c.level} (Table 4)`}>
+      <SheetBlock title="Disciplines" trailing={`${owned.length} of ${limits.disciplines} at level ${level} (Table 4)`}>
         <div className="chip-row">
           {disciplines.map((d) => (
             <span key={d} className="psi-discipline">

@@ -1,4 +1,5 @@
-import { computedSpellSlotAllotments, hasSpellSheet, isArcaneCaster } from '../rules/rules'
+import { hasSpellSheetAny, spellSheetAbility } from '../rules/multiclass'
+import { computedSpellSlotAllotments } from '../rules/rules'
 import { startSpellSheet } from '../rules/spellSheets'
 import type { PlayerCharacter } from '../types/library'
 import { loadValidators } from './libraryImport'
@@ -70,11 +71,11 @@ async function checkCharacter(data: ServerCharacter) {
   if (problem) throw new Error(`the sheet would not open on the iPad (${problem})`)
 }
 
-/** Slots de hoje e o atributo congelado na folha (Sabedoria, ou Inteligência para mago e bardo). */
+/** Slots de hoje (de todas as classes) e o atributo congelado na folha (spellSheetAbility). */
 export function spellSheetBasis(c: ServerCharacter) {
   return {
     allotments: computedSpellSlotAllotments(c as PlayerCharacter),
-    abilityScoreAtCreation: isArcaneCaster(c.characterClass) ? c.abilities.intelligence : c.abilities.wisdom,
+    abilityScoreAtCreation: spellSheetAbility(c),
   }
 }
 
@@ -83,7 +84,7 @@ export function spellSheetBasis(c: ServerCharacter) {
  * nenhuma folha e numa campanha ganha a "First day" na sessão ativa.
  */
 async function seedFirstSpellSheet(characterID: string, c: ServerCharacter, campaignID: string) {
-  if (!hasSpellSheet(c.characterClass)) return
+  if (!hasSpellSheetAny(c)) return
   const existing = await supabase.from('spell_sheet').select('id').eq('character_id', characterID).is('deleted_at', null).limit(1)
   if (existing.error) throw new Error(existing.error.message)
   if (existing.data.length > 0) return

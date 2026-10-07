@@ -30,8 +30,18 @@ entregas e pendências. Atualizar a cada entrega.
 1. Só multiclasse agora (MC1 a MC3). Classe dupla (MC4) fica para depois.
 2. HP: o jogador calcula; o app só mostra a regra.
 3. Combinação fora da tabela: permitida, com aviso (como os limites raciais).
-4. Variantes dos suplementos (Psionicist do CPsiH, bardos do CBH, sacerdotes do
-   CPrH): MC5.
+4. Variantes dos suplementos (bardos do CBH, sacerdotes do CPrH): MC5.
+
+## Decisões do usuário (2026-10-07, plano da MC3)
+
+5. Psionicist entra no seletor e fica na MC3 (antes estava na MC5). Combinações
+   do CPsiH (cap. 1): anão e halfling, Fighter/Psionicist e Thief/Psionicist;
+   gnomo, elfo e meio-elfo não podem.
+6. Bônus de requisito primário no XP do relatório vai pelo tipo de XP: magia de
+   Cleric e Turn Undead usam WIS; magia de Mage usa INT.
+7. Página 4 de multiclasse: as tabelas de cada classe, uma após a outra.
+8. MC3 em três entregas: MC3a (magia), MC3b (Turn Undead, ladrão, página 4),
+   MC3c (XP do relatório e restrições).
 
 ## Princípio de compatibilidade
 
@@ -52,9 +62,11 @@ entregas e pendências. Atualizar a cada entrega.
 |---|---|---|
 | MC1 | Formato (`multiClasses`) e regras combinadas, sem tela | feita (web v0.31.0) |
 | MC2 | Ficha: seletor de multiclasse, cabeçalho "Fighter/Mage 5/4", XP por classe, consequências | feita (web v0.32.0) |
-| MC3 | Recursos por classe: magia (arcana e divina), Turn Undead, perícias de ladrão, psiônicos, XP do relatório | a fazer |
+| MC3a | Magia por classe (slots, abas, folha de magia, grimório) e Psionicist no seletor (combinações do CPsiH, aba Psionics pelo nível dele) | feita (web v0.33.0) |
+| MC3b | Turn Undead pelo nível de Cleric, perícias de ladrão e backstab pelo nível de Thief, página 4 com as tabelas de cada classe | a fazer |
+| MC3c | XP do relatório por tipo (bônus de WIS/INT pela decisão 6, XP psiônico) e avisos de restrição (armadura do mago, armas do sacerdote) | a fazer |
 | MC4 | Classe dupla (humanos) | adiada (decisão 1) |
-| MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, Psionicist do CPsiH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
+| MC5 | Kits (um no total; guerreiro/ladrão só classe única), bardos do CBH, sacerdotes do CPrH, dreno de nível | adiada (decisão 4) |
 
 ## Log
 
@@ -88,3 +100,19 @@ entregas e pendências. Atualizar a cada entrega.
   - classe única: só aparece o "+" ao lado da classe; o resto igual.
   - Teste com o personagem "Teste MC" (elfo Fighter/Mage/Thief, criado no
     Sandbox da conta do usuário para os testes da multiclasse).
+- 2026-10-07: plano da MC3 aprovado (decisões 5 a 8).
+- 2026-10-07, MC3a feita (web v0.33.0):
+  - `computedSpellSlotAllotments` soma os slots de cada classe conjuradora pelo
+    nível dela (Fighter/Mage com Fighter principal antes ficava sem slots);
+  - `multiclass.ts`: `levelOf`, `hasClass`, `hasSpellSheetAny`,
+    `isArcaneCasterAny`, `casterLevel` e `spellSheetAbility` (WIS se há magia
+    divina, senão INT); usados na ficha, em `roster.ts` e nas sessões;
+  - abas Spells, Spellbook e Psionics aparecem se qualquer classe as tem;
+    acrescentar uma conjuradora pela janela cria o "First day" (como trocar
+    de classe);
+  - folha de magia: título "Wizard/Priest Spell Sheet", cabeçalho com
+    "Fighter/Mage 6/5", círculos com "Wizard"/"Priest" quando a folha tem os
+    dois tipos, dano pelo nível da classe que conjura;
+  - Psionicist: combinações do CPsiH no seletor (chips) e nos avisos; aba
+    Psionics (PSPs, disciplinas, Tabela 4) pelo nível de Psionicist;
+  - testes: os 67 de antes passam iguais e 3 novos.

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { loadSpellIndex, type SpellIndexEntry } from '../data/spells'
 import { normalize, similarity } from '../lib/search'
-import { canonicalClass, computedSpellSlotAllotments } from '../rules/rules'
+import { hasClass } from '../rules/multiclass'
+import { computedSpellSlotAllotments } from '../rules/rules'
 import { isOpposedBySchool, wizardSchools } from '../rules/spellSheets'
 import { useConfirm } from '../lib/useConfirm'
 import type { PlayerCharacter } from '../types/library'
@@ -79,7 +80,7 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
       })
     })
 
-  const isMage = canonicalClass(c.characterClass) === 'Mage'
+  const isMage = hasClass(c, 'Mage')
   const currentSchool = wizardSchools.find((s) => s.name === school)
 
   return (

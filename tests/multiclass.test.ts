@@ -94,3 +94,46 @@ test('consequências: mudar o nível de uma das classes fica pendente', () => {
 test('regra de HP é só texto (o jogador calcula)', () => {
   assert.match(M.hitPointsRule([{ characterClass: 'Fighter', level: 1 }, { characterClass: 'Mage', level: 1 }]), /d10 \(Fighter\) \+ d4 \(Mage\).*divide by 2/)
 })
+
+// --- MC3a: magia por classe e Psionicist no seletor ---------------------------------
+
+test('slots: classe única igual a antes; multiclasse soma as classes pelo nível de cada uma', () => {
+  const mage = { characterClass: 'Mage' as const, level: 5, abilities }
+  assert.deepEqual(
+    R.computedSpellSlotAllotments(mage),
+    R.wizardSpellProgression(5, abilities.intelligence).flatMap((n, i) => (n > 0 ? [{ caster: 'arcane', level: i + 1, count: n }] : [])),
+  )
+  // Fighter principal: antes ficava sem slots.
+  const fm = { characterClass: 'Fighter' as const, level: 6, multiClasses: [{ characterClass: 'Mage' as const, level: 5 }], abilities }
+  assert.deepEqual(R.computedSpellSlotAllotments(fm), R.computedSpellSlotAllotments(mage))
+  // Cleric/Mage: as duas magias, cada uma pelo seu nível.
+  const cm = { characterClass: 'Cleric' as const, level: 3, multiClasses: [{ characterClass: 'Mage' as const, level: 4 }], abilities }
+  const slots = R.computedSpellSlotAllotments(cm)
+  assert.deepEqual(slots.filter((a) => a.caster === 'divine'), R.computedSpellSlotAllotments({ characterClass: 'Cleric', level: 3, abilities }))
+  assert.deepEqual(slots.filter((a) => a.caster === 'arcane'), R.computedSpellSlotAllotments({ characterClass: 'Mage', level: 4, abilities }))
+})
+
+test('recursos por classe: quem conjura, nível de conjurador, atributo da folha', () => {
+  const fm = { characterClass: 'Fighter' as const, level: 6, multiClasses: [{ characterClass: 'Mage' as const, level: 5 }], abilities }
+  assert.equal(M.hasSpellSheetAny(fm), true)
+  assert.equal(M.isArcaneCasterAny(fm), true)
+  assert.equal(M.casterLevel(fm, 'arcane'), 5)
+  assert.equal(M.spellSheetAbility(fm), abilities.intelligence)
+  // Com magia divina, a folha guarda a Sabedoria (dá slots extras ao sacerdote).
+  const cm = { characterClass: 'Mage' as const, level: 4, multiClasses: [{ characterClass: 'Cleric' as const, level: 3 }], abilities }
+  assert.equal(M.spellSheetAbility(cm), abilities.wisdom)
+  assert.equal(M.casterLevel(cm, 'divine'), 3)
+  // Classe única: o de sempre.
+  assert.equal(M.hasSpellSheetAny({ characterClass: 'Fighter', level: 3 }), false)
+  assert.equal(M.spellSheetAbility({ characterClass: 'Mage', level: 3, abilities }), abilities.intelligence)
+  assert.equal(M.spellSheetAbility({ characterClass: 'Cleric', level: 3, abilities }), abilities.wisdom)
+  assert.equal(M.levelOf({ characterClass: 'Thief', level: 4, multiClasses: [{ characterClass: 'Psionicist', level: 3 }] }, 'Psionicist'), 3)
+})
+
+test('Psionicist (CPsiH): anão e halfling com Fighter ou Thief; elfo não', () => {
+  const base = { characterClass: 'Fighter' as const, level: 3, wizardSchool: null, multiClasses: [{ characterClass: 'Psionicist' as const, level: 3 }] }
+  assert.deepEqual(M.multiClassWarnings({ ...base, race: 'Dwarf' }), [])
+  assert.deepEqual(M.multiClassWarnings({ ...base, race: 'Halfling', characterClass: 'Thief' }), [])
+  assert.match(M.multiClassWarnings({ ...base, race: 'Elf' })[0], /not a standard Elf .*CPsiH/)
+  assert.ok(M.multiClassOptions.includes('Psionicist'))
+})

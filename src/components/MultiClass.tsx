@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { classLevels, combosFor, hitPointsRule, multiClassWarnings } from '../rules/multiclass'
+import { classLevels, combosFor, hitPointsRule, multiClassOptions, multiClassWarnings } from '../rules/multiclass'
 import { canonicalClass } from '../rules/rules'
 import type { CharacterClass, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -7,9 +7,6 @@ import { PaperModal } from './DetailBits'
 // Multiclasse na ficha (MC2, docs/multiclasse.md): janela para acrescentar ou
 // tirar classes, com as combinações padrão da raça, os avisos (fora da tabela é
 // permitido, com aviso — decisão do usuário) e a regra de HP (o jogador calcula).
-
-/** Classes que podem entrar num multiclasse (as do PHB; variantes na MC5). */
-const options: CharacterClass[] = ['Fighter', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Paladin', 'Bard', 'Psionicist']
 
 export function MultiClassWindow({
   c,
@@ -64,7 +61,7 @@ export function MultiClassWindow({
 
       <div className="rec-cell-label rec-left-label">Add a class</div>
       <div className="chip-row">
-        {options
+        {multiClassOptions
           .filter((o) => !taken.has(canonicalClass(o)))
           .map((o) => (
             <button key={o} className="chip" onClick={() => onChange([...extra, { characterClass: o, level: 1 }])}>
@@ -75,7 +72,7 @@ export function MultiClassWindow({
 
       {combos.length > 0 && (
         <>
-          <div className="rec-cell-label rec-left-label">Standard {c.race} combinations (PHB)</div>
+          <div className="rec-cell-label rec-left-label">Standard {c.race} combinations (PHB, CPsiH)</div>
           <div className="chip-row">
             {combos.map((combo) => (
               <button key={combo.join('/')} className="chip" onClick={() => adopt(combo)}>
