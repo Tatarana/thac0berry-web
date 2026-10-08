@@ -44,6 +44,7 @@ entregas e pendências. Atualizar a cada entrega.
 | GT1 | Consulta: índice das tabelas (estruturadas + markdown) no build, tela `/dm/tables` com busca e filtros (livro, cenário, capítulo), ficha com link para a regra | feita (web v0.40.0) |
 | GT2 | Motor de rolagem (`src/rules/dice.ts`: notação, faixas, rolar, achar linha) + Roll e resultado digitado na ficha + histórico | feita (web v0.41.0) |
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
+| GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data, com proposta e "ok" lá): tabelas que faltam do DMG, cenários (Ravenloft etc.), correções (dado da 88, títulos sem número) | tarefa para outro agente: `docs/gt4-tarefa.md` (precisa do data-mining, só no PC do usuário) |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
@@ -93,3 +94,20 @@ entregas e pendências. Atualizar a cada entrega.
     envio (Enter abria a tabela citada) — corrigido com `type="button"`.
 - 2026-10-08: GT4 documentada como tarefa para outro agente (`docs/gt4-tarefa.md`).
 - 2026-10-08: decisão 6 (cenários no `rules.json` com código de livro; filtro de regras por cenário). Proposta da GT4a (lista de livros nos dados + filtro de cenário nas regras) enviada ao usuário.
+- 2026-10-08, GT4a feita (web v0.42.0, thac0berry-data PR #2):
+  - thac0berry-data: `data/books.json` (14 livros: `id` = código do campo
+    `book` das regras, `title` do `breadcrumbs`, `setting` "Core" ou o cenário,
+    `order` a do iPad), gerado por `scripts/build_books.py` (para se o
+    rules.json tiver livro fora da lista); schema `book.schema.json`;
+  - web: `src/rules/books.ts` (ordem, cenários com Core primeiro, livros de um
+    cenário, cenário de um livro); o build copia `books.json` e para se faltar
+    livro; a lista fixa `bookOrder` e o "Dark Sun" fixo saíram do código;
+  - Rules Reference: chips **Setting** (All / Core / Dark Sun) e **Book**
+    (só os do cenário, com o título completo no toque e embaixo dos chips); a
+    lista e a busca respeitam o filtro (busca "psionic combat": 40 em todos,
+    31 em Dark Sun); subtítulo com a contagem de livros e cenários;
+  - Table Grimoire usa os mesmos livros e cenários (56 tabelas de Dark Sun);
+  - **ordem de merge**: o PR do thac0berry-data primeiro (o CI da web baixa o
+    `main` de lá); depois, `sync_data.py` no iPad (arquivo novo em `data/`);
+  - pendente no iPad: trocar `RulesCompendiumView.bookOrder` pelo `books.json`;
+  - testes: 116 (2 novos arquivos de teste: livros e dados reais).

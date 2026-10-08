@@ -90,8 +90,11 @@ número, então **o número da tabela precisa bater** com o que a 88 cita.
      "Forgotten Realms", "Greyhawk", "Planescape", "Spelljammer",
      "Dragonlance", "Al-Qadim", "Mystara / Known World", "Oriental Adventures /
      Kara-Tur", "Maztica", "Dark Sun"); se a GT4a já estiver feita, cada livro
-     novo entra também na lista de livros dos dados (`data/books.json`) com o
-     cenário dele — senão, combine com o usuário.
+     novo entra também na lista de livros dos dados: acrescente o código e o
+     cenário na lista `BOOKS` de `scripts/build_books.py` (thac0berry-data) e
+     rode o script — o build da web para se um livro das regras faltar em
+     `data/books.json`. A web mostra o cenário novo sozinha (Rules Reference e
+     Table Grimoire), sem mudar código.
 3. **DMG** (depois do "ok"): script no data repo (ex.:
    `scripts/add_dmg_missing_tables.py`) que lê o data-mining e acrescenta as
    tabelas às regras certas, com `[TABLE_REF: …]` no `content`. Idempotente.
@@ -109,9 +112,9 @@ número, então **o número da tabela precisa bater** com o que a 88 cita.
    - opcional: as listas `recommended` de 13 kits cortadas nas vírgulas (ver
      `docs/multiclasse.md`, Pendências, item 6).
 5. **Cenários**, conforme a decisão do passo 2.
-6. **Web** (só se o passo 2 pedir arquivo novo ou cenário novo): `settingOf`
-   em `src/rules/tableIndex.ts`, `bookOrder` em `src/data/rules.ts`,
-   `build-data.mjs`; testes em `tests/tableIndex.test.ts`. Subir a versão
+6. **Web**: com a GT4a, livro e cenário novos não pedem código (vêm de
+   `data/books.json`); só os testes de dados reais (`tests/books.test.ts`,
+   `tests/dice.test.ts`) ganham os casos novos. Subir a versão
    (`package.json` e `package-lock.json`) e registrar no log do
    `docs/grimorio-de-tabelas.md`.
 7. **Conferir no navegador** (`npm run dev` com `DATA_DIR=../thac0berry-data/data`,

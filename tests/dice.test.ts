@@ -99,7 +99,7 @@ test('citações: mesmo livro, "in the PHB" troca o livro; o link cobre só "Tab
 
 test('dados reais: Tabela 88 rola d100 e as tabelas 115→116 se encadeiam', () => {
   const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
-  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')))
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')))
   const t88 = tables.find((t) => t.id === 'dmg-88')!
   assert.equal(formatDice(rollPlan(t88)!.dice!), 'd100')
   const t115 = tables.find((t) => t.id === 'dmg-115')!
