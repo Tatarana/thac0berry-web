@@ -29,8 +29,7 @@ export interface RuleEntry extends RuleIndexEntry {
   relatedRuleIds: string[]
 }
 
-/** Ordem dos livros (RulesCompendiumView.bookOrder do iPad). */
-export const bookOrder = ['PHB', 'DMG', 'CPrH', 'CFH', 'CPaH', 'CRH', 'CBarbH', 'CBH', 'CNH', 'CTH', 'CPsiH', 'DSC', 'DK', 'WatW']
+// A ordem dos livros e o cenário de cada um vêm de data/books.json (src/data/books.ts).
 
 export const loadRulesIndex = () => loadData<RuleIndexEntry[]>('rules-index.json')
 
@@ -42,14 +41,15 @@ export async function loadRule(entry: RuleIndexEntry): Promise<RuleEntry | undef
 /**
  * Busca aproximada por tópico e palavras-chave (RulesDatabase.matches do
  * iPad): melhor pontuação entre o tópico e cada palavra-chave; mínimo 0,3;
- * até 40 resultados, do mais parecido para o menos.
+ * até 40 resultados, do mais parecido para o menos. `books`: só esses livros
+ * (filtro de livro ou de cenário); null = todos.
  */
-export function searchRules(entries: RuleIndexEntry[], text: string, book: string | null, limit = 40): RuleIndexEntry[] {
+export function searchRules(entries: RuleIndexEntry[], text: string, books: ReadonlySet<string> | null, limit = 40): RuleIndexEntry[] {
   const query = normalize(text)
   if (query === '') return []
   const scored: { entry: RuleIndexEntry; score: number }[] = []
   for (const entry of entries) {
-    if (book && entry.book !== book) continue
+    if (books && !books.has(entry.book)) continue
     let best = similarity(query, normalize(entry.topic))
     for (const keyword of entry.searchKeywords) best = Math.max(best, similarity(query, normalize(keyword)))
     if (best >= 0.3) scored.push({ entry, score: best })

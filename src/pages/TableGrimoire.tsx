@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { DmOnly } from '../components/DmOnly'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
-import { bookOrder } from '../data/rules'
+import { loadBooks } from '../data/books'
 import { loadTables } from '../data/tables'
+import { booksInSetting, settingsOf, type Book } from '../rules/books'
 import { formatDice, type DiceSpec } from '../rules/dice'
 import { filterTables, tableChapters, tableLabel, type GrimoireTable } from '../rules/tableIndex'
 import { rollPlan } from '../rules/tableRoll'
@@ -39,15 +40,22 @@ function TableList() {
   const [history, setHistory] = useState<RollRecord[]>([])
   const open = (table: GrimoireTable, autoRoll: boolean) => setSelected((current) => ({ table, autoRoll, opened: (current?.opened ?? 0) + 1 }))
 
+  const [bookList, setBookList] = useState<Book[]>([])
+
   useEffect(() => {
     loadTables()
       .then(setTables)
       .catch((reason: unknown) => setError(String(reason)))
+    loadBooks()
+      .then(setBookList)
+      .catch((reason: unknown) => setError(String(reason)))
   }, [])
 
   const all = useMemo(() => tables ?? [], [tables])
-  const settings = useMemo(() => [...new Set(all.map((t) => t.setting))].sort((a, b) => (a === 'Core' ? -1 : b === 'Core' ? 1 : a.localeCompare(b))), [all])
-  const books = useMemo(() => bookOrder.filter((b) => all.some((t) => t.book === b && (!setting || t.setting === setting))), [all, setting])
+  // Cenários e livros (data/books.json) que têm tabelas; a ordem é a dos livros.
+  const settings = useMemo(() => settingsOf(bookList).filter((name) => all.some((t) => t.setting === name)), [bookList, all])
+  const books = useMemo(() => booksInSetting(bookList, setting).filter((b) => all.some((t) => t.book === b.id)), [bookList, setting, all])
+  const bookOrder = useMemo(() => booksInSetting(bookList, null).map((b) => b.id), [bookList])
   const chapters = useMemo(() => (book ? tableChapters(all, book) : []), [all, book])
   // Dado de cada tabela que rola (motor de rolagem, src/rules/tableRoll.ts).
   const dice = useMemo(() => {
@@ -60,7 +68,7 @@ function TableList() {
   }, [all])
   const filtered = useMemo(
     () => filterTables(all, { query, book, setting, chapter }, bookOrder).filter((t) => !rollableOnly || dice.has(t.id)),
-    [all, query, book, setting, chapter, rollableOnly, dice],
+    [all, query, book, setting, chapter, rollableOnly, dice, bookOrder],
   )
   const rows = showAll ? filtered : filtered.slice(0, ROW_LIMIT)
 
@@ -118,9 +126,9 @@ function TableList() {
           <span className="paper-label">Book</span>
           <div className="chip-row chip-row-scroll">
             <button className={book === null ? 'chip chip-on' : 'chip'} onClick={() => pickBook(null)}>All</button>
-            {books.map((name) => (
-              <button key={name} className={book === name ? 'chip chip-on' : 'chip'} onClick={() => pickBook(name)}>
-                {name}
+            {books.map((b) => (
+              <button key={b.id} className={book === b.id ? 'chip chip-on' : 'chip'} title={b.title} onClick={() => pickBook(b.id)}>
+                {b.id}
               </button>
             ))}
           </div>

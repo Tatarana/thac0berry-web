@@ -5,6 +5,7 @@
 // Só funções puras: roda no build (scripts/build-data.mjs) e nos testes.
 
 import { normalize } from '../lib/search.ts'
+import { settingOfBook, type Book } from './books.ts'
 
 export interface SourceTable {
   tableNumber?: string
@@ -27,7 +28,7 @@ export interface GrimoireTable {
   /** Estável entre gerações: livro + número ("dmg-84"); sem número, a regra e a posição. */
   id: string
   book: string
-  /** Cenário de campanha ("Core" para os livros gerais). */
+  /** Cenário de campanha ("Core" para os livros gerais), do livro em data/books.json. */
   setting: string
   /** "84", "61a"; null quando o livro não numerou a tabela. */
   number: string | null
@@ -42,10 +43,6 @@ export interface GrimoireTable {
   alsoIn: string[]
 }
 
-/** Livros de cenário (o resto é "Core"). Ravenloft e os outros chegam com a GT4. */
-const settingOfBook: Record<string, string> = { DSC: 'Dark Sun', DK: 'Dark Sun', WatW: 'Dark Sun' }
-
-export const settingOf = (book: string) => settingOfBook[book] ?? 'Core'
 
 /** "Table 84: Treasure Types" → número "84" e título "Treasure Types" ("Table II: …" → "II"). */
 export function splitTableTitle(raw: string, tableNumber?: string): { number: string | null; title: string } {
@@ -113,8 +110,11 @@ const slug = (text: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
-/** Índice do Table Grimoire: estruturadas e markdown, sem repetidas, na ordem do rules.json. */
-export function buildTableIndex(rules: SourceRule[]): GrimoireTable[] {
+/**
+ * Índice do Table Grimoire: estruturadas e markdown, sem repetidas, na ordem
+ * do rules.json. O cenário de cada tabela vem do livro (`books`, data/books.json).
+ */
+export function buildTableIndex(rules: SourceRule[], books: Book[]): GrimoireTable[] {
   const result: GrimoireTable[] = []
   const byKey = new Map<string, GrimoireTable>()
   const ids = new Set<string>()
@@ -134,7 +134,7 @@ export function buildTableIndex(rules: SourceRule[]): GrimoireTable[] {
       const table: GrimoireTable = {
         id,
         book: rule.book,
-        setting: settingOf(rule.book),
+        setting: settingOfBook(books, rule.book),
         number,
         title: title || rule.topic,
         chapterNumber: rule.chapterNumber,

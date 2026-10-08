@@ -13,6 +13,7 @@
 //   public/data/rules-index.json        índice das regras (lista e busca)
 //   public/data/rules/<livro>.json      regras completas de cada livro
 //   public/data/tables.json             tabelas do Table Grimoire (estruturadas + markdown)
+//   public/data/books.json              livros das regras: ordem e cenário (cópia)
 //   public/data/magic-index.json         índice dos itens mágicos (com resumo)
 //   public/data/magic/magic_*.json       itens mágicos completos, por categoria
 //   public/data/psionic-powers.json      poderes psiônicos, sem o texto bruto de wiki
@@ -28,6 +29,7 @@
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { unlistedBooks } from '../src/rules/books.ts'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 
 const root = resolve(import.meta.dirname, '..')
@@ -89,6 +91,20 @@ console.log(`data: ${kits.length} kits (${Object.entries(kitGroups).map(([g, l])
 // Regras: índice leve (lista e busca) + um arquivo por livro com o texto e as
 // tabelas (só baixado ao abrir uma regra daquele livro).
 const rules = JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8'))
+// Livros (ordem e cenário de campanha de cada um): thac0berry-data/data/books.json.
+// Todo livro das regras precisa estar lá (senão o filtro de cenário erraria calado).
+const booksFile = join(source, 'books.json')
+if (!existsSync(booksFile)) {
+  console.error(`Faltou ${booksFile}: atualize o thac0berry-data (books.json entrou em 2026-10-08).`)
+  process.exit(1)
+}
+const books = JSON.parse(readFileSync(booksFile, 'utf8'))
+const unlisted = unlistedBooks(books, rules.map((rule) => rule.book))
+if (unlisted.length > 0) {
+  console.error(`Livros das regras fora de books.json: ${unlisted.join(', ')} (thac0berry-data: scripts/build_books.py).`)
+  process.exit(1)
+}
+copyFileSync(booksFile, join(out, 'books.json'))
 mkdirSync(join(out, 'rules'), { recursive: true })
 const rulesByBook = {}
 const rulesIndex = rules.map((rule) => {
@@ -111,7 +127,7 @@ console.log(`data: ${rules.length} regras em ${Object.keys(rulesByBook).length} 
 
 // Table Grimoire (docs/grimorio-de-tabelas.md): as tabelas estruturadas e as em
 // markdown no texto das regras, num índice só (src/rules/tableIndex.ts).
-const grimoireTables = buildTableIndex(rules)
+const grimoireTables = buildTableIndex(rules, books)
 writeFileSync(join(out, 'tables.json'), JSON.stringify(grimoireTables))
 console.log(`data: ${grimoireTables.length} tabelas no Table Grimoire`)
 
