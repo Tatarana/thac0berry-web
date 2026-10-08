@@ -15,6 +15,9 @@ entregas e pendências. Atualizar a cada entrega.
 4. Todas as tabelas, com filtro, incluindo as de cenários de campanha
    (Ravenloft etc.) separadas.
 5. Nome na tela: "Table Grimoire".
+6. (2026-10-08) Tabelas de cenário: no `rules.json`, com um código de livro
+   por cenário (ex.: `RL` Ravenloft), como regras com texto. E filtro de
+   **regras por cenário de campanha** (Rules Compendium), não só de tabelas.
 
 ## Dados (levantamento de 2026-10-08)
 
@@ -89,3 +92,4 @@ entregas e pendências. Atualizar a cada entrega.
   - achado no teste: link de tabela dentro do formulário virava botão de
     envio (Enter abria a tabela citada) — corrigido com `type="button"`.
 - 2026-10-08: GT4 documentada como tarefa para outro agente (`docs/gt4-tarefa.md`).
+- 2026-10-08: decisão 6 (cenários no `rules.json` com código de livro; filtro de regras por cenário). Proposta da GT4a (lista de livros nos dados + filtro de cenário nas regras) enviada ao usuário.
