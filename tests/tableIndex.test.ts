@@ -84,3 +84,9 @@ test('dados reais: todas as tabelas com id único e cabeçalho', () => {
   assert.ok(index.every((t) => t.headers.length > 0 && t.title !== ''))
   assert.ok(index.some((t) => t.id === 'dmg-88'))
 })
+
+test('título com número romano (CPsiH): "Table II: Clairsentience"', () => {
+  assert.deepEqual(splitTableTitle('Table II: Clairsentience'), { number: 'II', title: 'Clairsentience' })
+  // "Table" seguido de palavra comum não vira número.
+  assert.deepEqual(splitTableTitle('Table Illusions'), { number: null, title: 'Table Illusions' })
+})
