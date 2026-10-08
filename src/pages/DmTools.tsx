@@ -11,11 +11,13 @@ interface ToolEntry {
   accent: string
 }
 
-// Ferramentas do DM (2026-10-07): o catálogo de monstros é a primeira; as
+// Ferramentas do DM (2026-10-07): o catálogo de monstros é a primeira; o
+// Table Grimoire (2026-10-08) a segunda; as
 // próximas (encontros, combate) entram aqui. Sem `image` = ainda sem arte (✦).
 // Medalhão de Monsters: arte do usuário (2026-10-07).
 const tools: ToolEntry[] = [
   { title: 'Monsters', subtitle: '2,386 monsters · Monstrous Manual, Annuals & settings', to: '/dm/monsters', image: 'icon_monsters', accent: 'var(--crimson)' },
+  { title: 'Table Grimoire', subtitle: '512 tables · DMG, PHB, Complete Handbooks & Dark Sun', to: '/dm/tables', accent: 'var(--brass)' },
 ]
 
 export function DmTools() {

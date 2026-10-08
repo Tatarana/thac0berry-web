@@ -18,6 +18,7 @@ import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
 import { KitCompendium } from './pages/KitCompendium'
 import { MagicItemCompendium } from './pages/MagicItemCompendium'
 import { MonsterCompendium } from './pages/MonsterCompendium'
+import { TableGrimoire } from './pages/TableGrimoire'
 import { PsionicCompendium } from './pages/PsionicCompendium'
 import { RulesCompendium } from './pages/RulesCompendium'
 import { Settings } from './pages/Settings'
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
           <Route path="/dm" element={<DmTools />} />
           <Route path="/dm/monsters" element={<MonsterCompendium />} />
+          <Route path="/dm/tables" element={<TableGrimoire />} />
           <Route path="/characters" element={<Characters />} />
           <Route path="/characters/:id" element={<CharacterSheet />} />
           <Route path="/import" element={<ImportBackup />} />

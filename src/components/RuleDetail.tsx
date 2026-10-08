@@ -8,7 +8,7 @@ import { InlineMarkdown } from './InlineMarkdown'
 export function RuleTableView({ table }: { table: RuleTable }) {
   return (
     <div className="rule-table">
-      <p className="paper-soft">{table.title}</p>
+      {table.title && <p className="paper-soft">{table.title}</p>}
       <div className="rule-table-scroll">
         <table>
           <thead>
