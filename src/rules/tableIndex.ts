@@ -47,10 +47,11 @@ const settingOfBook: Record<string, string> = { DSC: 'Dark Sun', DK: 'Dark Sun',
 
 export const settingOf = (book: string) => settingOfBook[book] ?? 'Core'
 
-/** "Table 84: Treasure Types" → número "84" e título "Treasure Types". */
+/** "Table 84: Treasure Types" → número "84" e título "Treasure Types" ("Table II: …" → "II"). */
 export function splitTableTitle(raw: string, tableNumber?: string): { number: string | null; title: string } {
   const text = raw.replace(/\*+/g, '').trim().replace(/:$/, '').trim()
-  const match = /^Table\s+(\d+[A-Za-z]?)\s*[:.–-]?\s*(.*)$/i.exec(text)
+  // Número arábico ("84", "61a") ou romano ("II", do CPsiH).
+  const match = /^Table\s+(\d+[A-Za-z]?)\s*[:.–-]?\s*(.*)$/i.exec(text) ?? /^Table\s+([IVXL]+)\b\s*[:.–-]?\s*(.*)$/.exec(text)
   if (match) return { number: match[1], title: match[2].trim() }
   const fromField = /(\d+[A-Za-z]?)/.exec(tableNumber ?? '')
   return { number: fromField ? fromField[1] : null, title: /^table$/i.test(text) ? '' : text }

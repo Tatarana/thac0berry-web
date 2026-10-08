@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { DmOnly } from '../components/DmOnly'
-import { TableDetail } from '../components/TableDetail'
+import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { bookOrder } from '../data/rules'
 import { loadTables } from '../data/tables'
+import { formatDice, type DiceSpec } from '../rules/dice'
 import { filterTables, tableChapters, tableLabel, type GrimoireTable } from '../rules/tableIndex'
+import { rollPlan } from '../rules/tableRoll'
+
 
 // Linhas antes do "Show all" (como nos monstros); a busca e os filtros valem para todas.
 const ROW_LIMIT = 150
@@ -28,7 +31,13 @@ function TableList() {
   const [book, setBook] = useState<string | null>(null)
   const [chapter, setChapter] = useState<number | null>(null)
   const [showAll, setShowAll] = useState(false)
-  const [selected, setSelected] = useState<GrimoireTable | null>(null)
+  const [rollableOnly, setRollableOnly] = useState(false)
+  // Tabela aberta; `autoRoll` quando veio de "Roll on Table N"; `opened` troca a
+  // chave da ficha (a mesma tabela aberta de novo começa limpa).
+  const [selected, setSelected] = useState<{ table: GrimoireTable; autoRoll: boolean; opened: number } | null>(null)
+  // Histórico de rolagens e consultas desta visita (todas as tabelas, mais recente primeiro).
+  const [history, setHistory] = useState<RollRecord[]>([])
+  const open = (table: GrimoireTable, autoRoll: boolean) => setSelected((current) => ({ table, autoRoll, opened: (current?.opened ?? 0) + 1 }))
 
   useEffect(() => {
     loadTables()
@@ -40,7 +49,19 @@ function TableList() {
   const settings = useMemo(() => [...new Set(all.map((t) => t.setting))].sort((a, b) => (a === 'Core' ? -1 : b === 'Core' ? 1 : a.localeCompare(b))), [all])
   const books = useMemo(() => bookOrder.filter((b) => all.some((t) => t.book === b && (!setting || t.setting === setting))), [all, setting])
   const chapters = useMemo(() => (book ? tableChapters(all, book) : []), [all, book])
-  const filtered = useMemo(() => filterTables(all, { query, book, setting, chapter }, bookOrder), [all, query, book, setting, chapter])
+  // Dado de cada tabela que rola (motor de rolagem, src/rules/tableRoll.ts).
+  const dice = useMemo(() => {
+    const map = new Map<string, DiceSpec>()
+    for (const t of all) {
+      const spec = rollPlan(t)?.dice
+      if (spec) map.set(t.id, spec)
+    }
+    return map
+  }, [all])
+  const filtered = useMemo(
+    () => filterTables(all, { query, book, setting, chapter }, bookOrder).filter((t) => !rollableOnly || dice.has(t.id)),
+    [all, query, book, setting, chapter, rollableOnly, dice],
+  )
   const rows = showAll ? filtered : filtered.slice(0, ROW_LIMIT)
 
   const pickSetting = (next: string | null) => {
@@ -85,6 +106,15 @@ function TableList() {
           </div>
         )}
         <div className="paper-filter">
+          <span className="paper-label">Kind</span>
+          <div className="chip-row">
+            <button className={!rollableOnly ? 'chip chip-on' : 'chip'} onClick={() => setRollableOnly(false)}>All</button>
+            <button className={rollableOnly ? 'chip chip-on' : 'chip'} onClick={() => setRollableOnly(true)}>
+              Rollable ({dice.size})
+            </button>
+          </div>
+        </div>
+        <div className="paper-filter">
           <span className="paper-label">Book</span>
           <div className="chip-row chip-row-scroll">
             <button className={book === null ? 'chip chip-on' : 'chip'} onClick={() => pickBook(null)}>All</button>
@@ -114,12 +144,10 @@ function TableList() {
         <ul className="monster-list">
           {rows.map((t) => (
             <li key={t.id}>
-              <button className="spell-row kit-row" onClick={() => setSelected(t)}>
+              <button className="spell-row kit-row" onClick={() => open(t, false)}>
                 <span className="kit-row-top">
                   <span className="spell-name">{tableLabel(t)}</span>
-                  <span className="spell-meta">
-                    {t.rows.length} rows
-                  </span>
+                  <span className="spell-meta">{dice.get(t.id) ? `roll ${formatDice(dice.get(t.id)!)}` : `${t.rows.length} rows`}</span>
                 </span>
                 <span className="kit-summary">
                   <span className="monster-collection">{t.book}</span>
@@ -138,7 +166,18 @@ function TableList() {
           )}
         </ul>
       </div>
-      {selected && <TableDetail table={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <TableDetail
+          key={`${selected.table.id}-${selected.opened}`}
+          table={selected.table}
+          tables={all}
+          autoRoll={selected.autoRoll}
+          history={history}
+          onRecord={(record) => setHistory((list) => [{ ...record, id: (list[0]?.id ?? 0) + 1 }, ...list].slice(0, 50))}
+          onOpen={open}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   )
 }

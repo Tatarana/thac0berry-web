@@ -778,6 +778,73 @@ button {
   background: rgb(47 39 28 / 0.06);
 }
 
+/* ---- Table Grimoire: Roll, resultado digitado, linha em destaque ---- */
+
+.table-roller {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 14px;
+  margin: 4px 0 12px;
+}
+
+.table-roll {
+  font-size: 0.95rem;
+  padding: 6px 14px;
+}
+
+.table-typed {
+  display: flex;
+  flex-direction: column;
+  width: 7.5rem;
+}
+
+.table-typed .paper-search {
+  margin: 0;
+}
+
+.table-result {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.table-result strong {
+  color: var(--red-ink);
+  font-size: 1.15rem;
+}
+
+.table-next {
+  flex-basis: 100%;
+  text-align: left;
+}
+
+.rule-table tbody tr.table-hit td {
+  background: rgb(140 47 34 / 0.18);
+  font-weight: 700;
+}
+
+.table-ref {
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.table-ref-missing {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+.table-history {
+  margin-top: 14px;
+  font-size: 0.85rem;
+}
+
+.table-history ul {
+  margin: 4px 0 0;
+  padding-left: 1.1rem;
+}
+
 /* ---- Itens mágicos ---- */
 
 .detail-lines {

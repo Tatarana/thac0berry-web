@@ -25,7 +25,10 @@ entregas e pendências. Atualizar a cada entrega.
 - Faltam 35 tabelas do DMG, entre elas as 89–110 (subtabelas de itens
   mágicos, que a Tabela 88 cita), 54–56, 61–63, 66–70, 75 e 78.
 - Defeitos: Tabela 88 diz "D20 Roll" com faixas 01–100; tabelas 51 e 84
-  repetidas (em duas regras); 11 tabelas estruturadas sem número ("Table").
+  repetidas (em duas regras); 11 tabelas estruturadas sem número ("Table");
+  "00" que virou "0" na última linha de várias tabelas d100 (o motor lê como
+  100 e a tela mostra 00); CRH-21 (Aquatic Species Enemy) sem a linha 8.
+- Também falta a Tabela 117 do DMG (citada pela 116, "Special Purpose").
 - Cenários: nenhum livro de cenário no `rules.json` (só Dark Sun: DSC, DK,
   WatW). Ravenloft e os outros dependem do data-mining.
 - O `thac0berry-data-mining` não está no GitHub (fica no PC do usuário, ao
@@ -36,8 +39,8 @@ entregas e pendências. Atualizar a cada entrega.
 | # | Entrega | Estado |
 |---|---|---|
 | GT1 | Consulta: índice das tabelas (estruturadas + markdown) no build, tela `/dm/tables` com busca e filtros (livro, cenário, capítulo), ficha com link para a regra | feita (web v0.40.0) |
-| GT2 | Motor de rolagem (`src/rules/dice.ts`: notação, faixas, rolar, achar linha) + Roll e resultado digitado na ficha + histórico | a fazer |
-| GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | a fazer |
+| GT2 | Motor de rolagem (`src/rules/dice.ts`: notação, faixas, rolar, achar linha) + Roll e resultado digitado na ficha + histórico | feita (web v0.41.0) |
+| GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4 | Dados (thac0berry-data, com proposta e "ok" lá): tabelas que faltam do DMG, cenários (Ravenloft etc.), correções (dado da 88, títulos sem número) | bloqueada: data-mining fora do GitHub |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
@@ -62,3 +65,26 @@ entregas e pendências. Atualizar a cada entrega.
     testes: 105 (5 novos);
   - achado: a Tabela 65 do CRH tem cabeçalho de três níveis malformado na
     fonte (fica legível, não perfeita) — entra na GT4.
+- 2026-10-08, GT2 e GT3 feitas (web v0.41.0):
+  - motor único de dados `src/rules/dice.ts` (para o app inteiro): notação
+    `NdM±K` (d100, d%, 2d10, 3d6+2), rolar com gerador injetável, texto de
+    volta, dado que cobre um intervalo de resultados;
+  - `src/rules/tableRoll.ts`: faixas ("01-05", "96-00", "00", "13+"), linhas
+    de seção, plano da tabela (consultável: 177; rolável: 88), achar a
+    linha, resultado digitado (0/00 = 100 no d100); dado do cabeçalho, ou das
+    faixas quando passam do dobro dele (a 88 rola d100; o aviso aparece na
+    ficha); faixas um pouco acima do dado (modificadores) mantêm o dado;
+  - ficha: botão "Roll d100", campo "or your roll" (ou "Look up" nas tabelas
+    por nível/atributo), resultado com a linha em destaque, histórico da
+    visita ("This session", até 50, todas as tabelas);
+  - lista: "roll d100" ao lado das roláveis e chip "Rollable (88)";
+  - GT3: "Table N" nas células vira link quando a tabela existe (mesmo livro,
+    ou outro com "in the PHB"); depois de um resultado que cita outra tabela,
+    "Roll on Table N ›" abre e rola nela (115 → 116 conferido); tabela que
+    falta fica pontilhada com "not in the data yet" (88 → 89–108, 116 → 117:
+    dependem da GT4);
+  - títulos com número romano (WatW: Table I–VII) passam a ter número;
+  - conferido no navegador (88, 00, 115 → 116, histórico; celular sem
+    rolagem horizontal); testes: 114 (9 novos);
+  - achado no teste: link de tabela dentro do formulário virava botão de
+    envio (Enter abria a tabela citada) — corrigido com `type="button"`.
