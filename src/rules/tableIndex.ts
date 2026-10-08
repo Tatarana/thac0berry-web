@@ -61,6 +61,21 @@ const cellsOf = (line: string) => {
 
 const isSeparator = (line: string) => /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line.trim())
 
+/**
+ * Acerta cabeçalho e linhas de tamanhos diferentes (erros da extração): tira
+ * células vazias que sobram no fim do cabeçalho; quando toda linha tem uma
+ * célula a mais, falta a do canto (tabela cruzada, ex.: DSC Tabela 3) e ela
+ * entra vazia no começo; no resto, completa com células vazias.
+ */
+export function alignTable(headers: string[], rows: string[][]): { headers: string[]; rows: string[][] } {
+  let head = [...headers]
+  const widest = Math.max(0, ...rows.map((row) => row.length))
+  while (head.length > 1 && head.length > widest && head[head.length - 1].trim() === '') head.pop()
+  if (rows.length > 0 && rows.every((row) => row.length === head.length + 1)) head = ['', ...head]
+  while (head.length < widest) head.push('')
+  return { headers: head, rows: rows.map((row) => [...row, ...Array<string>(Math.max(0, head.length - row.length)).fill('')]) }
+}
+
 /** Tabelas em markdown no texto de uma regra, com o título em negrito logo acima (se houver). */
 export function markdownTables(content: string): SourceTable[] {
   const lines = content.split('\n')
@@ -82,9 +97,7 @@ export function markdownTables(content: string): SourceTable[] {
         }
         continue
       }
-      const cells = cellsOf(lines[j])
-      while (cells.length < headers.length) cells.push('')
-      rows.push(cells)
+      rows.push(cellsOf(lines[j]))
     }
     // Título: linha só em negrito até duas linhas não vazias acima da tabela.
     let title = ''
@@ -98,7 +111,7 @@ export function markdownTables(content: string): SourceTable[] {
         break
       }
     }
-    tables.push({ title, headers, rows })
+    tables.push({ title, ...alignTable(headers, rows) })
     i = j - 1
   }
   return tables

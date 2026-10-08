@@ -111,3 +111,28 @@ entregas e pendências. Atualizar a cada entrega.
     `main` de lá); depois, `sync_data.py` no iPad (arquivo novo em `data/`);
   - pendente no iPad: trocar `RulesCompendiumView.bookOrder` pelo `books.json`;
   - testes: 116 (2 novos arquivos de teste: livros e dados reais).
+- 2026-10-08, regras dos suplementos legíveis (web v0.42.1, thac0berry-data PR #3):
+  - achado do usuário na ficha Psionic Combat (DSC): tabelas como texto com
+    "|", "MTHACO" e "MAC"; MTHAC0 (Mental THAC0) e MAC (Mental Armor Class)
+    são termos do Dark Sun — o erro era só "MTHACO"/"THACOs" com a letra O
+    (5 ocorrências, todas nessa ficha), corrigido no thac0berry-data por
+    `scripts/fix_rules_ocr.py` (lista explícita, idempotente);
+  - a tela de regras não desenhava tabela em markdown (127 regras, 330
+    tabelas dos suplementos) nem lista "- " (177 regras): `parseRuleContent`
+    foi para `src/rules/ruleContent.ts` (pura, com testes) e agora desenha
+    tabelas em markdown (título do negrito acima), tabelas sem a linha "---"
+    (pares rótulo | valor, sem cabeçalho; uma célula vira lista), listas "- "
+    (itens separados por linha em branco viram uma lista só; introdução +
+    itens = parágrafo + lista) e some com as linhas "|  |";
+  - `alignTable` (compartilhado com o Table Grimoire): célula do canto que
+    faltava nas tabelas cruzadas (DSC Tabela 3) e célula vazia sobrando no fim
+    do cabeçalho (DSC Tabela 2); 0 tabelas desalinhadas depois disso;
+  - resultado em todas as regras: 0 parágrafos com "|" ou "- " soltos; 564
+    tabelas e 438 listas desenhadas; conferido no navegador (Psionic Combat:
+    2 tabelas; Barbarian Fighter: 9 tabelas);
+  - pendente no iPad: o `RuleContentParser` de lá tem o mesmo limite (não lê
+    tabela em markdown nem "- ");
+  - pendente nos dados (opcional, a tela já contorna): 6 regras com "|  |",
+    26 tabelas com cabeçalho torto; as tabelas sem "---" (32) ainda não
+    entram no Table Grimoire;
+  - testes: 122 (6 novos).
