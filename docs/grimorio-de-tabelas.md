@@ -41,7 +41,7 @@ entregas e pendências. Atualizar a cada entrega.
 | GT1 | Consulta: índice das tabelas (estruturadas + markdown) no build, tela `/dm/tables` com busca e filtros (livro, cenário, capítulo), ficha com link para a regra | feita (web v0.40.0) |
 | GT2 | Motor de rolagem (`src/rules/dice.ts`: notação, faixas, rolar, achar linha) + Roll e resultado digitado na ficha + histórico | feita (web v0.41.0) |
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
-| GT4 | Dados (thac0berry-data, com proposta e "ok" lá): tabelas que faltam do DMG, cenários (Ravenloft etc.), correções (dado da 88, títulos sem número) | bloqueada: data-mining fora do GitHub |
+| GT4 | Dados (thac0berry-data, com proposta e "ok" lá): tabelas que faltam do DMG, cenários (Ravenloft etc.), correções (dado da 88, títulos sem número) | tarefa para outro agente: `docs/gt4-tarefa.md` (precisa do data-mining, só no PC do usuário) |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Log
@@ -88,3 +88,4 @@ entregas e pendências. Atualizar a cada entrega.
     rolagem horizontal); testes: 114 (9 novos);
   - achado no teste: link de tabela dentro do formulário virava botão de
     envio (Enter abria a tabela citada) — corrigido com `type="button"`.
+- 2026-10-08: GT4 documentada como tarefa para outro agente (`docs/gt4-tarefa.md`).
