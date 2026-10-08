@@ -44,7 +44,7 @@ monstros: 152 MB no tamanho original (média 196 KB, mediana 102 KB, maior
 ## Log
 
 - 2026-10-07, DM1 feita (web v0.39.0):
-  - cartão "DM Tools" na tela inicial (só modo DM, ✦ sem arte); `/dm` (hub) e
+  - cartão "DM Tools" na tela inicial (só modo DM); `/dm` (hub) e
     `/dm/monsters`; fora do modo DM, aviso com "Switch to DM mode";
   - lista: busca por nome e apelido, chips de coleção e de frequência
     (Common/Uncommon/Rare/Very rare/Unique/Other), ordem por nome, HD ou XP
@@ -55,3 +55,7 @@ monstros: 152 MB no tamanho original (média 196 KB, mediana 102 KB, maior
   - regras puras em `src/rules/monsters.ts`; testes: 100 (6 novos);
   - achado no teste: ~300 seções com uma linha "=" (sobra de "=== Combat===")
     — corrigido no `build_monsters.py` (thac0berry-data `999086d`).
+- 2026-10-07, ícones do usuário (web v0.39.1): mesa do mestre com o d20 no
+  cartão "DM Tools" (`icon_dm_tools.png`) e medalhão dos monstros no item
+  Monsters do hub (`icon_monsters.png`); fundo branco tirado (só o branco ligado
+  às bordas, borda suave), 256 px como os ícones mais novos.
