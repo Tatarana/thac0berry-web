@@ -58,57 +58,6 @@ export function searchRules(entries: RuleIndexEntry[], text: string, books: Read
   return scored.slice(0, limit).map((item) => item.entry)
 }
 
-export type RuleBlock =
-  | { kind: 'heading'; text: string }
-  | { kind: 'subheading'; text: string }
-  | { kind: 'paragraph'; text: string }
-  | { kind: 'list'; items: string[] }
-  | { kind: 'table'; table: RuleTable }
-
-const tableRefPattern = /^\[TABLE_REF:\s*(.+?)\]$/
-
-function resolveTable(refTitle: string, tables: RuleTable[]): RuleTable | undefined {
-  return tables.find((table) => table.title === refTitle) ?? tables.find((table) => refTitle.startsWith(table.tableNumber))
-}
-
-/**
- * Quebra o texto em blocos (RuleContentParser do iPad): parágrafos separados
- * por linha em branco; "## " / "### " viram títulos; bloco só de "* " vira
- * lista; "[TABLE_REF: …]" sozinho vira a tabela correspondente.
- */
-export function parseRuleContent(content: string, tables: RuleTable[]): RuleBlock[] {
-  const blocks: RuleBlock[] = []
-  for (const rawParagraph of content.split('\n\n')) {
-    const paragraph = rawParagraph.trim()
-    if (paragraph === '') continue
-    let lines = paragraph.split('\n').map((line) => line.trim())
-    const first = lines[0]
-    if (first.startsWith('### ')) {
-      blocks.push({ kind: 'subheading', text: first.slice(4) })
-      lines = lines.slice(1)
-    } else if (first.startsWith('## ')) {
-      blocks.push({ kind: 'heading', text: first.slice(3) })
-      lines = lines.slice(1)
-    }
-    const rest = lines.join('\n').trim()
-    if (rest === '') continue
-
-    const ref = tableRefPattern.exec(rest)
-    if (ref) {
-      const table = resolveTable(ref[1].trim(), tables)
-      if (table) {
-        blocks.push({ kind: 'table', table })
-        continue
-      }
-    }
-
-    const restLines = rest.split('\n')
-    if (restLines.every((line) => line.startsWith('* ') || line.startsWith(':* '))) {
-      blocks.push({ kind: 'list', items: restLines.map((line) => (line.startsWith(':* ') ? line.slice(3) : line.slice(2))) })
-      continue
-    }
-
-    blocks.push({ kind: 'paragraph', text: rest })
-  }
-  return blocks
-}
+// O texto da regra em blocos (parágrafos, títulos, listas, tabelas) fica em
+// src/rules/ruleContent.ts (função pura, com testes).
+export { parseRuleContent, type RuleBlock } from '../rules/ruleContent'
