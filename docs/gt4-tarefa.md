@@ -82,14 +82,16 @@ número, então **o número da tabela precisa bater** com o que a 88 cita.
    os cenários com quantas tabelas cada um tem.
 2. **Proposta ao usuário** (regra 1 do data repo), com o levantamento e estas
    decisões em aberto:
-   - **cenários**: entram como regras novas no `rules.json` com um código de
-     livro por cenário (ex.: `RL` Ravenloft; muda a lista de livros do Rules
-     Compendium no iPad e na web) **ou** num arquivo novo
-     (`data/tables/<cenário>.json`, com schema novo e ajuste no
-     `build-data.mjs` da web)? Recomendo a primeira se cada cenário tiver regras
-     com texto; a segunda se forem só tabelas soltas;
-   - **nome e código** de cada cenário (a web agrupa pelo campo "setting":
-     hoje DSC, DK e WatW = "Dark Sun", em `settingOf` de `tableIndex.ts`).
+   - **cenários: decidido** (decisão 6 do usuário, 2026-10-08): entram como
+     regras novas no `rules.json`, com um **código de livro por cenário**
+     (ex.: `RL` Ravenloft), e as regras passam a ter filtro por cenário;
+   - **nome e código** de cada livro novo: o nome do cenário usa o mesmo
+     vocabulário que magias, itens mágicos e monstros já usam ("Ravenloft",
+     "Forgotten Realms", "Greyhawk", "Planescape", "Spelljammer",
+     "Dragonlance", "Al-Qadim", "Mystara / Known World", "Oriental Adventures /
+     Kara-Tur", "Maztica", "Dark Sun"); se a GT4a já estiver feita, cada livro
+     novo entra também na lista de livros dos dados (`data/books.json`) com o
+     cenário dele — senão, combine com o usuário.
 3. **DMG** (depois do "ok"): script no data repo (ex.:
    `scripts/add_dmg_missing_tables.py`) que lê o data-mining e acrescenta as
    tabelas às regras certas, com `[TABLE_REF: …]` no `content`. Idempotente.
