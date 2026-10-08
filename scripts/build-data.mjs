@@ -12,6 +12,7 @@
 //   public/data/weapons.json, armor.json, mundane_items.json   equipamento (cópia)
 //   public/data/rules-index.json        índice das regras (lista e busca)
 //   public/data/rules/<livro>.json      regras completas de cada livro
+//   public/data/tables.json             tabelas do Table Grimoire (estruturadas + markdown)
 //   public/data/magic-index.json         índice dos itens mágicos (com resumo)
 //   public/data/magic/magic_*.json       itens mágicos completos, por categoria
 //   public/data/psionic-powers.json      poderes psiônicos, sem o texto bruto de wiki
@@ -27,6 +28,7 @@
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { buildTableIndex } from '../src/rules/tableIndex.ts'
 
 const root = resolve(import.meta.dirname, '..')
 const source = resolve(process.env.DATA_DIR ?? join(root, '..', 'thac0berry-data', 'data'))
@@ -106,6 +108,12 @@ for (const [book, list] of Object.entries(rulesByBook)) {
   writeFileSync(join(out, 'rules', `${book}.json`), JSON.stringify(list))
 }
 console.log(`data: ${rules.length} regras em ${Object.keys(rulesByBook).length} livros`)
+
+// Table Grimoire (docs/grimorio-de-tabelas.md): as tabelas estruturadas e as em
+// markdown no texto das regras, num índice só (src/rules/tableIndex.ts).
+const grimoireTables = buildTableIndex(rules)
+writeFileSync(join(out, 'tables.json'), JSON.stringify(grimoireTables))
+console.log(`data: ${grimoireTables.length} tabelas no Table Grimoire`)
 
 // Itens mágicos: índice com o resumo (a lista do iPad mostra) + cópia dos
 // arquivos por categoria (detalhe completo, baixado ao abrir um item).
