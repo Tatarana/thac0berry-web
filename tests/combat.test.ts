@@ -5,7 +5,17 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import {
+  blankCombatant,
   changeHp,
+  endRound,
+  entryTotal,
+  initiativeKeys,
+  initiativeModifiers,
+  initiativeSteps,
+  newEncounter,
+  newInitiative,
+  actingNow,
+  startRound,
   characterCombatant,
   hitPoints,
   monsterCombatants,
@@ -131,4 +141,88 @@ test('dados reais: quantos DV do catálogo viram PV automáticos', () => {
   }
   assert.ok(total > 2500)
   assert.ok(parsed / total > 0.9, `só ${parsed} de ${total}`)
+})
+
+// --- CT2: iniciativa e rodadas ---------------------------------------------------------
+
+const table40 = initiativeModifiers([
+  ['Hasted', '-2'],
+  ['Slowed', '2'],
+  ['On higher ground', '-1'],
+  ['Foreign environment*', '6'],
+  ['Attacking with weapon', 'Weapon speed'],
+])
+
+test('modificadores: só as linhas com número; o asterisco sai do rótulo', () => {
+  assert.deepEqual(table40, [
+    { label: 'Hasted', value: -2 },
+    { label: 'Slowed', value: 2 },
+    { label: 'On higher ground', value: -1 },
+    { label: 'Foreign environment', value: 6 },
+  ])
+  assert.equal(entryTotal({ roll: 5, mods: ['Hasted', 'On higher ground'], extra: 4 }, table40), 6) // 5 − 2 − 1 + 4 (arma)
+  assert.equal(entryTotal({ roll: null, mods: [], extra: 0 }, table40), null)
+})
+
+function party() {
+  const e = newEncounter('Test', null, '2026-10-09')
+  const rufus = { ...blankCombatant('pc', 'party', 'Rufus'), hp: 10, hpMax: 10 }
+  const orc1 = { ...blankCombatant('monster', 'enemies', 'Orc 1'), hp: 4, hpMax: 4 }
+  const orc2 = { ...blankCombatant('monster', 'enemies', 'Orc 2'), hp: -12, hpMax: 4 } // morto
+  const wolf = { ...blankCombatant('monster', 'others', 'Wolf'), hp: 0, hpMax: 9 } // caído
+  e.combatants = [rufus, orc1, orc2, wolf]
+  return { e, rufus, orc1, orc2, wolf }
+}
+
+test('por lado: só lados com alguém de pé rolam; menor age primeiro', () => {
+  const { e, rufus, orc1 } = party()
+  assert.deepEqual(initiativeKeys(e, 'side', -10), ['party', 'enemies']) // "others" só tem o lobo caído
+  const round = { ...newInitiative('side'), entries: { party: { roll: 6, mods: [], extra: 0 }, enemies: { roll: 7, mods: ['Hasted'], extra: 0 } } }
+  const steps = initiativeSteps(e, round, table40, -10)
+  assert.deepEqual(steps.map((s) => [s.score, s.keys, s.combatantIDs]), [
+    [5, ['enemies'], [orc1.id]], // 7 − 2; o Orc 2 morto não age
+    [6, ['party'], [rufus.id]],
+  ])
+})
+
+test('empate age junto (simultâneo, DMG); quem não rolou fica de fora', () => {
+  const { e } = party()
+  const tie = { ...newInitiative('side'), entries: { party: { roll: 4, mods: [], extra: 0 }, enemies: { roll: 4, mods: [], extra: 0 } } }
+  assert.deepEqual(initiativeSteps(e, tie, table40, -10).map((s) => s.keys), [['party', 'enemies']])
+  const half = { ...newInitiative('side'), entries: { party: { roll: 4, mods: [], extra: 0 } } }
+  assert.deepEqual(initiativeSteps(e, half, table40, -10).map((s) => s.keys), [['party']])
+})
+
+test('individual: cada combatente de pé rola, com velocidade da arma', () => {
+  const { e, rufus, orc1 } = party()
+  assert.deepEqual(initiativeKeys(e, 'individual', -10), [rufus.id, orc1.id])
+  const round = { ...newInitiative('individual'), entries: { [rufus.id]: { roll: 3, mods: [], extra: 5 }, [orc1.id]: { roll: 6, mods: [], extra: 0 } } }
+  assert.deepEqual(initiativeSteps(e, round, table40, -10).map((s) => [s.score, s.combatantIDs]), [
+    [6, [orc1.id]],
+    [8, [rufus.id]], // 3 + 5 (espada longa)
+  ])
+})
+
+test('fim da rodada: conta mais uma, condições perdem uma rodada, iniciativa recomeça no mesmo método', () => {
+  const { e, rufus } = party()
+  e.round = 1
+  e.combatants = e.combatants.map((c) => (c.id === rufus.id ? { ...c, conditions: [{ id: 'x', name: 'Blessed', rounds: 1 }] } : c))
+  e.initiative = { ...newInitiative('individual'), entries: { [rufus.id]: { roll: 3, mods: [], extra: 0 } }, step: 0 }
+  const next = endRound(e)
+  assert.equal(next.round, 2)
+  assert.deepEqual(next.combatants.find((c) => c.id === rufus.id)?.conditions, [])
+  assert.deepEqual(next.initiative, { method: 'individual', entries: {}, step: null })
+})
+
+test('começar a rodada fecha a ordem: quem cai depois não muda a ordem; destaque no passo atual', () => {
+  const { e, rufus, orc1 } = party()
+  const round = { ...newInitiative('side'), entries: { party: { roll: 2, mods: [], extra: 0 }, enemies: { roll: 9, mods: [], extra: 0 } } }
+  const started = startRound(e, round, table40, -10)
+  assert.equal(started.round, 1)
+  assert.deepEqual(actingNow(started), [rufus.id])
+  // Rufus cai no meio da rodada: a ordem fechada continua a mesma.
+  const fallen = { ...started, combatants: started.combatants.map((c) => (c.id === rufus.id ? { ...c, hp: 0 } : c)), initiative: { ...started.initiative!, step: 1 } }
+  assert.deepEqual(actingNow(fallen), [orc1.id])
+  assert.equal(fallen.initiative.order?.length, 2)
+  assert.deepEqual(actingNow({ initiative: newInitiative('side') }), [])
 })

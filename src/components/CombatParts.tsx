@@ -54,12 +54,15 @@ function OptionalNumber({ value, onChange, label, className }: { value: number |
 export function CombatantRow({
   c,
   settings,
+  acting = false,
   onChange,
   onRemove,
   onOpenMonster,
 }: {
   c: Combatant
   settings: CombatSettings
+  /** Age no passo atual da iniciativa (CT2). */
+  acting?: boolean
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
@@ -84,10 +87,11 @@ export function CombatantRow({
   }
 
   return (
-    <li className={`combatant combatant-${status}`}>
+    <li className={`combatant combatant-${status}${acting ? ' combatant-acting' : ''}`}>
       <div className="combatant-top">
         <InkInput className="combatant-name" value={c.name} label="Name" placeholder="Name" onChange={(name) => onChange({ ...c, name })} />
         <span className="combatant-kind">{kindLabels[c.kind]}</span>
+        {acting && <span className="combatant-acting-tag">Acting</span>}
         {status !== 'ok' && <span className={`combatant-status combatant-status-${status}`}>{status === 'down' ? 'Down' : 'Dead'}</span>}
         <select className="combatant-side" aria-label="Side" value={c.side} onChange={(event) => onChange({ ...c, side: event.target.value as Side })}>
           {sides.map((s) => (
