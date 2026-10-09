@@ -6,6 +6,9 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
+  goBackToRound,
+  missingRolls,
+  thac0ByHitPoints,
   hitPointDice,
   initiativeByCombatant,
   rerollHp,
@@ -402,4 +405,56 @@ test('INIT por combatente: total e vez de agir', () => {
   const { e, rufus, orc1 } = party()
   const round = { ...newInitiative('side'), entries: { party: { roll: 6, mods: [], extra: 0 }, enemies: { roll: 2, mods: [], extra: 0 } } }
   assert.deepEqual(initiativeByCombatant(initiativeSteps(e, round, table40, -10)), { [orc1.id]: { score: 2, place: 1 }, [rufus.id]: { score: 6, place: 2 } })
+})
+
+// --- Beholder: PV em faixa e THAC0 por PV --------------------------------------------------
+
+test('PV em faixa sem dado padrão: média no meio, rolagem sorteia na faixa', () => {
+  const spec = parseHitDice('45-75 hp')!
+  assert.deepEqual(spec, { between: [45, 75] })
+  assert.equal(hitPoints(spec, 'average'), 60)
+  assert.equal(hitPoints(spec, 'roll', () => 0), 45)
+  assert.equal(hitPoints(spec, 'roll', () => 0.999), 75)
+  assert.equal(hitPointDice('45-75 hp'), '45–75 hp')
+})
+
+test('THAC0 por PV acompanha os PV do monstro (e o 🎲)', () => {
+  const text = '45-49 hp: 11\n50-59 hp: 9\n60-69 hp: 7\n70+ hp: 5'
+  assert.equal(thac0ByHitPoints(text, 47), 11)
+  assert.equal(thac0ByHitPoints(text, 74), 5)
+  assert.equal(thac0ByHitPoints('19', 47), null)
+  const beholder = { name: 'Beholder', armorClass: t('0/2/7'), hitDice: t('45-75 hp'), thac0: t(text) }
+  const [b] = monsterCombatants(beholder, { monsterID: 'b', monsterFile: 'b.json' }, 1, 'enemies', [], 'average')
+  assert.deepEqual([b.ac, b.hp, b.thac0], [0, 60, 7])
+  const rolled = rerollHp({ ...b, hp: 50 }, () => 0.999) // 75 PV, 10 de dano mantido
+  assert.deepEqual([rolled.hpMax, rolled.hp, rolled.thac0], [75, 65, 5])
+})
+
+// --- Rodadas: fotos e voltar no tempo ---------------------------------------------------
+
+test('fotos das rodadas e voltar a uma rodada anterior', () => {
+  const { e, rufus, orc1 } = party()
+  const roll = (party: number, enemies: number) => ({ ...newInitiative('side'), entries: { party: { roll: party, mods: [], extra: 0 }, enemies: { roll: enemies, mods: [], extra: 0 } } })
+  assert.deepEqual(missingRolls(e, newInitiative('side'), -10), ['party', 'enemies'])
+  let x = startRound(e, roll(2, 9), table40, -10) // rodada 1
+  x = { ...x, combatants: x.combatants.map((c) => (c.id === orc1.id ? { ...c, hp: 1 } : c)) } // dano na rodada 1
+  // Rolar de novo na mesma rodada: a foto guarda a nova ordem, mas não o dano.
+  x = startRound(x, roll(8, 3), table40, -10)
+  assert.equal(x.history?.length, 1)
+  assert.equal(x.history?.[0].combatants[orc1.id].hp, 4)
+  assert.deepEqual(actingNow(x), [orc1.id])
+  x = endRound(x) // rodada 2 já nasce com a foto
+  assert.deepEqual(x.history?.map((h) => h.round), [1, 2])
+  assert.equal(x.history?.[1].combatants[orc1.id].hp, 1)
+  x = startRound({ ...x, combatants: x.combatants.map((c) => (c.id === rufus.id ? { ...c, conditions: [{ id: 'h', name: 'Held', rounds: 2 }] } : c)) }, roll(5, 6), table40, -10)
+  x = endRound(x)
+  // Volta à rodada 1: PV e condições como estavam, iniciativa daquela rodada pronta, rodadas seguintes fora.
+  const back = goBackToRound(x, 1)
+  assert.equal(back.round, 1)
+  assert.equal(back.combatants.find((c) => c.id === orc1.id)?.hp, 4)
+  assert.deepEqual(back.combatants.find((c) => c.id === rufus.id)?.conditions, [])
+  assert.equal(back.initiative?.step, 0)
+  assert.deepEqual(actingNow(back), [orc1.id])
+  assert.deepEqual(back.history?.map((h) => h.round), [1])
+  assert.equal(goBackToRound(x, 9), x)
 })

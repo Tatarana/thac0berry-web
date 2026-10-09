@@ -4637,3 +4637,28 @@ button.slot-dot:hover {
   border: 0;
   background: none;
 }
+
+/* Rodadas guardadas (voltar no tempo). */
+.rounds-list {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.rounds-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgb(107 92 70 / 0.2);
+}
+
+.rounds-name {
+  min-width: 5rem;
+  font-weight: 700;
+}
+
+.rounds-list .chip {
+  margin-left: auto;
+}

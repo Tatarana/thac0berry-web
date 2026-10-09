@@ -44,6 +44,8 @@ export interface Combatant {
   /** Monstro do catálogo (abre a ficha). */
   monsterID: string | null
   monsterFile: string | null
+  /** Tabela de THAC0 por PV do livro (Beholder): o THAC0 acompanha os PV rolados. */
+  thac0Text?: string
   /** Último teste de moral (CT3); ausente em combatentes de antes do CT3. */
   lastMorale?: MoraleCheck | null
 }
@@ -58,6 +60,25 @@ export interface Encounter {
   combatants: Combatant[]
   /** Iniciativa da rodada (CT2); ausente em encontros de antes do CT2. */
   initiative?: InitiativeRound | null
+  /** Fotos do começo de cada rodada, para voltar no tempo; ausente em encontros antigos. */
+  history?: RoundSnapshot[]
+}
+
+/** Estado de combate de um combatente numa foto (nome, notas e lado não voltam). */
+export interface CombatantState {
+  hp: number | null
+  hpMax: number | null
+  thac0: number | null
+  conditions: Condition[]
+  lastMorale: MoraleCheck | null
+}
+
+/** Foto do encontro no começo de uma rodada. */
+export interface RoundSnapshot {
+  round: number
+  combatants: Record<string, CombatantState>
+  /** Iniciativa da rodada (a ordem, quando a rodada começou). */
+  initiative: InitiativeRound
 }
 
 export interface CombatSettings {
@@ -76,7 +97,7 @@ export const sideLabels: Record<Side, string> = { party: 'Party', enemies: 'Enem
 // --- PV pelos Dados de Vida ------------------------------------------------------------
 
 /** O que dá para tirar do texto de DV: dados (d8 por DV) ou um valor fixo de PV. */
-export type HitDiceSpec = { dice: DiceSpec; bonus?: DiceSpec } | { fixed: number }
+export type HitDiceSpec = { dice: DiceSpec; bonus?: DiceSpec } | { fixed: number } | { between: [number, number] }
 
 /**
  * DV do Monstrous Manual: "4", "4+1", "1-1", "11+", "12 (base)" (d8 cada);
@@ -109,8 +130,10 @@ function hpText(text: string): HitDiceSpec | null {
   if (match) return { fixed: Number(match[1]) }
   match = /^(\d+)\s*[-–]\s*(\d+)\s*hp$/i.exec(text)
   if (match) {
-    const spec = diceForRange(Number(match[1]), Number(match[2]))
-    return spec ? { dice: spec } : null
+    const [low, high] = [Number(match[1]), Number(match[2])]
+    const spec = diceForRange(low, high)
+    // Sem dado padrão ("45-75 hp", Beholder): sorteia na faixa.
+    return spec ? { dice: spec } : high > low ? { between: [low, high] } : null
   }
   match = /^(\d*)d(\d+)\s*hp$/i.exec(text)
   if (match) return { dice: { count: Number(match[1] || 1), sides: Number(match[2]), modifier: 0 } }
@@ -185,9 +208,31 @@ export function thac0Value(thac0: { text: string; value: number | null } | undef
   return match ? Number(match[1]) : null
 }
 
+/** Linhas "PV: THAC0" ("45-49 hp: 11", "70+ hp: 5"), do THAC0 que depende dos PV (Beholder). */
+function thac0HpRows(text: string | undefined) {
+  return [...(text ?? '').matchAll(/(\d+)\s*(?:[-–]\s*(\d+)|(\+))?\s*hp\s*:\s*(20|1\d|\d)/gi)].map((m) => ({
+    low: Number(m[1]),
+    high: m[2] ? Number(m[2]) : m[3] ? Infinity : Number(m[1]),
+    value: Number(m[4]),
+  }))
+}
+
+/** O THAC0 do livro depende dos PV (tabela "45-49 hp: 11"…). */
+export const thac0DependsOnHp = (text: string | undefined) => thac0HpRows(text).length > 0
+
+/** THAC0 pela linha dos PV; null se o texto não é uma tabela por PV ou os PV não caem em nenhuma linha. */
+export function thac0ByHitPoints(text: string | undefined, hp: number | null): number | null {
+  if (hp === null) return null
+  return thac0HpRows(text).find((r) => hp >= r.low && hp <= r.high)?.value ?? null
+}
+
 /** PV de um monstro: rolados ou na média (arredonda para baixo); nunca menos que 1. */
 export function hitPoints(spec: HitDiceSpec, mode: CombatSettings['monsterHp'], random?: Random): number {
   if ('fixed' in spec) return Math.max(1, spec.fixed)
+  if ('between' in spec) {
+    const [low, high] = spec.between
+    return mode === 'average' ? Math.floor((low + high) / 2) : low + Math.floor((random ?? Math.random)() * (high - low + 1))
+  }
   const average = (d: DiceSpec) => (d.count * (d.sides + 1)) / 2 + d.modifier
   const dice = [spec.dice, ...(spec.bonus ? [spec.bonus] : [])]
   const value = mode === 'average' ? Math.floor(dice.reduce((sum, d) => sum + average(d), 0)) : dice.reduce((sum, d) => sum + rollDice(d, random).total, 0)
@@ -292,6 +337,8 @@ export function monsterCombatants(
   setup: MonsterSetup = monsterSetup(stats),
 ): Combatant[] {
   const spec = parseHitDice(setup.hitDice)
+  // THAC0 que depende dos PV (Beholder): cada um pelo seu, e acompanha o 🎲.
+  const byHp = setup.thac0 === null && thac0HpRows(stats.thac0?.text).length > 0
   return numberedNames(stats.name, count, existingNames).map((name) => {
     const hp = setup.hp ?? (spec ? hitPoints(spec, mode, random) : null)
     return {
@@ -300,7 +347,8 @@ export function monsterCombatants(
       acText: stats.armorClass?.text.split('\n')[0] ?? '',
       hp,
       hpMax: hp,
-      thac0: setup.thac0,
+      thac0: byHp ? thac0ByHitPoints(stats.thac0?.text, hp) : setup.thac0,
+      ...(byHp ? { thac0Text: stats.thac0?.text } : {}),
       attacks: stats.attacks ?? '',
       damage: stats.damage ?? '',
       morale: parseMorale(stats.morale),
@@ -347,18 +395,20 @@ export function changeHp<T extends Pick<Combatant, 'hp' | 'hpMax'>>(c: T, delta:
  * Rola de novo os PV de um monstro pelos DV (o 🎲 da tabela); o dano já
  * sofrido continua (4/6 que rola 8 vira 6/8). Sem DV que deem PV, não muda.
  */
-export function rerollHp<T extends Pick<Combatant, 'hp' | 'hpMax' | 'hitDice'>>(c: T, random?: Random): T {
+export function rerollHp<T extends Pick<Combatant, 'hp' | 'hpMax' | 'hitDice' | 'thac0' | 'thac0Text'>>(c: T, random?: Random): T {
   const spec = parseHitDice(c.hitDice)
   if (!spec) return c
   const hpMax = hitPoints(spec, 'roll', random)
   const taken = c.hpMax !== null && c.hp !== null ? c.hpMax - c.hp : 0
-  return { ...c, hpMax, hp: hpMax - taken }
+  const thac0 = c.thac0Text ? (thac0ByHitPoints(c.thac0Text, hpMax) ?? c.thac0) : c.thac0
+  return { ...c, hpMax, hp: hpMax - taken, thac0 }
 }
 
 /** O dado dos PV ("4d8+1", "14d8 + 1d4"), para o tooltip do 🎲; null sem dado. */
 export function hitPointDice(hitDice: string): string | null {
   const spec = parseHitDice(hitDice)
   if (!spec || 'fixed' in spec) return null
+  if ('between' in spec) return `${spec.between[0]}–${spec.between[1]} hp`
   return [spec.dice, ...(spec.bonus ? [spec.bonus] : [])].map(formatDice).join(' + ')
 }
 
@@ -474,7 +524,50 @@ export function initiativeByCombatant(steps: InitiativeStep[]): Record<string, {
 }
 
 export function startRound(e: Encounter, round: InitiativeRound, modifiers: InitiativeModifier[], deathAt: number): Encounter {
-  return { ...e, round: Math.max(e.round, 1), initiative: { ...round, step: 0, order: initiativeSteps(e, round, modifiers, deathAt) } }
+  const started = { ...e, round: Math.max(e.round, 1), initiative: { ...round, step: 0, order: initiativeSteps(e, round, modifiers, deathAt) } }
+  return withSnapshot(started)
+}
+
+/** Quem ainda não rolou (lados ou combatentes de pé sem o d10). */
+export function missingRolls(e: Pick<Encounter, 'combatants'>, round: InitiativeRound, deathAt: number): string[] {
+  return initiativeKeys(e, round.method, deathAt).filter((k) => (round.entries[k]?.roll ?? null) === null)
+}
+
+/** Máximo de fotos guardadas (as mais antigas saem). */
+export const historyLimit = 50
+
+const stateOf = (c: Combatant): CombatantState => ({ hp: c.hp, hpMax: c.hpMax, thac0: c.thac0, conditions: c.conditions, lastMorale: c.lastMorale ?? null })
+
+/**
+ * Guarda a foto da rodada atual. A primeira foto de uma rodada fica com o
+ * estado do começo dela; as seguintes (rolar a iniciativa de novo) só trocam
+ * a iniciativa — o dano já feito na rodada não entra na foto.
+ */
+export function withSnapshot(e: Encounter): Encounter {
+  const initiative = e.initiative ?? newInitiative(defaultSettings.initiative)
+  const history = e.history ?? []
+  const existing = history.find((h) => h.round === e.round)
+  const snapshot: RoundSnapshot = existing
+    ? { ...existing, initiative }
+    : { round: e.round, combatants: Object.fromEntries(e.combatants.map((c) => [c.id, stateOf(c)])), initiative }
+  return { ...e, history: [...history.filter((h) => h.round !== e.round), snapshot].sort((a, b) => a.round - b.round).slice(-historyLimit) }
+}
+
+/**
+ * Volta ao começo da rodada `round` (magias que voltam no tempo): PV,
+ * condições, moral e a iniciativa como estavam; as rodadas seguintes saem da
+ * história. Quem entrou depois fica como está.
+ */
+export function goBackToRound(e: Encounter, round: number): Encounter {
+  const snapshot = e.history?.find((h) => h.round === round)
+  if (!snapshot) return e
+  return {
+    ...e,
+    round,
+    combatants: e.combatants.map((c) => (snapshot.combatants[c.id] ? { ...c, ...snapshot.combatants[c.id] } : c)),
+    initiative: snapshot.initiative.step !== null ? { ...snapshot.initiative, step: 0 } : snapshot.initiative,
+    history: (e.history ?? []).filter((h) => h.round <= round),
+  }
 }
 
 /** Combatentes que agem agora (passo atual da ordem fechada); vazio fora da rodada. */
@@ -491,12 +584,13 @@ export const newInitiative = (method: InitiativeMethod): InitiativeRound => ({ m
  * iniciativa recomeça (DMG: rola-se a cada rodada), no mesmo método.
  */
 export function endRound(e: Encounter): Encounter {
-  return {
+  // A próxima rodada já nasce com a foto do começo dela (a rodada 1 tira a sua no "Start round").
+  return withSnapshot({
     ...e,
     round: e.round + 1,
     combatants: e.combatants.map((c) => ({ ...c, conditions: tickConditions(c.conditions) })),
     initiative: newInitiative(e.initiative?.method ?? defaultSettings.initiative),
-  }
+  })
 }
 
 // --- Moral (CT3) ----------------------------------------------------------------------

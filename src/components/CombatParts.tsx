@@ -14,6 +14,7 @@ import {
   parseHitDice,
   rerollHp,
   sideLabels,
+  thac0DependsOnHp,
   statusOf,
   type CombatSettings,
   type Combatant,
@@ -532,6 +533,7 @@ export function AddMonsterWindow({
                 <span className="paper-label">THAC0</span>
                 <OptionalNumber value={setup.thac0} label="Monster THAC0" onChange={setThac0Edit} />
                 {stats.thac0?.text !== String(setup.thac0) && book(stats.thac0?.text)}
+                {setup.thac0 === null && thac0DependsOnHp(stats.thac0?.text) && <span className="paper-soft add-book">blank: each one by its own hit points</span>}
               </label>
               {!hpFromDice && (
                 <label className="add-stat">

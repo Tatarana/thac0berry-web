@@ -6,11 +6,14 @@ import {
   emptyEntry,
   endRound,
   entryTotal,
+  goBackToRound,
   initiativeKeys,
   initiativeSteps,
+  missingRolls,
   newInitiative,
   sideLabels,
   startRound,
+  statusOf,
   type CombatSettings,
   type Encounter,
   type InitiativeEntry,
@@ -18,6 +21,7 @@ import {
   type InitiativeModifier,
   type InitiativeRound,
   type InitiativeStep,
+  type RoundSnapshot,
   type Side,
 } from '../rules/combat'
 import { PaperModal } from './DetailBits'
@@ -37,20 +41,30 @@ const keyLabel = (encounter: Encounter, method: InitiativeMethod, key: string) =
 
 /**
  * Linha compacta da iniciativa (pedido do usuário, 2026-10-09: o bloco
- * "Before the fight" ocupava demais): rodada, quem age, Next/End round e o
- * botão que abre a janela das rolagens. O total de cada um vai na coluna INIT.
+ * "Before the fight" ocupava demais): rodada, quem age e os botões da rodada.
+ * Nunca fica sem saída: "Start round" aparece aqui assim que todos rolaram, e
+ * "End round" existe desde a rodada 1 (o DM pode pular a iniciativa). O total
+ * de cada um vai na coluna INIT.
  */
 export function InitiativeBar({
   encounter,
   steps,
+  canStart,
+  onStart,
   onChange,
   onOpen,
+  onRounds,
 }: {
   encounter: Encounter
   /** Ordem da rodada (fechada, ou a prévia). */
   steps: InitiativeStep[]
+  /** Todos rolaram: dá para começar a rodada daqui. */
+  canStart: boolean
+  onStart: () => void
   onChange: (next: Encounter) => void
   onOpen: () => void
+  /** Lista das rodadas para voltar no tempo (só quando há fotos). */
+  onRounds?: () => void
 }) {
   const round = encounter.initiative
   const started = round?.step !== null && round?.step !== undefined
@@ -59,37 +73,45 @@ export function InitiativeBar({
   return (
     <div className="initiative-bar">
       <span className="rec-title initiative-round">{encounter.round > 0 ? `Round ${encounter.round}` : 'Before the fight'}</span>
-      {started ? (
-        <>
-          {step && (
-            <span className="initiative-acting">
-              Acting: <strong>{step.keys.map((k) => keyLabel(encounter, round.method, k)).join(' + ')}</strong> ({step.score}){step.keys.length > 1 && ' · simultaneous'}
-            </span>
-          )}
-          <span className="chip-row">
-            {!last && (
-              <button className="chip chip-on" onClick={() => onChange({ ...encounter, initiative: { ...round, step: round.step! + 1 } })}>
-                Next ›
-              </button>
-            )}
-            <button className={last ? 'chip chip-on' : 'chip'} onClick={() => onChange(endRound(encounter))}>
-              End round {encounter.round}
-            </button>
-            <button className="chip" onClick={onOpen}>
-              Initiative
-            </button>
-          </span>
-        </>
-      ) : (
-        <button className="chip chip-on" onClick={onOpen}>
-          Roll initiative
-        </button>
+      {step && (
+        <span className="initiative-acting">
+          Acting: <strong>{step.keys.map((k) => keyLabel(encounter, round!.method, k)).join(' + ')}</strong> ({step.score}){step.keys.length > 1 && ' · simultaneous'}
+        </span>
       )}
+      <span className="chip-row">
+        {started && !last && (
+          <button className="chip chip-on" onClick={() => onChange({ ...encounter, initiative: { ...round, step: round.step! + 1 } })}>
+            Next ›
+          </button>
+        )}
+        {!started && canStart && (
+          <button className="chip chip-on" onClick={onStart}>
+            Start round {Math.max(encounter.round, 1)}
+          </button>
+        )}
+        {encounter.round > 0 && (
+          <button className={last ? 'chip chip-on' : 'chip'} onClick={() => onChange(endRound(encounter))}>
+            End round {encounter.round}
+          </button>
+        )}
+        <button className={!started && !canStart ? 'chip chip-on' : 'chip'} onClick={onOpen}>
+          {!started && !canStart ? 'Roll initiative' : 'Initiative'}
+        </button>
+        {onRounds && (
+          <button className="chip" onClick={onRounds}>
+            Rounds
+          </button>
+        )}
+      </span>
     </div>
   )
 }
 
-/** Janela das rolagens de iniciativa: método, d10 de cada um (os dos PCs só anotados), modificadores e "Start round". */
+/**
+ * Janela das rolagens de iniciativa: método, d10 de cada um (os dos PCs só
+ * anotados), modificadores e "Start round". Com a rodada já começada, dá para
+ * rolar de novo e recomeçar a rodada com a nova ordem (o DM pode querer).
+ */
 export function InitiativeWindow({
   encounter,
   settings,
@@ -107,16 +129,19 @@ export function InitiativeWindow({
   const started = round.step !== null
   // Rodada começada: a ordem fechada; antes, a prévia com as rolagens até aqui.
   const steps = started && round.order ? round.order : initiativeSteps(encounter, round, modifiers, settings.deathAt)
-  const missing = keys.filter((k) => (round.entries[k]?.roll ?? null) === null)
+  const preview = initiativeSteps(encounter, round, modifiers, settings.deathAt)
+  const missing = missingRolls(encounter, round, settings.deathAt)
   // Os jogadores rolam a dos PCs (o lado Party, ou cada PC); o DM só anota. O app rola o resto.
   const byPlayers = (key: string) => (round.method === 'side' ? key === 'party' : encounter.combatants.find((c) => c.id === key)?.kind === 'pc')
-  const toRoll = missing.filter((k) => !byPlayers(k))
+  const foes = keys.filter((k) => !byPlayers(k))
+  const toRoll = started ? foes : missing.filter((k) => !byPlayers(k))
   const waiting = missing.filter(byPlayers)
   const labelOf = (key: string) => keyLabel(encounter, round.method, key)
+  const last = started && round.step! >= steps.length - 1
 
   const setRound = (next: InitiativeRound) => onChange({ ...encounter, initiative: next })
   const setEntry = (key: string, entry: InitiativeEntry) => setRound({ ...round, entries: { ...round.entries, [key]: entry } })
-  const rollMissing = () => {
+  const rollFoes = () => {
     const entries = { ...round.entries }
     for (const key of toRoll) entries[key] = { ...(entries[key] ?? emptyEntry()), roll: rollDice(d10).total }
     setRound({ ...round, entries })
@@ -124,58 +149,66 @@ export function InitiativeWindow({
   const setMethod = (method: InitiativeMethod) => {
     if (method !== round.method) setRound(newInitiative(method))
   }
+  const start = () => {
+    onChange(startRound(encounter, round, modifiers, settings.deathAt))
+    onClose()
+  }
 
   return createPortal(
     <PaperModal title={`Initiative — ${encounter.round > 0 ? `Round ${encounter.round}` : 'before the fight'}`} subtitle="1d10, lowest first; ties act at the same time (DMG, Chapter 9)" onClose={onClose}>
       <div className="initiative">
         <div className="chip-row initiative-method">
-          <button className={round.method === 'side' ? 'chip chip-on' : 'chip'} onClick={() => setMethod('side')} disabled={started}>
+          <button className={round.method === 'side' ? 'chip chip-on' : 'chip'} onClick={() => setMethod('side')}>
             By side
           </button>
-          <button className={round.method === 'individual' ? 'chip chip-on' : 'chip'} onClick={() => setMethod('individual')} disabled={started}>
+          <button className={round.method === 'individual' ? 'chip chip-on' : 'chip'} onClick={() => setMethod('individual')}>
             Individual
           </button>
         </div>
-
-        {!started ? (
-          <>
-            <p className="paper-soft initiative-help">
-              Type the players' roll for {round.method === 'side' ? 'the party' : 'each PC'}; roll (or type) the rest.
-            </p>
-            {keys.length === 0 && <p className="paper-soft">Nobody standing to roll initiative.</p>}
-            <ul className="initiative-entries">
-              {keys.map((key) => (
-                <EntryRow
-                  key={key}
-                  label={labelOf(key)}
-                  entry={round.entries[key] ?? emptyEntry()}
-                  modifiers={modifiers}
-                  extraLabel={round.method === 'individual' ? 'Weapon speed / casting time' : 'Other'}
-                  byPlayers={byPlayers(key)}
-                  onChange={(entry) => setEntry(key, entry)}
-                />
-              ))}
-            </ul>
-            <div className="chip-row initiative-actions">
-              <button className="chip" disabled={toRoll.length === 0} onClick={rollMissing}>
-                Roll {toRoll.length === 0 || toRoll.length === keys.filter((k) => !byPlayers(k)).length ? 'the rest' : `the ${toRoll.length} missing`}
-              </button>
-              <button
-                className="chip chip-on"
-                disabled={steps.length === 0 || missing.length > 0}
-                onClick={() => {
-                  onChange(startRound(encounter, round, modifiers, settings.deathAt))
-                  onClose()
-                }}
-              >
-                Start round {Math.max(encounter.round, 1)}
-              </button>
-              {waiting.length > 0 && <span className="paper-soft">Waiting for the players' roll{waiting.length > 1 ? 's' : ''}: {waiting.map(labelOf).join(', ')}</span>}
-            </div>
-          </>
-        ) : (
-          <p className="paper-soft initiative-help">The order is set for this round; the rolls open again after "End round".</p>
-        )}
+        <p className="paper-soft initiative-help">
+          {started
+            ? 'The round is under way. Change the rolls (or roll the foes again) and restart the round to use the new order.'
+            : `Type the players' roll for ${round.method === 'side' ? 'the party' : 'each PC'}; roll (or type) the rest.`}
+        </p>
+        {keys.length === 0 && <p className="paper-soft">Nobody standing to roll initiative.</p>}
+        <ul className="initiative-entries">
+          {keys.map((key) => (
+            <EntryRow
+              key={key}
+              label={labelOf(key)}
+              entry={round.entries[key] ?? emptyEntry()}
+              modifiers={modifiers}
+              extraLabel={round.method === 'individual' ? 'Weapon speed / casting time' : 'Other'}
+              byPlayers={byPlayers(key)}
+              onChange={(entry) => setEntry(key, entry)}
+            />
+          ))}
+        </ul>
+        <div className="chip-row initiative-actions">
+          <button className="chip" disabled={toRoll.length === 0} onClick={rollFoes}>
+            {started ? 'Re-roll the foes' : `Roll ${toRoll.length === 0 || toRoll.length === foes.length ? 'the rest' : `the ${toRoll.length} missing`}`}
+          </button>
+          <button className="chip chip-on" disabled={preview.length === 0 || missing.length > 0} onClick={start}>
+            {started ? 'Restart' : 'Start'} round {Math.max(encounter.round, 1)}
+          </button>
+          {started && !last && (
+            <button className="chip" onClick={() => setRound({ ...round, step: round.step! + 1 })}>
+              Next ›
+            </button>
+          )}
+          {encounter.round > 0 && (
+            <button
+              className="chip"
+              onClick={() => {
+                onChange(endRound(encounter))
+                onClose()
+              }}
+            >
+              End round {encounter.round}
+            </button>
+          )}
+          {waiting.length > 0 && <span className="paper-soft">Waiting for the players' roll{waiting.length > 1 ? 's' : ''}: {waiting.map(labelOf).join(', ')}</span>}
+        </div>
 
         {steps.length > 0 && (
           <ol className="initiative-order">
@@ -194,6 +227,55 @@ export function InitiativeWindow({
           </ol>
         )}
       </div>
+    </PaperModal>,
+    document.body,
+  )
+}
+
+/** Rodadas guardadas: voltar ao começo de qualquer uma (magias que voltam no tempo). */
+export function RoundsWindow({
+  encounter,
+  settings,
+  onChange,
+  onClose,
+}: {
+  encounter: Encounter
+  settings: CombatSettings
+  onChange: (next: Encounter) => void
+  onClose: () => void
+}) {
+  const history = [...(encounter.history ?? [])].reverse()
+  const standing = (snapshot: RoundSnapshot) =>
+    (['party', 'enemies', 'others'] as Side[])
+      .map((side) => {
+        const list = encounter.combatants.filter((c) => c.side === side && snapshot.combatants[c.id])
+        if (list.length === 0) return null
+        const up = list.filter((c) => statusOf(snapshot.combatants[c.id], settings.deathAt) === 'ok').length
+        return `${sideLabels[side]} ${up}/${list.length}`
+      })
+      .filter(Boolean)
+      .join(' · ')
+  const goBack = (round: number) => {
+    const later = round < encounter.round ? ` Rounds ${round + 1} to ${encounter.round} will be forgotten.` : ''
+    if (!window.confirm(`Go back to the start of round ${round}? Hit points, conditions, morale and initiative return to how they were.${later}`)) return
+    onChange(goBackToRound(encounter, round))
+    onClose()
+  }
+  return createPortal(
+    <PaperModal title="Rounds" subtitle="Go back to the start of any round (time-bending magic)" onClose={onClose}>
+      {history.length === 0 && <p className="paper-soft">No rounds saved yet: each round is saved when it starts.</p>}
+      <ul className="rounds-list">
+        {history.map((h) => (
+          <li key={h.round}>
+            <span className="rounds-name">Round {h.round}</span>
+            <span className="paper-soft">{standing(h)} standing</span>
+            <button className="chip" onClick={() => goBack(h.round)}>
+              {h.round === encounter.round ? 'Restart this round' : `Go back to round ${h.round}`}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="paper-soft">Names, notes and sides stay as they are now; combatants added later stay in the fight.</p>
     </PaperModal>,
     document.body,
   )
