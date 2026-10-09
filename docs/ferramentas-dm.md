@@ -59,3 +59,7 @@ monstros: 152 MB no tamanho original (média 196 KB, mediana 102 KB, maior
   cartão "DM Tools" (`icon_dm_tools.png`) e medalhão dos monstros no item
   Monsters do hub (`icon_monsters.png`); fundo branco tirado (só o branco ligado
   às bordas, borda suave), 256 px como os ícones mais novos.
+- 2026-10-09, ícone do Table Grimoire (web v0.42.2): medalhão do usuário
+  (ábaco e livro de tabelas) no item Table Grimoire do hub
+  (`icon_table_grimoire.png`); mesmo processo: só o branco ligado às bordas
+  sai, borda suave, 256 px.

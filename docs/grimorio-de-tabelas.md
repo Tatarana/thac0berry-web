@@ -136,3 +136,4 @@ entregas e pendências. Atualizar a cada entrega.
     26 tabelas com cabeçalho torto; as tabelas sem "---" (32) ainda não
     entram no Table Grimoire;
   - testes: 122 (6 novos).
+- 2026-10-09: ícone do Table Grimoire no hub DM Tools (arte do usuário; web v0.42.2; detalhes em `docs/ferramentas-dm.md`).
