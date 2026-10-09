@@ -54,6 +54,7 @@ export function InitiativeBar({
   onChange,
   onOpen,
   onRounds,
+  onSurprise,
 }: {
   encounter: Encounter
   /** Ordem da rodada (fechada, ou a prévia). */
@@ -65,6 +66,8 @@ export function InitiativeBar({
   onOpen: () => void
   /** Lista das rodadas para voltar no tempo (só quando há fotos). */
   onRounds?: () => void
+  /** Teste de surpresa (antes da rodada 1). */
+  onSurprise: () => void
 }) {
   const round = encounter.initiative
   const started = round?.step !== null && round?.step !== undefined
@@ -97,12 +100,24 @@ export function InitiativeBar({
         <button className={!started && !canStart ? 'chip chip-on' : 'chip'} onClick={onOpen}>
           {!started && !canStart ? 'Roll initiative' : 'Initiative'}
         </button>
+        {encounter.round === 0 && !started && (
+          <button className="chip" onClick={onSurprise}>
+            Surprise
+          </button>
+        )}
         {onRounds && (
           <button className="chip" onClick={onRounds}>
             Rounds
           </button>
         )}
       </span>
+      {encounter.surprise && encounter.round <= 1 && (
+        <span className={encounter.surprise.surprised.length ? 'initiative-surprised' : 'paper-soft'}>
+          {encounter.surprise.surprised.length
+            ? `${encounter.surprise.surprised.map((s) => sideLabels[s]).join(' and ')} surprised: no action in round 1`
+            : 'No one surprised'}
+        </span>
+      )}
     </div>
   )
 }

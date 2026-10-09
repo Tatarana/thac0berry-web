@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
+import { EndEncounterWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
 import { MoraleWindow } from '../components/CombatMorale'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
@@ -23,6 +24,7 @@ import {
   startRound,
   type Combatant,
   type Encounter,
+  type XpAward,
 } from '../rules/combat'
 import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import type { GrimoireTable } from '../rules/tableIndex'
@@ -62,6 +64,9 @@ function Tracker() {
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
   const [showPast, setShowPast] = useState(false)
+  const [surpriseOpen, setSurpriseOpen] = useState(false)
+  const [ending, setEnding] = useState(false)
+  const [saveID, setSaveID] = useState<string | null>(null)
   // Encerrados ("End encounter") saem da fila e ficam em "Past encounters".
   const active = store.encounters.filter((e) => !e.endedAt)
   const past = store.encounters.filter((e) => e.endedAt)
@@ -90,11 +95,11 @@ function Tracker() {
     setCreating(false)
   }
 
-  // Encerra (fica guardado em "Past encounters") e volta à tela anterior.
-  const finish = () => {
-    if (!current || !window.confirm(`End "${current.name}"? It is kept under Past encounters and can be reopened.`)) return
+  // Encerra com o XP do resumo (fica guardado em "Past encounters") e volta à tela anterior.
+  const finish = (award: XpAward) => {
+    if (!current) return
     update((draft) => {
-      draft.encounters = draft.encounters.map((e) => (e.id === current.id ? endEncounter(e, new Date().toISOString()) : e))
+      draft.encounters = draft.encounters.map((e) => (e.id === current.id ? endEncounter(e, new Date().toISOString(), award) : e))
       draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null
     })
     navigate('/dm')
@@ -119,6 +124,7 @@ function Tracker() {
   const actingNow = new Set(current ? actingIDs(current) : [])
 
   const moraleTarget = current?.combatants.find((c) => c.id === moraleID) ?? null
+  const saveTarget = current?.combatants.find((c) => c.id === saveID) ?? null
 
   const add = (list: Combatant[]) => editEncounter((e) => void e.combatants.push(...list))
   const replace = (next: Combatant) => editEncounter((e) => void (e.combatants = e.combatants.map((c) => (c.id === next.id ? next : c))))
@@ -162,7 +168,8 @@ function Tracker() {
           <>
             {current.endedAt && (
               <p className="paper-soft combat-ended">
-                Ended on {new Date(current.endedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}, round {current.round}.{' '}
+                Ended on {new Date(current.endedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}, round {current.round}
+                {current.xpAward ? ` · ${current.xpAward.total.toLocaleString('en-US')} XP, ${current.xpAward.each.toLocaleString('en-US')} each` : ''}.{' '}
                 <button className="chip" onClick={() => editEncounter((e) => Object.assign(e, reopenEncounter(e)))}>
                   Reopen
                 </button>
@@ -182,7 +189,7 @@ function Tracker() {
                 </button>
               </div>
               {!current.endedAt && (
-                <button className="chip chip-on combat-end" onClick={finish}>
+                <button className="chip chip-on combat-end" onClick={() => setEnding(true)}>
                   End encounter
                 </button>
               )}
@@ -202,6 +209,7 @@ function Tracker() {
                 onChange={(next) => editEncounter((e) => Object.assign(e, next))}
                 onOpen={() => setInitiativeOpen(true)}
                 onRounds={current.history?.length ? () => setRoundsOpen(true) : undefined}
+                onSurprise={() => setSurpriseOpen(true)}
               />
             )}
             {tables.length > 0 && (
@@ -213,6 +221,7 @@ function Tracker() {
                 settings={store.settings}
                 acting={actingNow}
                 initiative={initiative}
+                surprised={current.round <= 1 ? (current.surprise?.surprised ?? []) : []}
                 onChange={replace}
                 onRemove={drop}
                 onOpenMonster={(c) => {
@@ -220,6 +229,7 @@ function Tracker() {
                   return entry ? () => setOpenMonster(entry) : undefined
                 }}
                 onMorale={(c) => setMoraleID(c.id)}
+                onSave={(c) => setSaveID(c.id)}
               />
             )}
           </>
@@ -247,6 +257,11 @@ function Tracker() {
         <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
       {creating && <NewEncounterWindow encounters={store.encounters} campaignID={current?.campaignID ?? null} onCreate={create} onClose={() => setCreating(false)} />}
+      {surpriseOpen && current && (
+        <SurpriseWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setSurpriseOpen(false)} />
+      )}
+      {ending && current && <EndEncounterWindow encounter={current} settings={store.settings} onEnd={finish} onClose={() => setEnding(false)} />}
+      {saveTarget && <SaveWindow key={saveTarget.id} combatant={saveTarget} onChange={replace} onClose={() => setSaveID(null)} />}
       {roundsOpen && current && (
         <RoundsWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setRoundsOpen(false)} />
       )}
