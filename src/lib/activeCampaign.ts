@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { useCampaigns } from './campaignCharacters'
+import { useMode } from './mode'
 
 // Campanha ativa do modo DM (docs/campanha-ativa.md, decisões de 2026-10-09):
 // escolhida uma vez, vale para tudo o que o DM faz até ele trocar. Fica no
@@ -81,4 +82,18 @@ export function useCheckedActiveCampaign() {
     else if (found.name !== active.name) setActiveCampaign({ id: found.id, name: found.name })
   }, [active, campaigns])
   return active
+}
+
+/**
+ * "Campaign Settings" da campanha ativa (CA3), para os filtros do DM começarem
+ * por ela; null quando não restringe (One-shot, campanha sem cenários, modo
+ * Jogador, sem login).
+ */
+export function useActiveCampaignSettings(): string[] | null {
+  const mode = useMode()
+  const active = useActiveCampaign()
+  const { campaigns } = useCampaigns()
+  if (mode !== 'dm' || !active?.id) return null
+  const settings = campaigns?.find((c) => c.id === active.id)?.enabled_settings
+  return settings && settings.length > 0 ? settings : null
 }

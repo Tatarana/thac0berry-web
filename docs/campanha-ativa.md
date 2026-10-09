@@ -31,7 +31,7 @@ tudo que fizesse seria para a campanha escolhida".
 |---|---|---|
 | CA1 | Campanha ativa: escolha (com One-shot), chip no topo para trocar, DM Tools com a campanha e atalhos, "Run this campaign" na campanha | feita (web v0.53.0) |
 | CA2 | Combat Tracker preso à campanha ativa: só os encontros dela, sem escolher campanha no encontro novo nem no + PC, aviso ao trocar com encontro em andamento, levar os encontros antigos para a campanha | feita (web v0.54.0) |
-| CA3 | Filtros de cenário (Monsters, Table Grimoire, Rules) começando pelo "Campaign Settings" da campanha ativa | a fazer |
+| CA3 | Filtros de cenário (Monsters, Table Grimoire, Rules) começando pelo "Campaign Settings" da campanha ativa | feita (web v0.55.0) |
 
 ## Backlog
 
@@ -80,3 +80,19 @@ tudo que fizesse seria para a campanha escolhida".
   - conferido no navegador (campanha simulada: encontros de outra campanha
     escondidos, mover os antigos, encontro novo sem seletor, + PC, aviso ao
     trocar para o One-shot, log do roll); testes: 169 (2 novos).
+- 2026-10-09, CA3 feita (web v0.55.0):
+  - `src/rules/campaignFilter.ts` (com testes): cenários que valem na
+    campanha = Core + o "Campaign Settings" dela (vazio = a campanha não
+    restringe); coleções de monstros = as dos livros gerais (Monstrous Manual
+    Core, MC Annuals) + as do cenário — os nomes não batem, então há um mapa
+    (Forgotten Realms → "Forgotten Realms & Continents"; Al-Qadim, cujos
+    monstros são os "Zakhara", e Council of Wyrms → "Other Campaigns /
+    Magazines"); teste confere que toda coleção do mapa existe no catálogo;
+  - `useActiveCampaignSettings` (`src/lib/activeCampaign.ts`): o cenário da
+    campanha ativa, só no modo DM e numa campanha com cenários;
+  - Monsters, Table Grimoire e Rules: chip novo "Campaign (Core + Dark Sun)",
+    já marcado ao abrir; "All" e os outros cenários continuam a um toque. No
+    modo Jogador, no One-shot ou numa campanha sem cenários, nada muda;
+  - conferido no navegador sem login (as três telas como antes); o caminho com
+    a campanha depende do login (o cenário vem do Supabase) e ficou nos testes
+    da regra.

@@ -11,6 +11,11 @@ import { formatDice, type DiceSpec } from '../rules/dice'
 import { filterTables, tableChapters, tableLabel, type GrimoireTable } from '../rules/tableIndex'
 import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import { rollPlan } from '../rules/tableRoll'
+import { campaignFilterLabel, campaignSettingSet } from '../rules/campaignFilter'
+import { useActiveCampaignSettings } from '../lib/activeCampaign'
+
+/** Valor do filtro de cenário "da campanha ativa" (CA3). */
+const CAMPAIGN = 'campaign'
 
 
 // Linhas antes do "Show all" (como nos monstros); a busca e os filtros valem para todas.
@@ -31,7 +36,12 @@ function TableList() {
   const [tables, setTables] = useState<GrimoireTable[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [setting, setSetting] = useState<string | null>(null)
+  // Cenário: começa pelo da campanha ativa (CA3); undefined = ainda não mexeu.
+  const campaignSettings = useActiveCampaignSettings()
+  const campaignSet = campaignSettingSet(campaignSettings)
+  const [settingPick, setSetting] = useState<string | null | undefined>(undefined)
+  const setting = settingPick === undefined ? (campaignSet ? CAMPAIGN : null) : settingPick
+  const byCampaign = setting === CAMPAIGN && campaignSet !== null
   const [book, setBook] = useState<string | null>(null)
   const [chapter, setChapter] = useState<number | null>(null)
   const [showAll, setShowAll] = useState(false)
@@ -59,7 +69,10 @@ function TableList() {
   const all = useMemo(() => tables ?? [], [tables])
   // Cenários e livros (data/books.json) que têm tabelas; a ordem é a dos livros.
   const settings = useMemo(() => settingsOf(bookList).filter((name) => all.some((t) => t.setting === name)), [bookList, all])
-  const books = useMemo(() => booksInSetting(bookList, setting).filter((b) => all.some((t) => t.book === b.id)), [bookList, setting, all])
+  const books = useMemo(
+    () => (byCampaign ? booksInSetting(bookList, null).filter((b) => campaignSet.has(b.setting)) : booksInSetting(bookList, setting)).filter((b) => all.some((t) => t.book === b.id)),
+    [bookList, setting, all, byCampaign, campaignSet],
+  )
   const bookOrder = useMemo(() => booksInSetting(bookList, null).map((b) => b.id), [bookList])
   const chapters = useMemo(() => (book ? tableChapters(all, book) : []), [all, book])
   // Dado de cada tabela que rola (motor de rolagem, src/rules/tableRoll.ts).
@@ -72,8 +85,11 @@ function TableList() {
     return map
   }, [all])
   const filtered = useMemo(
-    () => filterTables(all, { query, book, setting, chapter }, bookOrder).filter((t) => !rollableOnly || dice.has(t.id)),
-    [all, query, book, setting, chapter, rollableOnly, dice, bookOrder],
+    () =>
+      filterTables(all, { query, book, setting: byCampaign ? null : setting, chapter }, bookOrder).filter(
+        (t) => (!byCampaign || campaignSet.has(t.setting)) && (!rollableOnly || dice.has(t.id)),
+      ),
+    [all, query, book, setting, chapter, rollableOnly, dice, bookOrder, byCampaign, campaignSet],
   )
   const rows = showAll ? filtered : filtered.slice(0, ROW_LIMIT)
 
@@ -110,6 +126,11 @@ function TableList() {
           <div className="paper-filter">
             <span className="paper-label">Setting</span>
             <div className="chip-row">
+              {campaignSettings && (
+                <button className={setting === CAMPAIGN ? 'chip chip-on' : 'chip'} onClick={() => pickSetting(CAMPAIGN)}>
+                  {campaignFilterLabel(campaignSettings)}
+                </button>
+              )}
               <button className={setting === null ? 'chip chip-on' : 'chip'} onClick={() => pickSetting(null)}>All</button>
               {settings.map((name) => (
                 <button key={name} className={setting === name ? 'chip chip-on' : 'chip'} onClick={() => pickSetting(name)}>
