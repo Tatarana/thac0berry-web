@@ -4346,7 +4346,34 @@ button.slot-dot:hover {
   color: var(--ink);
 }
 
-.cg-conditions {
+.cg-morale-btn {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed rgb(107 92 70 / 0.6);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Ataques quebram linha só quando o texto é longo (a tabela cabe em 1024 px). */
+.combat-grid .cg-attacks {
+  white-space: normal;
+  min-width: 7rem;
+}
+
+.cg-morale-held {
+  color: var(--teal);
+}
+
+.cg-morale-failed {
+  color: var(--red-ink);
+  font-weight: 700;
+}
+
+/* .combat-grid na frente: senão o nowrap das células vence e a coluna não quebra linha. */
+.combat-grid .cg-conditions {
   white-space: normal;
   min-width: 6rem;
 }
@@ -4412,4 +4439,67 @@ button.slot-dot:hover {
 .cg-acting-mark {
   color: var(--pen-ink);
   font-size: 0.7rem;
+}
+
+/* Teste de moral (CT3) */
+.morale .chip-row {
+  flex-wrap: wrap;
+}
+
+.morale .paper-filter {
+  margin-bottom: 10px;
+}
+
+.morale-auto {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.morale-target {
+  margin: 10px 0 6px;
+}
+
+.morale-roll {
+  align-items: center;
+}
+
+.morale-roll .ink-number {
+  width: 4rem;
+}
+
+.morale-result {
+  margin: 10px 0 12px;
+  padding: 8px 10px;
+  border-left: 4px solid;
+  border-radius: 3px;
+}
+
+.morale-holds {
+  border-color: var(--teal);
+  background: rgb(46 140 122 / 0.1);
+}
+
+.morale-fails {
+  border-color: var(--red-ink);
+  background: rgb(140 47 34 / 0.09);
+}
+
+.morale-marks {
+  display: flex;
+  margin-top: 6px;
+}
+
+.morale-when {
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.morale-when summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.morale-when ul {
+  margin: 4px 0;
+  padding-left: 1.2rem;
 }

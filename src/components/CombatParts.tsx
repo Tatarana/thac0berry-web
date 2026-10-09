@@ -65,6 +65,7 @@ export function CombatTable({
   onChange,
   onRemove,
   onOpenMonster,
+  onMorale,
 }: {
   combatants: Combatant[]
   settings: CombatSettings
@@ -74,6 +75,8 @@ export function CombatTable({
   onRemove: (id: string) => void
   /** Ficha do monstro (quando o índice já carregou). */
   onOpenMonster: (c: Combatant) => (() => void) | undefined
+  /** Abre o teste de moral (CT3; nunca para PCs). */
+  onMorale: (c: Combatant) => void
 }) {
   return (
     <div className="combat-grid-wrap">
@@ -85,7 +88,7 @@ export function CombatTable({
             <th>THAC0</th>
             <th className="cg-hp">HP</th>
             <th title="Damage (Enter or −) or heal (+)">±</th>
-            <th title="Morale (2d10, DMG Table 49)">Mor.</th>
+            <th title="Morale: click to check (2d10, DMG Tables 49 and 50)">Mor.</th>
             <th className="cg-attacks" title="Attacks · Damage">Atk · Dmg</th>
             <th className="cg-conditions">Conditions</th>
             <th className="cg-notes">Notes</th>
@@ -105,7 +108,7 @@ export function CombatTable({
                 </th>
               </tr>
               {list.map((c) => (
-                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} />
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} />
               ))}
             </tbody>
           )
@@ -122,6 +125,7 @@ function CombatRow({
   onChange,
   onRemove,
   onOpenMonster,
+  onMorale,
 }: {
   c: Combatant
   settings: CombatSettings
@@ -129,6 +133,7 @@ function CombatRow({
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
+  onMorale: () => void
 }) {
   const [amount, setAmount] = useState('')
   const [adding, setAdding] = useState(false)
@@ -151,6 +156,7 @@ function CombatRow({
     setAdding(false)
   }
   const attacks = [c.attacks && `${c.attacks}×`, c.damage].filter(Boolean).join(' ')
+  const last = c.lastMorale
 
   return (
     <tr className={[`cg-row cg-${status}`, acting ? 'cg-acting' : ''].filter(Boolean).join(' ')}>
@@ -199,8 +205,18 @@ function CombatRow({
           </button>
         </form>
       </td>
-      <td className="cg-text" title={c.morale?.text}>
-        {c.kind === 'pc' ? '' : c.morale ? (c.morale.low === c.morale.high ? c.morale.low : `${c.morale.low}-${c.morale.high}`) : '—'}
+      <td className="cg-morale">
+        {c.kind !== 'pc' && (
+          <button
+            className="cg-morale-btn"
+            aria-label={`${c.name}: morale check`}
+            title={[c.morale?.text ?? 'No morale rating', last && `Last check (round ${last.round}): ${last.roll} vs ${last.target}, ${last.holds ? 'held' : 'failed'}`, 'Click to check morale'].filter(Boolean).join(' · ')}
+            onClick={onMorale}
+          >
+            {c.morale ? (c.morale.low === c.morale.high ? c.morale.low : `${c.morale.low}-${c.morale.high}`) : '—'}
+            {last && <span className={last.holds ? 'cg-morale-held' : 'cg-morale-failed'}>{last.holds ? ' ✓' : ' ✗'}</span>}
+          </button>
+        )}
       </td>
       <td className="cg-attacks cg-text" title={attacks}>
         {attacks || '—'}

@@ -44,6 +44,8 @@ export interface Combatant {
   /** Monstro do catálogo (abre a ficha). */
   monsterID: string | null
   monsterFile: string | null
+  /** Último teste de moral (CT3); ausente em combatentes de antes do CT3. */
+  lastMorale?: MoraleCheck | null
 }
 
 export interface Encounter {
@@ -389,3 +391,99 @@ export function endRound(e: Encounter): Encounter {
     initiative: newInitiative(e.initiative?.method ?? defaultSettings.initiative),
   }
 }
+
+// --- Moral (CT3) ----------------------------------------------------------------------
+
+/**
+ * Um teste de moral: 2d10 contra a moral ajustada pelos modificadores da
+ * Tabela 50; igual ou abaixo, mantém o combate (DMG cap. 9).
+ */
+export interface MoraleCheck {
+  round: number
+  /** Testes deste combatente nesta rodada (o 2º em diante tem −1 cada, Tabela 50). */
+  count: number
+  roll: number
+  target: number
+  holds: boolean
+}
+
+/** Linhas numéricas das Tabelas 49 (moral por tipo) e 50 (modificadores). */
+export const moraleRows = initiativeModifiers
+
+/** Modificador que a regra calcula sozinha, com o porquê. */
+export interface AutoModifier extends InitiativeModifier {
+  reason: string
+}
+
+/**
+ * DV como número, para os modificadores de DV da Tabela 50: "4+1" → 4,
+ * "½" → 0,5, "1-1" → 0,75 (mais de ½ e menos de 1), "1-4 hp" → 0,25;
+ * null quando não dá ("Varies").
+ */
+export function hitDiceValue(text: string | null | undefined): number | null {
+  const first = (text ?? '').split('\n')[0].trim().replace(/hit points?/gi, 'hp')
+  const clean = first.replace(/\s*\([^)]*\)\s*$/, '').trim().replace('½', '1/2').replace('¼', '1/4')
+  if (clean === '1/2') return 0.5
+  if (clean === '1/4') return 0.25
+  // Só PV (sem DV): até 4 PV é menos de meio DV.
+  const hp = /^(?:\d+\s*[-–]\s*)?(\d+)\s*hp$|^\d*d(\d+)\s*hp$/i.exec(clean)
+  if (hp) return Number(hp[1] ?? hp[2]) <= 4 ? 0.25 : null
+  const match = /^(\d+)\s*(?:([+-])\s*\d+)?\+?$/.exec(clean)
+  if (!match) return null
+  const count = Number(match[1])
+  if (count === 1 && match[2] === '-') return 0.75
+  return count >= 1 ? count : null
+}
+
+/** A linha da Tabela 50 que casa com o padrão (o texto vem dos dados). */
+const rowLike = (modifiers: InitiativeModifier[], pattern: RegExp) => modifiers.find((m) => pattern.test(m.label))
+
+/**
+ * Modificadores da Tabela 50 que saem dos números do encontro: PV perdidos
+ * (25% ou 50%, do combatente ou do grupo — nota * da tabela; vale o maior,
+ * não somam), DV e testes repetidos na mesma rodada.
+ */
+export function autoMoraleModifiers(c: Combatant, e: Pick<Encounter, 'combatants' | 'round'>, modifiers: InitiativeModifier[], deathAt: number): AutoModifier[] {
+  const auto: AutoModifier[] = []
+  const own = c.hp !== null && c.hpMax ? 1 - Math.max(c.hp, 0) / c.hpMax : 0
+  const group = e.combatants.filter((x) => x.side === c.side)
+  const fallen = group.length > 1 ? group.filter((x) => statusOf(x, deathAt) !== 'ok').length / group.length : 0
+  const lost = Math.max(own, fallen)
+  const lostRow = lost >= 0.5 ? rowLike(modifiers, /50%/) : lost >= 0.25 ? rowLike(modifiers, /25%/) : undefined
+  if (lostRow) {
+    const pct = (n: number) => `${Math.round(n * 100)}%`
+    auto.push({ ...lostRow, reason: own >= fallen ? `lost ${pct(own)} of its hp` : `${pct(fallen)} of its side has fallen` })
+  }
+  const hd = hitDiceValue(c.hitDice)
+  const hdRow =
+    hd === null
+      ? undefined
+      : hd <= 0.5
+        ? rowLike(modifiers, /1\/2 HD or less/i)
+        : hd < 1
+          ? rowLike(modifiers, /less than 1 HD/i)
+          : hd >= 15
+            ? rowLike(modifiers, /15 or more HD/i)
+            : hd >= 9
+              ? rowLike(modifiers, /9 to 14/i)
+              : hd >= 4
+                ? rowLike(modifiers, /4 to 8/i)
+                : undefined
+  if (hdRow) auto.push({ ...hdRow, reason: `HD ${c.hitDice.split('\n')[0].trim()}` })
+  const again = c.lastMorale && c.lastMorale.round === e.round ? c.lastMorale.count : 0
+  const againRow = again > 0 ? rowLike(modifiers, /additional check/i) : undefined
+  if (againRow) auto.push({ ...againRow, value: againRow.value * again, reason: `${again} check${again > 1 ? 's' : ''} already this round` })
+  return auto
+}
+
+/** Moral ajustada: a moral escolhida mais os modificadores (o 2d10 tem que ficar igual ou abaixo). */
+export const moraleTarget = (rating: number, modifiers: number[]) => rating + modifiers.reduce((sum, m) => sum + m, 0)
+
+/** Registra o teste no combatente (conta os testes da rodada, para o −1 dos seguintes). */
+export function recordMorale(c: Combatant, round: number, roll: number, target: number): Combatant {
+  const count = c.lastMorale && c.lastMorale.round === round ? c.lastMorale.count + 1 : 1
+  return { ...c, lastMorale: { round, count, roll, target, holds: roll <= target } }
+}
+
+/** Moral da Tabela 49 para quem não tem a do livro ("Regular soldiers (12)"). */
+export const moraleFromTable = (row: InitiativeModifier): MoraleRating => ({ text: `${row.label} (${row.value})`, low: row.value, high: row.value })
