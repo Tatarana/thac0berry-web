@@ -10,6 +10,9 @@ import { supabase } from './supabase'
 export interface CampaignOption {
   id: string
   name: string
+  is_archived?: boolean
+  /** "Campaign Settings" da campanha (null = todos), para os filtros do DM (CA3). */
+  enabled_settings?: string[] | null
 }
 
 export interface CampaignCharacter {
@@ -27,7 +30,7 @@ export function useCampaigns() {
     let cancelled = false
     void supabase
       .from('campaign')
-      .select('id, name')
+      .select('id, name, is_archived, enabled_settings')
       .is('deleted_at', null)
       .order('name')
       .then(({ data, error: e }) => {

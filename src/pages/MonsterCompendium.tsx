@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { CampaignSwitch } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
@@ -49,6 +50,7 @@ function MonsterList() {
       <div className="paper-sheet">
         <div className="paper-top">
           <Link to="/dm" className="paper-link">‹ DM Tools</Link>
+          <CampaignSwitch />
         </div>
         <h1 className="paper-title">Monsters</h1>
         <p className="paper-soft">

@@ -6,6 +6,7 @@ import { MoraleWindow } from '../components/CombatMorale'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable, NewEncounterWindow } from '../components/CombatParts'
+import { CampaignSwitch } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
@@ -145,9 +146,12 @@ function Tracker() {
       <div className="paper-sheet combat-sheet">
         <div className="paper-top">
           <Link to="/dm" className="paper-link">‹ DM Tools</Link>
-          <button className="paper-link" onClick={() => setSettingsOpen(true)}>
-            settings
-          </button>
+          <span className="paper-top-right">
+            <CampaignSwitch />
+            <button className="paper-link" onClick={() => setSettingsOpen(true)}>
+              settings
+            </button>
+          </span>
         </div>
         <h1 className="paper-title">Combat Tracker</h1>
         {saveError && <p className="paper-soft save-error">Could not save on this device: {saveError}</p>}
