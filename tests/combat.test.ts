@@ -6,6 +6,10 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
+  armorClassValue,
+  hitDiceChoices,
+  monsterSetup,
+  thac0Value,
   autoMoraleModifiers,
   hitDiceValue,
   moraleFromTable,
@@ -54,6 +58,10 @@ test('DV: "4", "4+1", "1-1", "12 (base)" em d8; "½" 1d4; "1 hp" fixo; "1-4 hp" 
   assert.deepEqual(parseHitDice('¼'), { dice: { count: 1, sides: 2, modifier: 0 } })
   assert.deepEqual(parseHitDice('11+'), { dice: { count: 11, sides: 8, modifier: 0 } })
   assert.equal(parseHitDice('8, 12, or 16'), null)
+  assert.equal(parseHitDice('4-7'), null) // faixa: o DM escolhe (não é 4d8−7)
+  // Gigantes: DV mais PV extras.
+  assert.deepEqual(parseHitDice('14 + 1-4 hit points'), { dice: { count: 14, sides: 8, modifier: 0 }, bonus: { count: 1, sides: 4, modifier: 0 } })
+  assert.equal(hitPoints(parseHitDice('14 + 1-4 hit points')!, 'average'), 65) // 63 + 2,5
   assert.equal(parseHitDice('Varies'), null)
   assert.equal(parseHitDice('See below'), null)
 })
@@ -143,7 +151,8 @@ test('dados reais: quantos DV do catálogo viram PV automáticos', () => {
     for (const m of list) for (const v of m.variants) {
       if (!v.combat.hitDice) continue
       total++
-      if (parseHitDice(v.combat.hitDice.text)) parsed++
+      // Faixa ou lista de DV: o DM escolhe um valor e os PV saem dele.
+      if (parseHitDice(v.combat.hitDice.text) || hitDiceChoices(v.combat.hitDice.text).length > 0) parsed++
     }
   }
   assert.ok(total > 2500)
@@ -257,6 +266,7 @@ test('DV como número para a Tabela 50', () => {
   assert.equal(hitDiceValue('1-1'), 0.75)
   assert.equal(hitDiceValue('1-4 hp'), 0.25)
   assert.equal(hitDiceValue('9 (40 hp)'), 9)
+  assert.equal(hitDiceValue('14 + 1-4 hit points'), 14)
   assert.equal(hitDiceValue('Varies'), null)
 })
 
@@ -299,4 +309,75 @@ test('dados reais: Tabela 50 tem as linhas que a moral calcula sozinha', () => {
   for (const pattern of [/25%/, /50%/, /1\/2 HD or less/i, /less than 1 HD/i, /4 to 8/i, /9 to 14/i, /15 or more HD/i, /additional check/i])
     assert.ok(rows.some((r) => pattern.test(r.label)), String(pattern))
   assert.equal(moraleRows(tables.find((t) => t.id === 'dmg-49')?.rows ?? []).length, 14)
+})
+
+// --- Monstros: CA, THAC0 e DV com texto ambíguo -----------------------------------------
+
+const t = (text: string) => ({ text, value: null })
+
+test('DV em faixa ou lista viram escolhas', () => {
+  assert.deepEqual(hitDiceChoices('4-7'), ['4', '5', '6', '7'])
+  assert.deepEqual(hitDiceChoices('2 to 4'), ['2', '3', '4'])
+  assert.deepEqual(hitDiceChoices('8, 12, or 16'), ['8', '12', '16'])
+  assert.deepEqual(hitDiceChoices('6+3 to 8+3'), ['6+3', '7+3', '8+3'])
+  assert.deepEqual(hitDiceChoices('7+7 to 9+9'), ['7+7', '8+8', '9+9'])
+  assert.deepEqual(hitDiceChoices('2+1 to 5+4'), ['2+1', '5+4'])
+  assert.deepEqual(hitDiceChoices('1-1'), [])
+  assert.deepEqual(hitDiceChoices('4+1'), [])
+  assert.deepEqual(hitDiceChoices('Varies'), [])
+})
+
+test('CA: valor da ficha ou o primeiro número do texto', () => {
+  assert.equal(armorClassValue({ text: '6 (10)', value: 6 }), 6)
+  assert.equal(armorClassValue(t('0 (5)')), 0)
+  assert.equal(armorClassValue(t('3/7')), 3)
+  assert.equal(armorClassValue(t('-2/4/6')), -2)
+  assert.equal(armorClassValue(t('5 or 4 (8)')), 5)
+  assert.equal(armorClassValue(t('Varies')), null)
+  assert.equal(armorClassValue(undefined), null)
+})
+
+test('THAC0: tabela por DV, primeiro número, ou nada', () => {
+  const hellHound = t('4 HD: 17\n5-6 HD: 15\n7 HD: 13')
+  assert.equal(thac0Value(hellHound, 4), 17)
+  assert.equal(thac0Value(hellHound, 6), 15)
+  assert.equal(thac0Value(hellHound, null), null)
+  assert.equal(thac0Value(t('8 Hit Dice: 13\n12 Hit Dice: 9\n16 Hit Dice: 5'), 12), 9)
+  assert.equal(thac0Value(t('2 HD: 193-4 HD: 17\n5 HD: 15'), 3), 17) // linhas grudadas na extração
+  assert.equal(thac0Value(t('12-13 Hit Dice: 714+ Hit Dice: 5'), 16), 5)
+  assert.equal(thac0Value(t('1+1 and 2+2 HD: 19\n3+3 HD: 17'), 2), 19)
+  assert.equal(thac0Value(t('7 or 5'), null), 7)
+  assert.equal(thac0Value(t('17, but see below'), null), 17)
+  assert.equal(thac0Value(t('45-49 hp: 11\n50-59 hp: 9'), null), null)
+  assert.equal(thac0Value(t('Varies'), null), null)
+})
+
+test('monstro com faixa: DV menor, THAC0 da tabela; escolha do DM manda', () => {
+  const hound = { name: 'Hell Hound', armorClass: { text: '4', value: 4 }, hitDice: t('4-7'), thac0: t('4 HD: 17\n5-6 HD: 15\n7 HD: 13') }
+  assert.deepEqual(monsterSetup(hound), { ac: 4, thac0: 17, hitDice: '4', hp: null })
+  assert.deepEqual(monsterSetup(hound, '6'), { ac: 4, thac0: 15, hitDice: '6', hp: null })
+  const [c] = monsterCombatants(hound, { monsterID: 'h', monsterFile: 'h.json' }, 1, 'enemies', [], 'average', undefined, monsterSetup(hound, '6'))
+  assert.deepEqual([c.ac, c.thac0, c.hitDice, c.hp], [4, 15, '6', 27])
+  const golem = { name: 'Golem', hitDice: t('Varies') }
+  const [g] = monsterCombatants(golem, { monsterID: 'g', monsterFile: 'g.json' }, 1, 'enemies', [], 'roll', undefined, { ...monsterSetup(golem), hp: 60 })
+  assert.equal(g.hp, 60)
+})
+
+test('dados reais: CA, THAC0 e PV saem sozinhos para a grande maioria', () => {
+  const dir = join(resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data')), 'monsters')
+  let total = 0
+  const ok = { ac: 0, thac0: 0, hp: 0 }
+  for (const file of readdirSync(dir).filter((f) => f.startsWith('monsters_') && f !== 'monsters_index.json')) {
+    const list: { name: string; variants: { combat: Parameters<typeof monsterSetup>[0] }[] }[] = JSON.parse(readFileSync(join(dir, file), 'utf8'))
+    for (const m of list) for (const v of m.variants) {
+      total++
+      const setup = monsterSetup({ ...v.combat, name: m.name })
+      if (setup.ac !== null) ok.ac++
+      if (setup.thac0 !== null) ok.thac0++
+      if (parseHitDice(setup.hitDice)) ok.hp++
+    }
+  }
+  assert.ok(ok.ac / total > 0.95, `CA: ${ok.ac} de ${total}`)
+  assert.ok(ok.thac0 / total > 0.93, `THAC0: ${ok.thac0} de ${total}`)
+  assert.ok(ok.hp / total > 0.92, `PV: ${ok.hp} de ${total}`)
 })

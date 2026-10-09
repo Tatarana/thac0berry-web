@@ -76,7 +76,7 @@ export const sideLabels: Record<Side, string> = { party: 'Party', enemies: 'Enem
 // --- PV pelos Dados de Vida ------------------------------------------------------------
 
 /** O que dá para tirar do texto de DV: dados (d8 por DV) ou um valor fixo de PV. */
-export type HitDiceSpec = { dice: DiceSpec } | { fixed: number }
+export type HitDiceSpec = { dice: DiceSpec; bonus?: DiceSpec } | { fixed: number }
 
 /**
  * DV do Monstrous Manual: "4", "4+1", "1-1", "11+", "12 (base)" (d8 cada);
@@ -94,6 +94,12 @@ export function parseHitDice(text: string | null | undefined): HitDiceSpec | nul
     if (fromInner) return fromInner
   }
   const clean = first.replace(/\s*\([^)]*\)\s*$/, '').trim()
+  // Gigantes: "14 + 1-4 hit points" (14d8 mais 1d4 PV).
+  const giant = /^(\d+)\s*\+\s*(\d+)\s*[-–]\s*(\d+)\s*hp$/i.exec(clean)
+  if (giant) {
+    const bonus = diceForRange(Number(giant[2]), Number(giant[3]))
+    return bonus ? { dice: { count: Number(giant[1]), sides: 8, modifier: 0 }, bonus } : null
+  }
   return hpText(clean) ?? diceText(clean)
 }
 
@@ -120,15 +126,71 @@ function diceText(text: string): HitDiceSpec | null {
   if (!match) return null
   const count = Number(match[1])
   if (count < 1) return null
+  // "4-7" é faixa de DV (o DM escolhe, hitDiceChoices), não 4d8−7; "1-1" é modificador.
+  if (match[2] === '-' && Number(match[3]) > count) return null
   const modifier = match[3] ? Number(match[3]) * (match[2] === '-' ? -1 : 1) : 0
   return { dice: { count, sides: 8, modifier } }
+}
+
+/**
+ * DV para o DM escolher quando o livro dá faixa ou lista: "4-7" e "2 to 8"
+ * (cada valor), "6+3 to 8+3" e "7+7 to 9+9" (mantém o padrão do bônus),
+ * "8, 12, or 16"; vazio quando não é escolha ("4+1", "Varies").
+ */
+export function hitDiceChoices(text: string | null | undefined): string[] {
+  const clean = (text ?? '').split('\n')[0].replace(/\s*\([^)]*\)\s*$/, '').trim()
+  const list = clean.split(/\s*,\s*(?:or\s+)?|\s+or\s+/)
+  if (list.length > 1 && list.every((x) => /^\d+(?:\+\d+)?$/.test(x))) return list
+  const range = /^(\d+)(?:\+(\d+))?\s*(?:-|–|to)\s*(\d+)(?:\+(\d+))?$/.exec(clean)
+  if (!range) return []
+  const [low, high] = [Number(range[1]), Number(range[3])]
+  if (high <= low || (range[2] === undefined) !== (range[4] === undefined)) return []
+  const plus = (n: number) => {
+    if (range[2] === undefined) return ''
+    if (range[2] === range[4]) return `+${range[2]}` // "6+3 to 8+3"
+    if (Number(range[2]) === low && Number(range[4]) === high) return `+${n}` // "7+7 to 9+9"
+    return null
+  }
+  if (plus(low) === null) return [`${low}+${range[2]}`, `${high}+${range[4]}`] // "2+1 to 5+4": só as pontas
+  return Array.from({ length: high - low + 1 }, (_, i) => `${low + i}${plus(low + i)}`)
+}
+
+/** CA do monstro: o valor da ficha, ou o primeiro número do texto ("0 (5)" → 0, "3/7" → 3). */
+export function armorClassValue(ac: { text: string; value: number | null } | undefined): number | null {
+  if (ac?.value != null) return ac.value
+  const match = /^\s*([-–−]?\d+)/.exec((ac?.text ?? '').split('\n')[0])
+  return match ? Number(match[1].replace(/[–−]/, '-')) : null
+}
+
+/**
+ * THAC0 do monstro: o valor da ficha; a linha da tabela por DV que casa com
+ * os DV ("4 HD: 17 / 5-6 HD: 15"); ou o primeiro número ("7 or 5" → 7,
+ * "17, but see below" → 17). null quando não dá ("Varies", "Nil").
+ */
+export function thac0Value(thac0: { text: string; value: number | null } | undefined, hitDice: number | null): number | null {
+  if (thac0?.value != null) return thac0.value
+  const text = thac0?.text ?? ''
+  // Linhas "DV: THAC0"; o THAC0 tem no máximo 20 (separa linhas grudadas como "2 HD: 193-4 HD: 17").
+  const rows = [...text.matchAll(/(\d+)(?:\+\d+)?(?:\s*(?:-|–|to|and)\s*(\d+)(?:\+\d+)?)?\+?\s*(?:HD|Hit Dice)\s*:\s*(20|1\d|\d)/gi)].map((m) => ({
+    low: Number(m[1]),
+    high: m[2] ? Number(m[2]) : /\d\+\s*(?:HD|Hit Dice)/i.test(m[0]) ? Infinity : Number(m[1]),
+    value: Number(m[3]),
+  }))
+  if (rows.length > 0) {
+    if (hitDice === null) return null
+    const hd = Math.floor(hitDice)
+    return rows.find((r) => hd >= r.low && hd <= r.high)?.value ?? null
+  }
+  const match = /^\s*(\d+)(?!\d|\s*(?:-\s*\d+\s*)?(?:hp|HD|Hit Dice))/i.exec(text)
+  return match ? Number(match[1]) : null
 }
 
 /** PV de um monstro: rolados ou na média (arredonda para baixo); nunca menos que 1. */
 export function hitPoints(spec: HitDiceSpec, mode: CombatSettings['monsterHp'], random?: Random): number {
   if ('fixed' in spec) return Math.max(1, spec.fixed)
-  const { count, sides, modifier } = spec.dice
-  const value = mode === 'average' ? Math.floor((count * (sides + 1)) / 2) + modifier : rollDice(spec.dice, random).total
+  const average = (d: DiceSpec) => (d.count * (d.sides + 1)) / 2 + d.modifier
+  const dice = [spec.dice, ...(spec.bonus ? [spec.bonus] : [])]
+  const value = mode === 'average' ? Math.floor(dice.reduce((sum, d) => sum + average(d), 0)) : dice.reduce((sum, d) => sum + rollDice(d, random).total, 0)
   return Math.max(1, value)
 }
 
@@ -198,6 +260,22 @@ export interface MonsterStats {
   morale?: string
 }
 
+/** O que o DM confere ao adicionar um monstro: CA, THAC0, DV (escolhido na faixa) e PV fixos opcionais. */
+export interface MonsterSetup {
+  ac: number | null
+  thac0: number | null
+  /** DV usados (o escolhido, quando o livro dá faixa). */
+  hitDice: string
+  /** PV iguais para todos (quando os DV não dão PV, o DM digita). */
+  hp: number | null
+}
+
+/** Valores iniciais: os da ficha, lidos do texto quando o valor vem vazio; faixa de DV começa no menor. */
+export function monsterSetup(stats: MonsterStats, hitDice?: string): MonsterSetup {
+  const hd = hitDice ?? hitDiceChoices(stats.hitDice?.text)[0] ?? stats.hitDice?.text.split('\n')[0].trim() ?? ''
+  return { ac: armorClassValue(stats.armorClass), thac0: thac0Value(stats.thac0, hitDiceValue(hd)), hitDice: hd, hp: null }
+}
+
 /**
  * `count` combatentes de um monstro do catálogo: CA, THAC0, ataques, dano,
  * moral e XP da ficha; PV pelos DV (rolados ou na média) — sem DV legível, os
@@ -211,22 +289,23 @@ export function monsterCombatants(
   existingNames: string[],
   mode: CombatSettings['monsterHp'],
   random?: Random,
+  setup: MonsterSetup = monsterSetup(stats),
 ): Combatant[] {
-  const spec = parseHitDice(stats.hitDice?.text)
+  const spec = parseHitDice(setup.hitDice)
   return numberedNames(stats.name, count, existingNames).map((name) => {
-    const hp = spec ? hitPoints(spec, mode, random) : null
+    const hp = setup.hp ?? (spec ? hitPoints(spec, mode, random) : null)
     return {
       ...blankCombatant('monster', side, name),
-      ac: stats.armorClass?.value ?? null,
+      ac: setup.ac,
       acText: stats.armorClass?.text.split('\n')[0] ?? '',
       hp,
       hpMax: hp,
-      thac0: stats.thac0?.value ?? null,
+      thac0: setup.thac0,
       attacks: stats.attacks ?? '',
       damage: stats.damage ?? '',
       morale: parseMorale(stats.morale),
       xp: stats.xp?.value ?? null,
-      hitDice: stats.hitDice?.text.split('\n')[0] ?? '',
+      hitDice: setup.hitDice,
       ...source,
     }
   })
@@ -425,6 +504,8 @@ export function hitDiceValue(text: string | null | undefined): number | null {
   const clean = first.replace(/\s*\([^)]*\)\s*$/, '').trim().replace('½', '1/2').replace('¼', '1/4')
   if (clean === '1/2') return 0.5
   if (clean === '1/4') return 0.25
+  const giant = /^(\d+)\s*\+\s*\d+\s*[-–]\s*\d+\s*hp$/i.exec(clean) // "14 + 1-4 hp"
+  if (giant) return Number(giant[1])
   // Só PV (sem DV): até 4 PV é menos de meio DV.
   const hp = /^(?:\d+\s*[-–]\s*)?(\d+)\s*hp$|^\d*d(\d+)\s*hp$/i.exec(clean)
   if (hp) return Number(hp[1] ?? hp[2]) <= 4 ? 0.25 : null
