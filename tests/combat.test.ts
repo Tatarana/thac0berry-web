@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
+  canRerollHp,
   endEncounter,
   lastEncounterOf,
   partyForNewEncounter,
@@ -500,4 +501,14 @@ test('grupo do encontro novo: campanha no primeiro; depois, o Party do último c
   assert.ok(next.every((c) => c.id !== ze.id && c.id !== rufus.id)) // ids novos
   // Personagem do App que a conta não lê mais: vai como terminou.
   assert.equal(partyForNewEncounter(last, []).find((c) => c.name === 'Zé')?.hp, -12)
+})
+
+test('rolar os PV de novo: só antes da luta, monstro sem dano e com DV que deem PV', () => {
+  const orc = { ...blankCombatant('monster', 'enemies', 'Orc'), hitDice: '1', hp: 4, hpMax: 4 }
+  assert.equal(canRerollHp(orc, 0), true)
+  assert.equal(canRerollHp(orc, 1), false) // a luta começou
+  assert.equal(canRerollHp({ ...orc, hp: 2 }, 0), false) // já levou dano
+  assert.equal(canRerollHp({ ...orc, hitDice: 'Varies' }, 0), false)
+  assert.equal(canRerollHp({ ...orc, hitDice: '9 (40 hp)' }, 0), false) // PV fixos
+  assert.equal(canRerollHp({ ...orc, kind: 'npc' }, 0), false)
 })

@@ -7,6 +7,7 @@ import {
   changeHp,
   characterCombatant,
   hitDiceChoices,
+  canRerollHp,
   hitPointDice,
   lastEncounterOf,
   monsterCombatants,
@@ -70,6 +71,7 @@ export function CombatTable({
   settings,
   acting,
   initiative,
+  beforeFight = false,
   surprised = [],
   onChange,
   onRemove,
@@ -86,6 +88,8 @@ export function CombatTable({
   initiative: Record<string, { score: number; place: number }>
   /** Lados surpresos que não agem nesta rodada (CT5a). */
   surprised?: Side[]
+  /** Antes da rodada 1: só então os PV dos monstros podem ser rolados de novo. */
+  beforeFight?: boolean
   onChange: (next: Combatant) => void
   onRemove: (id: string) => void
   /** Ficha do monstro (quando o índice já carregou). */
@@ -141,7 +145,7 @@ export function CombatTable({
                 </th>
               </tr>
               {list.map((c) => (
-                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} onAttack={() => onAttack(c)} />
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} beforeFight={beforeFight} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} onAttack={() => onAttack(c)} />
               ))}
             </tbody>
           )
@@ -160,7 +164,7 @@ const columnHelp = {
   init: 'Initiative: the modified d10 (the side total, when rolling by side). Lowest acts first; ties act together. Empty for those down or dead.',
   ac: 'Armor Class. Hover (or see the monster sheet) for the book text when it lists more than one.',
   thac0: 'To Hit Armor Class 0: the d20 roll needed to hit AC 0 (subtract the target AC).',
-  hp: 'Hit points: current / maximum. Down at 0; dead at the value set in settings. 🎲 rolls a monster’s Hit Dice again (damage taken is kept).',
+  hp: 'Hit points: current / maximum. Down at 0; dead at the value set in settings. Before the fight, “roll” rolls an unhurt monster’s Hit Dice instead of the value it has.',
   damage: 'Type an amount, then − (or Enter) for damage or + to heal (never above the maximum).',
   morale: 'Morale rating. Tap it to make a morale check (2d10, DMG Tables 49 and 50); ✓/✗ is the last result. PCs never check morale.',
   attacks: 'Attacks per round × damage, from the monster sheet.',
@@ -205,6 +209,7 @@ function CombatRow({
   acting,
   init,
   surprised,
+  beforeFight,
   onChange,
   onRemove,
   onOpenMonster,
@@ -217,6 +222,7 @@ function CombatRow({
   acting: boolean
   init?: { score: number; place: number }
   surprised?: boolean
+  beforeFight?: boolean
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
@@ -319,9 +325,9 @@ function CombatRow({
         <OptionalNumber className="cg-hp-now" value={c.hp} label={`${c.name}: current hit points`} onChange={(hp) => onChange({ ...c, hp })} />
         <span className="cg-slash">/</span>
         <OptionalNumber value={c.hpMax} label={`${c.name}: maximum hit points`} onChange={(hpMax) => onChange({ ...c, hpMax, hp: c.hp ?? hpMax })} />
-        {c.kind === 'monster' && hpDice && (
-          <button className="cg-link cg-reroll" aria-label={`${c.name}: roll hit points`} title={`Roll ${hpDice} (damage taken is kept)`} onClick={() => onChange(rerollHp(c))}>
-            🎲
+        {beforeFight && hpDice && canRerollHp(c, 0) && (
+          <button className="cg-link cg-reroll" aria-label={`${c.name}: roll hit points`} title={`Roll ${hpDice} instead of this value (before the fight only)`} onClick={() => onChange(rerollHp(c))}>
+            roll
           </button>
         )}
       </td>

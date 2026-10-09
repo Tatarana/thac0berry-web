@@ -417,8 +417,9 @@ export function changeHp<T extends Pick<Combatant, 'hp' | 'hpMax'>>(c: T, delta:
 }
 
 /**
- * Rola de novo os PV de um monstro pelos DV (o 🎲 da tabela); o dano já
- * sofrido continua (4/6 que rola 8 vira 6/8). Sem DV que deem PV, não muda.
+ * Rola de novo os PV de um monstro pelos DV (o "roll" da tabela, só antes da
+ * luta: `canRerollHp`); o dano já sofrido continua (4/6 que rola 8 vira 6/8).
+ * Sem DV que deem PV, não muda.
  */
 export function rerollHp<T extends Pick<Combatant, 'hp' | 'hpMax' | 'hitDice' | 'thac0' | 'thac0Text'>>(c: T, random?: Random): T {
   const spec = parseHitDice(c.hitDice)
@@ -429,7 +430,16 @@ export function rerollHp<T extends Pick<Combatant, 'hp' | 'hpMax' | 'hitDice' | 
   return { ...c, hpMax, hp: hpMax - taken, thac0 }
 }
 
-/** O dado dos PV ("4d8+1", "14d8 + 1d4"), para o tooltip do 🎲; null sem dado. */
+/**
+ * Dá para rolar os PV de novo? Só antes da rodada 1 e sem dano (pedido do
+ * usuário, 2026-10-09): é "rolar em vez da média", e nunca muda quem está de
+ * pé no meio da luta.
+ */
+export function canRerollHp(c: Pick<Combatant, 'kind' | 'hp' | 'hpMax' | 'hitDice'>, round: number): boolean {
+  return round === 0 && c.kind === 'monster' && c.hp !== null && c.hp === c.hpMax && parseHitDice(c.hitDice) !== null && !('fixed' in parseHitDice(c.hitDice)!)
+}
+
+/** O dado dos PV ("4d8+1", "14d8 + 1d4"), para o tooltip do "roll"; null sem dado. */
 export function hitPointDice(hitDice: string): string | null {
   const spec = parseHitDice(hitDice)
   if (!spec || 'fixed' in spec) return null

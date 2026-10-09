@@ -284,3 +284,9 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (ogro ataca Rufus com ataque pelas costas +2 e
     acerta, dano aplicado; salvamento; PV digitados juntos numa linha;
     condição que expira no fim da rodada; log copiado); testes: 166 (5 novos).
+- 2026-10-09, "roll" dos PV dos monstros (web v0.52.1; o usuário achou o 🎲
+  estranho): rolar os DV de novo podia matar ou levantar um monstro no meio
+  da luta (o dano era mantido) e funcionava o combate todo, a cada toque. Agora
+  só aparece **antes da rodada 1** e em monstro **sem dano** (`canRerollHp`):
+  é "rolar em vez da média". O emoji virou o texto "roll", discreto, com o
+  dado no tooltip; testes: 167 (1 novo).
