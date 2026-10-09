@@ -232,6 +232,7 @@ function Tracker() {
                 settings={store.settings}
                 acting={actingNow}
                 initiative={initiative}
+                beforeFight={current.round === 0}
                 surprised={current.round <= 1 ? (current.surprise?.surprised ?? []) : []}
                 onChange={replace}
                 onRemove={drop}

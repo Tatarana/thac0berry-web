@@ -4627,7 +4627,9 @@ button.slot-dot:hover {
 }
 
 .cg-reroll {
-  font-size: 0.75rem;
+  margin-left: 2px;
+  font-size: 0.68rem;
+  text-decoration: underline dotted;
 }
 
 /* Na janela, a iniciativa não precisa do quadro. */
