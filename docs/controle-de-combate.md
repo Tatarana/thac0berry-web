@@ -294,3 +294,6 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   Combat Tracker passou a mostrar só os encontros da campanha ativa do modo
   DM; a campanha não é mais escolhida no encontro novo nem no + PC. O log
   registra o "roll" dos PV como "hit points 4/4 → 8/8" (não mais dano/cura).
+- 2026-10-09: ícone do Combat Tracker no DM Tools (arte do usuário, recortada
+  do fundo branco: `public/images/icon_combat_tracker.png`, 256 px, como os
+  outros ícones do hub).
