@@ -4662,3 +4662,30 @@ button.slot-dot:hover {
 .rounds-list .chip {
   margin-left: auto;
 }
+
+/* Botão de adicionar monstros em destaque: é o passo que falta. */
+.add-go {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--wine);
+  color: var(--sheet);
+  font-family: var(--font-printed);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+}
+
+.add-go:hover {
+  background: var(--crimson);
+}
+
+.add-go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
