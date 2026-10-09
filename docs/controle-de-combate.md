@@ -41,7 +41,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT1 | Encontros e combatentes: PCs (da campanha ou à mão), NPCs, monstros do catálogo (com quantidade e PV rolados ou na média), PV com dano/cura, estados (caído, morto), condições com rodadas, configurações do DM; guardado no aparelho | feita (web v0.43.0) |
 | CT2 | Iniciativa e rodadas: por lado ou individual (padrão do DM), modificadores da Tabela 40, rolar ou digitar, ordem e "Next" | feita (web v0.44.0) |
 | CT3 | Moral: 2d10 contra a moral, Tabela 50 em chips (PV perdido calculado), resultado e quando testar | feita (web v0.45.0) |
-| CT4 | Tabelas rápidas: painel com as tabelas de combate (35, 36, 40/41, 44, 46, 47, 49/50, 51, 57, 58, 59), com Roll e favoritas | a fazer |
+| CT4 | Tabelas rápidas: faixa com as tabelas de combate (35, 36, 39, 40/41, 43, 44, 46, 47, 48, 49/50, 51, 57, 58, 59), janela do Table Grimoire (com Roll) e lista do DM | feita (web v0.49.0) |
 | CT5 | Ideias (decidir na vez): surpresa, distância e reação, "acerta?", salvamentos de monstro, efeitos com duração, XP no fim, log | a decidir |
 
 ## Backlog
@@ -198,3 +198,21 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   destaque (largo, vinho) e fechar a janela (close, Esc ou fora dela) com um
   monstro escolhido e não adicionado pede confirmação; sem monstro escolhido,
   fecha direto.
+- 2026-10-09, CT4 feita (web v0.49.0; decisão do usuário: a tabela abre em
+  janela por cima, como no Grimoire):
+  - `src/rules/quickTables.ts` (com testes): lista padrão (DMG 35, 36, 39,
+    40, 41, 43, 44, 46, 47, 48, 49, 50, 51, 57, 58, 59 — 39, 43 e 48 entraram
+    a mais que o plano), lista do DM nas configurações (ausente = padrão;
+    `toggleQuickTable` volta a null quando fica igual à padrão), ids que não
+    existem nos dados ficam de fora, rótulos curtos nas padrão ("46 Saves"; a
+    faixa cabe em duas ou três linhas) e o título dos dados nas outras;
+  - faixa "Tables" no Combat Tracker (`src/components/CombatTables.tsx`),
+    abaixo da linha da iniciativa: cada chip abre a janela do Table Grimoire
+    (`TableDetail`: Roll quando a tabela tem dado, histórico da visita,
+    tabelas citadas); "edit list" mostra × nos chips, "+ Table" (busca em
+    todas as tabelas, de qualquer livro e cenário) e "Reset";
+  - "☆ Combat Tracker" / "★ In the Combat Tracker" na janela da tabela, no
+    Grimoire e no Combat Tracker, fixa ou tira a tabela da faixa;
+  - conferido no navegador (abrir, tirar pelo ★, editar, pôr uma tabela do
+    CTH, Reset, fixar uma tabela do PHB pelo Grimoire e vê-la no tracker;
+    1024 px e celular sem rolagem de página); testes: 155 (3 novos).

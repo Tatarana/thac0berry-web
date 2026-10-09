@@ -4689,3 +4689,29 @@ button.slot-dot:hover {
   opacity: 0.45;
   cursor: default;
 }
+
+/* Tabelas rápidas (CT4). */
+.quick-tables {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.quick-tables-row {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.quick-table {
+  display: inline-flex;
+  align-items: center;
+}
+
+.quick-tables .chip {
+  font-size: 0.78rem;
+}
+
+.table-pin {
+  margin-bottom: 8px;
+}

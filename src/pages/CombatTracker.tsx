@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
 import { MoraleWindow } from '../components/CombatMorale'
+import { QuickTables } from '../components/CombatTables'
+import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable } from '../components/CombatParts'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
+import { loadTables } from '../data/tables'
 import { useCombatStore } from '../lib/combatStore'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
@@ -19,11 +22,13 @@ import {
   type Combatant,
   type Encounter,
 } from '../rules/combat'
+import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
+import type { GrimoireTable } from '../rules/tableIndex'
 
 // Combat Tracker (ferramenta do DM, docs/controle-de-combate.md): encontros
 // guardados no aparelho, com os combatentes de cada lado. CT1: combatentes,
-// PV, estados e condições; CT2: iniciativa e rodadas; CT3: moral; tabelas
-// (CT4) entram depois.
+// PV, estados e condições; CT2: iniciativa e rodadas; CT3: moral; CT4:
+// tabelas rápidas.
 
 export function CombatTracker() {
   return (
@@ -42,6 +47,15 @@ function Tracker() {
   const [moraleID, setMoraleID] = useState<string | null>(null)
   const [initiativeOpen, setInitiativeOpen] = useState(false)
   const [roundsOpen, setRoundsOpen] = useState(false)
+  // Tabelas rápidas (CT4): a janela é a do Table Grimoire; o histórico vale para a visita.
+  const [tables, setTables] = useState<GrimoireTable[]>([])
+  const [openTable, setOpenTable] = useState<{ table: GrimoireTable; autoRoll: boolean; opened: number } | null>(null)
+  const [rollHistory, setRollHistory] = useState<RollRecord[]>([])
+  const showTable = (table: GrimoireTable, autoRoll = false) => setOpenTable((now) => ({ table, autoRoll, opened: (now?.opened ?? 0) + 1 }))
+
+  useEffect(() => {
+    void loadTables().then(setTables)
+  }, [])
 
   const current = store.encounters.find((e) => e.id === store.currentID) ?? store.encounters[0] ?? null
 
@@ -150,6 +164,9 @@ function Tracker() {
                 onRounds={current.history?.length ? () => setRoundsOpen(true) : undefined}
               />
             )}
+            {tables.length > 0 && (
+              <QuickTables tables={tables} saved={store.settings.quickTables} onSave={(next) => update((d) => void (d.settings.quickTables = next))} onOpen={(t) => showTable(t)} />
+            )}
             {current.combatants.length > 0 && (
               <CombatTable
                 combatants={current.combatants}
@@ -191,6 +208,22 @@ function Tracker() {
       )}
       {roundsOpen && current && (
         <RoundsWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setRoundsOpen(false)} />
+      )}
+      {openTable && (
+        <TableDetail
+          key={`${openTable.table.id}-${openTable.opened}`}
+          table={openTable.table}
+          tables={tables}
+          autoRoll={openTable.autoRoll}
+          history={rollHistory}
+          onRecord={(record) => setRollHistory((list) => [{ ...record, id: (list[0]?.id ?? 0) + 1 }, ...list].slice(0, 50))}
+          onOpen={showTable}
+          onClose={() => setOpenTable(null)}
+          pin={{
+            pinned: quickTableIDs(store.settings.quickTables).includes(openTable.table.id),
+            onToggle: () => update((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, openTable.table.id))),
+          }}
+        />
       )}
       {openMonster && <MonsterDetail entry={openMonster} onClose={() => setOpenMonster(null)} />}
     </div>
