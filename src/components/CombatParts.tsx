@@ -49,25 +49,89 @@ function OptionalNumber({ value, onChange, label, className }: { value: number |
   )
 }
 
-// --- Linha de um combatente -------------------------------------------------------------
+// --- Tabela dos combatentes (estilo planilha) -------------------------------------------
 
-export function CombatantRow({
+const sideShort: Record<Side, string> = { party: 'Party', enemies: 'Enemies', others: 'Others' }
+
+/**
+ * Os combatentes numa tabela compacta (pedido do usuário, 2026-10-09: "estilo
+ * excel", cabendo na largura): uma linha por combatente, os lados como faixas.
+ * No celular a tabela rola de lado dentro do quadro.
+ */
+export function CombatTable({
+  combatants,
+  settings,
+  acting,
+  onChange,
+  onRemove,
+  onOpenMonster,
+}: {
+  combatants: Combatant[]
+  settings: CombatSettings
+  /** Quem age no passo atual da iniciativa (CT2). */
+  acting: Set<string>
+  onChange: (next: Combatant) => void
+  onRemove: (id: string) => void
+  /** Ficha do monstro (quando o índice já carregou). */
+  onOpenMonster: (c: Combatant) => (() => void) | undefined
+}) {
+  return (
+    <div className="combat-grid-wrap">
+      <table className="combat-grid">
+        <thead>
+          <tr>
+            <th className="cg-name">Name</th>
+            <th title="Armor Class">AC</th>
+            <th>THAC0</th>
+            <th className="cg-hp">HP</th>
+            <th title="Damage (Enter or −) or heal (+)">±</th>
+            <th title="Morale (2d10, DMG Table 49)">Mor.</th>
+            <th className="cg-attacks" title="Attacks · Damage">Atk · Dmg</th>
+            <th className="cg-conditions">Conditions</th>
+            <th className="cg-notes">Notes</th>
+            <th>Side</th>
+            <th aria-label="Remove" />
+          </tr>
+        </thead>
+        {sides.map((side) => {
+          const list = combatants.filter((c) => c.side === side)
+          if (list.length === 0) return null
+          const standing = list.filter((c) => statusOf(c, settings.deathAt) === 'ok').length
+          return (
+            <tbody key={side}>
+              <tr className="cg-band">
+                <th colSpan={11}>
+                  {sideLabels[side]} <span className="cg-band-count">· {standing} of {list.length} standing</span>
+                </th>
+              </tr>
+              {list.map((c) => (
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} />
+              ))}
+            </tbody>
+          )
+        })}
+      </table>
+    </div>
+  )
+}
+
+function CombatRow({
   c,
   settings,
-  acting = false,
+  acting,
   onChange,
   onRemove,
   onOpenMonster,
 }: {
   c: Combatant
   settings: CombatSettings
-  /** Age no passo atual da iniciativa (CT2). */
-  acting?: boolean
+  acting: boolean
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
 }) {
   const [amount, setAmount] = useState('')
+  const [adding, setAdding] = useState(false)
   const [condition, setCondition] = useState('')
   const [rounds, setRounds] = useState('')
   const status = statusOf(c, settings.deathAt)
@@ -84,109 +148,114 @@ export function CombatantRow({
     onChange({ ...c, conditions: [...c.conditions, { id: crypto.randomUUID().toUpperCase(), name, rounds: r && r > 0 ? r : null }] })
     setCondition('')
     setRounds('')
+    setAdding(false)
   }
+  const attacks = [c.attacks && `${c.attacks}×`, c.damage].filter(Boolean).join(' ')
 
   return (
-    <li className={`combatant combatant-${status}${acting ? ' combatant-acting' : ''}`}>
-      <div className="combatant-top">
-        <InkInput className="combatant-name" value={c.name} label="Name" placeholder="Name" onChange={(name) => onChange({ ...c, name })} />
-        <span className="combatant-kind">{kindLabels[c.kind]}</span>
-        {acting && <span className="combatant-acting-tag">Acting</span>}
-        {status !== 'ok' && <span className={`combatant-status combatant-status-${status}`}>{status === 'down' ? 'Down' : 'Dead'}</span>}
-        <select className="combatant-side" aria-label="Side" value={c.side} onChange={(event) => onChange({ ...c, side: event.target.value as Side })}>
-          {sides.map((s) => (
-            <option key={s} value={s}>
-              {sideLabels[s]}
-            </option>
-          ))}
-        </select>
-        <button className="paper-link" aria-label={`Remove ${c.name}`} title="Remove" onClick={onRemove}>
-          ×
-        </button>
-      </div>
-
-      <div className="combatant-stats">
-        <label className="combatant-stat" title={c.acText && c.acText !== String(c.ac) ? `Book: ${c.acText}` : undefined}>
-          <span className="paper-label">AC</span>
-          <OptionalNumber value={c.ac} label="Armor class" onChange={(ac) => onChange({ ...c, ac })} />
-        </label>
-        <label className="combatant-stat">
-          <span className="paper-label">THAC0</span>
-          <OptionalNumber value={c.thac0} label="THAC0" onChange={(thac0) => onChange({ ...c, thac0 })} />
-        </label>
-        <div className="combatant-stat combatant-hp">
-          <span className="paper-label">HP{c.hitDice ? ` · HD ${c.hitDice}` : ''}</span>
-          <span className="combatant-hp-line">
-            <OptionalNumber className="combatant-hp-now" value={c.hp} label="Current hit points" onChange={(hp) => onChange({ ...c, hp })} />
-            <span className="paper-soft">/</span>
-            <OptionalNumber value={c.hpMax} label="Maximum hit points" onChange={(hpMax) => onChange({ ...c, hpMax, hp: c.hp ?? hpMax })} />
-          </span>
-        </div>
+    <tr className={[`cg-row cg-${status}`, acting ? 'cg-acting' : ''].filter(Boolean).join(' ')}>
+      <td className="cg-name">
+        <span className="cg-name-line">
+          {acting && <span className="cg-acting-mark" title="Acting now">▶</span>}
+          <input className="ink-input" value={c.name} aria-label="Name" placeholder="Name" onChange={(event) => onChange({ ...c, name: event.target.value })} />
+        </span>
+        <span className="cg-sub">
+          {kindLabels[c.kind]}
+          {c.hitDice ? ` · HD ${c.hitDice}` : ''}
+          {c.xp !== null ? ` · ${c.xp.toLocaleString('en-US')} XP` : ''}
+          {status !== 'ok' && <strong className="cg-status"> · {status === 'down' ? 'Down' : 'Dead'}</strong>}
+          {onOpenMonster && (
+            <button className="cg-link" onClick={onOpenMonster} title="Monster sheet">
+              ⓘ
+            </button>
+          )}
+        </span>
+      </td>
+      <td title={c.acText && c.acText !== String(c.ac) ? `Book: ${c.acText}` : undefined}>
+        <OptionalNumber value={c.ac} label={`${c.name}: armor class`} onChange={(ac) => onChange({ ...c, ac })} />
+      </td>
+      <td>
+        <OptionalNumber value={c.thac0} label={`${c.name}: THAC0`} onChange={(thac0) => onChange({ ...c, thac0 })} />
+      </td>
+      <td className="cg-hp">
+        <OptionalNumber className="cg-hp-now" value={c.hp} label={`${c.name}: current hit points`} onChange={(hp) => onChange({ ...c, hp })} />
+        <span className="cg-slash">/</span>
+        <OptionalNumber value={c.hpMax} label={`${c.name}: maximum hit points`} onChange={(hpMax) => onChange({ ...c, hpMax, hp: c.hp ?? hpMax })} />
+      </td>
+      <td>
         <form
-          className="combatant-damage"
+          className="cg-damage"
           onSubmit={(event) => {
             event.preventDefault()
             apply(-1)
           }}
         >
-          <input className="ink-input ink-number" inputMode="numeric" placeholder="±" aria-label="Damage or healing" value={amount} onChange={(event) => setAmount(event.target.value)} />
-          <button type="submit" className="chip" disabled={value === null || c.hp === null}>
-            Damage
+          <input className="ink-input ink-number" inputMode="numeric" placeholder="±" aria-label={`${c.name}: damage or healing`} value={amount} onChange={(event) => setAmount(event.target.value)} />
+          <button type="submit" className="cg-btn" title="Damage" aria-label={`${c.name}: damage`} disabled={value === null || c.hp === null}>
+            −
           </button>
-          <button type="button" className="chip" disabled={value === null || c.hp === null} onClick={() => apply(1)}>
-            Heal
+          <button type="button" className="cg-btn" title="Heal" aria-label={`${c.name}: heal`} disabled={value === null || c.hp === null} onClick={() => apply(1)}>
+            +
           </button>
         </form>
-      </div>
-
-      {(c.attacks || c.damage || c.morale || c.xp !== null || c.monsterID) && (
-        <p className="combatant-facts paper-soft">
-          {[
-            c.attacks && `Attacks ${c.attacks}`,
-            c.damage && `Damage ${c.damage}`,
-            c.morale && `Morale ${c.morale.text}`,
-            c.xp !== null && `${c.xp.toLocaleString('en-US')} XP`,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-          {onOpenMonster && (
-            <>
-              {' '}
-              <button className="paper-link" onClick={onOpenMonster}>
-                monster sheet
-              </button>
-            </>
-          )}
-        </p>
-      )}
-
-      <div className="combatant-conditions">
+      </td>
+      <td className="cg-text" title={c.morale?.text}>
+        {c.kind === 'pc' ? '' : c.morale ? (c.morale.low === c.morale.high ? c.morale.low : `${c.morale.low}-${c.morale.high}`) : '—'}
+      </td>
+      <td className="cg-attacks cg-text" title={attacks}>
+        {attacks || '—'}
+      </td>
+      <td className="cg-conditions">
         {c.conditions.map((cond) => (
-          <span key={cond.id} className="chip chip-on condition-chip">
+          <span key={cond.id} className="cg-cond">
             {cond.name}
-            {cond.rounds !== null ? ` · ${cond.rounds} rd` : ''}
-            <button className="condition-remove" aria-label={`Remove ${cond.name}`} onClick={() => onChange({ ...c, conditions: c.conditions.filter((x) => x.id !== cond.id) })}>
+            {cond.rounds !== null ? ` ${cond.rounds}` : ''}
+            <button className="cg-link" aria-label={`Remove ${cond.name}`} onClick={() => onChange({ ...c, conditions: c.conditions.filter((x) => x.id !== cond.id) })}>
               ×
             </button>
           </span>
         ))}
-        <form
-          className="condition-add"
-          onSubmit={(event) => {
-            event.preventDefault()
-            addCondition()
-          }}
-        >
-          <input className="ink-input" placeholder="condition" aria-label="New condition" value={condition} onChange={(event) => setCondition(event.target.value)} />
-          <input className="ink-input ink-number" inputMode="numeric" placeholder="rds" aria-label="Rounds" value={rounds} onChange={(event) => setRounds(event.target.value)} />
-          <button type="submit" className="chip" disabled={condition.trim() === ''}>
-            + Condition
+        {adding ? (
+          <form
+            className="cg-cond-add"
+            onSubmit={(event) => {
+              event.preventDefault()
+              addCondition()
+            }}
+          >
+            <input className="ink-input" autoFocus placeholder="condition" aria-label={`${c.name}: new condition`} value={condition} onChange={(event) => setCondition(event.target.value)} />
+            <input className="ink-input ink-number" inputMode="numeric" placeholder="rds" aria-label={`${c.name}: rounds`} value={rounds} onChange={(event) => setRounds(event.target.value)} />
+            <button type="submit" className="cg-btn" disabled={condition.trim() === ''} aria-label="Add condition">
+              ✓
+            </button>
+            <button type="button" className="cg-link" onClick={() => setAdding(false)} aria-label="Cancel">
+              ×
+            </button>
+          </form>
+        ) : (
+          <button className="cg-btn" title="Add a condition" aria-label={`${c.name}: add condition`} onClick={() => setAdding(true)}>
+            +
           </button>
-        </form>
-      </div>
-
-      <InkInput className="combatant-notes" value={c.notes} label="Notes" placeholder="notes" onChange={(notes) => onChange({ ...c, notes })} />
-    </li>
+        )}
+      </td>
+      <td className="cg-notes">
+        <input className="ink-input" value={c.notes} aria-label={`${c.name}: notes`} placeholder="—" onChange={(event) => onChange({ ...c, notes: event.target.value })} />
+      </td>
+      <td>
+        <select className="cg-side" aria-label={`${c.name}: side`} value={c.side} onChange={(event) => onChange({ ...c, side: event.target.value as Side })}>
+          {sides.map((s) => (
+            <option key={s} value={s}>
+              {sideShort[s]}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <button className="cg-link" aria-label={`Remove ${c.name}`} title="Remove" onClick={onRemove}>
+          ×
+        </button>
+      </td>
+    </tr>
   )
 }
 

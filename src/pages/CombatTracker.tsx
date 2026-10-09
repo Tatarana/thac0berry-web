@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { InitiativePanel } from '../components/CombatInitiative'
-import { AddMonsterWindow, AddPersonWindow, CombatantRow, CombatSettingsWindow } from '../components/CombatParts'
+import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable } from '../components/CombatParts'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { useCombatStore } from '../lib/combatStore'
-import { actingNow as actingIDs, newEncounter, ofSide, sideLabels, statusOf, type Combatant, type Encounter, type Side } from '../rules/combat'
+import { actingNow as actingIDs, newEncounter, type Combatant, type Encounter } from '../rules/combat'
 
 // Combat Tracker (ferramenta do DM, docs/controle-de-combate.md): encontros
 // guardados no aparelho, com os combatentes de cada lado. CT1: combatentes,
@@ -20,8 +20,6 @@ export function CombatTracker() {
     </DmOnly>
   )
 }
-
-const sides: Side[] = ['party', 'enemies', 'others']
 
 function Tracker() {
   const { store, update, saveError } = useCombatStore()
@@ -99,19 +97,19 @@ function Tracker() {
           <>
             <div className="combat-head">
               <input className="ink-input combat-title" aria-label="Encounter name" value={current.name} onChange={(event) => editEncounter((e) => void (e.name = event.target.value))} />
-              <button className="paper-link" onClick={remove}>
+              <div className="chip-row combat-add">
+                <button className="chip chip-on" onClick={() => setAdding('pc')}>
+                  + PC
+                </button>
+                <button className="chip chip-on" onClick={() => setAdding('monster')}>
+                  + Monster
+                </button>
+                <button className="chip chip-on" onClick={() => setAdding('npc')}>
+                  + NPC
+                </button>
+              </div>
+              <button className="paper-link combat-delete" onClick={remove}>
                 delete encounter
-              </button>
-            </div>
-            <div className="chip-row combat-add">
-              <button className="chip chip-on" onClick={() => setAdding('pc')}>
-                + PC
-              </button>
-              <button className="chip chip-on" onClick={() => setAdding('monster')}>
-                + Monster
-              </button>
-              <button className="chip chip-on" onClick={() => setAdding('npc')}>
-                + NPC
               </button>
             </div>
 
@@ -120,34 +118,19 @@ function Tracker() {
             ) : (
               <InitiativePanel encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} />
             )}
-            {sides.map((side) => {
-              const list = ofSide(current, side)
-              if (list.length === 0) return null
-              const standing = list.filter((c) => statusOf(c, store.settings.deathAt) === 'ok').length
-              return (
-                <section key={side} className="combat-side">
-                  <h2 className="rec-title combat-side-title">
-                    {sideLabels[side]} <span className="paper-soft">· {standing} of {list.length} standing</span>
-                  </h2>
-                  <ul className="combatant-list">
-                    {list.map((c) => {
-                      const entry = c.monsterID ? monsterIndex?.find((m) => m.id === c.monsterID) : undefined
-                      return (
-                        <CombatantRow
-                          key={c.id}
-                          c={c}
-                          settings={store.settings}
-                          acting={actingNow.has(c.id)}
-                          onChange={replace}
-                          onRemove={() => drop(c.id)}
-                          onOpenMonster={entry ? () => setOpenMonster(entry) : undefined}
-                        />
-                      )
-                    })}
-                  </ul>
-                </section>
-              )
-            })}
+            {current.combatants.length > 0 && (
+              <CombatTable
+                combatants={current.combatants}
+                settings={store.settings}
+                acting={actingNow}
+                onChange={replace}
+                onRemove={drop}
+                onOpenMonster={(c) => {
+                  const entry = c.monsterID ? monsterIndex?.find((m) => m.id === c.monsterID) : undefined
+                  return entry ? () => setOpenMonster(entry) : undefined
+                }}
+              />
+            )}
           </>
         )}
       </div>
