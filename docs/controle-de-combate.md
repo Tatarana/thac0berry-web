@@ -170,3 +170,27 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (rolagens na janela, Init na tabela, Next, End
     round limpa o Init, 🎲 com dano mantido, PC sem 🎲; cabe em 1024 e 1280
     px); testes: 149 (2 novos).
+- 2026-10-09, rodadas sem travar, re-rolar e voltar no tempo (web v0.48.0):
+  - **bug da v0.47.0**: quem rolava a iniciativa e fechava a janela ficava
+    só com "Roll initiative" na linha, sem Start nem End round (print do
+    usuário no round 2). Agora a linha nunca fica sem saída: "Start round N"
+    aparece nela assim que todos rolaram, e "End round" existe desde a
+    rodada 1, mesmo sem iniciativa (o DM pode pular);
+  - **rolar de novo na mesma rodada**: com a rodada em andamento, a janela
+    mostra as rolagens editáveis, "Re-roll the foes" (mantém os d10 dos
+    PCs) e "Restart round N" (nova ordem, volta ao primeiro); também Next e
+    End round; o método pode trocar a qualquer momento;
+  - **voltar a qualquer rodada** (magias que voltam no tempo): cada rodada
+    guarda uma foto do começo dela (`withSnapshot`: no "Start round" da 1 e
+    no "End round" das seguintes; re-rolar só troca a iniciativa da foto,
+    o dano já feito não entra); botão "Rounds" lista as rodadas com quem
+    estava de pé; `goBackToRound` restaura PV, THAC0, condições e moral e a
+    iniciativa daquela rodada pronta (decisão do usuário), e esquece as
+    rodadas seguintes (com confirmação); nomes, notas e lados ficam como
+    estão; até 50 fotos (`historyLimit`), no aparelho;
+  - **Beholder** e PV em faixa sem dado padrão ("45-75 hp"): média no meio
+    da faixa, rolagem sorteia nela; THAC0 por PV ("45-49 hp: 11…",
+    `thac0ByHitPoints`) calculado para cada um e acompanhando o 🎲;
+  - conferido no navegador (o caso do print; re-rolar com dano feito;
+    pular a rodada 2; voltar da 3 à 1 com PV restaurados; recarregar mantém;
+    Beholder CA 0, 60 PV, THAC0 7 → 🎲 75 PV, THAC0 5); testes: 152 (3 novos).
