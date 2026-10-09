@@ -5,6 +5,8 @@ import { RuleDetail } from '../components/RuleDetail'
 import { loadBooks } from '../data/books'
 import { loadRulesIndex, searchRules, type RuleIndexEntry } from '../data/rules'
 import { booksInSetting, settingsOf, type Book } from '../rules/books'
+import { useActiveCampaignSettings } from '../lib/activeCampaign'
+import { campaignFilterLabel, campaignSettingSet } from '../rules/campaignFilter'
 
 function RuleRow({ entry, onSelect }: { entry: RuleIndexEntry; onSelect: () => void }) {
   return (
@@ -22,12 +24,20 @@ function RuleRow({ entry, onSelect }: { entry: RuleIndexEntry; onSelect: () => v
 
 // Rules Reference (RulesCompendiumView do iPad): filtro por livro; sem busca,
 // capítulos recolhíveis por livro; com busca, resultados por relevância.
+/** Valor do filtro de cenário "da campanha ativa" (CA3, só no modo DM). */
+const CAMPAIGN = 'campaign'
+
 export function RulesCompendium() {
   const [entries, setEntries] = useState<RuleIndexEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [book, setBook] = useState<string | null>(null)
   // Cenário de campanha (data/books.json): filtra os livros, a lista e a busca.
-  const [setting, setSetting] = useState<string | null>(null)
+  // No modo DM, começa pelo cenário da campanha ativa (CA3); undefined = ainda não mexeu.
+  const campaignSettings = useActiveCampaignSettings()
+  const campaignSet = campaignSettingSet(campaignSettings)
+  const [settingPick, setSetting] = useState<string | null | undefined>(undefined)
+  const setting = settingPick === undefined ? (campaignSet ? CAMPAIGN : null) : settingPick
+  const byCampaign = setting === CAMPAIGN && campaignSet !== null
   const [books, setBooks] = useState<Book[]>([])
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -43,7 +53,10 @@ export function RulesCompendium() {
   }, [])
 
   const settings = useMemo(() => settingsOf(books), [books])
-  const visibleBooks = useMemo(() => booksInSetting(books, setting), [books, setting])
+  const visibleBooks = useMemo(
+    () => (byCampaign ? booksInSetting(books, null).filter((b) => campaignSet.has(b.setting)) : booksInSetting(books, setting)),
+    [books, setting, byCampaign, campaignSet],
+  )
   // Livros que entram na lista e na busca: o escolhido, ou os do cenário (null = todos).
   const allowed = useMemo(() => (book ? new Set([book]) : setting ? new Set(visibleBooks.map((b) => b.id)) : null), [book, setting, visibleBooks])
   const pickSetting = (next: string | null) => {
@@ -104,6 +117,11 @@ export function RulesCompendium() {
           <div className="paper-filter">
             <span className="paper-label">Setting</span>
             <div className="chip-row">
+              {campaignSettings && (
+                <button className={setting === CAMPAIGN ? 'chip chip-on' : 'chip'} onClick={() => pickSetting(CAMPAIGN)}>
+                  {campaignFilterLabel(campaignSettings)}
+                </button>
+              )}
               <button className={setting === null ? 'chip chip-on' : 'chip'} onClick={() => pickSetting(null)}>All</button>
               {settings.map((name) => (
                 <button key={name} className={setting === name ? 'chip chip-on' : 'chip'} onClick={() => pickSetting(name)}>

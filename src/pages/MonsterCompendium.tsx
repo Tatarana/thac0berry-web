@@ -5,6 +5,8 @@ import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { filterMonsters, frequencyBuckets, monsterCollections, xpLabel, type FrequencyBucket, type MonsterSort } from '../rules/monsters'
+import { useActiveCampaignSettings } from '../lib/activeCampaign'
+import { campaignFilterLabel, campaignMonsterCollections } from '../rules/campaignFilter'
 
 // Linhas antes do "Show all" (2.386 monstros travam o celular de uma vez); a
 // busca e os filtros valem para todos.
@@ -26,11 +28,19 @@ export function MonsterCompendium() {
   )
 }
 
+/** Valor do filtro de coleção "da campanha ativa" (CA3). */
+const CAMPAIGN = 'campaign'
+
 function MonsterList() {
   const [monsters, setMonsters] = useState<MonsterIndexEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [collection, setCollection] = useState<string | null>(null)
+  // Coleção: começa pelas da campanha ativa (CA3); undefined = ainda não mexeu.
+  const campaignSettings = useActiveCampaignSettings()
+  const campaignSet = campaignMonsterCollections(campaignSettings)
+  const [collectionPick, setCollection] = useState<string | null | undefined>(undefined)
+  const collection = collectionPick === undefined ? (campaignSet ? CAMPAIGN : null) : collectionPick
+  const byCampaign = collection === CAMPAIGN && campaignSet !== null
   const [frequency, setFrequency] = useState<FrequencyBucket | null>(null)
   const [sort, setSort] = useState<MonsterSort>('name')
   const [showAll, setShowAll] = useState(false)
@@ -42,7 +52,10 @@ function MonsterList() {
       .catch((reason: unknown) => setError(String(reason)))
   }, [])
 
-  const filtered = useMemo(() => filterMonsters(monsters ?? [], { query, collection, frequency, sort }), [monsters, query, collection, frequency, sort])
+  const filtered = useMemo(
+    () => filterMonsters(monsters ?? [], { query, collection: byCampaign ? null : collection, frequency, sort }).filter((m) => !byCampaign || campaignSet.has(m.collection)),
+    [monsters, query, collection, frequency, sort, byCampaign, campaignSet],
+  )
   const rows = showAll ? filtered : filtered.slice(0, ROW_LIMIT)
 
   return (
@@ -67,6 +80,11 @@ function MonsterList() {
         <div className="paper-filter">
           <span className="paper-label">Collection</span>
           <div className="chip-row chip-row-scroll">
+            {campaignSettings && (
+              <button className={collection === CAMPAIGN ? 'chip chip-on' : 'chip'} onClick={() => setCollection(CAMPAIGN)} title={campaignSet ? [...campaignSet].join(', ') : undefined}>
+                {campaignFilterLabel(campaignSettings)}
+              </button>
+            )}
             <button className={collection === null ? 'chip chip-on' : 'chip'} onClick={() => setCollection(null)}>All</button>
             {monsterCollections.map((name) => (
               <button key={name} className={collection === name ? 'chip chip-on' : 'chip'} onClick={() => setCollection(name)}>
