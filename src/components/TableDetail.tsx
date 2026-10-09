@@ -30,6 +30,7 @@ export function TableDetail({
   onRecord,
   onOpen,
   onClose,
+  pin,
 }: {
   table: GrimoireTable
   /** Todas as tabelas (para achar as citadas). */
@@ -40,6 +41,8 @@ export function TableDetail({
   onRecord: (record: Omit<RollRecord, 'id'>) => void
   onOpen: (table: GrimoireTable, autoRoll: boolean) => void
   onClose: () => void
+  /** Fixar a tabela na faixa do Combat Tracker (CT4). */
+  pin?: { pinned: boolean; onToggle: () => void }
 }) {
   const plan = useMemo(() => rollPlan(table), [table])
   const [value, setValue] = useState<number | null>(null)
@@ -122,6 +125,11 @@ export function TableDetail({
     <>
       <PaperModal title={tableLabel(table)} subtitle={`${table.book} · Ch. ${table.chapterNumber}: ${table.chapterTitle}`} onClose={onClose} wide>
         {table.setting !== 'Core' && <p className="paper-soft">Campaign setting: {table.setting}</p>}
+        {pin && (
+          <button className={pin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'} onClick={pin.onToggle} title={pin.pinned ? 'Remove from the Combat Tracker tables' : 'Show this table in the Combat Tracker'}>
+            {pin.pinned ? '★ In the Combat Tracker' : '☆ Combat Tracker'}
+          </button>
+        )}
 
         {plan && (
           <form

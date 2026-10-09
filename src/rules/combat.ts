@@ -88,6 +88,8 @@ export interface CombatSettings {
   monsterHp: 'roll' | 'average'
   /** PV em que o combatente morre: -10 (regra opcional do DMG, "Hovering on Death's Door") ou 0. */
   deathAt: number
+  /** Tabelas rápidas do DM (CT4, src/rules/quickTables.ts); ausente = a lista padrão. */
+  quickTables?: string[] | null
 }
 
 export const defaultSettings: CombatSettings = { initiative: 'side', monsterHp: 'roll', deathAt: -10 }

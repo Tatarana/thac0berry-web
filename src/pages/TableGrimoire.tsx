@@ -4,9 +4,11 @@ import { DmOnly } from '../components/DmOnly'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { loadBooks } from '../data/books'
 import { loadTables } from '../data/tables'
+import { useCombatStore } from '../lib/combatStore'
 import { booksInSetting, settingsOf, type Book } from '../rules/books'
 import { formatDice, type DiceSpec } from '../rules/dice'
 import { filterTables, tableChapters, tableLabel, type GrimoireTable } from '../rules/tableIndex'
+import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import { rollPlan } from '../rules/tableRoll'
 
 
@@ -41,6 +43,8 @@ function TableList() {
   const open = (table: GrimoireTable, autoRoll: boolean) => setSelected((current) => ({ table, autoRoll, opened: (current?.opened ?? 0) + 1 }))
 
   const [bookList, setBookList] = useState<Book[]>([])
+  // Fixar tabelas na faixa do Combat Tracker (CT4): a lista fica nas configurações dele.
+  const { store: combat, update: updateCombat } = useCombatStore()
 
   useEffect(() => {
     loadTables()
@@ -184,6 +188,10 @@ function TableList() {
           onRecord={(record) => setHistory((list) => [{ ...record, id: (list[0]?.id ?? 0) + 1 }, ...list].slice(0, 50))}
           onOpen={open}
           onClose={() => setSelected(null)}
+          pin={{
+            pinned: quickTableIDs(combat.settings.quickTables).includes(selected.table.id),
+            onToggle: () => updateCombat((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, selected.table.id))),
+          }}
         />
       )}
     </div>
