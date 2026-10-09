@@ -62,6 +62,8 @@ export interface Encounter {
   initiative?: InitiativeRound | null
   /** Fotos do começo de cada rodada, para voltar no tempo; ausente em encontros antigos. */
   history?: RoundSnapshot[]
+  /** Quando o DM encerrou o encontro ("End encounter"); ausente/null = em andamento. */
+  endedAt?: string | null
 }
 
 /** Estado de combate de um combatente numa foto (nome, notas e lado não voltam). */
@@ -423,6 +425,49 @@ export function tickConditions(conditions: Condition[]): Condition[] {
 
 export function newEncounter(name: string, campaignID: string | null, now: string): Encounter {
   return { id: newID(), name, campaignID, createdAt: now, updatedAt: now, round: 0, combatants: [] }
+}
+
+// --- Encerrar e começar o próximo -------------------------------------------------------
+
+export const endEncounter = (e: Encounter, now: string): Encounter => ({ ...e, endedAt: now })
+export const reopenEncounter = (e: Encounter): Encounter => ({ ...e, endedAt: null })
+
+/** O encontro mais recente da campanha (sem campanha: o mais recente sem campanha), ou null. */
+export function lastEncounterOf(encounters: Encounter[], campaignID: string | null): Encounter | null {
+  return encounters.filter((e) => e.campaignID === campaignID).reduce<Encounter | null>((last, e) => (!last || e.createdAt > last.createdAt ? e : last), null)
+}
+
+/** Personagem do App como vem do banco (só o que o combate usa). */
+export interface AppCharacter {
+  id: string
+  data: { name: string; armorClass: number; hitPointsMax: number; hitPointsCurrent: number; thac0: number }
+}
+
+/**
+ * O grupo de um encontro novo. No primeiro da campanha: os personagens dela
+ * (os que a conta lê). Nos seguintes: o lado Party do último encontro (PCs e
+ * NPCs aliados, inclusive caídos e mortos — podem ter sido curados), com os
+ * personagens do App recarregados da ficha (PV atuais, CA, THAC0) e os sem
+ * App com os PV de como terminaram; personagem novo na campanha entra também.
+ * Condições, moral e iniciativa começam limpas.
+ */
+export function partyForNewEncounter(previous: Encounter | null, characters: AppCharacter[]): Combatant[] {
+  const byID = new Map(characters.map((c) => [c.id, c]))
+  const carried = (previous?.combatants ?? [])
+    .filter((c) => c.side === 'party' && c.kind !== 'monster')
+    .map((c): Combatant => {
+      const sheet = c.characterID ? byID.get(c.characterID) : undefined
+      const fresh = sheet ? characterCombatant(sheet.id, sheet.data) : null
+      return {
+        ...c,
+        id: newID(),
+        ...(fresh ? { name: fresh.name, ac: fresh.ac, acText: fresh.acText, hp: fresh.hp, hpMax: fresh.hpMax, thac0: fresh.thac0 } : {}),
+        conditions: [],
+        lastMorale: null,
+      }
+    })
+  const present = new Set(carried.flatMap((c) => (c.characterID ? [c.characterID] : [])))
+  return [...carried, ...characters.filter((c) => !present.has(c.id)).map((c) => characterCombatant(c.id, c.data))]
 }
 
 /** Combatentes de um lado, na ordem em que entraram. */

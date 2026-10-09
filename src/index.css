@@ -4715,3 +4715,24 @@ button.slot-dot:hover {
 .table-pin {
   margin-bottom: 8px;
 }
+
+/* Encontros encerrados (End encounter). */
+.chip-past {
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.combat-ended {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.combat-end {
+  white-space: nowrap;
+}
+
+.new-party {
+  margin: 4px 0;
+  padding-left: 1.1rem;
+}
