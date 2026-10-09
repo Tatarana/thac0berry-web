@@ -463,6 +463,12 @@ export function newEncounter(name: string, campaignID: string | null, now: strin
 export const endEncounter = (e: Encounter, now: string, award: XpAward | null = null): Encounter => ({ ...e, endedAt: now, xpAward: award })
 export const reopenEncounter = (e: Encounter): Encounter => ({ ...e, endedAt: null })
 
+/** Os encontros da campanha ativa (CA2, docs/campanha-ativa.md); null = One-shot (sem campanha). */
+export const encountersOf = (encounters: Encounter[], campaignID: string | null) => encounters.filter((e) => (e.campaignID ?? null) === campaignID)
+
+/** Encontro começado e não encerrado na campanha (aviso ao trocar de campanha). */
+export const encounterInProgress = (encounters: Encounter[], campaignID: string | null) => encountersOf(encounters, campaignID).find((e) => !e.endedAt && e.round > 0) ?? null
+
 /** O encontro mais recente da campanha (sem campanha: o mais recente sem campanha), ou null. */
 export function lastEncounterOf(encounters: Encounter[], campaignID: string | null): Encounter | null {
   return encounters.filter((e) => e.campaignID === campaignID).reduce<Encounter | null>((last, e) => (!last || e.createdAt > last.createdAt ? e : last), null)

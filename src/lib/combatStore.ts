@@ -13,6 +13,8 @@ export interface CombatStore {
   encounters: Encounter[]
   /** Encontro aberto por último. */
   currentID: string | null
+  /** Já perguntou se leva os encontros sem campanha (de antes da campanha ativa) para uma campanha (CA2). */
+  legacyPromptDone?: boolean
 }
 
 const empty = (): CombatStore => ({ version: 1, settings: { ...defaultSettings }, encounters: [], currentID: null })
@@ -28,6 +30,9 @@ function read(): CombatStore {
     return empty()
   }
 }
+
+/** Lê o que está no aparelho (fora do React: aviso ao trocar de campanha). */
+export const readCombatStore = read
 
 /** Grava no aparelho; devolve o erro (navegador sem espaço ou sem armazenamento), ou null. */
 function write(store: CombatStore): string | null {

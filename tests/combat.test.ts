@@ -7,6 +7,8 @@ import { test } from 'node:test'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
   canRerollHp,
+  encounterInProgress,
+  encountersOf,
   endEncounter,
   lastEncounterOf,
   partyForNewEncounter,
@@ -511,4 +513,16 @@ test('rolar os PV de novo: só antes da luta, monstro sem dano e com DV que deem
   assert.equal(canRerollHp({ ...orc, hitDice: 'Varies' }, 0), false)
   assert.equal(canRerollHp({ ...orc, hitDice: '9 (40 hp)' }, 0), false) // PV fixos
   assert.equal(canRerollHp({ ...orc, kind: 'npc' }, 0), false)
+})
+
+test('campanha ativa: só os encontros dela; encontro em andamento', () => {
+  const a = { ...newEncounter('A', 'camp', '2026-10-01'), round: 2 }
+  const b = { ...newEncounter('B', 'camp', '2026-10-02'), endedAt: '2026-10-02' , round: 3 }
+  const c = newEncounter('C', null, '2026-10-03')
+  const old = { ...newEncounter('Old', null, '2026-09-01'), campaignID: undefined as unknown as null } // sem o campo
+  assert.deepEqual(encountersOf([a, b, c, old], 'camp').map((e) => e.name), ['A', 'B'])
+  assert.deepEqual(encountersOf([a, b, c, old], null).map((e) => e.name), ['C', 'Old'])
+  assert.equal(encounterInProgress([a, b, c], 'camp')?.name, 'A')
+  assert.equal(encounterInProgress([b, c], 'camp'), null)
+  assert.equal(encounterInProgress([c], null), null) // round 0: ainda não começou
 })

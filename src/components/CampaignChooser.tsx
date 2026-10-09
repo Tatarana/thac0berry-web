@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { oneShot, setActiveCampaign, useActiveCampaign, type ActiveCampaign } from '../lib/activeCampaign'
 import { useCampaigns } from '../lib/campaignCharacters'
+import { readCombatStore } from '../lib/combatStore'
+import { encounterInProgress } from '../rules/combat'
 import { useMode } from '../lib/mode'
 import { PaperModal } from './DetailBits'
 import { ModeSwitch } from './ModeChooser'
@@ -17,6 +19,9 @@ export function CampaignPicker({ onChosen }: { onChosen?: (campaign: ActiveCampa
   const active = useActiveCampaign()
   const [showArchived, setShowArchived] = useState(false)
   const choose = (campaign: ActiveCampaign) => {
+    // Encontro começado na campanha que fica para trás: ele continua lá; só avisa (CA2).
+    const running = active && active.id !== campaign.id ? encounterInProgress(readCombatStore().encounters, active.id) : null
+    if (running && !window.confirm(`“${running.name}” is still in progress in ${active?.id === null ? 'the one-shot' : active?.name}. It stays there for when you come back. Switch anyway?`)) return
     setActiveCampaign(campaign)
     onChosen?.(campaign)
   }

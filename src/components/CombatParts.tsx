@@ -626,22 +626,20 @@ export function AddMonsterWindow({
 export function AddPersonWindow({
   kind,
   campaignID,
-  onCampaign,
   alreadyIn,
   onAdd,
   onClose,
 }: {
   kind: 'pc' | 'npc'
+  /** Campanha ativa (CA2); null = One-shot, sem personagens do App. */
   campaignID: string | null
-  onCampaign: (id: string | null) => void
   /** Personagens do App que já estão no encontro. */
   alreadyIn: string[]
   onAdd: (list: Combatant[]) => void
   onClose: () => void
 }) {
-  const { signedIn: session, campaigns, error: campaignError } = useCampaigns()
-  const { characters, error: charactersError } = useCampaignCharacters(kind === 'pc' ? campaignID : null)
-  const error = campaignError ?? charactersError
+  const { signedIn: session } = useCampaigns()
+  const { characters, error } = useCampaignCharacters(kind === 'pc' ? campaignID : null)
   const [form, setForm] = useState(() => blankCombatant(kind, kind === 'pc' ? 'party' : 'enemies'))
   const [moraleText, setMoraleText] = useState('')
 
@@ -671,19 +669,14 @@ export function AddPersonWindow({
       {kind === 'pc' && (
         <section className="add-section">
           <span className="paper-label">From the App</span>
-          {!session ? (
+          {campaignID === null ? (
+            <p className="paper-soft">A one-shot has no campaign characters: add the players below.</p>
+          ) : !session ? (
             <p className="paper-soft">Sign in to bring in the campaign's characters.</p>
           ) : (
             <>
-              <select className="add-campaign" aria-label="Campaign" value={campaignID ?? ''} onChange={(event) => onCampaign(event.target.value || null)}>
-                <option value="">Choose a campaign…</option>
-                {(campaigns ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name || 'Unnamed Campaign'}
-                  </option>
-                ))}
-              </select>
-              {campaignID && characters && fromApp.length === 0 && <p className="paper-soft">No other characters of this campaign that you can see.</p>}
+              {!characters && !error && <p className="paper-soft">Loading the campaign's characters…</p>}
+              {characters && fromApp.length === 0 && <p className="paper-soft">No other characters of this campaign that you can see.</p>}
               <ul className="add-list">
                 {fromApp.map(({ id, data }) => (
                   <li key={id}>
@@ -788,47 +781,36 @@ export function CombatSettingsWindow({ settings, onChange, onClose }: { settings
  */
 export function NewEncounterWindow({
   encounters,
-  campaignID: initialCampaign,
+  campaignID,
+  campaignName,
   onCreate,
   onClose,
 }: {
+  /** Os encontros de todas as campanhas (o último da campanha ativa dá o grupo). */
   encounters: Encounter[]
+  /** Campanha ativa (CA2); null = One-shot. */
   campaignID: string | null
-  onCreate: (name: string, campaignID: string | null, party: Combatant[]) => void
+  campaignName: string
+  onCreate: (name: string, party: Combatant[]) => void
   onClose: () => void
 }) {
-  const { signedIn, campaigns, error: campaignError } = useCampaigns()
-  const [campaignID, setCampaignID] = useState(initialCampaign)
-  const [name, setName] = useState(`Encounter ${encounters.length + 1}`)
-  const { characters, error } = useCampaignCharacters(campaignID)
+  const { signedIn } = useCampaigns()
   const previous = lastEncounterOf(encounters, campaignID)
+  const [name, setName] = useState(`Encounter ${encounters.filter((e) => (e.campaignID ?? null) === campaignID).length + 1}`)
+  const { characters, error } = useCampaignCharacters(campaignID)
   const loading = signedIn && campaignID !== null && characters === null && !error
   const party = loading ? [] : partyForNewEncounter(previous, characters ?? [])
-  const campaignName = campaigns?.find((c) => c.id === campaignID)?.name
 
   return createPortal(
-    <PaperModal title="New encounter" subtitle="The party comes along" onClose={onClose}>
-      {(campaignError ?? error) && <p className="paper-soft save-error">{campaignError ?? error}</p>}
+    <PaperModal title="New encounter" subtitle={campaignID === null ? 'One-shot' : campaignName} onClose={onClose}>
+      {error && <p className="paper-soft save-error">{error}</p>}
       <label className="add-field">
         <span className="paper-label">Name</span>
         <input className="ink-input" value={name} aria-label="Encounter name" onChange={(event) => setName(event.target.value)} />
       </label>
-      {signedIn && (
-        <label className="add-field">
-          <span className="paper-label">Campaign</span>
-          <select className="add-campaign" aria-label="Campaign" value={campaignID ?? ''} onChange={(event) => setCampaignID(event.target.value || null)}>
-            <option value="">No campaign</option>
-            {(campaigns ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
       <div className="add-field">
         <span className="paper-label">
-          {previous ? `Party from “${previous.name}”` : campaignName ? `Characters of ${campaignName}` : 'Party'}
+          {previous ? `Party from “${previous.name}”` : campaignID ? `Characters of ${campaignName}` : 'Party'}
         </span>
         {loading ? (
           <p className="paper-soft">Loading the characters…</p>
@@ -845,7 +827,7 @@ export function NewEncounterWindow({
         )}
         {previous && <p className="paper-soft">App characters come with their sheet’s current hit points; the others as they ended.</p>}
       </div>
-      <button className="add-go" disabled={loading || name.trim() === ''} onClick={() => onCreate(name.trim(), campaignID, party)}>
+      <button className="add-go" disabled={loading || name.trim() === ''} onClick={() => onCreate(name.trim(), party)}>
         Create encounter{party.length > 0 ? ` with ${party.length}` : ''}
       </button>
     </PaperModal>,
