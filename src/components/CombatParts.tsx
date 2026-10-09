@@ -7,12 +7,17 @@ import {
   blankCombatant,
   changeHp,
   characterCombatant,
+  hitDiceChoices,
   monsterCombatants,
+  monsterSetup,
+  parseHitDice,
   sideLabels,
   statusOf,
   type CombatSettings,
   type Combatant,
   type CombatantKind,
+  type MonsterSetup,
+  type MonsterStats,
   type Side,
 } from '../rules/combat'
 import { filterMonsters, xpLabel } from '../rules/monsters'
@@ -51,8 +56,6 @@ function OptionalNumber({ value, onChange, label, className }: { value: number |
 
 // --- Tabela dos combatentes (estilo planilha) -------------------------------------------
 
-const sideShort: Record<Side, string> = { party: 'Party', enemies: 'Enemies', others: 'Others' }
-
 /**
  * Os combatentes numa tabela compacta (pedido do usuário, 2026-10-09: "estilo
  * excel", cabendo na largura): uma linha por combatente, os lados como faixas.
@@ -78,21 +81,34 @@ export function CombatTable({
   /** Abre o teste de moral (CT3; nunca para PCs). */
   onMorale: (c: Combatant) => void
 }) {
+  const [legend, setLegend] = useState(false)
   return (
     <div className="combat-grid-wrap">
       <table className="combat-grid">
         <thead>
           <tr>
-            <th className="cg-name">Name</th>
-            <th title="Armor Class">AC</th>
-            <th>THAC0</th>
-            <th className="cg-hp">HP</th>
-            <th title="Damage (Enter or −) or heal (+)">±</th>
-            <th title="Morale: click to check (2d10, DMG Tables 49 and 50)">Mor.</th>
-            <th className="cg-attacks" title="Attacks · Damage">Atk · Dmg</th>
-            <th className="cg-conditions">Conditions</th>
-            <th className="cg-notes">Notes</th>
-            <th>Side</th>
+            <th className="cg-name" title={columnHelp.name}>
+              Name{' '}
+              <button className="rule-link cg-legend" aria-label="What each column means" title="What each column means" onClick={() => setLegend(true)}>
+                ?
+              </button>
+            </th>
+            <th title={columnHelp.ac}>AC</th>
+            <th title={columnHelp.thac0}>THAC0</th>
+            <th className="cg-hp" title={columnHelp.hp}>
+              HP
+            </th>
+            <th title={columnHelp.damage}>±</th>
+            <th title={columnHelp.morale}>Mor.</th>
+            <th className="cg-attacks" title={columnHelp.attacks}>
+              Atk · Dmg
+            </th>
+            <th className="cg-conditions" title={columnHelp.conditions}>
+              Conditions
+            </th>
+            <th className="cg-notes" title={columnHelp.notes}>
+              Notes
+            </th>
             <th aria-label="Remove" />
           </tr>
         </thead>
@@ -103,7 +119,7 @@ export function CombatTable({
           return (
             <tbody key={side}>
               <tr className="cg-band">
-                <th colSpan={11}>
+                <th colSpan={10}>
                   {sideLabels[side]} <span className="cg-band-count">· {standing} of {list.length} standing</span>
                 </th>
               </tr>
@@ -114,7 +130,51 @@ export function CombatTable({
           )
         })}
       </table>
+      {legend && <ColumnLegend onClose={() => setLegend(false)} />}
     </div>
+  )
+}
+
+/** O que cada coluna é (tooltip no computador; no iPad, a legenda do "?"). */
+const columnHelp = {
+  name: 'Name. Tap a monster to open its sheet; ✎ renames or moves to another side.',
+  ac: 'Armor Class. Hover (or see the monster sheet) for the book text when it lists more than one.',
+  thac0: 'To Hit Armor Class 0: the d20 roll needed to hit AC 0 (subtract the target AC).',
+  hp: 'Hit points: current / maximum. Down at 0; dead at the value set in settings.',
+  damage: 'Type an amount, then − (or Enter) for damage or + to heal (never above the maximum).',
+  morale: 'Morale rating. Tap it to make a morale check (2d10, DMG Tables 49 and 50); ✓/✗ is the last result. PCs never check morale.',
+  attacks: 'Attacks per round × damage, from the monster sheet.',
+  conditions: 'Conditions with rounds left (they count down at the end of each round). + adds one.',
+  notes: 'Free notes for this combatant.',
+}
+
+function ColumnLegend({ onClose }: { onClose: () => void }) {
+  const rows: [string, string][] = [
+    ['Name', columnHelp.name],
+    ['AC', columnHelp.ac],
+    ['THAC0', columnHelp.thac0],
+    ['HP', columnHelp.hp],
+    ['±', columnHelp.damage],
+    ['Mor.', columnHelp.morale],
+    ['Atk · Dmg', columnHelp.attacks],
+    ['Conditions', columnHelp.conditions],
+    ['Notes', columnHelp.notes],
+    ['×', 'Remove the combatant from the encounter.'],
+    ['▶', 'Acting now, in the initiative order of the round.'],
+  ]
+  return createPortal(
+    <PaperModal title="Columns" subtitle="Combat Tracker" onClose={onClose}>
+      <dl className="cg-legend-list">
+        {rows.map(([term, text]) => (
+          <div key={term}>
+            <dt>{term}</dt>
+            <dd>{text}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="paper-soft">Rows are grouped by side. Red rows are down; faded, struck-through rows are dead.</p>
+    </PaperModal>,
+    document.body,
   )
 }
 
@@ -139,6 +199,7 @@ function CombatRow({
   const [adding, setAdding] = useState(false)
   const [condition, setCondition] = useState('')
   const [rounds, setRounds] = useState('')
+  const [editing, setEditing] = useState(false)
   const status = statusOf(c, settings.deathAt)
   const value = /^\d+$/.test(amount.trim()) ? Number(amount.trim()) : null
   const apply = (sign: 1 | -1) => {
@@ -163,18 +224,46 @@ function CombatRow({
       <td className="cg-name">
         <span className="cg-name-line">
           {acting && <span className="cg-acting-mark" title="Acting now">▶</span>}
-          <input className="ink-input" value={c.name} aria-label="Name" placeholder="Name" onChange={(event) => onChange({ ...c, name: event.target.value })} />
+          {editing ? (
+            <form
+              className="cg-edit"
+              onSubmit={(event) => {
+                event.preventDefault()
+                setEditing(false)
+              }}
+            >
+              <input className="ink-input" autoFocus value={c.name} aria-label={`${c.name}: name`} placeholder="Name" onChange={(event) => onChange({ ...c, name: event.target.value })} />
+              <select className="cg-side" aria-label={`${c.name}: side`} value={c.side} onChange={(event) => onChange({ ...c, side: event.target.value as Side })}>
+                {sides.map((x) => (
+                  <option key={x} value={x}>
+                    {sideLabels[x]}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="cg-btn" aria-label="Done">
+                ✓
+              </button>
+            </form>
+          ) : (
+            <>
+              {onOpenMonster ? (
+                <button className="cg-name-text cg-name-link" onClick={onOpenMonster} title="Open the monster sheet">
+                  {c.name || 'Unnamed'}
+                </button>
+              ) : (
+                <span className="cg-name-text">{c.name || 'Unnamed'}</span>
+              )}
+              <button className="cg-link cg-edit-btn" aria-label={`Edit ${c.name}`} title="Rename or change side" onClick={() => setEditing(true)}>
+                ✎
+              </button>
+            </>
+          )}
         </span>
         <span className="cg-sub">
           {kindLabels[c.kind]}
           {c.hitDice ? ` · HD ${c.hitDice}` : ''}
           {c.xp !== null ? ` · ${c.xp.toLocaleString('en-US')} XP` : ''}
           {status !== 'ok' && <strong className="cg-status"> · {status === 'down' ? 'Down' : 'Dead'}</strong>}
-          {onOpenMonster && (
-            <button className="cg-link" onClick={onOpenMonster} title="Monster sheet">
-              ⓘ
-            </button>
-          )}
         </span>
       </td>
       <td title={c.acText && c.acText !== String(c.ac) ? `Book: ${c.acText}` : undefined}>
@@ -258,15 +347,6 @@ function CombatRow({
         <input className="ink-input" value={c.notes} aria-label={`${c.name}: notes`} placeholder="—" onChange={(event) => onChange({ ...c, notes: event.target.value })} />
       </td>
       <td>
-        <select className="cg-side" aria-label={`${c.name}: side`} value={c.side} onChange={(event) => onChange({ ...c, side: event.target.value as Side })}>
-          {sides.map((s) => (
-            <option key={s} value={s}>
-              {sideShort[s]}
-            </option>
-          ))}
-        </select>
-      </td>
-      <td>
         <button className="cg-link" aria-label={`Remove ${c.name}`} title="Remove" onClick={onRemove}>
           ×
         </button>
@@ -292,12 +372,16 @@ export function AddMonsterWindow({
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<MonsterIndexEntry | null>(null)
-  const [variants, setVariants] = useState<{ name: string }[]>([])
-  const [variant, setVariant] = useState(0)
+  const [monster, setMonster] = useState<Awaited<ReturnType<typeof loadMonster>> | null>(null)
+  const [variant, setVariantIndex] = useState(0)
+  // Conferência do DM (item 3 do retorno de 2026-10-09): undefined = valor lido da ficha.
+  const [hitDice, setHitDice] = useState<string | undefined>(undefined)
+  const [acEdit, setAcEdit] = useState<number | null | undefined>(undefined)
+  const [thac0Edit, setThac0Edit] = useState<number | null | undefined>(undefined)
+  const [hpEach, setHpEach] = useState<number | null>(null)
   const [count, setCount] = useState(1)
   const [side, setSide] = useState<Side>('enemies')
   const [hpMode, setHpMode] = useState(settings.monsterHp)
-  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     loadMonsterIndex()
@@ -307,39 +391,50 @@ export function AddMonsterWindow({
 
   const results = useMemo(() => (index && query.trim() ? filterMonsters(index, { query, collection: null, frequency: null, sort: 'name' }).slice(0, 30) : []), [index, query])
 
+  const setVariant = (index: number) => {
+    setVariantIndex(index)
+    setHitDice(undefined)
+    setAcEdit(undefined)
+    setThac0Edit(undefined)
+    setHpEach(null)
+  }
+
   const pick = (entry: MonsterIndexEntry) => {
     setPicked(entry)
+    setMonster(null)
     setVariant(0)
-    setVariants([])
     loadMonster(entry)
-      .then((m) => setVariants(m.variants.map((v) => ({ name: v.name }))))
+      .then(setMonster)
       .catch((reason: unknown) => setError(String(reason)))
   }
 
-  const add = async () => {
-    if (!picked) return
-    setBusy(true)
-    try {
-      const monster = await loadMonster(picked)
-      const v = monster.variants[variant] ?? monster.variants[0]
-      const name = monster.variants.length > 1 && v.name ? v.name : monster.name
-      onAdd(
-        monsterCombatants(
-          { name, armorClass: v.combat.armorClass, hitDice: v.combat.hitDice, thac0: v.combat.thac0, xp: v.combat.xp, attacks: v.combat.attacks, damage: v.combat.damage, morale: v.combat.morale },
-          { monsterID: monster.id, monsterFile: picked.file },
-          count,
-          side,
-          existingNames,
-          hpMode,
-        ),
-      )
-      onClose()
-    } catch (reason) {
-      setError(String(reason))
-    } finally {
-      setBusy(false)
-    }
+  const v = monster ? (monster.variants[variant] ?? monster.variants[0]) : null
+  const stats: MonsterStats | null =
+    monster && v
+      ? {
+          name: monster.variants.length > 1 && v.name ? v.name : monster.name,
+          armorClass: v.combat.armorClass,
+          hitDice: v.combat.hitDice,
+          thac0: v.combat.thac0,
+          xp: v.combat.xp,
+          attacks: v.combat.attacks,
+          damage: v.combat.damage,
+          morale: v.combat.morale,
+        }
+      : null
+  const read = stats ? monsterSetup(stats, hitDice) : null
+  const choices = hitDiceChoices(stats?.hitDice?.text)
+  const hpFromDice = read ? parseHitDice(read.hitDice) !== null : false
+  const setup: MonsterSetup | null = read
+    ? { ac: acEdit === undefined ? read.ac : acEdit, thac0: thac0Edit === undefined ? read.thac0 : thac0Edit, hitDice: read.hitDice, hp: hpFromDice ? null : hpEach }
+    : null
+
+  const add = () => {
+    if (!picked || !monster || !stats || !setup) return
+    onAdd(monsterCombatants(stats, { monsterID: monster.id, monsterFile: picked.file }, count, side, existingNames, hpMode, undefined, setup))
+    onClose()
   }
+  const book = (text: string | undefined) => (text ? <span className="paper-soft add-book">book: {text.split('\n').join(' · ')}</span> : null)
 
   return createPortal(
     <PaperModal title="Add monsters" subtitle="From the monster catalog" onClose={onClose}>
@@ -370,17 +465,61 @@ export function AddMonsterWindow({
               change
             </button>
           </p>
-          {variants.length > 1 && (
+          {!monster && !error && <p className="paper-soft">Loading…</p>}
+          {monster && monster.variants.length > 1 && (
             <label className="add-field">
               <span className="paper-label">Variant</span>
               <select value={variant} onChange={(event) => setVariant(Number(event.target.value))}>
-                {variants.map((v, i) => (
+                {monster.variants.map((x, i) => (
                   <option key={i} value={i}>
-                    {v.name || picked.name}
+                    {x.name || picked.name}
                   </option>
                 ))}
               </select>
             </label>
+          )}
+          {setup && stats && (
+            <div className="add-stats">
+              <label className="add-stat">
+                <span className="paper-label">AC</span>
+                <OptionalNumber value={setup.ac} label="Monster armor class" onChange={setAcEdit} />
+                {stats.armorClass?.text !== String(setup.ac) && book(stats.armorClass?.text)}
+              </label>
+              <label className="add-stat">
+                <span className="paper-label">Hit Dice</span>
+                {choices.length > 0 ? (
+                  <select
+                    aria-label="Monster hit dice"
+                    value={setup.hitDice}
+                    onChange={(event) => {
+                      setHitDice(event.target.value)
+                      setThac0Edit(undefined)
+                    }}
+                  >
+                    {choices.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{setup.hitDice || '—'}</span>
+                )}
+                {choices.length > 0 && book(stats.hitDice?.text)}
+              </label>
+              <label className="add-stat">
+                <span className="paper-label">THAC0</span>
+                <OptionalNumber value={setup.thac0} label="Monster THAC0" onChange={setThac0Edit} />
+                {stats.thac0?.text !== String(setup.thac0) && book(stats.thac0?.text)}
+              </label>
+              {!hpFromDice && (
+                <label className="add-stat">
+                  <span className="paper-label">HP each</span>
+                  <OptionalNumber value={hpEach} label="Monster hit points" onChange={setHpEach} />
+                  <span className="paper-soft add-book">the Hit Dice give no hit points: type them, or leave blank</span>
+                </label>
+              )}
+            </div>
           )}
           <label className="add-field">
             <span className="paper-label">How many</span>
@@ -407,7 +546,7 @@ export function AddMonsterWindow({
               </button>
             </div>
           </div>
-          <button className="chip chip-on" disabled={busy} onClick={() => void add()}>
+          <button className="chip chip-on" disabled={!setup} onClick={add}>
             Add {count > 1 ? `${count} ${picked.name}` : picked.name}
           </button>
         </div>

@@ -128,3 +128,27 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (orc com 40% do lado caído: −2 automático; 2º
     teste na rodada: −1 automático; NPC; PC sem botão; celular); testes: 142
     (4 novos).
+- 2026-10-09, ajustes pedidos pelo usuário depois do CT3 (web v0.46.0):
+  1. **Iniciativa dos PCs**: os jogadores rolam e o DM só anota. Por lado, a
+     linha Party fica só com o campo; no individual, cada PC. "Roll the rest"
+     rola só NPCs e monstros; "Start round" espera as rolagens dos jogadores
+     ("Waiting for the players' roll").
+  2. **Nome do monstro abre a ficha** (o ⓘ saiu); ✎ renomeia e muda o lado
+     (todos os combatentes).
+  3. **CA, THAC0 e PV dos monstros** (cerca de 13% vinham em branco porque o
+     valor numérico da ficha é vazio quando o texto é ambíguo):
+     `armorClassValue` ("0 (5)" → 0, "3/7" → 3), `thac0Value` (tabela por DV
+     como "4 HD: 17 / 5-6 HD: 15", ou o primeiro número: "7 or 5" → 7),
+     `hitDiceChoices` (faixa "4-7", "2 to 8", lista "8, 12, or 16" — o DM
+     escolhe, começa no menor); **bug corrigido**: DV em faixa ("16-20") virava
+     16d8−20; gigantes ("14 + 1-4 hit points") agora têm PV (14d8 + 1d4). Na
+     janela + Monster, CA, DV e THAC0 aparecem preenchidos e editáveis, com o
+     texto do livro ao lado; o THAC0 acompanha o DV escolhido; sem PV pelos
+     DV ("Varies"), campo "HP each". No catálogo: CA 96,6%, THAC0 93,1%, PV
+     92,8% sozinhos (o resto é "Varies", "As in life", "See below").
+  4. **Coluna Side removida** (o lado muda pelo ✎).
+  5. **Explicação das colunas**: tooltip em cada título (computador) e "?" no
+     cabeçalho com a legenda de todas as colunas (iPad).
+  - Conferido no navegador (Hell Hound com DV 6 → THAC0 15; Frost Giant CA 0,
+    THAC0 7, PV 53; ficha pelo nome; ✎ mudando de lado; legenda; tabela cabe
+    em 1024 e 1280 px); testes: 147 (5 novos).

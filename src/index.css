@@ -4283,6 +4283,67 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
+/* Nome como texto (o ✎ edita); nos monstros, abre a ficha. */
+.cg-name-text {
+  padding: 1px 2px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--pen-ink);
+  text-align: left;
+}
+
+.cg-name-link {
+  text-decoration: underline dotted rgb(30 53 87 / 0.5);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.cg-edit-btn {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+.cg-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cg-legend {
+  margin-left: 4px;
+  vertical-align: middle;
+  background: var(--sheet-deep);
+  color: var(--ink);
+}
+
+.cg-legend:hover {
+  color: var(--sheet);
+}
+
+.cg-legend-list {
+  margin: 0;
+}
+
+.cg-legend-list div {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgb(107 92 70 / 0.2);
+}
+
+.cg-legend-list dt {
+  font-weight: 700;
+}
+
+.cg-legend-list dd {
+  margin: 0;
+}
+
 .cg-sub {
   display: block;
   font-size: 0.68rem;
@@ -4424,6 +4485,7 @@ button.slot-dot:hover {
   opacity: 0.5;
 }
 
+.cg-dead .cg-name-text,
 .cg-dead .cg-name-line .ink-input {
   text-decoration: line-through;
 }
@@ -4502,4 +4564,37 @@ button.slot-dot:hover {
 .morale-when ul {
   margin: 4px 0;
   padding-left: 1.2rem;
+}
+
+/* Conferência do monstro ao adicionar: CA, DV, THAC0 (e PV quando os DV não dão). */
+.add-stats {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.add-stat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.add-stat .paper-label {
+  min-width: 4.5rem;
+}
+
+.add-stat .ink-number {
+  width: 3.5rem;
+}
+
+.add-book {
+  font-size: 0.85rem;
+}
+
+/* Iniciativa dos PCs: rolada pelos jogadores, o DM só anota. */
+.initiative-players {
+  min-width: 2.6rem;
+  font-size: 0.8rem;
+  font-style: italic;
 }

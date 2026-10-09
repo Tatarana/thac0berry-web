@@ -56,13 +56,17 @@ export function InitiativePanel({
   // Rodada começada: a ordem fechada; antes, a prévia com as rolagens até aqui.
   const steps = started && round.order ? round.order : initiativeSteps(encounter, round, modifiers, settings.deathAt)
   const missing = keys.filter((k) => (round.entries[k]?.roll ?? null) === null)
+  // Os jogadores rolam a dos PCs (o lado Party, ou cada PC); o DM só anota. O app rola o resto.
+  const byPlayers = (key: string) => (round.method === 'side' ? key === 'party' : encounter.combatants.find((c) => c.id === key)?.kind === 'pc')
+  const toRoll = missing.filter((k) => !byPlayers(k))
+  const waiting = missing.filter(byPlayers)
 
   const setRound = (next: InitiativeRound) => onChange({ ...encounter, initiative: next })
   const setEntry = (key: string, entry: InitiativeEntry) => setRound({ ...round, entries: { ...round.entries, [key]: entry } })
   const labelOf = (key: string) => (round.method === 'individual' ? (encounter.combatants.find((c) => c.id === key)?.name ?? '?') : sideLabels[key as Side])
   const rollMissing = () => {
     const entries = { ...round.entries }
-    for (const key of missing) entries[key] = { ...(entries[key] ?? emptyEntry()), roll: rollDice(d10).total }
+    for (const key of toRoll) entries[key] = { ...(entries[key] ?? emptyEntry()), roll: rollDice(d10).total }
     setRound({ ...round, entries })
   }
   const setMethod = (method: InitiativeMethod) => {
@@ -86,7 +90,7 @@ export function InitiativePanel({
       {!started && (
         <>
           <p className="paper-soft initiative-help">
-            Roll 1d10 {round.method === 'side' ? 'for each side' : 'for each combatant'} (or type the roll); the lowest modified result acts first, and ties act at the same time (DMG, Chapter 9).
+            1d10 {round.method === 'side' ? 'for each side' : 'for each combatant'}: type the players' roll for {round.method === 'side' ? 'the party' : 'each PC'} and roll (or type) the rest. The lowest modified result acts first, and ties act at the same time (DMG, Chapter 9).
           </p>
           {keys.length === 0 && <p className="paper-soft">Nobody standing to roll initiative.</p>}
           <ul className="initiative-entries">
@@ -97,13 +101,14 @@ export function InitiativePanel({
                 entry={round.entries[key] ?? emptyEntry()}
                 modifiers={modifiers}
                 extraLabel={round.method === 'individual' ? 'Weapon speed / casting time' : 'Other'}
+                byPlayers={byPlayers(key)}
                 onChange={(entry) => setEntry(key, entry)}
               />
             ))}
           </ul>
           <div className="chip-row initiative-actions">
-            <button className="chip" disabled={missing.length === 0} onClick={rollMissing}>
-              Roll {missing.length === keys.length ? 'all' : `the ${missing.length} missing`}
+            <button className="chip" disabled={toRoll.length === 0} onClick={rollMissing}>
+              Roll {toRoll.length === 0 || toRoll.length === keys.filter((k) => !byPlayers(k)).length ? 'the rest' : `the ${toRoll.length} missing`}
             </button>
             <button
               className="chip chip-on"
@@ -112,6 +117,7 @@ export function InitiativePanel({
             >
               Start round {Math.max(encounter.round, 1)}
             </button>
+            {waiting.length > 0 && <span className="paper-soft">Waiting for the players' roll{waiting.length > 1 ? 's' : ''}: {waiting.map(labelOf).join(', ')}</span>}
           </div>
         </>
       )}
@@ -154,12 +160,15 @@ function EntryRow({
   entry,
   modifiers,
   extraLabel,
+  byPlayers,
   onChange,
 }: {
   label: string
   entry: InitiativeEntry
   modifiers: InitiativeModifier[]
   extraLabel: string
+  /** Rolagem dos jogadores: o DM só digita (sem o botão Roll). */
+  byPlayers: boolean
   onChange: (entry: InitiativeEntry) => void
 }) {
   const [text, setText] = useState<string | null>(null)
@@ -171,7 +180,8 @@ function EntryRow({
       <input
         className="ink-input ink-number"
         inputMode="numeric"
-        placeholder="d10"
+        placeholder={byPlayers ? 'roll' : 'd10'}
+        title={byPlayers ? "The players roll; type their d10" : undefined}
         aria-label={`${label}: d10`}
         value={text ?? (entry.roll === null ? '' : String(entry.roll))}
         onFocus={() => setText(entry.roll === null ? '' : String(entry.roll))}
@@ -183,9 +193,13 @@ function EntryRow({
           else if (/^\d+$/.test(next)) onChange({ ...entry, roll: Number(next) })
         }}
       />
-      <button className="chip" onClick={() => onChange({ ...entry, roll: rollDice(d10).total })}>
-        Roll
-      </button>
+      {byPlayers ? (
+        <span className="paper-soft initiative-players">players</span>
+      ) : (
+        <button className="chip" onClick={() => onChange({ ...entry, roll: rollDice(d10).total })}>
+          Roll
+        </button>
+      )}
       <label className="initiative-extra">
         <span className="paper-label">{extraLabel}</span>
         <input
