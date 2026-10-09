@@ -4736,3 +4736,124 @@ button.slot-dot:hover {
   margin: 4px 0;
   padding-left: 1.1rem;
 }
+
+/* CT5a: surpresa, salvamentos, XP no fim. */
+.initiative-surprised {
+  color: var(--red-ink);
+  font-weight: 700;
+}
+
+.surprise-side {
+  padding: 8px 0;
+  border-bottom: 1px solid rgb(107 92 70 / 0.2);
+}
+
+.surprise-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.surprise-head .ink-number {
+  width: 3rem;
+}
+
+.surprise-immune {
+  font-size: 0.85rem;
+}
+
+.surprise-result {
+  font-weight: 700;
+}
+
+.surprise-yes {
+  color: var(--red-ink);
+}
+
+.surprise-mods {
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.surprise-mods .chip {
+  font-size: 0.78rem;
+}
+
+.cg-save {
+  margin-left: 4px;
+  font-size: 0.68rem;
+  text-decoration: underline dotted;
+}
+
+.save-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.save-head .ink-number {
+  width: 3rem;
+}
+
+.save-list {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.save-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgb(107 92 70 / 0.2);
+}
+
+.save-name {
+  flex: 1 1 14rem;
+}
+
+.save-target {
+  min-width: 2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.save-pass {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.save-fail {
+  color: var(--red-ink);
+  font-weight: 700;
+}
+
+.xp-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 8px 20px;
+}
+
+.xp-list {
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.xp-list li {
+  padding: 2px 0;
+}
+
+.xp-total {
+  margin: 8px 0 4px;
+  font-size: 1.05rem;
+}
+
+.cg-surprised {
+  color: var(--red-ink);
+}

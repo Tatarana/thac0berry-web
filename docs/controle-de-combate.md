@@ -42,9 +42,14 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT2 | Iniciativa e rodadas: por lado ou individual (padrão do DM), modificadores da Tabela 40, rolar ou digitar, ordem e "Next" | feita (web v0.44.0) |
 | CT3 | Moral: 2d10 contra a moral, Tabela 50 em chips (PV perdido calculado), resultado e quando testar | feita (web v0.45.0) |
 | CT4 | Tabelas rápidas: faixa com as tabelas de combate (35, 36, 39, 40/41, 43, 44, 46, 47, 48, 49/50, 51, 57, 58, 59), janela do Table Grimoire (com Roll) e lista do DM | feita (web v0.49.0) |
-| CT5 | Ideias (decidir na vez): surpresa, distância e reação, "acerta?", salvamentos de monstro, efeitos com duração, XP no fim, log | a decidir |
+| CT5a | Surpresa, salvamentos de monstro, XP no fim (decisão do usuário: a sugestão) | feita (web v0.51.0) |
+| CT5b | "Acerta?" (ataque contra a CA, Tabela 35, dano) e log do combate | a fazer |
 
 ## Backlog
+
+- CT5 sem prioridade: distância e reação (Tabelas 58/59 já estão na faixa de
+  tabelas) e efeitos com duração em vários combatentes de uma vez.
+- Lançar o XP do fim do encontro nas fichas do App.
 
 - Guardar os encontros no Supabase (todos os aparelhos; ligado à sessão da
   campanha): tabela nova e mudança no documento de sync do backend.
@@ -237,3 +242,24 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (encontro 1 com PCs sem App e henchman; End leva a
     DM Tools; encontro 2 traz Rufus 14/24, Zé −15/30 e o henchman, sem o orc;
     past encounters e Reopen); testes: 157 (2 novos).
+- 2026-10-09, CT5a feita (web v0.51.0):
+  - **surpresa** (`src/rules/surprise.ts`; PHB cap. 11, DMG Tabela 57): botão
+    "Surprise" antes da rodada 1; 1d10 por lado (o da Party os jogadores
+    rolam), modificadores da Tabela 57 em chips ("The other side is:"), "+1 a
+    cada 10 membros" do outro lado calculado, "can't be surprised"; 1–3
+    modificado é surpreso. O lado surpreso fica fora da iniciativa da rodada 1
+    (`surprisedNow`; "S" na coluna Init, aviso na linha da iniciativa) e o
+    primeiro teste de moral dele ganha o −2 de "was surprised";
+  - **salvamentos de monstro** (DMG Tabela 46; Monstrous Manual: guerreiro do
+    nível = DV): `warriorSaveRows` acha o bloco do guerreiro na tabela (vem sem
+    o nome dos grupos; é o único que começa no nível 0), nível pelos DV
+    (`saveLevel`: ½ DV → 0; "4+1" → 4), "save" na linha de monstros e NPCs abre
+    as 5 categorias com Roll (d20 + modificador ≥ valor), "+ condition" na falha;
+  - **XP no fim** (DMG cap. 8): "End encounter" abre o resumo: inimigos
+    vencidos já marcados (caídos, mortos, Fleeing ou Surrendered — fuga e
+    rendição contam como vitória), quem divide (lado Party menos os mortos),
+    total e parte de cada um, "Copy summary"; o XP fica guardado no encontro
+    encerrado ("Ended on … · 315 XP, 157 each");
+  - conferido no navegador (inimigos surpresos no escuro: fora da rodada 1, −2
+    na moral; salvamento do ogro HD 4+1 = nível 4; XP de 3 orcs e um ogro para
+    o único PC vivo; resumo copiado); testes: 161 (4 novos).

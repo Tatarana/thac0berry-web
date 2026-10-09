@@ -70,10 +70,12 @@ export function CombatTable({
   settings,
   acting,
   initiative,
+  surprised = [],
   onChange,
   onRemove,
   onOpenMonster,
   onMorale,
+  onSave,
 }: {
   combatants: Combatant[]
   settings: CombatSettings
@@ -81,12 +83,16 @@ export function CombatTable({
   acting: Set<string>
   /** Coluna INIT: total e vez de cada combatente na ordem da rodada. */
   initiative: Record<string, { score: number; place: number }>
+  /** Lados surpresos que não agem nesta rodada (CT5a). */
+  surprised?: Side[]
   onChange: (next: Combatant) => void
   onRemove: (id: string) => void
   /** Ficha do monstro (quando o índice já carregou). */
   onOpenMonster: (c: Combatant) => (() => void) | undefined
   /** Abre o teste de moral (CT3; nunca para PCs). */
   onMorale: (c: Combatant) => void
+  /** Abre o salvamento do monstro ou NPC (CT5a). */
+  onSave: (c: Combatant) => void
 }) {
   const [legend, setLegend] = useState(false)
   return (
@@ -132,7 +138,7 @@ export function CombatTable({
                 </th>
               </tr>
               {list.map((c) => (
-                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} />
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} />
               ))}
             </tbody>
           )
@@ -147,7 +153,7 @@ const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n 
 
 /** O que cada coluna é (tooltip no computador; no iPad, a legenda do "?"). */
 const columnHelp = {
-  name: 'Name. Tap a monster to open its sheet; ✎ renames or moves to another side.',
+  name: 'Name. Tap a monster to open its sheet; ✎ renames or moves to another side; “save” rolls a monster’s saving throw.',
   init: 'Initiative: the modified d10 (the side total, when rolling by side). Lowest acts first; ties act together. Empty for those down or dead.',
   ac: 'Armor Class. Hover (or see the monster sheet) for the book text when it lists more than one.',
   thac0: 'To Hit Armor Class 0: the d20 roll needed to hit AC 0 (subtract the target AC).',
@@ -195,19 +201,23 @@ function CombatRow({
   settings,
   acting,
   init,
+  surprised,
   onChange,
   onRemove,
   onOpenMonster,
   onMorale,
+  onSave,
 }: {
   c: Combatant
   settings: CombatSettings
   acting: boolean
   init?: { score: number; place: number }
+  surprised?: boolean
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
   onMorale: () => void
+  onSave: () => void
 }) {
   const [amount, setAmount] = useState('')
   const [adding, setAdding] = useState(false)
@@ -279,10 +289,15 @@ function CombatRow({
           {c.hitDice ? ` · HD ${c.hitDice}` : ''}
           {c.xp !== null ? ` · ${c.xp.toLocaleString('en-US')} XP` : ''}
           {status !== 'ok' && <strong className="cg-status"> · {status === 'down' ? 'Down' : 'Dead'}</strong>}
+          {c.kind !== 'pc' && (
+            <button className="cg-link cg-save" aria-label={`${c.name}: saving throw`} title="Saving throw (DMG Table 46)" onClick={onSave}>
+              save
+            </button>
+          )}
         </span>
       </td>
-      <td className="cg-init" title={init ? `Acts ${ordinal(init.place)}` : undefined}>
-        {init ? init.score : status === 'ok' ? '—' : ''}
+      <td className="cg-init" title={init ? `Acts ${ordinal(init.place)}` : surprised && status === 'ok' ? 'Surprised: no action this round' : undefined}>
+        {init ? init.score : status !== 'ok' ? '' : surprised ? <span className="cg-surprised">S</span> : '—'}
       </td>
       <td title={c.acText && c.acText !== String(c.ac) ? `Book: ${c.acText}` : undefined}>
         <OptionalNumber value={c.ac} label={`${c.name}: armor class`} onChange={(ac) => onChange({ ...c, ac })} />

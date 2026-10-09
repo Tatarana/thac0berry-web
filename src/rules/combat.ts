@@ -64,6 +64,25 @@ export interface Encounter {
   history?: RoundSnapshot[]
   /** Quando o DM encerrou o encontro ("End encounter"); ausente/null = em andamento. */
   endedAt?: string | null
+  /** Teste de surpresa antes da rodada 1 (CT5a); o lado surpreso não age na rodada 1. */
+  surprise?: SurpriseResult | null
+  /** XP do fim do encontro (CT5a), guardado ao encerrar. */
+  xpAward?: XpAward | null
+}
+
+/** Resultado da surpresa: o d10 modificado de cada lado e quem ficou surpreso. */
+export interface SurpriseResult {
+  totals: Partial<Record<'party' | 'enemies', number>>
+  surprised: Side[]
+}
+
+/** XP de grupo do encontro (DMG cap. 8): total dos inimigos vencidos, dividido em partes iguais. */
+export interface XpAward {
+  total: number
+  shares: number
+  each: number
+  foes: string[]
+  members: string[]
 }
 
 /** Estado de combate de um combatente numa foto (nome, notas e lado não voltam). */
@@ -429,7 +448,7 @@ export function newEncounter(name: string, campaignID: string | null, now: strin
 
 // --- Encerrar e começar o próximo -------------------------------------------------------
 
-export const endEncounter = (e: Encounter, now: string): Encounter => ({ ...e, endedAt: now })
+export const endEncounter = (e: Encounter, now: string, award: XpAward | null = null): Encounter => ({ ...e, endedAt: now, xpAward: award })
 export const reopenEncounter = (e: Encounter): Encounter => ({ ...e, endedAt: null })
 
 /** O encontro mais recente da campanha (sem campanha: o mais recente sem campanha), ou null. */
@@ -468,6 +487,32 @@ export function partyForNewEncounter(previous: Encounter | null, characters: App
     })
   const present = new Set(carried.flatMap((c) => (c.characterID ? [c.characterID] : [])))
   return [...carried, ...characters.filter((c) => !present.has(c.id)).map((c) => characterCombatant(c.id, c.data))]
+}
+
+// --- XP no fim (DMG cap. 8) ----------------------------------------------------------------
+
+/** Vitória não é só matar: caídos, mortos, em fuga ou rendidos contam (DMG cap. 8). */
+export function defeatedFoes(e: Pick<Encounter, 'combatants'>, deathAt: number): Combatant[] {
+  return e.combatants.filter((c) => c.side !== 'party' && (statusOf(c, deathAt) !== 'ok' || c.conditions.some((x) => /^(fleeing|surrendered)$/i.test(x.name))))
+}
+
+/** Quem divide o XP por padrão: o lado Party (PCs e NPCs aliados), menos os mortos. */
+export const xpMembers = (e: Pick<Encounter, 'combatants'>, deathAt: number) => e.combatants.filter((c) => c.side === 'party' && statusOf(c, deathAt) !== 'dead')
+
+/** Prêmio de grupo: soma o XP dos vencidos e divide em partes iguais (arredonda para baixo). */
+export function xpAward(foes: Pick<Combatant, 'id' | 'xp'>[], members: Pick<Combatant, 'id'>[]): XpAward {
+  const total = foes.reduce((sum, c) => sum + (c.xp ?? 0), 0)
+  const shares = members.length
+  return { total, shares, each: shares > 0 ? Math.floor(total / shares) : 0, foes: foes.map((c) => c.id), members: members.map((c) => c.id) }
+}
+
+/** Resumo para copiar: "Encounter 3 — 270 XP: 4 Orcs (60), Ogre (210). 4 shares: 67 XP each (Rufus, …)." */
+export function xpSummary(name: string, award: XpAward, combatants: Combatant[]): string {
+  const nameOf = (id: string) => combatants.find((c) => c.id === id)
+  const foes = award.foes.map(nameOf).filter((c): c is Combatant => !!c)
+  const members = award.members.map((id) => nameOf(id)?.name).filter(Boolean)
+  const foeList = foes.map((c) => `${c.name} (${(c.xp ?? 0).toLocaleString('en-US')})`).join(', ')
+  return `${name} — ${award.total.toLocaleString('en-US')} XP${foeList ? `: ${foeList}` : ''}. ${award.shares} share${award.shares === 1 ? '' : 's'}: ${award.each.toLocaleString('en-US')} XP each${members.length ? ` (${members.join(', ')})` : ''}.`
 }
 
 /** Combatentes de um lado, na ordem em que entraram. */
@@ -519,9 +564,15 @@ export function entryTotal(entry: InitiativeEntry, modifiers: InitiativeModifier
 /** Quem pode agir: caídos e mortos ficam de fora da ordem. */
 const acting = (c: Combatant, deathAt: number) => statusOf(c, deathAt) === 'ok'
 
+/** O lado ficou surpreso e a rodada é a 1 (ou antes dela): não age (PHB cap. 11). */
+export const surprisedNow = (e: Partial<Pick<Encounter, 'round' | 'surprise'>>, side: Side) => (e.round ?? 0) <= 1 && !!e.surprise?.surprised.includes(side)
+
+type RoundView = Pick<Encounter, 'combatants'> & Partial<Pick<Encounter, 'round' | 'surprise'>>
+const actsNow = (e: RoundView, c: Combatant, deathAt: number) => acting(c, deathAt) && !surprisedNow(e, c.side)
+
 /** Chaves que rolam iniciativa: os lados com alguém de pé, ou cada combatente de pé. */
-export function initiativeKeys(e: Pick<Encounter, 'combatants'>, method: InitiativeMethod, deathAt: number): string[] {
-  const standing = e.combatants.filter((c) => acting(c, deathAt))
+export function initiativeKeys(e: RoundView, method: InitiativeMethod, deathAt: number): string[] {
+  const standing = e.combatants.filter((c) => actsNow(e, c, deathAt))
   if (method === 'individual') return standing.map((c) => c.id)
   return (['party', 'enemies', 'others'] as Side[]).filter((side) => standing.some((c) => c.side === side))
 }
@@ -539,7 +590,7 @@ export interface InitiativeStep {
  * juntos ("everything happens simultaneously", DMG cap. 9). Quem não rolou
  * fica de fora até rolar.
  */
-export function initiativeSteps(e: Pick<Encounter, 'combatants'>, round: InitiativeRound, modifiers: InitiativeModifier[], deathAt: number): InitiativeStep[] {
+export function initiativeSteps(e: RoundView, round: InitiativeRound, modifiers: InitiativeModifier[], deathAt: number): InitiativeStep[] {
   const byScore = new Map<number, string[]>()
   for (const key of initiativeKeys(e, round.method, deathAt)) {
     const total = entryTotal(round.entries[key] ?? emptyEntry(), modifiers)
@@ -552,7 +603,7 @@ export function initiativeSteps(e: Pick<Encounter, 'combatants'>, round: Initiat
       score,
       keys,
       combatantIDs: e.combatants
-        .filter((c) => acting(c, deathAt) && (round.method === 'individual' ? keys.includes(c.id) : keys.includes(c.side)))
+        .filter((c) => actsNow(e, c, deathAt) && (round.method === 'individual' ? keys.includes(c.id) : keys.includes(c.side)))
         .map((c) => c.id),
     }))
 }
@@ -576,7 +627,7 @@ export function startRound(e: Encounter, round: InitiativeRound, modifiers: Init
 }
 
 /** Quem ainda não rolou (lados ou combatentes de pé sem o d10). */
-export function missingRolls(e: Pick<Encounter, 'combatants'>, round: InitiativeRound, deathAt: number): string[] {
+export function missingRolls(e: RoundView, round: InitiativeRound, deathAt: number): string[] {
   return initiativeKeys(e, round.method, deathAt).filter((k) => (round.entries[k]?.roll ?? null) === null)
 }
 
@@ -693,8 +744,11 @@ const rowLike = (modifiers: InitiativeModifier[], pattern: RegExp) => modifiers.
  * (25% ou 50%, do combatente ou do grupo — nota * da tabela; vale o maior,
  * não somam), DV e testes repetidos na mesma rodada.
  */
-export function autoMoraleModifiers(c: Combatant, e: Pick<Encounter, 'combatants' | 'round'>, modifiers: InitiativeModifier[], deathAt: number): AutoModifier[] {
+export function autoMoraleModifiers(c: Combatant, e: Pick<Encounter, 'combatants' | 'round'> & Partial<Pick<Encounter, 'surprise'>>, modifiers: InitiativeModifier[], deathAt: number): AutoModifier[] {
   const auto: AutoModifier[] = []
+  // Lado surpreso: o −2 de "was surprised" no primeiro teste de moral.
+  const surprisedRow = e.surprise?.surprised.includes(c.side) && !c.lastMorale ? rowLike(modifiers, /was surprised/i) : undefined
+  if (surprisedRow) auto.push({ ...surprisedRow, reason: 'its side was surprised' })
   const own = c.hp !== null && c.hpMax ? 1 - Math.max(c.hp, 0) / c.hpMax : 0
   const group = e.combatants.filter((x) => x.side === c.side)
   const fallen = group.length > 1 ? group.filter((x) => statusOf(x, deathAt) !== 'ok').length / group.length : 0
