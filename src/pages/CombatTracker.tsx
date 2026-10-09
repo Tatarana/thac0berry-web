@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { InitiativePanel } from '../components/CombatInitiative'
 import { AddMonsterWindow, AddPersonWindow, CombatantRow, CombatSettingsWindow } from '../components/CombatParts'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { useCombatStore } from '../lib/combatStore'
-import { newEncounter, ofSide, sideLabels, statusOf, type Combatant, type Encounter, type Side } from '../rules/combat'
+import { actingNow as actingIDs, newEncounter, ofSide, sideLabels, statusOf, type Combatant, type Encounter, type Side } from '../rules/combat'
 
 // Combat Tracker (ferramenta do DM, docs/controle-de-combate.md): encontros
 // guardados no aparelho, com os combatentes de cada lado. CT1: combatentes,
-// PV, estados e condições; iniciativa (CT2), moral (CT3) e tabelas (CT4)
-// entram depois.
+// PV, estados e condições; CT2: iniciativa e rodadas; moral (CT3) e tabelas
+// (CT4) entram depois.
 
 export function CombatTracker() {
   return (
@@ -58,6 +59,9 @@ function Tracker() {
       draft.currentID = draft.encounters[0]?.id ?? null
     })
   }
+
+  // Quem age agora (passo atual da ordem fechada no começo da rodada): destaque na lista.
+  const actingNow = new Set(current ? actingIDs(current) : [])
 
   const add = (list: Combatant[]) => editEncounter((e) => void e.combatants.push(...list))
   const replace = (next: Combatant) => editEncounter((e) => void (e.combatants = e.combatants.map((c) => (c.id === next.id ? next : c))))
@@ -111,7 +115,11 @@ function Tracker() {
               </button>
             </div>
 
-            {current.combatants.length === 0 && <p className="paper-soft">Add the party and their foes to start.</p>}
+            {current.combatants.length === 0 ? (
+              <p className="paper-soft">Add the party and their foes to start.</p>
+            ) : (
+              <InitiativePanel encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} />
+            )}
             {sides.map((side) => {
               const list = ofSide(current, side)
               if (list.length === 0) return null
@@ -129,6 +137,7 @@ function Tracker() {
                           key={c.id}
                           c={c}
                           settings={store.settings}
+                          acting={actingNow.has(c.id)}
                           onChange={replace}
                           onRemove={() => drop(c.id)}
                           onOpenMonster={entry ? () => setOpenMonster(entry) : undefined}

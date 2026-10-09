@@ -54,6 +54,8 @@ export interface Encounter {
   updatedAt: string
   round: number
   combatants: Combatant[]
+  /** Iniciativa da rodada (CT2); ausente em encontros de antes do CT2. */
+  initiative?: InitiativeRound | null
 }
 
 export interface CombatSettings {
@@ -273,3 +275,117 @@ export function newEncounter(name: string, campaignID: string | null, now: strin
 
 /** Combatentes de um lado, na ordem em que entraram. */
 export const ofSide = (e: Pick<Encounter, 'combatants'>, side: Side) => e.combatants.filter((c) => c.side === side)
+
+// --- Iniciativa e rodadas (CT2; DMG cap. 9, Tabelas 40 e 41) -------------------------------
+
+export type InitiativeMethod = CombatSettings['initiative']
+
+/** Rolagem de um lado (método por lado) ou de um combatente (individual). */
+export interface InitiativeEntry {
+  /** O d10 (rolado ou digitado); null = ainda não rolou. */
+  roll: number | null
+  /** Modificadores escolhidos das Tabelas 40/41 (o rótulo da linha). */
+  mods: string[]
+  /** Valor digitado: velocidade da arma, tempo de conjuração, outro ajuste. */
+  extra: number
+}
+
+export interface InitiativeRound {
+  method: InitiativeMethod
+  /** Chave = lado ("party", "enemies", "others") ou id do combatente. */
+  entries: Record<string, InitiativeEntry>
+  /** Passo atual da ordem; null = rodada não começou. */
+  step: number | null
+  /** Ordem fechada ao começar a rodada (quem cai depois não muda a ordem). */
+  order?: InitiativeStep[]
+}
+
+/** Uma linha das Tabelas 40/41 com valor numérico ("Hasted", -2). */
+export interface InitiativeModifier {
+  label: string
+  value: number
+}
+
+/** Linhas numéricas de uma tabela de modificadores ("Weapon speed" fica de fora: é digitado). */
+export function initiativeModifiers(rows: string[][]): InitiativeModifier[] {
+  return rows.flatMap(([label, value]) => (/^[+-−]?\d+$/.test((value ?? '').trim()) ? [{ label: label.replace(/\*+$/, '').trim(), value: Number(value.trim().replace('−', '-')) }] : []))
+}
+
+export const emptyEntry = (): InitiativeEntry => ({ roll: null, mods: [], extra: 0 })
+
+/** Resultado modificado: d10 + modificadores + valor digitado; null sem o d10. */
+export function entryTotal(entry: InitiativeEntry, modifiers: InitiativeModifier[]): number | null {
+  if (entry.roll === null) return null
+  return entry.roll + entry.extra + entry.mods.reduce((sum, label) => sum + (modifiers.find((m) => m.label === label)?.value ?? 0), 0)
+}
+
+/** Quem pode agir: caídos e mortos ficam de fora da ordem. */
+const acting = (c: Combatant, deathAt: number) => statusOf(c, deathAt) === 'ok'
+
+/** Chaves que rolam iniciativa: os lados com alguém de pé, ou cada combatente de pé. */
+export function initiativeKeys(e: Pick<Encounter, 'combatants'>, method: InitiativeMethod, deathAt: number): string[] {
+  const standing = e.combatants.filter((c) => acting(c, deathAt))
+  if (method === 'individual') return standing.map((c) => c.id)
+  return (['party', 'enemies', 'others'] as Side[]).filter((side) => standing.some((c) => c.side === side))
+}
+
+export interface InitiativeStep {
+  score: number
+  /** Chaves (lados ou combatentes) que agem juntas — empate é simultâneo (DMG). */
+  keys: string[]
+  /** Combatentes de pé que agem neste passo. */
+  combatantIDs: string[]
+}
+
+/**
+ * Ordem da rodada: o menor resultado modificado age primeiro; empates agem
+ * juntos ("everything happens simultaneously", DMG cap. 9). Quem não rolou
+ * fica de fora até rolar.
+ */
+export function initiativeSteps(e: Pick<Encounter, 'combatants'>, round: InitiativeRound, modifiers: InitiativeModifier[], deathAt: number): InitiativeStep[] {
+  const byScore = new Map<number, string[]>()
+  for (const key of initiativeKeys(e, round.method, deathAt)) {
+    const total = entryTotal(round.entries[key] ?? emptyEntry(), modifiers)
+    if (total === null) continue
+    byScore.set(total, [...(byScore.get(total) ?? []), key])
+  }
+  return [...byScore.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([score, keys]) => ({
+      score,
+      keys,
+      combatantIDs: e.combatants
+        .filter((c) => acting(c, deathAt) && (round.method === 'individual' ? keys.includes(c.id) : keys.includes(c.side)))
+        .map((c) => c.id),
+    }))
+}
+
+/**
+ * Começa a rodada: fecha a ordem (com os modificadores) e vai ao primeiro
+ * passo; a primeira rodada do combate é a 1.
+ */
+export function startRound(e: Encounter, round: InitiativeRound, modifiers: InitiativeModifier[], deathAt: number): Encounter {
+  return { ...e, round: Math.max(e.round, 1), initiative: { ...round, step: 0, order: initiativeSteps(e, round, modifiers, deathAt) } }
+}
+
+/** Combatentes que agem agora (passo atual da ordem fechada); vazio fora da rodada. */
+export function actingNow(e: Pick<Encounter, 'initiative'>): string[] {
+  const r = e.initiative
+  return r && r.step !== null ? (r.order?.[r.step]?.combatantIDs ?? []) : []
+}
+
+/** Nova rodada de iniciativa (sem rolagens), pelo método escolhido. */
+export const newInitiative = (method: InitiativeMethod): InitiativeRound => ({ method, entries: {}, step: null })
+
+/**
+ * Fim da rodada: conta mais uma, as condições perdem uma rodada e a
+ * iniciativa recomeça (DMG: rola-se a cada rodada), no mesmo método.
+ */
+export function endRound(e: Encounter): Encounter {
+  return {
+    ...e,
+    round: e.round + 1,
+    combatants: e.combatants.map((c) => ({ ...c, conditions: tickConditions(c.conditions) })),
+    initiative: newInitiative(e.initiative?.method ?? defaultSettings.initiative),
+  }
+}

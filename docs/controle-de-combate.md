@@ -39,7 +39,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | # | Entrega | Estado |
 |---|---|---|
 | CT1 | Encontros e combatentes: PCs (da campanha ou à mão), NPCs, monstros do catálogo (com quantidade e PV rolados ou na média), PV com dano/cura, estados (caído, morto), condições com rodadas, configurações do DM; guardado no aparelho | feita (web v0.43.0) |
-| CT2 | Iniciativa e rodadas: por lado ou individual (padrão do DM), modificadores da Tabela 40, rolar ou digitar, ordem e "Next" | a fazer |
+| CT2 | Iniciativa e rodadas: por lado ou individual (padrão do DM), modificadores da Tabela 40, rolar ou digitar, ordem e "Next" | feita (web v0.44.0) |
 | CT3 | Moral: 2d10 contra a moral, Tabela 50 em chips (PV perdido calculado), resultado e quando testar | a fazer |
 | CT4 | Tabelas rápidas: painel com as tabelas de combate (35, 36, 40/41, 44, 46, 47, 49/50, 51, 57, 58, 59), com Roll e favoritas | a fazer |
 | CT5 | Ideias (decidir na vez): surpresa, distância e reação, "acerta?", salvamentos de monstro, efeitos com duração, XP no fim, log | a decidir |
@@ -79,3 +79,20 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (3 orcs na média, PC sem o App, NPC, dano até
     caído e morto, condição, recarregar mantém tudo, ficha do monstro;
     celular sem rolagem horizontal); testes: 132 (10 novos).
+- 2026-10-09, CT2 feita (web v0.44.0):
+  - `src/rules/combat.ts`: modificadores lidos das Tabelas 40/41 do
+    Table Grimoire (só as linhas com número; velocidade da arma e tempo de
+    conjuração são digitados), total modificado (d10 + modificadores +
+    valor digitado), quem rola (lados com alguém de pé, ou cada combatente de
+    pé), ordem com o menor primeiro e **empate simultâneo** (DMG cap. 9),
+    `startRound` fecha a ordem (quem cai no meio da rodada não muda a ordem),
+    `actingNow`, `endRound` (+1 rodada, condições perdem uma rodada, nova
+    iniciativa no mesmo método — o DMG rola a cada rodada);
+  - painel de iniciativa no encontro (`src/components/CombatInitiative.tsx`):
+    "Before the fight" / "Round N", método por lado ou individual (padrão das
+    configurações, trocável antes de começar), d10 rolado ou digitado por
+    lado/combatente, modificadores em chips, "Roll all", prévia da ordem,
+    "Start round", "Next ›", "End round"; quem age fica com "Acting" na lista;
+  - conferido no navegador (por lado com Hasted: Party 4, Enemies 5; Next;
+    End round leva à rodada 2 e tira o Bless de 1 rodada; individual com
+    empate simultâneo; celular sem rolagem horizontal); testes: 138 (6 novos).

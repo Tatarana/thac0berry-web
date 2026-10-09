@@ -4202,3 +4202,121 @@ button.slot-dot:hover {
   color: var(--ink);
   padding: 4px 6px;
 }
+
+/* Iniciativa e rodadas (CT2) */
+
+.combatant-acting {
+  border-color: var(--pen-ink);
+  box-shadow: 0 0 0 2px rgb(30 53 87 / 0.25);
+}
+
+.combatant-acting-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pen-ink);
+}
+
+.initiative {
+  margin: 6px 0 4px;
+  padding: 10px 12px;
+  border: 1.3px solid var(--ink);
+  border-radius: 4px;
+  background: rgb(233 220 190 / 0.5);
+}
+
+.initiative-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.initiative-round {
+  margin: 0;
+  text-align: left;
+}
+
+.initiative-help {
+  margin: 6px 0;
+  font-size: 0.82rem;
+}
+
+.initiative-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.initiative-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 10px;
+}
+
+.initiative-label {
+  min-width: 7rem;
+  font-weight: 700;
+}
+
+.initiative-entry > .ink-number {
+  width: 2.6em;
+}
+
+.initiative-extra {
+  display: flex;
+  flex-direction: column;
+}
+
+.initiative-extra .ink-number {
+  width: 3em;
+}
+
+.initiative-total {
+  font-weight: 700;
+  color: var(--red-ink);
+}
+
+.initiative-mods {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+}
+
+.initiative-mods summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.initiative-actions {
+  margin-top: 8px;
+}
+
+.initiative-order {
+  margin: 8px 0 0;
+  padding-left: 1.4rem;
+}
+
+.initiative-order li {
+  padding: 2px 0;
+}
+
+.initiative-score {
+  display: inline-block;
+  min-width: 1.6em;
+  font-weight: 700;
+}
+
+.initiative-now {
+  font-weight: 700;
+  color: var(--pen-ink);
+}
+
+.initiative-done {
+  opacity: 0.5;
+}
