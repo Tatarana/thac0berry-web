@@ -43,7 +43,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT3 | Moral: 2d10 contra a moral, Tabela 50 em chips (PV perdido calculado), resultado e quando testar | feita (web v0.45.0) |
 | CT4 | Tabelas rápidas: faixa com as tabelas de combate (35, 36, 39, 40/41, 43, 44, 46, 47, 48, 49/50, 51, 57, 58, 59), janela do Table Grimoire (com Roll) e lista do DM | feita (web v0.49.0) |
 | CT5a | Surpresa, salvamentos de monstro, XP no fim (decisão do usuário: a sugestão) | feita (web v0.51.0) |
-| CT5b | "Acerta?" (ataque contra a CA, Tabela 35, dano) e log do combate | a fazer |
+| CT5b | "Acerta?" (ataque contra a CA, Tabela 35, dano) e log do combate | feita (web v0.52.0) |
 
 ## Backlog
 
@@ -263,3 +263,24 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (inimigos surpresos no escuro: fora da rodada 1, −2
     na moral; salvamento do ogro HD 4+1 = nível 4; XP de 3 orcs e um ogro para
     o único PC vivo; resumo copiado); testes: 161 (4 novos).
+- 2026-10-09, CT5b feita (web v0.52.0; o usuário pediu para fazer direto,
+  sem proposta à parte):
+  - **"Acerta?"** (`src/rules/attack.ts`; DMG cap. 9): "atk" na linha de quem
+    está de pé abre a janela: alvo (os do outro lado), THAC0 do atacante e CA
+    do alvo (editáveis), modificadores da Tabela 35 em chips (o "Automatic"
+    do alvo dormindo fica de fora: o DM decide) e um valor livre; precisa de
+    THAC0 − CA no d20 (rolado ou digitado; 20 natural sempre acerta, 1
+    sempre erra). Acertou: o dano de cada ataque do monstro vira um botão
+    (`attackDamages`: um por "/", "1-8", "1d8+2", "1"; "By weapon" sem dado,
+    o DM digita) e "Apply N damage to <alvo>" tira os PV;
+  - **log do combate** (`src/rules/combatLog.ts`): toda mudança no encontro
+    passa por `describeChanges` (antes × depois): começo de rodada com a
+    ordem, fim de rodada e as condições que acabaram, volta no tempo,
+    surpresa, quem entrou e saiu, PV (as mudanças digitadas em sequência, em
+    até 4 s, viram uma linha só), caído, morto ou de pé de novo, condições,
+    testes de moral, fim do encontro com o XP; ataques e salvamentos entram
+    como nota. Botão "Log (N)" na linha da iniciativa: por rodada, a mais
+    recente em cima, e "Copy log" em texto. Até 500 linhas, no encontro;
+  - conferido no navegador (ogro ataca Rufus com ataque pelas costas +2 e
+    acerta, dano aplicado; salvamento; PV digitados juntos numa linha;
+    condição que expira no fim da rodada; log copiado); testes: 166 (5 novos).

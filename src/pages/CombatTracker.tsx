@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
-import { EndEncounterWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
+import { AttackWindow, EndEncounterWindow, LogWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
 import { MoraleWindow } from '../components/CombatMorale'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
@@ -14,6 +14,7 @@ import { useCombatStore } from '../lib/combatStore'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
   actingNow as actingIDs,
+  changeHp,
   endEncounter,
   initiativeByCombatant,
   initiativeSteps,
@@ -26,6 +27,7 @@ import {
   type Encounter,
   type XpAward,
 } from '../rules/combat'
+import { appendLog, describeChanges } from '../rules/combatLog'
 import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import type { GrimoireTable } from '../rules/tableIndex'
 
@@ -67,6 +69,8 @@ function Tracker() {
   const [surpriseOpen, setSurpriseOpen] = useState(false)
   const [ending, setEnding] = useState(false)
   const [saveID, setSaveID] = useState<string | null>(null)
+  const [attackID, setAttackID] = useState<string | null>(null)
+  const [logOpen, setLogOpen] = useState(false)
   // Encerrados ("End encounter") saem da fila e ficam em "Past encounters".
   const active = store.encounters.filter((e) => !e.endedAt)
   const past = store.encounters.filter((e) => e.endedAt)
@@ -77,13 +81,20 @@ function Tracker() {
     if (!monsterIndex && current?.combatants.some((c) => c.monsterID)) void loadMonsterIndex().then(setMonsterIndex)
   }, [monsterIndex, current])
 
-  const editEncounter = (mutate: (e: Encounter) => void) =>
+  // Toda mudança no encontro passa por aqui e deixa o rastro no log (CT5b): o
+  // log sai da diferença entre antes e depois (src/rules/combatLog.ts).
+  const editEncounter = (mutate: (e: Encounter) => void, notes: string[] = []) =>
     update((draft) => {
       const e = draft.encounters.find((x) => x.id === current?.id)
       if (!e) return
+      const before: Encounter = { ...e, combatants: [...e.combatants] }
       mutate(e)
+      // "End of round N" fica na rodada que terminou.
+      const round = e.round > before.round && before.round > 0 ? before.round : e.round
+      e.log = appendLog(e.log, round, [...notes.map((text) => ({ text })), ...describeChanges(before, e, store.settings.deathAt)])
       e.updatedAt = new Date().toISOString()
     })
+  const note = (text: string) => editEncounter(() => {}, [text])
 
   const create = (name: string, campaignID: string | null, party: Combatant[]) => {
     update((draft) => {
@@ -98,10 +109,8 @@ function Tracker() {
   // Encerra com o XP do resumo (fica guardado em "Past encounters") e volta à tela anterior.
   const finish = (award: XpAward) => {
     if (!current) return
-    update((draft) => {
-      draft.encounters = draft.encounters.map((e) => (e.id === current.id ? endEncounter(e, new Date().toISOString(), award) : e))
-      draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null
-    })
+    editEncounter((e) => Object.assign(e, endEncounter(e, new Date().toISOString(), award)))
+    update((draft) => void (draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null))
     navigate('/dm')
   }
 
@@ -125,6 +134,7 @@ function Tracker() {
 
   const moraleTarget = current?.combatants.find((c) => c.id === moraleID) ?? null
   const saveTarget = current?.combatants.find((c) => c.id === saveID) ?? null
+  const attacker = current?.combatants.find((c) => c.id === attackID) ?? null
 
   const add = (list: Combatant[]) => editEncounter((e) => void e.combatants.push(...list))
   const replace = (next: Combatant) => editEncounter((e) => void (e.combatants = e.combatants.map((c) => (c.id === next.id ? next : c))))
@@ -210,6 +220,7 @@ function Tracker() {
                 onOpen={() => setInitiativeOpen(true)}
                 onRounds={current.history?.length ? () => setRoundsOpen(true) : undefined}
                 onSurprise={() => setSurpriseOpen(true)}
+                onLog={() => setLogOpen(true)}
               />
             )}
             {tables.length > 0 && (
@@ -230,6 +241,7 @@ function Tracker() {
                 }}
                 onMorale={(c) => setMoraleID(c.id)}
                 onSave={(c) => setSaveID(c.id)}
+                onAttack={(c) => setAttackID(c.id)}
               />
             )}
           </>
@@ -261,7 +273,19 @@ function Tracker() {
         <SurpriseWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setSurpriseOpen(false)} />
       )}
       {ending && current && <EndEncounterWindow encounter={current} settings={store.settings} onEnd={finish} onClose={() => setEnding(false)} />}
-      {saveTarget && <SaveWindow key={saveTarget.id} combatant={saveTarget} onChange={replace} onClose={() => setSaveID(null)} />}
+      {saveTarget && <SaveWindow key={saveTarget.id} combatant={saveTarget} onChange={replace} onLog={note} onClose={() => setSaveID(null)} />}
+      {attacker && current && (
+        <AttackWindow
+          key={attacker.id}
+          attacker={attacker}
+          encounter={current}
+          settings={store.settings}
+          onDamage={(id, amount) => editEncounter((e) => void (e.combatants = e.combatants.map((c) => (c.id === id ? changeHp(c, -amount) : c))))}
+          onLog={note}
+          onClose={() => setAttackID(null)}
+        />
+      )}
+      {logOpen && current && <LogWindow encounter={current} onClose={() => setLogOpen(false)} />}
       {roundsOpen && current && (
         <RoundsWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setRoundsOpen(false)} />
       )}

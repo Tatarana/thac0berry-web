@@ -4857,3 +4857,61 @@ button.slot-dot:hover {
 .cg-surprised {
   color: var(--red-ink);
 }
+
+/* CT5b: ataque e log. */
+.attack-setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.attack-setup label {
+  display: grid;
+  gap: 2px;
+}
+
+.attack-setup .ink-number {
+  width: 3.5rem;
+}
+
+.attack-mods {
+  flex-wrap: wrap;
+}
+
+.attack-mods .chip {
+  font-size: 0.78rem;
+}
+
+.attack-damage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 8px;
+}
+
+.attack-typed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.attack-typed .ink-number {
+  width: 3rem;
+}
+
+.log-round {
+  margin-top: 10px;
+}
+
+.log-list {
+  margin: 2px 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.92rem;
+}
+
+.log-list li {
+  padding: 1px 0;
+}

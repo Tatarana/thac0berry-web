@@ -55,6 +55,7 @@ export function InitiativeBar({
   onOpen,
   onRounds,
   onSurprise,
+  onLog,
 }: {
   encounter: Encounter
   /** Ordem da rodada (fechada, ou a prévia). */
@@ -68,6 +69,8 @@ export function InitiativeBar({
   onRounds?: () => void
   /** Teste de surpresa (antes da rodada 1). */
   onSurprise: () => void
+  /** Log do combate (CT5b). */
+  onLog: () => void
 }) {
   const round = encounter.initiative
   const started = round?.step !== null && round?.step !== undefined
@@ -110,6 +113,9 @@ export function InitiativeBar({
             Rounds
           </button>
         )}
+        <button className="chip" onClick={onLog}>
+          Log{encounter.log?.length ? ` (${encounter.log.length})` : ''}
+        </button>
       </span>
       {encounter.surprise && encounter.round <= 1 && (
         <span className={encounter.surprise.surprised.length ? 'initiative-surprised' : 'paper-soft'}>

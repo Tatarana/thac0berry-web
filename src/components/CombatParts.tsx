@@ -76,6 +76,7 @@ export function CombatTable({
   onOpenMonster,
   onMorale,
   onSave,
+  onAttack,
 }: {
   combatants: Combatant[]
   settings: CombatSettings
@@ -93,6 +94,8 @@ export function CombatTable({
   onMorale: (c: Combatant) => void
   /** Abre o salvamento do monstro ou NPC (CT5a). */
   onSave: (c: Combatant) => void
+  /** Abre o "Acerta?" (CT5b). */
+  onAttack: (c: Combatant) => void
 }) {
   const [legend, setLegend] = useState(false)
   return (
@@ -138,7 +141,7 @@ export function CombatTable({
                 </th>
               </tr>
               {list.map((c) => (
-                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} />
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} onAttack={() => onAttack(c)} />
               ))}
             </tbody>
           )
@@ -153,7 +156,7 @@ const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n 
 
 /** O que cada coluna é (tooltip no computador; no iPad, a legenda do "?"). */
 const columnHelp = {
-  name: 'Name. Tap a monster to open its sheet; ✎ renames or moves to another side; “save” rolls a monster’s saving throw.',
+  name: 'Name. Tap a monster to open its sheet; ✎ renames or moves to another side; “atk” resolves an attack (does it hit?); “save” rolls a monster’s saving throw.',
   init: 'Initiative: the modified d10 (the side total, when rolling by side). Lowest acts first; ties act together. Empty for those down or dead.',
   ac: 'Armor Class. Hover (or see the monster sheet) for the book text when it lists more than one.',
   thac0: 'To Hit Armor Class 0: the d20 roll needed to hit AC 0 (subtract the target AC).',
@@ -207,6 +210,7 @@ function CombatRow({
   onOpenMonster,
   onMorale,
   onSave,
+  onAttack,
 }: {
   c: Combatant
   settings: CombatSettings
@@ -218,6 +222,7 @@ function CombatRow({
   onOpenMonster?: () => void
   onMorale: () => void
   onSave: () => void
+  onAttack: () => void
 }) {
   const [amount, setAmount] = useState('')
   const [adding, setAdding] = useState(false)
@@ -289,6 +294,11 @@ function CombatRow({
           {c.hitDice ? ` · HD ${c.hitDice}` : ''}
           {c.xp !== null ? ` · ${c.xp.toLocaleString('en-US')} XP` : ''}
           {status !== 'ok' && <strong className="cg-status"> · {status === 'down' ? 'Down' : 'Dead'}</strong>}
+          {status === 'ok' && (
+            <button className="cg-link cg-save" aria-label={`${c.name}: attack`} title="Attack: does it hit? (THAC0 − AC)" onClick={onAttack}>
+              atk
+            </button>
+          )}
           {c.kind !== 'pc' && (
             <button className="cg-link cg-save" aria-label={`${c.name}: saving throw`} title="Saving throw (DMG Table 46)" onClick={onSave}>
               save
