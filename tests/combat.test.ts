@@ -6,6 +6,9 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
+  hitPointDice,
+  initiativeByCombatant,
+  rerollHp,
   armorClassValue,
   hitDiceChoices,
   monsterSetup,
@@ -380,4 +383,23 @@ test('dados reais: CA, THAC0 e PV saem sozinhos para a grande maioria', () => {
   assert.ok(ok.ac / total > 0.95, `CA: ${ok.ac} de ${total}`)
   assert.ok(ok.thac0 / total > 0.93, `THAC0: ${ok.thac0} de ${total}`)
   assert.ok(ok.hp / total > 0.92, `PV: ${ok.hp} de ${total}`)
+})
+
+// --- Rolar os PV de novo e a coluna INIT -------------------------------------------------
+
+test('rolar os DV de novo mantém o dano sofrido', () => {
+  const orc = { ...blankCombatant('monster', 'enemies', 'Orc'), hitDice: '1', hp: 4, hpMax: 6 }
+  const rolled = rerollHp(orc, () => 0.99) // d8 → 8
+  assert.deepEqual([rolled.hp, rolled.hpMax], [6, 8])
+  const golem = { ...orc, hitDice: 'Varies' }
+  assert.equal(rerollHp(golem, () => 0.5), golem)
+  assert.equal(hitPointDice('4+1'), '4d8+1')
+  assert.equal(hitPointDice('14 + 1-4 hit points'), '14d8 + d4') // formatDice escreve "d4" para 1d4
+  assert.equal(hitPointDice('9 (40 hp)'), null)
+})
+
+test('INIT por combatente: total e vez de agir', () => {
+  const { e, rufus, orc1 } = party()
+  const round = { ...newInitiative('side'), entries: { party: { roll: 6, mods: [], extra: 0 }, enemies: { roll: 2, mods: [], extra: 0 } } }
+  assert.deepEqual(initiativeByCombatant(initiativeSteps(e, round, table40, -10)), { [orc1.id]: { score: 2, place: 1 }, [rufus.id]: { score: 6, place: 2 } })
 })

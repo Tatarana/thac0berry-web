@@ -152,3 +152,21 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - Conferido no navegador (Hell Hound com DV 6 → THAC0 15; Frost Giant CA 0,
     THAC0 7, PV 53; ficha pelo nome; ✎ mudando de lado; legenda; tabela cabe
     em 1024 e 1280 px); testes: 147 (5 novos).
+- 2026-10-09, iniciativa compacta e PV rolados na tabela (web v0.47.0, pedido
+  do usuário: "o bloco Before the fight tá enorme"):
+  - a iniciativa virou **uma linha** ("Before the fight · Roll initiative";
+    na rodada, "Round N · Acting: Enemies (7) · Next › · End round ·
+    Initiative") e uma **janela** com as rolagens (método, d10, modificadores,
+    "Roll the rest", "Start round" fecha a janela; com a rodada começada, a
+    janela mostra a ordem);
+  - **coluna Init** na tabela: o total de cada combatente (o do lado, na
+    iniciativa por lado), com "Acts 2nd" no tooltip; "—" antes das rolagens,
+    vazio para caídos e mortos (`initiativeByCombatant`);
+  - **🎲 nos PV dos monstros**: rola os DV de novo mantendo o dano sofrido
+    (`rerollHp`; 4/6 que rola 8 vira 6/8), tooltip com o dado
+    (`hitPointDice`: "4d8+1", "14d8 + d4");
+  - modificadores de iniciativa num hook próprio (`src/lib/initiativeTables.ts`),
+    usado pela página e pela janela;
+  - conferido no navegador (rolagens na janela, Init na tabela, Next, End
+    round limpa o Init, 🎲 com dano mantido, PC sem 🎲; cabe em 1024 e 1280
+    px); testes: 149 (2 novos).

@@ -8,9 +8,11 @@ import {
   changeHp,
   characterCombatant,
   hitDiceChoices,
+  hitPointDice,
   monsterCombatants,
   monsterSetup,
   parseHitDice,
+  rerollHp,
   sideLabels,
   statusOf,
   type CombatSettings,
@@ -65,6 +67,7 @@ export function CombatTable({
   combatants,
   settings,
   acting,
+  initiative,
   onChange,
   onRemove,
   onOpenMonster,
@@ -74,6 +77,8 @@ export function CombatTable({
   settings: CombatSettings
   /** Quem age no passo atual da iniciativa (CT2). */
   acting: Set<string>
+  /** Coluna INIT: total e vez de cada combatente na ordem da rodada. */
+  initiative: Record<string, { score: number; place: number }>
   onChange: (next: Combatant) => void
   onRemove: (id: string) => void
   /** Ficha do monstro (quando o índice já carregou). */
@@ -93,6 +98,7 @@ export function CombatTable({
                 ?
               </button>
             </th>
+            <th title={columnHelp.init}>Init</th>
             <th title={columnHelp.ac}>AC</th>
             <th title={columnHelp.thac0}>THAC0</th>
             <th className="cg-hp" title={columnHelp.hp}>
@@ -119,12 +125,12 @@ export function CombatTable({
           return (
             <tbody key={side}>
               <tr className="cg-band">
-                <th colSpan={10}>
+                <th colSpan={11}>
                   {sideLabels[side]} <span className="cg-band-count">· {standing} of {list.length} standing</span>
                 </th>
               </tr>
               {list.map((c) => (
-                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} />
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} />
               ))}
             </tbody>
           )
@@ -135,12 +141,15 @@ export function CombatTable({
   )
 }
 
+const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`
+
 /** O que cada coluna é (tooltip no computador; no iPad, a legenda do "?"). */
 const columnHelp = {
   name: 'Name. Tap a monster to open its sheet; ✎ renames or moves to another side.',
+  init: 'Initiative: the modified d10 (the side total, when rolling by side). Lowest acts first; ties act together. Empty for those down or dead.',
   ac: 'Armor Class. Hover (or see the monster sheet) for the book text when it lists more than one.',
   thac0: 'To Hit Armor Class 0: the d20 roll needed to hit AC 0 (subtract the target AC).',
-  hp: 'Hit points: current / maximum. Down at 0; dead at the value set in settings.',
+  hp: 'Hit points: current / maximum. Down at 0; dead at the value set in settings. 🎲 rolls a monster’s Hit Dice again (damage taken is kept).',
   damage: 'Type an amount, then − (or Enter) for damage or + to heal (never above the maximum).',
   morale: 'Morale rating. Tap it to make a morale check (2d10, DMG Tables 49 and 50); ✓/✗ is the last result. PCs never check morale.',
   attacks: 'Attacks per round × damage, from the monster sheet.',
@@ -151,6 +160,7 @@ const columnHelp = {
 function ColumnLegend({ onClose }: { onClose: () => void }) {
   const rows: [string, string][] = [
     ['Name', columnHelp.name],
+    ['Init', columnHelp.init],
     ['AC', columnHelp.ac],
     ['THAC0', columnHelp.thac0],
     ['HP', columnHelp.hp],
@@ -182,6 +192,7 @@ function CombatRow({
   c,
   settings,
   acting,
+  init,
   onChange,
   onRemove,
   onOpenMonster,
@@ -190,6 +201,7 @@ function CombatRow({
   c: Combatant
   settings: CombatSettings
   acting: boolean
+  init?: { score: number; place: number }
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
@@ -218,6 +230,7 @@ function CombatRow({
   }
   const attacks = [c.attacks && `${c.attacks}×`, c.damage].filter(Boolean).join(' ')
   const last = c.lastMorale
+  const hpDice = hitPointDice(c.hitDice)
 
   return (
     <tr className={[`cg-row cg-${status}`, acting ? 'cg-acting' : ''].filter(Boolean).join(' ')}>
@@ -266,6 +279,9 @@ function CombatRow({
           {status !== 'ok' && <strong className="cg-status"> · {status === 'down' ? 'Down' : 'Dead'}</strong>}
         </span>
       </td>
+      <td className="cg-init" title={init ? `Acts ${ordinal(init.place)}` : undefined}>
+        {init ? init.score : status === 'ok' ? '—' : ''}
+      </td>
       <td title={c.acText && c.acText !== String(c.ac) ? `Book: ${c.acText}` : undefined}>
         <OptionalNumber value={c.ac} label={`${c.name}: armor class`} onChange={(ac) => onChange({ ...c, ac })} />
       </td>
@@ -276,6 +292,11 @@ function CombatRow({
         <OptionalNumber className="cg-hp-now" value={c.hp} label={`${c.name}: current hit points`} onChange={(hp) => onChange({ ...c, hp })} />
         <span className="cg-slash">/</span>
         <OptionalNumber value={c.hpMax} label={`${c.name}: maximum hit points`} onChange={(hpMax) => onChange({ ...c, hpMax, hp: c.hp ?? hpMax })} />
+        {c.kind === 'monster' && hpDice && (
+          <button className="cg-link cg-reroll" aria-label={`${c.name}: roll hit points`} title={`Roll ${hpDice} (damage taken is kept)`} onClick={() => onChange(rerollHp(c))}>
+            🎲
+          </button>
+        )}
       </td>
       <td>
         <form
