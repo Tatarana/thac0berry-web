@@ -456,10 +456,15 @@ export function AddMonsterWindow({
     onAdd(monsterCombatants(stats, { monsterID: monster.id, monsterFile: picked.file }, count, side, existingNames, hpMode, undefined, setup))
     onClose()
   }
+  // Fechar com um monstro escolhido e não adicionado pede confirmação (pedido do usuário, 2026-10-09).
+  const close = () => {
+    if (picked && !window.confirm(`${picked.name} was not added to the encounter. Close anyway?`)) return
+    onClose()
+  }
   const book = (text: string | undefined) => (text ? <span className="paper-soft add-book">book: {text.split('\n').join(' · ')}</span> : null)
 
   return createPortal(
-    <PaperModal title="Add monsters" subtitle="From the monster catalog" onClose={onClose}>
+    <PaperModal title="Add monsters" subtitle="From the monster catalog" onClose={close}>
       {error && <p className="paper-soft save-error">{error}</p>}
       {!picked ? (
         <>
@@ -569,7 +574,7 @@ export function AddMonsterWindow({
               </button>
             </div>
           </div>
-          <button className="chip chip-on" disabled={!setup} onClick={add}>
+          <button className="add-go" disabled={!setup} onClick={add}>
             Add {count > 1 ? `${count} ${picked.name}` : picked.name}
           </button>
         </div>

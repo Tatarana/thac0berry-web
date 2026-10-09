@@ -194,3 +194,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (o caso do print; re-rolar com dano feito;
     pular a rodada 2; voltar da 3 à 1 com PV restaurados; recarregar mantém;
     Beholder CA 0, 60 PV, THAC0 7 → 🎲 75 PV, THAC0 5); testes: 152 (3 novos).
+- 2026-10-09, janela + Monster (web v0.48.1): botão "Add <monstro>" em
+  destaque (largo, vinho) e fechar a janela (close, Esc ou fora dela) com um
+  monstro escolhido e não adicionado pede confirmação; sem monstro escolhido,
+  fecha direto.
