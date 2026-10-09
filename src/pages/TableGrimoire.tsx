@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { CampaignSwitch } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { loadBooks } from '../data/books'
@@ -91,6 +92,7 @@ function TableList() {
       <div className="paper-sheet">
         <div className="paper-top">
           <Link to="/dm" className="paper-link">‹ DM Tools</Link>
+          <CampaignSwitch />
         </div>
         <h1 className="paper-title">Table Grimoire</h1>
         <p className="paper-soft">

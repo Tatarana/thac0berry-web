@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { CampaignSwitch } from './CampaignChooser'
 import { ModeSwitch } from './ModeChooser'
 
 // Cabeçalho das telas internas (igual ao Settings do iPad): botão de voltar,
@@ -10,7 +11,10 @@ export function PageHeader({ title, backTo = '/' }: { title: string; backTo?: st
         <Link to={backTo} className="back-button" aria-label="Back">
           ‹
         </Link>
-        <ModeSwitch />
+        <span className="page-top-switches">
+          <CampaignSwitch />
+          <ModeSwitch />
+        </span>
       </div>
       <div>
         <div className="smallcaps">Advanced Dungeons &amp; Dragons · 2nd Edition</div>

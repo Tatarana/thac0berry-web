@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router'
+import { ActiveCampaignCard } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { PageHeader } from '../components/PageHeader'
 
@@ -27,6 +28,7 @@ export function DmTools() {
     <DmOnly>
       <div className="page">
         <PageHeader title="DM Tools" />
+        <ActiveCampaignCard />
         <div className="hub-grid">
           {tools.map((tool) => (
             <Link key={tool.title} to={tool.to} className="ember-card hub-row" style={{ '--accent': tool.accent } as CSSProperties}>

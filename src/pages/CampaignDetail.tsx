@@ -6,10 +6,12 @@ import { CampaignSessions } from '../components/CampaignSessions'
 import { CharacterActions } from '../components/CharacterActions'
 import { PaperModal } from '../components/DetailBits'
 import { PageHeader } from '../components/PageHeader'
+import { setActiveCampaign, useActiveCampaign } from '../lib/activeCampaign'
 import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, settingLogo, useCampaignDoc } from '../lib/campaigns'
 import { assignToCampaign, createCharacter, deleteCampaign } from '../lib/roster'
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
+import { useMode } from '../lib/mode'
 import type { SaveState } from '../lib/useCharacterDoc'
 
 // Detalhe da campanha (CampaignDetailView do iPad): nome, início, anotações,
@@ -107,6 +109,8 @@ export function CampaignDetail() {
   const { session, loading, signInWithGoogle } = useAuth()
   const userID = session?.user.id ?? null
   const { campaign, loadError, save, conflict, dismissConflict, update, retry } = useCampaignDoc(id, userID)
+  const mode = useMode()
+  const active = useActiveCampaign()
   const [cast, setCast] = useState<CastMember[] | null>(null)
   const [open, setOpen] = useState<{ dead: boolean; archived: boolean }>({ dead: false, archived: false })
   const [castVersion, setCastVersion] = useState(0)
@@ -251,6 +255,15 @@ export function CampaignDetail() {
                 {campaign.is_archived ? 'Unarchive' : 'Archive'}
               </button>
               {campaign.is_archived && <span className="import-tag">archived</span>}
+              {/* Modo DM: tornar esta a campanha ativa (docs/campanha-ativa.md). */}
+              {mode === 'dm' &&
+                (active?.id === campaign.id ? (
+                  <span className="import-tag">running</span>
+                ) : (
+                  <button className="btn" onClick={() => setActiveCampaign({ id: campaign.id, name: campaign.name })}>
+                    Run this campaign
+                  </button>
+                ))}
             </div>
             <SaveLine save={save} onRetry={() => void retry()} />
           </section>

@@ -4917,3 +4917,96 @@ button.slot-dot:hover {
 .log-list li {
   padding: 1px 0;
 }
+
+/* Campanha ativa do modo DM (docs/campanha-ativa.md). */
+.page-top-switches,
+.paper-top-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campaign-button {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.campaign-button-name {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paper-top .campaign-button {
+  border-color: rgb(47 39 28 / 0.4);
+  background: rgb(255 255 255 / 0.25);
+  color: var(--ink);
+}
+
+.ember-card .campaign-button {
+  font-size: 0.85rem;
+}
+
+.campaign-chooser {
+  max-width: 640px;
+}
+
+.campaign-choices {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.campaign-choice {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  margin: 4px 0;
+  padding: 10px 12px;
+  border: 1px solid rgb(107 92 70 / 0.4);
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.campaign-choice:hover {
+  border-color: var(--ink);
+}
+
+.campaign-choice-on {
+  border-color: var(--wine);
+  box-shadow: inset 4px 0 0 var(--wine);
+}
+
+.campaign-choice-name {
+  font-family: var(--font-hand);
+  font-size: 1.35rem;
+  color: var(--pen-ink);
+}
+
+.campaign-choice-note {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.active-campaign {
+  margin-bottom: 14px;
+}
+
+.active-campaign-name {
+  margin: 2px 0 8px;
+  font-family: var(--font-hand);
+  font-size: 1.8rem;
+}
+
+.paper-top-end {
+  justify-content: flex-end;
+}
