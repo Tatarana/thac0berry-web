@@ -68,6 +68,8 @@ export interface Encounter {
   surprise?: SurpriseResult | null
   /** XP do fim do encontro (CT5a), guardado ao encerrar. */
   xpAward?: XpAward | null
+  /** Log do combate (CT5b, src/rules/combatLog.ts); ausente em encontros antigos. */
+  log?: import('./combatLog.ts').LogEntry[]
 }
 
 /** Resultado da surpresa: o d10 modificado de cada lado e quem ficou surpreso. */
