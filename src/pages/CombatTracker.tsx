@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { InitiativePanel } from '../components/CombatInitiative'
+import { InitiativeBar, InitiativeWindow } from '../components/CombatInitiative'
 import { MoraleWindow } from '../components/CombatMorale'
 import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable } from '../components/CombatParts'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { useCombatStore } from '../lib/combatStore'
-import { actingNow as actingIDs, newEncounter, type Combatant, type Encounter } from '../rules/combat'
+import { useInitiativeModifiers } from '../lib/initiativeTables'
+import { actingNow as actingIDs, initiativeByCombatant, initiativeSteps, newEncounter, newInitiative, type Combatant, type Encounter } from '../rules/combat'
 
 // Combat Tracker (ferramenta do DM, docs/controle-de-combate.md): encontros
 // guardados no aparelho, com os combatentes de cada lado. CT1: combatentes,
@@ -29,6 +30,7 @@ function Tracker() {
   const [monsterIndex, setMonsterIndex] = useState<MonsterIndexEntry[] | null>(null)
   const [openMonster, setOpenMonster] = useState<MonsterIndexEntry | null>(null)
   const [moraleID, setMoraleID] = useState<string | null>(null)
+  const [initiativeOpen, setInitiativeOpen] = useState(false)
 
   const current = store.encounters.find((e) => e.id === store.currentID) ?? store.encounters[0] ?? null
 
@@ -59,6 +61,12 @@ function Tracker() {
       draft.currentID = draft.encounters[0]?.id ?? null
     })
   }
+
+  // Ordem da rodada (fechada no "Start round", ou a prévia com as rolagens): a linha da iniciativa e a coluna INIT.
+  const round = current?.initiative ?? newInitiative(store.settings.initiative)
+  const modifiers = useInitiativeModifiers(round.method)
+  const steps = !current ? [] : round.step !== null && round.order ? round.order : initiativeSteps(current, round, modifiers, store.settings.deathAt)
+  const initiative = initiativeByCombatant(steps)
 
   // Quem age agora (passo atual da ordem fechada no começo da rodada): destaque na lista.
   const actingNow = new Set(current ? actingIDs(current) : [])
@@ -120,13 +128,14 @@ function Tracker() {
             {current.combatants.length === 0 ? (
               <p className="paper-soft">Add the party and their foes to start.</p>
             ) : (
-              <InitiativePanel encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} />
+              <InitiativeBar encounter={current} steps={steps} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onOpen={() => setInitiativeOpen(true)} />
             )}
             {current.combatants.length > 0 && (
               <CombatTable
                 combatants={current.combatants}
                 settings={store.settings}
                 acting={actingNow}
+                initiative={initiative}
                 onChange={replace}
                 onRemove={drop}
                 onOpenMonster={(c) => {
@@ -156,6 +165,9 @@ function Tracker() {
       {settingsOpen && <CombatSettingsWindow settings={store.settings} onChange={(s) => update((d) => void (d.settings = s))} onClose={() => setSettingsOpen(false)} />}
       {moraleTarget && current && (
         <MoraleWindow key={moraleTarget.id} combatant={moraleTarget} encounter={current} settings={store.settings} onChange={replace} onClose={() => setMoraleID(null)} />
+      )}
+      {initiativeOpen && current && (
+        <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
       {openMonster && <MonsterDetail entry={openMonster} onClose={() => setOpenMonster(null)} />}
     </div>

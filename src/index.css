@@ -4598,3 +4598,42 @@ button.slot-dot:hover {
   font-size: 0.8rem;
   font-style: italic;
 }
+
+/* Linha compacta da iniciativa (a janela tem as rolagens; o total vai na coluna INIT). */
+.initiative-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 6px 0 10px;
+}
+
+.initiative-bar .initiative-round {
+  margin: 0;
+}
+
+.initiative-acting strong {
+  color: var(--pen-ink);
+}
+
+.initiative-method {
+  margin-bottom: 6px;
+}
+
+.cg-init {
+  text-align: center;
+  font-weight: 700;
+  color: var(--pen-ink);
+}
+
+.cg-reroll {
+  font-size: 0.75rem;
+}
+
+/* Na janela, a iniciativa não precisa do quadro. */
+.modal-sheet .initiative {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}

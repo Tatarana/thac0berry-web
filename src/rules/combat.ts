@@ -2,7 +2,7 @@
 // regras do combate na mesa. Só funções puras; a tela só exibe e chama.
 // Dados de rolagem pelo motor único (dice.ts).
 
-import { diceForRange, rollDice, type DiceSpec, type Random } from './dice.ts'
+import { diceForRange, formatDice, rollDice, type DiceSpec, type Random } from './dice.ts'
 
 export type Side = 'party' | 'enemies' | 'others'
 export type CombatantKind = 'pc' | 'npc' | 'monster'
@@ -343,6 +343,25 @@ export function changeHp<T extends Pick<Combatant, 'hp' | 'hpMax'>>(c: T, delta:
   return { ...c, hp }
 }
 
+/**
+ * Rola de novo os PV de um monstro pelos DV (o 🎲 da tabela); o dano já
+ * sofrido continua (4/6 que rola 8 vira 6/8). Sem DV que deem PV, não muda.
+ */
+export function rerollHp<T extends Pick<Combatant, 'hp' | 'hpMax' | 'hitDice'>>(c: T, random?: Random): T {
+  const spec = parseHitDice(c.hitDice)
+  if (!spec) return c
+  const hpMax = hitPoints(spec, 'roll', random)
+  const taken = c.hpMax !== null && c.hp !== null ? c.hpMax - c.hp : 0
+  return { ...c, hpMax, hp: hpMax - taken }
+}
+
+/** O dado dos PV ("4d8+1", "14d8 + 1d4"), para o tooltip do 🎲; null sem dado. */
+export function hitPointDice(hitDice: string): string | null {
+  const spec = parseHitDice(hitDice)
+  if (!spec || 'fixed' in spec) return null
+  return [spec.dice, ...(spec.bonus ? [spec.bonus] : [])].map(formatDice).join(' + ')
+}
+
 /** Fim de rodada: as condições com prazo perdem uma rodada e as que chegam a 0 saem. */
 export function tickConditions(conditions: Condition[]): Condition[] {
   return conditions.flatMap((c) => (c.rounds === null ? [c] : c.rounds > 1 ? [{ ...c, rounds: c.rounds - 1 }] : []))
@@ -445,6 +464,15 @@ export function initiativeSteps(e: Pick<Encounter, 'combatants'>, round: Initiat
  * Começa a rodada: fecha a ordem (com os modificadores) e vai ao primeiro
  * passo; a primeira rodada do combate é a 1.
  */
+/** INIT de cada combatente: o total (o do lado dele, na iniciativa por lado) e a vez em que age (1 = primeiro). */
+export function initiativeByCombatant(steps: InitiativeStep[]): Record<string, { score: number; place: number }> {
+  const out: Record<string, { score: number; place: number }> = {}
+  steps.forEach((step, i) => {
+    for (const id of step.combatantIDs) out[id] = { score: step.score, place: i + 1 }
+  })
+  return out
+}
+
 export function startRound(e: Encounter, round: InitiativeRound, modifiers: InitiativeModifier[], deathAt: number): Encounter {
   return { ...e, round: Math.max(e.round, 1), initiative: { ...round, step: 0, order: initiativeSteps(e, round, modifiers, deathAt) } }
 }
