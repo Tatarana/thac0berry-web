@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { attackDamages, attackHits, neededToHit, rollDamage } from '../src/rules/attack.ts'
-import { blankCombatant, changeHp, endRound, goBackToRound, newEncounter, newInitiative, recordMorale, startRound, type Encounter } from '../src/rules/combat.ts'
+import { blankCombatant, changeHp, rerollHp, endRound, goBackToRound, newEncounter, newInitiative, recordMorale, startRound, type Encounter } from '../src/rules/combat.ts'
 import { appendLog, describeChanges, logByRound, logPlainText, logText, type LogEntry } from '../src/rules/combatLog.ts'
 
 test('ataque: THAC0 − CA; 20 natural acerta, 1 natural erra', () => {
@@ -77,4 +77,10 @@ test('log por rodada e texto para copiar', () => {
   ]
   assert.deepEqual(logByRound(log).map((g) => [g.round, g.entries.map((x) => x.id)]), [[2, [3]], [1, [2, 1]]])
   assert.equal(logPlainText(log), 'Round 1\n  Round 1 starts: Party (3)\n  Orc: HP 6 → 2 (4 damage)\nRound 2\n  Orc is down')
+})
+
+test('log: rolar os PV (ou mudar o máximo) não vira dano nem cura', () => {
+  const { e, orc } = scene()
+  const rolled = replace(e, orc.id, (c) => rerollHp({ ...c, hitDice: '1' }, () => 0.99)) // 6/6 → 8/8
+  assert.deepEqual(describeChanges(e, rolled, -10).map((x) => logText({ ...x, id: 0, round: 0 })), ['Orc: hit points 6/6 → 8/8'])
 })

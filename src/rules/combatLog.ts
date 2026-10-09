@@ -63,7 +63,10 @@ const statusText = { ok: 'is back up', down: 'is down', dead: 'is dead' } as con
 /** O que mudou num combatente: PV, estado, condições, moral. */
 function combatantChanges(before: Combatant, after: Combatant, deathAt: number): NewEntry[] {
   const out: NewEntry[] = []
-  if (before.hp !== after.hp) out.push({ text: '', hp: { combatantID: after.id, name: after.name, from: before.hp, to: after.hp } })
+  // PV máximos mudaram (o "roll" antes da luta, ou o DM corrigiu o máximo): são os PV
+  // do combatente, não dano nem cura.
+  if (before.hpMax !== after.hpMax) out.push({ text: `${after.name}: hit points ${before.hp ?? '—'}/${before.hpMax ?? '—'} → ${after.hp ?? '—'}/${after.hpMax ?? '—'}`, about: after.id })
+  else if (before.hp !== after.hp) out.push({ text: '', hp: { combatantID: after.id, name: after.name, from: before.hp, to: after.hp } })
   const [s0, s1] = [statusOf(before, deathAt), statusOf(after, deathAt)]
   if (s0 !== s1) out.push({ text: `${after.name} ${statusText[s1]}`, about: after.id })
   const names = (c: Combatant) => new Set(c.conditions.map((x) => x.id))
