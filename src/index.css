@@ -3981,173 +3981,47 @@ button.slot-dot:hover {
 
 .combat-head {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: 6px 0 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 4px 0 8px;
 }
 
 .combat-title {
-  flex: 1;
+  flex: 1 1 12rem;
   min-width: 0;
   font-size: 1.3rem;
 }
 
-.combat-add {
-  margin-bottom: 10px;
+.combat-delete {
+  font-size: 0.85rem;
 }
 
-.combat-side {
-  margin-top: 14px;
-}
 
-.combat-side-title {
-  text-align: left;
-}
 
-.combatant-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
-.combatant {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1.3px solid var(--ink);
-  border-radius: 4px;
-  background: rgb(233 220 190 / 0.35);
-}
 
-.combatant-down {
-  border-color: var(--red-ink);
-  background: rgb(140 47 34 / 0.08);
-}
 
-.combatant-dead {
-  opacity: 0.55;
-}
 
-.combatant-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
 
-.combatant-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 1.15rem;
-}
 
-.combatant-kind {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
 
-.combatant-status {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--red-ink);
-  text-transform: uppercase;
-}
 
-.combatant-side {
-  max-width: 7rem;
-  font: inherit;
-  font-size: 0.8rem;
-  background: transparent;
-  border: 1px solid rgb(107 92 70 / 0.4);
-  border-radius: 4px;
-  color: var(--ink);
-}
 
-.combatant-stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 8px 14px;
-}
 
-.combatant-stat {
-  display: flex;
-  flex-direction: column;
-}
 
-.combatant-stat .ink-number {
-  width: 3.2em;
-}
 
-.combatant-hp-line {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
 
-.combatant-hp-now {
-  font-weight: 700;
-}
 
-.combatant-damage {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.combatant-damage .ink-number {
-  width: 3em;
-}
 
-.combatant-facts {
-  margin: 0;
-  font-size: 0.82rem;
-}
 
-.combatant-conditions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
 
-.condition-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
 
-.condition-remove {
-  padding: 0 2px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
 
-.condition-add {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.condition-add .ink-input:first-child {
-  width: 8em;
-}
 
-.condition-add .ink-number {
-  width: 2.6em;
-}
 
-.combatant-notes {
-  font-size: 0.9rem;
-}
 
 .add-section {
   display: flex;
@@ -4205,22 +4079,11 @@ button.slot-dot:hover {
 
 /* Iniciativa e rodadas (CT2) */
 
-.combatant-acting {
-  border-color: var(--pen-ink);
-  box-shadow: 0 0 0 2px rgb(30 53 87 / 0.25);
-}
 
-.combatant-acting-tag {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--pen-ink);
-}
 
 .initiative {
-  margin: 6px 0 4px;
-  padding: 10px 12px;
+  margin: 4px 0 4px;
+  padding: 6px 10px;
   border: 1.3px solid var(--ink);
   border-radius: 4px;
   background: rgb(233 220 190 / 0.5);
@@ -4294,16 +4157,27 @@ button.slot-dot:hover {
 }
 
 .initiative-actions {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
+/* Ordem da rodada numa linha só: "1. 2 Party · Rufus  ›  2. 7 Enemies · …" */
 .initiative-order {
-  margin: 8px 0 0;
-  padding-left: 1.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
 }
 
 .initiative-order li {
-  padding: 2px 0;
+  counter-increment: step;
+}
+
+.initiative-order li::before {
+  content: counter(step) ". ";
+  color: var(--ink-soft);
 }
 
 .initiative-score {
@@ -4319,4 +4193,223 @@ button.slot-dot:hover {
 
 .initiative-done {
   opacity: 0.5;
+}
+
+/* Combatentes em tabela, estilo planilha (2026-10-09) */
+
+/* Tela de trabalho do DM: folha mais larga que a padrão, para caber a tabela. */
+.paper-sheet.combat-sheet {
+  max-width: 1320px;
+  padding: 20px 22px 32px;
+}
+
+.combat-grid-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+  border: 1.3px solid var(--ink);
+  border-radius: 4px;
+}
+
+.combat-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.combat-grid th,
+.combat-grid td {
+  padding: 2px 5px;
+  border-bottom: 1px solid rgb(107 92 70 / 0.25);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.combat-grid thead th {
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  color: var(--sheet);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.combat-grid .ink-input {
+  font-size: 1rem;
+  padding: 0;
+  border-bottom-color: transparent;
+}
+
+.combat-grid .ink-input:focus {
+  border-bottom-color: var(--pen-ink);
+}
+
+.combat-grid .ink-number {
+  width: 1.9em;
+  text-align: center;
+}
+
+.cg-band th {
+  padding-top: 6px;
+  background: rgb(47 39 28 / 0.08);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.cg-band-count {
+  color: var(--ink-soft);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.cg-name {
+  min-width: 8rem;
+}
+
+.cg-name-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cg-name-line .ink-input {
+  width: 100%;
+  min-width: 5.5rem;
+  font-weight: 700;
+}
+
+.cg-sub {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+
+.cg-status {
+  color: var(--red-ink);
+}
+
+.cg-hp {
+  min-width: 4.2rem;
+}
+
+.cg-hp .cg-hp-now {
+  font-weight: 700;
+}
+
+.cg-slash {
+  color: var(--ink-soft);
+}
+
+.cg-damage,
+.cg-cond-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+}
+
+.cg-btn {
+  min-width: 1.5em;
+  padding: 0 4px;
+  border: 1px solid var(--ink-soft);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.cg-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cg-link {
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cg-text {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+
+.cg-conditions {
+  white-space: normal;
+  min-width: 6rem;
+}
+
+.cg-cond {
+  display: inline-flex;
+  align-items: center;
+  margin: 1px 3px 1px 0;
+  padding: 0 0 0 5px;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--sheet);
+  font-size: 0.75rem;
+}
+
+.cg-cond .cg-link {
+  color: var(--sheet);
+}
+
+.cg-cond-add .ink-input:first-child {
+  width: 6.5em;
+}
+
+.cg-notes {
+  min-width: 5.5rem;
+  width: 100%;
+}
+
+.cg-notes .ink-input {
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.cg-side {
+  font: inherit;
+  font-size: 0.78rem;
+  background: transparent;
+  border: 1px solid rgb(107 92 70 / 0.4);
+  border-radius: 3px;
+  color: var(--ink);
+}
+
+.cg-down td {
+  background: rgb(140 47 34 / 0.09);
+}
+
+.cg-dead td {
+  opacity: 0.5;
+}
+
+.cg-dead .cg-name-line .ink-input {
+  text-decoration: line-through;
+}
+
+.cg-acting td {
+  background: rgb(30 53 87 / 0.1);
+}
+
+.cg-acting td:first-child {
+  box-shadow: inset 3px 0 0 var(--pen-ink);
+}
+
+.cg-acting-mark {
+  color: var(--pen-ink);
+  font-size: 0.7rem;
 }

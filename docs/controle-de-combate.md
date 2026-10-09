@@ -96,3 +96,14 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (por lado com Hasted: Party 4, Enemies 5; Next;
     End round leva à rodada 2 e tira o Bless de 1 rodada; individual com
     empate simultâneo; celular sem rolagem horizontal); testes: 138 (6 novos).
+  - **tela em tabela, estilo planilha** (pedido do usuário, ainda na v0.44.0:
+    "condense os dados estilo tabela, cabendo horizontalmente"): uma linha
+    por combatente, lados como faixas ("Enemies · 3 of 5 standing"); colunas
+    Name (tipo, DV, XP, estado e ⓘ da ficha embaixo), AC, THAC0, HP
+    atual/máx, ± com − (dano, Enter) e + (cura), Mor., Atk · Dmg, Conditions
+    (chips com rodadas e + para acrescentar ali mesmo), Notes, Side, ×; linha
+    em destaque para quem age (▶), avermelhada para caído, apagada e riscada
+    para morto; a folha do Combat Tracker é mais larga que a padrão (1320 px)
+    e a tabela cabe sem rolar em 1024 e 1280 px; no celular, rola de lado
+    dentro do quadro; topo enxuto (nome do encontro e + PC/Monster/NPC na
+    mesma linha; ordem da iniciativa numa linha).
