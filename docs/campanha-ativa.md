@@ -30,7 +30,7 @@ tudo que fizesse seria para a campanha escolhida".
 | # | Entrega | Estado |
 |---|---|---|
 | CA1 | Campanha ativa: escolha (com One-shot), chip no topo para trocar, DM Tools com a campanha e atalhos, "Run this campaign" na campanha | feita (web v0.53.0) |
-| CA2 | Combat Tracker preso à campanha ativa: só os encontros dela, sem escolher campanha no encontro novo nem no + PC, aviso ao trocar com encontro em andamento, levar os encontros antigos para a campanha | a fazer |
+| CA2 | Combat Tracker preso à campanha ativa: só os encontros dela, sem escolher campanha no encontro novo nem no + PC, aviso ao trocar com encontro em andamento, levar os encontros antigos para a campanha | feita (web v0.54.0) |
 | CA3 | Filtros de cenário (Monsters, Table Grimoire, Rules) começando pelo "Campaign Settings" da campanha ativa | a fazer |
 
 ## Backlog
@@ -63,3 +63,20 @@ tudo que fizesse seria para a campanha escolhida".
   - conferido no navegador sem login (escolha do One-shot, chip, cartão, modo
     Jogador sem chip, celular sem rolagem). O Combat Tracker ainda escolhe a
     campanha no encontro (muda na CA2).
+- 2026-10-09, CA2 feita (web v0.54.0):
+  - Combat Tracker só com os encontros da campanha ativa (`encountersOf`; o
+    One-shot tem os sem campanha); "Encounters · <campanha>"; past encounters
+    é o histórico da campanha;
+  - "+ New encounter" pede só o nome (a campanha é a ativa; o grupo vem como
+    antes); "+ PC" lista direto os personagens da campanha (no One-shot, só à
+    mão);
+  - trocar de campanha com um encontro começado e não encerrado avisa
+    (`encounterInProgress`); o encontro fica na campanha dele;
+  - encontros sem campanha de antes: numa campanha, o Combat Tracker pergunta
+    uma vez "Move them to <campanha>?" (Move / Keep as one-shots;
+    `legacyPromptDone` no armazenamento do Combat Tracker);
+  - junto (pedido do usuário): o log registrava o "roll" dos PV como dano ou
+    cura; agora, quando o máximo de PV muda, aparece "hit points 4/4 → 8/8";
+  - conferido no navegador (campanha simulada: encontros de outra campanha
+    escondidos, mover os antigos, encontro novo sem seletor, + PC, aviso ao
+    trocar para o One-shot, log do roll); testes: 169 (2 novos).

@@ -290,3 +290,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   só aparece **antes da rodada 1** e em monstro **sem dano** (`canRerollHp`):
   é "rolar em vez da média". O emoji virou o texto "roll", discreto, com o
   dado no tooltip; testes: 167 (1 novo).
+- 2026-10-09, campanha ativa (docs/campanha-ativa.md, CA2, web v0.54.0): o
+  Combat Tracker passou a mostrar só os encontros da campanha ativa do modo
+  DM; a campanha não é mais escolhida no encontro novo nem no + PC. O log
+  registra o "roll" dos PV como "hit points 4/4 → 8/8" (não mais dano/cura).

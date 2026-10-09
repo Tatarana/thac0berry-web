@@ -11,12 +11,14 @@ import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { loadTables } from '../data/tables'
+import { useActiveCampaign } from '../lib/activeCampaign'
 import { useCombatStore } from '../lib/combatStore'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
   actingNow as actingIDs,
   changeHp,
   endEncounter,
+  encountersOf,
   initiativeByCombatant,
   initiativeSteps,
   missingRolls,
@@ -72,10 +74,18 @@ function Tracker() {
   const [saveID, setSaveID] = useState<string | null>(null)
   const [attackID, setAttackID] = useState<string | null>(null)
   const [logOpen, setLogOpen] = useState(false)
-  // Encerrados ("End encounter") saem da fila e ficam em "Past encounters".
-  const active = store.encounters.filter((e) => !e.endedAt)
-  const past = store.encounters.filter((e) => e.endedAt)
-  const current = store.encounters.find((e) => e.id === store.currentID) ?? active[0] ?? null
+  // Só os encontros da campanha ativa (CA2, docs/campanha-ativa.md); encerrados
+  // ("End encounter") saem da fila e ficam em "Past encounters".
+  const campaign = useActiveCampaign()
+  const campaignID = campaign?.id ?? null
+  const campaignName = campaign?.id === null ? 'One-shot' : campaign?.name || 'Unnamed campaign'
+  const mine = encountersOf(store.encounters, campaignID)
+  const active = mine.filter((e) => !e.endedAt)
+  const past = mine.filter((e) => e.endedAt)
+  const current = mine.find((e) => e.id === store.currentID) ?? active[0] ?? null
+  // Encontros sem campanha de antes da campanha ativa: perguntar uma vez se vão para esta campanha.
+  const legacy = campaignID !== null && !store.legacyPromptDone ? encountersOf(store.encounters, null) : []
+  const nextActive = (encounters: Encounter[]) => encountersOf(encounters, campaignID).find((e) => !e.endedAt)?.id ?? null
 
   useEffect(() => {
     // Ficha do monstro a partir do combatente (o índice só carrega se houver monstro).
@@ -97,7 +107,7 @@ function Tracker() {
     })
   const note = (text: string) => editEncounter(() => {}, [text])
 
-  const create = (name: string, campaignID: string | null, party: Combatant[]) => {
+  const create = (name: string, party: Combatant[]) => {
     update((draft) => {
       const e = newEncounter(name, campaignID, new Date().toISOString())
       e.combatants = party
@@ -111,7 +121,7 @@ function Tracker() {
   const finish = (award: XpAward) => {
     if (!current) return
     editEncounter((e) => Object.assign(e, endEncounter(e, new Date().toISOString(), award)))
-    update((draft) => void (draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null))
+    update((draft) => void (draft.currentID = nextActive(draft.encounters)))
     navigate('/dm')
   }
 
@@ -119,7 +129,7 @@ function Tracker() {
     if (!current || !window.confirm(`Delete "${current.name}"? It is only on this device and cannot be recovered.`)) return
     update((draft) => {
       draft.encounters = draft.encounters.filter((e) => e.id !== current.id)
-      draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null
+      draft.currentID = nextActive(draft.encounters)
     })
   }
 
@@ -156,8 +166,28 @@ function Tracker() {
         <h1 className="paper-title">Combat Tracker</h1>
         {saveError && <p className="paper-soft save-error">Could not save on this device: {saveError}</p>}
 
+        {legacy.length > 0 && (
+          <p className="paper-soft combat-legacy">
+            {legacy.length === 1 ? '1 encounter from before has' : `${legacy.length} encounters from before have`} no campaign. Move {legacy.length === 1 ? 'it' : 'them'} to {campaignName}?{' '}
+            <button
+              className="chip chip-on"
+              onClick={() =>
+                update((d) => {
+                  d.encounters = d.encounters.map((e) => ((e.campaignID ?? null) === null ? { ...e, campaignID } : e))
+                  d.legacyPromptDone = true
+                })
+              }
+            >
+              Move
+            </button>{' '}
+            <button className="chip" onClick={() => update((d) => void (d.legacyPromptDone = true))}>
+              Keep as one-shots
+            </button>
+          </p>
+        )}
+
         <div className="paper-filter">
-          <span className="paper-label">Encounter</span>
+          <span className="paper-label">Encounters · {campaignName}</span>
           <div className="chip-row chip-row-scroll">
             {(showPast ? [...active, ...past] : active).map((e) => (
               <button key={e.id} className={[e.id === current?.id ? 'chip chip-on' : 'chip', e.endedAt ? 'chip-past' : ''].join(' ')} onClick={() => update((d) => void (d.currentID = e.id))}>
@@ -259,8 +289,7 @@ function Tracker() {
       {(adding === 'pc' || adding === 'npc') && current && (
         <AddPersonWindow
           kind={adding}
-          campaignID={current.campaignID}
-          onCampaign={(id) => editEncounter((e) => void (e.campaignID = id))}
+          campaignID={campaignID}
           alreadyIn={current.combatants.flatMap((c) => (c.characterID ? [c.characterID] : []))}
           onAdd={add}
           onClose={() => setAdding(null)}
@@ -273,7 +302,7 @@ function Tracker() {
       {initiativeOpen && current && (
         <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
-      {creating && <NewEncounterWindow encounters={store.encounters} campaignID={current?.campaignID ?? null} onCreate={create} onClose={() => setCreating(false)} />}
+      {creating && <NewEncounterWindow encounters={store.encounters} campaignID={campaignID} campaignName={campaignName} onCreate={create} onClose={() => setCreating(false)} />}
       {surpriseOpen && current && (
         <SurpriseWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setSurpriseOpen(false)} />
       )}
