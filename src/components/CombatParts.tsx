@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useAuth } from '../auth/context'
 import { loadMonster, loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
-import { supabase } from '../lib/supabase'
+import { useCampaignCharacters, useCampaigns } from '../lib/campaignCharacters'
 import {
   blankCombatant,
   changeHp,
   characterCombatant,
   hitDiceChoices,
   hitPointDice,
+  lastEncounterOf,
   monsterCombatants,
   monsterSetup,
   parseHitDice,
+  partyForNewEncounter,
   rerollHp,
   sideLabels,
   thac0DependsOnHp,
@@ -19,12 +20,12 @@ import {
   type CombatSettings,
   type Combatant,
   type CombatantKind,
+  type Encounter,
   type MonsterSetup,
   type MonsterStats,
   type Side,
 } from '../rules/combat'
 import { filterMonsters, xpLabel } from '../rules/monsters'
-import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import { InkInput } from './SheetBits'
 
@@ -586,11 +587,6 @@ export function AddMonsterWindow({
 
 // --- Adicionar PC ou NPC ------------------------------------------------------------------
 
-interface CampaignOption {
-  id: string
-  name: string
-}
-
 /**
  * PCs: os personagens da campanha que a conta consegue ler (hoje, os da
  * própria conta; com a Fase 2 do backend, os dos jogadores também) e, à mão,
@@ -612,48 +608,11 @@ export function AddPersonWindow({
   onAdd: (list: Combatant[]) => void
   onClose: () => void
 }) {
-  const { session } = useAuth()
-  const [campaigns, setCampaigns] = useState<CampaignOption[] | null>(null)
-  const [characters, setCharacters] = useState<{ id: string; data: PlayerCharacter }[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { signedIn: session, campaigns, error: campaignError } = useCampaigns()
+  const { characters, error: charactersError } = useCampaignCharacters(kind === 'pc' ? campaignID : null)
+  const error = campaignError ?? charactersError
   const [form, setForm] = useState(() => blankCombatant(kind, kind === 'pc' ? 'party' : 'enemies'))
   const [moraleText, setMoraleText] = useState('')
-
-  useEffect(() => {
-    if (kind !== 'pc' || !session) return
-    let cancelled = false
-    void supabase
-      .from('campaign')
-      .select('id, name')
-      .is('deleted_at', null)
-      .order('name')
-      .then(({ data, error: e }) => {
-        if (cancelled) return
-        if (e) setError(e.message)
-        else setCampaigns((data as CampaignOption[]) ?? [])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [kind, session])
-
-  useEffect(() => {
-    if (kind !== 'pc' || !session || !campaignID) return
-    let cancelled = false
-    void supabase
-      .from('character')
-      .select('id, data')
-      .eq('campaign_id', campaignID)
-      .is('deleted_at', null)
-      .then(({ data, error: e }) => {
-        if (cancelled) return
-        if (e) setError(e.message)
-        else setCharacters((data as { id: string; data: PlayerCharacter }[]) ?? [])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [kind, session, campaignID])
 
   const addManual = () => {
     const name = form.name.trim()
@@ -784,6 +743,80 @@ export function CombatSettingsWindow({ settings, onChange, onClose }: { settings
           { value: 0, label: 'At 0 hp' },
         ])}
       </section>
+    </PaperModal>,
+    document.body,
+  )
+}
+
+// --- Encontro novo --------------------------------------------------------------------------
+
+/**
+ * Encontro novo: nome e campanha. O grupo entra sozinho (pedido do usuário,
+ * 2026-10-09): no primeiro da campanha, os personagens dela; nos seguintes, o
+ * lado Party do último encontro, com as fichas do App recarregadas.
+ */
+export function NewEncounterWindow({
+  encounters,
+  campaignID: initialCampaign,
+  onCreate,
+  onClose,
+}: {
+  encounters: Encounter[]
+  campaignID: string | null
+  onCreate: (name: string, campaignID: string | null, party: Combatant[]) => void
+  onClose: () => void
+}) {
+  const { signedIn, campaigns, error: campaignError } = useCampaigns()
+  const [campaignID, setCampaignID] = useState(initialCampaign)
+  const [name, setName] = useState(`Encounter ${encounters.length + 1}`)
+  const { characters, error } = useCampaignCharacters(campaignID)
+  const previous = lastEncounterOf(encounters, campaignID)
+  const loading = signedIn && campaignID !== null && characters === null && !error
+  const party = loading ? [] : partyForNewEncounter(previous, characters ?? [])
+  const campaignName = campaigns?.find((c) => c.id === campaignID)?.name
+
+  return createPortal(
+    <PaperModal title="New encounter" subtitle="The party comes along" onClose={onClose}>
+      {(campaignError ?? error) && <p className="paper-soft save-error">{campaignError ?? error}</p>}
+      <label className="add-field">
+        <span className="paper-label">Name</span>
+        <input className="ink-input" value={name} aria-label="Encounter name" onChange={(event) => setName(event.target.value)} />
+      </label>
+      {signedIn && (
+        <label className="add-field">
+          <span className="paper-label">Campaign</span>
+          <select className="add-campaign" aria-label="Campaign" value={campaignID ?? ''} onChange={(event) => setCampaignID(event.target.value || null)}>
+            <option value="">No campaign</option>
+            {(campaigns ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <div className="add-field">
+        <span className="paper-label">
+          {previous ? `Party from “${previous.name}”` : campaignName ? `Characters of ${campaignName}` : 'Party'}
+        </span>
+        {loading ? (
+          <p className="paper-soft">Loading the characters…</p>
+        ) : party.length === 0 ? (
+          <p className="paper-soft">{campaignID ? 'No characters of this campaign that you can see yet.' : 'Nobody yet: add the party with + PC.'}</p>
+        ) : (
+          <ul className="new-party">
+            {party.map((c) => (
+              <li key={c.id}>
+                <strong>{c.name}</strong> <span className="paper-soft">{[c.kind === 'npc' ? 'NPC' : c.characterID ? 'PC' : 'PC (no App)', c.hp !== null ? `HP ${c.hp}/${c.hpMax ?? '—'}` : null].filter(Boolean).join(' · ')}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {previous && <p className="paper-soft">App characters come with their sheet’s current hit points; the others as they ended.</p>}
+      </div>
+      <button className="add-go" disabled={loading || name.trim() === ''} onClick={() => onCreate(name.trim(), campaignID, party)}>
+        Create encounter{party.length > 0 ? ` with ${party.length}` : ''}
+      </button>
     </PaperModal>,
     document.body,
   )

@@ -216,3 +216,24 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - conferido no navegador (abrir, tirar pelo ★, editar, pôr uma tabela do
     CTH, Reset, fixar uma tabela do PHB pelo Grimoire e vê-la no tracker;
     1024 px e celular sem rolagem de página); testes: 155 (3 novos).
+- 2026-10-09, encerrar o encontro e o grupo que vem junto (web v0.50.0;
+  decisões do usuário: NPCs aliados do lado Party vêm junto; PV dos sem App
+  como terminaram):
+  - **End encounter**: marca o encontro como encerrado (`endEncounter`, data
+    e rodada), grava e volta para DM Tools. Encerrados saem da fila e ficam em
+    "past encounters (N)"; abertos, mostram "Ended on …" e **Reopen**;
+  - **+ New encounter** abre uma janela com nome e **campanha** e mostra quem
+    vem junto (`partyForNewEncounter`, com testes):
+    - primeiro encontro da campanha: os personagens dela que a conta lê
+      (Fase 1 do backend: os da própria conta; com a Fase 2, os dos jogadores);
+    - nos seguintes: o lado Party do último encontro da campanha
+      (`lastEncounterOf`; sem campanha, o último sem campanha) — PCs e NPCs
+      aliados, inclusive caídos e mortos; personagens do App recarregados da
+      ficha (PV atuais, CA, THAC0), os sem App com os PV de como terminaram;
+      personagem novo na campanha entra também; condições, moral e
+      iniciativa limpas; ids novos;
+  - campanhas e personagens da conta num lugar só
+    (`src/lib/campaignCharacters.ts`), usado pelo + PC e pela janela nova;
+  - conferido no navegador (encontro 1 com PCs sem App e henchman; End leva a
+    DM Tools; encontro 2 traz Rufus 14/24, Zé −15/30 e o henchman, sem o orc;
+    past encounters e Reopen); testes: 157 (2 novos).

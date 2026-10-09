@@ -6,6 +6,10 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
+  endEncounter,
+  lastEncounterOf,
+  partyForNewEncounter,
+  reopenEncounter,
   goBackToRound,
   missingRolls,
   thac0ByHitPoints,
@@ -457,4 +461,43 @@ test('fotos das rodadas e voltar a uma rodada anterior', () => {
   assert.deepEqual(actingNow(back), [orc1.id])
   assert.deepEqual(back.history?.map((h) => h.round), [1])
   assert.equal(goBackToRound(x, 9), x)
+})
+
+// --- Encerrar o encontro e começar o próximo ----------------------------------------------
+
+test('encerrar, reabrir e o último encontro da campanha', () => {
+  const a = { ...newEncounter('A', 'camp', '2026-10-01T10:00:00Z') }
+  const b = { ...newEncounter('B', 'camp', '2026-10-02T10:00:00Z') }
+  const c = { ...newEncounter('C', null, '2026-10-03T10:00:00Z') }
+  assert.equal(lastEncounterOf([a, b, c], 'camp'), b)
+  assert.equal(lastEncounterOf([a, b, c], null), c)
+  assert.equal(lastEncounterOf([a, b], 'other'), null)
+  const ended = endEncounter(b, '2026-10-02T12:00:00Z')
+  assert.equal(ended.endedAt, '2026-10-02T12:00:00Z')
+  assert.equal(reopenEncounter(ended).endedAt, null)
+})
+
+test('grupo do encontro novo: campanha no primeiro; depois, o Party do último com a ficha recarregada', () => {
+  const sheet = (name: string, hp: number) => ({ name, armorClass: 3, hitPointsMax: 30, hitPointsCurrent: hp, thac0: 17 })
+  // Primeiro encontro: os personagens da campanha.
+  const first = partyForNewEncounter(null, [{ id: 'z', data: sheet('Zé', 30) }])
+  assert.deepEqual(first.map((c) => [c.name, c.kind, c.side, c.hp, c.characterID]), [['Zé', 'pc', 'party', 30, 'z']])
+  // Último encontro: Zé morto (-12), Rufus sem App ferido, um henchman, um orc.
+  const last = newEncounter('Last', 'camp', '2026-10-01')
+  const ze = { ...first[0], hp: -12, conditions: [{ id: 'x', name: 'Held', rounds: 2 }] }
+  const rufus = { ...blankCombatant('pc', 'party', 'Rufus'), hp: 5, hpMax: 24 }
+  const hench = { ...blankCombatant('npc', 'party', 'Henchman'), hp: 3, hpMax: 8 }
+  const orc = { ...blankCombatant('monster', 'enemies', 'Orc'), hp: 0, hpMax: 6 }
+  last.combatants = [ze, rufus, hench, orc]
+  // Entre os encontros Zé foi curado na ficha; Mané entrou na campanha.
+  const next = partyForNewEncounter(last, [{ id: 'z', data: sheet('Zé', 22) }, { id: 'm', data: sheet('Mané', 30) }])
+  assert.deepEqual(next.map((c) => [c.name, c.hp, c.conditions.length]), [
+    ['Zé', 22, 0],
+    ['Rufus', 5, 0], // sem App: como terminou
+    ['Henchman', 3, 0],
+    ['Mané', 30, 0],
+  ])
+  assert.ok(next.every((c) => c.id !== ze.id && c.id !== rufus.id)) // ids novos
+  // Personagem do App que a conta não lê mais: vai como terminou.
+  assert.equal(partyForNewEncounter(last, []).find((c) => c.name === 'Zé')?.hp, -12)
 })

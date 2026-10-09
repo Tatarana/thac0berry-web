@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
 import { MoraleWindow } from '../components/CombatMorale'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
-import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable } from '../components/CombatParts'
+import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable, NewEncounterWindow } from '../components/CombatParts'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
@@ -13,11 +13,13 @@ import { useCombatStore } from '../lib/combatStore'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
   actingNow as actingIDs,
+  endEncounter,
   initiativeByCombatant,
   initiativeSteps,
   missingRolls,
   newEncounter,
   newInitiative,
+  reopenEncounter,
   startRound,
   type Combatant,
   type Encounter,
@@ -57,7 +59,13 @@ function Tracker() {
     void loadTables().then(setTables)
   }, [])
 
-  const current = store.encounters.find((e) => e.id === store.currentID) ?? store.encounters[0] ?? null
+  const navigate = useNavigate()
+  const [creating, setCreating] = useState(false)
+  const [showPast, setShowPast] = useState(false)
+  // Encerrados ("End encounter") saem da fila e ficam em "Past encounters".
+  const active = store.encounters.filter((e) => !e.endedAt)
+  const past = store.encounters.filter((e) => e.endedAt)
+  const current = store.encounters.find((e) => e.id === store.currentID) ?? active[0] ?? null
 
   useEffect(() => {
     // Ficha do monstro a partir do combatente (o índice só carrega se houver monstro).
@@ -72,18 +80,31 @@ function Tracker() {
       e.updatedAt = new Date().toISOString()
     })
 
-  const create = () =>
+  const create = (name: string, campaignID: string | null, party: Combatant[]) => {
     update((draft) => {
-      const e = newEncounter(`Encounter ${draft.encounters.length + 1}`, current?.campaignID ?? null, new Date().toISOString())
+      const e = newEncounter(name, campaignID, new Date().toISOString())
+      e.combatants = party
       draft.encounters.unshift(e)
       draft.currentID = e.id
     })
+    setCreating(false)
+  }
+
+  // Encerra (fica guardado em "Past encounters") e volta à tela anterior.
+  const finish = () => {
+    if (!current || !window.confirm(`End "${current.name}"? It is kept under Past encounters and can be reopened.`)) return
+    update((draft) => {
+      draft.encounters = draft.encounters.map((e) => (e.id === current.id ? endEncounter(e, new Date().toISOString()) : e))
+      draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null
+    })
+    navigate('/dm')
+  }
 
   const remove = () => {
     if (!current || !window.confirm(`Delete "${current.name}"? It is only on this device and cannot be recovered.`)) return
     update((draft) => {
       draft.encounters = draft.encounters.filter((e) => e.id !== current.id)
-      draft.currentID = draft.encounters[0]?.id ?? null
+      draft.currentID = draft.encounters.find((e) => !e.endedAt)?.id ?? null
     })
   }
 
@@ -118,21 +139,35 @@ function Tracker() {
         <div className="paper-filter">
           <span className="paper-label">Encounter</span>
           <div className="chip-row chip-row-scroll">
-            {store.encounters.map((e) => (
-              <button key={e.id} className={e.id === current?.id ? 'chip chip-on' : 'chip'} onClick={() => update((d) => void (d.currentID = e.id))}>
+            {(showPast ? [...active, ...past] : active).map((e) => (
+              <button key={e.id} className={[e.id === current?.id ? 'chip chip-on' : 'chip', e.endedAt ? 'chip-past' : ''].join(' ')} onClick={() => update((d) => void (d.currentID = e.id))}>
                 {e.name || 'Unnamed encounter'}
+                {e.endedAt ? ' · ended' : ''}
               </button>
             ))}
-            <button className="chip" onClick={create}>
+            <button className="chip" onClick={() => setCreating(true)}>
               + New encounter
             </button>
+            {past.length > 0 && (
+              <button className="paper-link" onClick={() => setShowPast(!showPast)}>
+                {showPast ? 'hide past encounters' : `past encounters (${past.length})`}
+              </button>
+            )}
           </div>
         </div>
 
         {!current ? (
-          <p className="paper-soft">No encounters yet. Create one to prepare a fight — it is kept on this device.</p>
+          <p className="paper-soft">No encounters in progress. Create one to prepare a fight — it is kept on this device.</p>
         ) : (
           <>
+            {current.endedAt && (
+              <p className="paper-soft combat-ended">
+                Ended on {new Date(current.endedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}, round {current.round}.{' '}
+                <button className="chip" onClick={() => editEncounter((e) => Object.assign(e, reopenEncounter(e)))}>
+                  Reopen
+                </button>
+              </p>
+            )}
             <div className="combat-head">
               <input className="ink-input combat-title" aria-label="Encounter name" value={current.name} onChange={(event) => editEncounter((e) => void (e.name = event.target.value))} />
               <div className="chip-row combat-add">
@@ -146,6 +181,11 @@ function Tracker() {
                   + NPC
                 </button>
               </div>
+              {!current.endedAt && (
+                <button className="chip chip-on combat-end" onClick={finish}>
+                  End encounter
+                </button>
+              )}
               <button className="paper-link combat-delete" onClick={remove}>
                 delete encounter
               </button>
@@ -206,6 +246,7 @@ function Tracker() {
       {initiativeOpen && current && (
         <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
+      {creating && <NewEncounterWindow encounters={store.encounters} campaignID={current?.campaignID ?? null} onCreate={create} onClose={() => setCreating(false)} />}
       {roundsOpen && current && (
         <RoundsWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setRoundsOpen(false)} />
       )}
