@@ -4,7 +4,14 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
+import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import {
+  autoMoraleModifiers,
+  hitDiceValue,
+  moraleFromTable,
+  moraleRows,
+  moraleTarget,
+  recordMorale,
   blankCombatant,
   changeHp,
   endRound,
@@ -225,4 +232,71 @@ test('começar a rodada fecha a ordem: quem cai depois não muda a ordem; destaq
   assert.deepEqual(actingNow(fallen), [orc1.id])
   assert.equal(fallen.initiative.order?.length, 2)
   assert.deepEqual(actingNow({ initiative: newInitiative('side') }), [])
+})
+
+// --- CT3: moral ------------------------------------------------------------------------
+
+// Tabela 50 como vem dos dados (com os asteriscos das notas).
+const table50 = moraleRows([
+  ['Abandoned by friends', '-6'],
+  ['Creature lost 25% of its hp*', '-2'],
+  ['Creature lost 50% of its hp*', '-4'],
+  ['Creatures with 1/2 HD or less', '-2'],
+  ['Creatures with greater than 1/2 HD, but less than 1 HD', '-1'],
+  ['Creatures with 4 to 8+ HD', '1'],
+  ['Creatures with 9 to 14+ HD', '2'],
+  ['Creatures with 15 or more HD', '3'],
+  ['Each additional check required in round**', '-1'],
+  ['Unable to affect opponent***', '-8'],
+])
+
+test('DV como número para a Tabela 50', () => {
+  assert.equal(hitDiceValue('4+1'), 4)
+  assert.equal(hitDiceValue('11+'), 11)
+  assert.equal(hitDiceValue('½'), 0.5)
+  assert.equal(hitDiceValue('1-1'), 0.75)
+  assert.equal(hitDiceValue('1-4 hp'), 0.25)
+  assert.equal(hitDiceValue('9 (40 hp)'), 9)
+  assert.equal(hitDiceValue('Varies'), null)
+})
+
+test('moral: PV perdidos (do combatente ou do grupo, vale o maior), DV e testes repetidos', () => {
+  assert.equal(table50[1].label, 'Creature lost 25% of its hp')
+  const e = newEncounter('Test', null, '2026-10-09')
+  const ogre = { ...blankCombatant('monster', 'enemies', 'Ogre'), hp: 14, hpMax: 20, hitDice: '4+1' }
+  e.combatants = [ogre]
+  e.round = 2
+  assert.deepEqual(autoMoraleModifiers(ogre, e, table50, -10).map((m) => [m.label, m.value, m.reason]), [
+    ['Creature lost 25% of its hp', -2, 'lost 30% of its hp'],
+    ['Creatures with 4 to 8+ HD', 1, 'HD 4+1'],
+  ])
+  // Metade do grupo caiu: vale o 50% do grupo (não soma com o 25% dele).
+  const goblins = [0, 1, 2, 3].map((i) => ({ ...blankCombatant('monster', 'enemies', `Goblin ${i}`), hp: i < 2 ? 0 : 7, hpMax: 7, hitDice: '1-1' }))
+  e.combatants = goblins
+  const checked = recordMorale(recordMorale(goblins[3], 2, 9, 10), 2, 4, 10)
+  assert.equal(checked.lastMorale?.count, 2)
+  assert.deepEqual(autoMoraleModifiers(checked, e, table50, -10).map((m) => [m.value, m.reason]), [
+    [-4, '50% of its side has fallen'],
+    [-1, 'HD 1-1'],
+    [-2, '2 checks already this round'],
+  ])
+  // Em outra rodada a contagem recomeça.
+  assert.equal(recordMorale(checked, 3, 12, 10).lastMorale?.count, 1)
+})
+
+test('moral: 2d10 igual ou abaixo da moral ajustada mantém o combate', () => {
+  assert.equal(moraleTarget(12, [-2, 1]), 11)
+  const orc = blankCombatant('monster', 'enemies', 'Orc')
+  assert.deepEqual(recordMorale(orc, 1, 11, 11).lastMorale, { round: 1, count: 1, roll: 11, target: 11, holds: true })
+  assert.equal(recordMorale(orc, 1, 12, 11).lastMorale?.holds, false)
+  assert.deepEqual(moraleFromTable({ label: 'Regular soldiers', value: 12 }), { text: 'Regular soldiers (12)', low: 12, high: 12 })
+})
+
+test('dados reais: Tabela 50 tem as linhas que a moral calcula sozinha', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')))
+  const rows = moraleRows(tables.find((t) => t.id === 'dmg-50')?.rows ?? [])
+  for (const pattern of [/25%/, /50%/, /1\/2 HD or less/i, /less than 1 HD/i, /4 to 8/i, /9 to 14/i, /15 or more HD/i, /additional check/i])
+    assert.ok(rows.some((r) => pattern.test(r.label)), String(pattern))
+  assert.equal(moraleRows(tables.find((t) => t.id === 'dmg-49')?.rows ?? []).length, 14)
 })

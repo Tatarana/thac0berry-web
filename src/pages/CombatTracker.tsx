@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { InitiativePanel } from '../components/CombatInitiative'
+import { MoraleWindow } from '../components/CombatMorale'
 import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable } from '../components/CombatParts'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
@@ -10,7 +11,7 @@ import { actingNow as actingIDs, newEncounter, type Combatant, type Encounter } 
 
 // Combat Tracker (ferramenta do DM, docs/controle-de-combate.md): encontros
 // guardados no aparelho, com os combatentes de cada lado. CT1: combatentes,
-// PV, estados e condições; CT2: iniciativa e rodadas; moral (CT3) e tabelas
+// PV, estados e condições; CT2: iniciativa e rodadas; CT3: moral; tabelas
 // (CT4) entram depois.
 
 export function CombatTracker() {
@@ -27,6 +28,7 @@ function Tracker() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [monsterIndex, setMonsterIndex] = useState<MonsterIndexEntry[] | null>(null)
   const [openMonster, setOpenMonster] = useState<MonsterIndexEntry | null>(null)
+  const [moraleID, setMoraleID] = useState<string | null>(null)
 
   const current = store.encounters.find((e) => e.id === store.currentID) ?? store.encounters[0] ?? null
 
@@ -60,6 +62,8 @@ function Tracker() {
 
   // Quem age agora (passo atual da ordem fechada no começo da rodada): destaque na lista.
   const actingNow = new Set(current ? actingIDs(current) : [])
+
+  const moraleTarget = current?.combatants.find((c) => c.id === moraleID) ?? null
 
   const add = (list: Combatant[]) => editEncounter((e) => void e.combatants.push(...list))
   const replace = (next: Combatant) => editEncounter((e) => void (e.combatants = e.combatants.map((c) => (c.id === next.id ? next : c))))
@@ -129,6 +133,7 @@ function Tracker() {
                   const entry = c.monsterID ? monsterIndex?.find((m) => m.id === c.monsterID) : undefined
                   return entry ? () => setOpenMonster(entry) : undefined
                 }}
+                onMorale={(c) => setMoraleID(c.id)}
               />
             )}
           </>
@@ -149,6 +154,9 @@ function Tracker() {
         />
       )}
       {settingsOpen && <CombatSettingsWindow settings={store.settings} onChange={(s) => update((d) => void (d.settings = s))} onClose={() => setSettingsOpen(false)} />}
+      {moraleTarget && current && (
+        <MoraleWindow key={moraleTarget.id} combatant={moraleTarget} encounter={current} settings={store.settings} onChange={replace} onClose={() => setMoraleID(null)} />
+      )}
       {openMonster && <MonsterDetail entry={openMonster} onClose={() => setOpenMonster(null)} />}
     </div>
   )

@@ -40,7 +40,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 |---|---|---|
 | CT1 | Encontros e combatentes: PCs (da campanha ou à mão), NPCs, monstros do catálogo (com quantidade e PV rolados ou na média), PV com dano/cura, estados (caído, morto), condições com rodadas, configurações do DM; guardado no aparelho | feita (web v0.43.0) |
 | CT2 | Iniciativa e rodadas: por lado ou individual (padrão do DM), modificadores da Tabela 40, rolar ou digitar, ordem e "Next" | feita (web v0.44.0) |
-| CT3 | Moral: 2d10 contra a moral, Tabela 50 em chips (PV perdido calculado), resultado e quando testar | a fazer |
+| CT3 | Moral: 2d10 contra a moral, Tabela 50 em chips (PV perdido calculado), resultado e quando testar | feita (web v0.45.0) |
 | CT4 | Tabelas rápidas: painel com as tabelas de combate (35, 36, 40/41, 44, 46, 47, 49/50, 51, 57, 58, 59), com Roll e favoritas | a fazer |
 | CT5 | Ideias (decidir na vez): surpresa, distância e reação, "acerta?", salvamentos de monstro, efeitos com duração, XP no fim, log | a decidir |
 
@@ -107,3 +107,24 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     e a tabela cabe sem rolar em 1024 e 1280 px; no celular, rola de lado
     dentro do quadro; topo enxuto (nome do encontro e + PC/Monster/NPC na
     mesma linha; ordem da iniciativa numa linha).
+- 2026-10-09, CT3 feita (web v0.45.0):
+  - `src/rules/combat.ts`: moral das Tabelas 49 e 50 lidas do Table Grimoire;
+    modificadores calculados sozinhos (`autoMoraleModifiers`): PV perdidos
+    25%/50% do combatente **ou do grupo** (nota * da tabela; vale o maior, não
+    somam), DV (`hitDiceValue`: "½", "1-1", "4+1", "1-4 hp") e −1 por teste já
+    feito na rodada (nota **); moral ajustada (`moraleTarget`), registro do
+    teste no combatente (`lastMorale`, com a contagem da rodada) e moral da
+    Tabela 49 para quem não tem a do livro (`moraleFromTable`);
+  - janela de moral (`src/components/CombatMorale.tsx`), aberta pela célula
+    Mor. (nunca em PCs): valor dentro da faixa do livro ("Steady (11-12)" →
+    11 ou 12), ou escolha na Tabela 49; 2d10 rolado ou digitado; resultado
+    (mantém / falha, com a margem e o que o DMG manda fazer: recuar ou
+    debandar, render-se se não houver saída) e "Mark Fleeing/Surrendered"
+    (vira condição); Tabela 50 em chips, os automáticos ligados com o porquê
+    (o DM desliga se quiser); "When to check morale" com a lista do DMG;
+  - na tabela, a célula Mor. mostra ✓/✗ do último teste; a coluna de
+    condições agora quebra linha (o `nowrap` das células vencia) e a de
+    ataques quebra só em texto longo: continua cabendo em 1024 e 1280 px;
+  - conferido no navegador (orc com 40% do lado caído: −2 automático; 2º
+    teste na rodada: −1 automático; NPC; PC sem botão; celular); testes: 142
+    (4 novos).
