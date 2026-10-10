@@ -528,6 +528,7 @@ export function computedSpellSlotAllotments(c: {
   wizardSchool?: string | null
   multiClasses?: ClassLevel[] | null
   formerClasses?: ClassLevel[] | null
+  kitSpellcasting?: { arcane?: number[] | null; divine?: number[] | null } | null
 }): SlotAllotment[] {
   const toAllotments = (counts: number[], caster: SlotAllotment['caster'], bonus = 0) =>
     counts.flatMap((count, index) => (count > 0 ? [{ caster, level: index + 1, count: count + bonus }] : []))
@@ -553,6 +554,15 @@ export function computedSpellSlotAllotments(c: {
       if (same) same.count = Math.max(same.count, a.count)
       else result.push(a)
     }
+  }
+  // Conjuração por kit (ajuste 6): os slots que o jogador marcou à mão, por círculo.
+  for (const caster of ['arcane', 'divine'] as const) {
+    ;(c.kitSpellcasting?.[caster] ?? []).forEach((count, index) => {
+      if (count <= 0) return
+      const same = result.find((r) => r.caster === caster && r.level === index + 1)
+      if (same) same.count = Math.max(same.count, count)
+      else result.push({ caster, level: index + 1, count })
+    })
   }
   return result
 }

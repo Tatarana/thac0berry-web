@@ -35,7 +35,7 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
 | U2 | Settings | 1, 2 (migração no backend) | feita (web v0.55.2; falta o `db push` e o teste na tela) |
 | U3 | Janela da regeneração | 4 | feita (web v0.55.3; teste na tela com o usuário) |
 | U4 | CA com DEX | 7 | feita (web v0.55.4; teste na tela com o usuário) |
-| U5 | Conjuração por kit | 6 (extensão "web primeiro" no schema) | planejada |
+| U5 | Conjuração por kit | 6 (extensão "web primeiro" no schema) | feita (web v0.56.0; teste na tela com o usuário) |
 
 ## Log
 
@@ -84,3 +84,19 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   - testes: 177;
   - **pendente no iPad**: lá a caixa ainda é a CA final; quando o iPad voltar, a
     ficha dele precisa somar a DEX do mesmo jeito (mesmo campo `armorClass`).
+- 2026-10-10, U5 feita (web v0.56.0; data `f849f47`):
+  - schema: `kitSpellcasting` (`{ arcane?: number[], divine?: number[] }`,
+    slots por círculo; a presença liga o tipo), extensão "web primeiro"
+    (gerador do iPad, branch `n3`);
+  - regras: `hasSpellSheetAny`/`isArcaneCasterAny`/`isDivineCasterAny`
+    consideram o kit (`kitCasts`); `computedSpellSlotAllotments` soma os slots
+    marcados à mão;
+  - tela: botão ✦ ao lado do kit no cabeçalho abre "Spellcasting from a kit"
+    (Wizard spells: grimório + folha arcana; Priest spells: folha divina; slots
+    por círculo, 9 e 7); ao ligar, o app cria o "First day" se o personagem não
+    tem folha (como numa troca de classe). As folhas que já existem não mudam;
+    os dias novos usam os slots;
+  - testes: 178;
+  - pendente no iPad: ler `kitSpellcasting` quando ele voltar.
+- Com a U5, os oito ajustes estão feitos. Falta o usuário testar na tela (e
+  rodar o `db push` da U2). Próximo do backlog: GT4.

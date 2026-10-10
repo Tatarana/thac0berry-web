@@ -10,7 +10,7 @@
 // classe (magia, perícias de ladrão, tabelas de referência) contam as
 // anteriores; XP, combinações e proficiências, não.
 
-import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library.ts'
+import type { CharacterClass, ClassLevel, KitSpellcasting, PlayerCharacter } from '../types/library.ts'
 import { normalize } from '../lib/search.ts'
 import { primeRequisites } from './sessionReport.ts'
 import { demiBardKits, demiBardWarning, levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
@@ -29,7 +29,12 @@ import {
   type ReferenceKind,
 } from './rules.ts'
 
-type WithClasses = Pick<PlayerCharacter, 'characterClass' | 'level'> & { multiClasses?: ClassLevel[] | null; formerClasses?: ClassLevel[] | null }
+type WithClasses = Pick<PlayerCharacter, 'characterClass' | 'level'> & {
+  multiClasses?: ClassLevel[] | null
+  formerClasses?: ClassLevel[] | null
+  /** Conjuração vinda de um kit (ajuste 6): grimório e folhas sem classe conjuradora. */
+  kitSpellcasting?: KitSpellcasting | null
+}
 
 /** As classes de um personagem (principal, nível e as outras). */
 export type ClassChoice = WithClasses
@@ -67,13 +72,18 @@ export function levelOf(c: WithClasses, wanted: CanonicalClass): number | null {
 export const hasClass = (c: WithClasses, wanted: CanonicalClass) => levelOf(c, wanted) !== null
 
 /** Alguma classe tem folha de magia (Cleric, Mage, Bard). */
-export const hasSpellSheetAny = (c: WithClasses) => allClasses(c).some((k) => hasSpellSheet(k.characterClass))
+export const hasSpellSheetAny = (c: WithClasses) =>
+  allClasses(c).some((k) => hasSpellSheet(k.characterClass)) || kitCasts(c, 'arcane') || kitCasts(c, 'divine')
+
+/** Conjuração por kit ligada para o tipo (ajuste 6; o array pode estar vazio = sem slots ainda). */
+export const kitCasts = (c: WithClasses, caster: 'arcane' | 'divine') => Array.isArray(c.kitSpellcasting?.[caster])
 
 /** Alguma classe conjura magia arcana (Mage, Bard): grimório. */
-export const isArcaneCasterAny = (c: WithClasses) => allClasses(c).some((k) => isArcaneCaster(k.characterClass))
+export const isArcaneCasterAny = (c: WithClasses) => allClasses(c).some((k) => isArcaneCaster(k.characterClass)) || kitCasts(c, 'arcane')
 
 /** Alguma classe conjura magia divina com folha (Cleric). */
-export const isDivineCasterAny = (c: WithClasses) => allClasses(c).some((k) => hasSpellSheet(k.characterClass) && !isArcaneCaster(k.characterClass))
+export const isDivineCasterAny = (c: WithClasses) =>
+  allClasses(c).some((k) => hasSpellSheet(k.characterClass) && !isArcaneCaster(k.characterClass)) || kitCasts(c, 'divine')
 
 /**
  * Atributo congelado na folha de magia: Sabedoria (dá slots extras ao

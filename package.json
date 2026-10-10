@@ -1,7 +1,7 @@
 {
   "name": "thac0berry-web",
   "private": true,
-  "version": "0.55.4",
+  "version": "0.56.0",
   "type": "module",
   "scripts": {
     "data": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/build-data.mjs",

@@ -5145,3 +5145,43 @@ button.slot-dot:hover {
   flex-wrap: wrap;
   gap: 14px;
 }
+
+/* Conjuração por kit (ajuste 6, 2026-10-10). */
+.kit-spells {
+  margin-left: 4px;
+}
+
+.kit-casting {
+  padding: 8px 0;
+  border-top: 1px solid rgb(47 39 28 / 0.15);
+}
+
+.kit-casting-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.kit-casting-slots {
+  margin: 6px 0 0 26px;
+}
+
+.kit-casting-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+}
+
+.kit-casting-circle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.kit-casting-circle .ink-input {
+  width: 2em;
+  text-align: center;
+}

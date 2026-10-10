@@ -8,6 +8,7 @@ import * as E from '../src/rules/effects.ts'
 import * as R from '../src/rules/rules.ts'
 import * as S from '../src/rules/sheetEdits.ts'
 import * as K from '../src/rules/combat.ts'
+import * as M from '../src/rules/multiclass.ts'
 import type { PlayerCharacter } from '../src/types/library.ts'
 
 function cleric(): PlayerCharacter {
@@ -87,4 +88,19 @@ test('CA final = armadura + ajuste defensivo da DEX (linha da ficha, ou a tabela
 test('Combat Tracker usa a CA final do personagem', () => {
   const pc = { name: 'Kel', armorClass: 5, hitPointsMax: 38, hitPointsCurrent: 38, thac0: 14, details: { dexterityDefense: '-2' } }
   assert.equal(K.characterCombatant('x', pc).ac, 3)
+})
+
+test('conjuração por kit: grimório e folhas sem ser mago/sacerdote, slots à mão', () => {
+  const ninja = { characterClass: 'Thief' as const, level: 4, abilities: { strength: 10, dexterity: 17, constitution: 10, intelligence: 15, wisdom: 9, charisma: 10 } }
+  assert.equal(M.hasSpellSheetAny(ninja), false)
+  const shinobi = { ...ninja, kitSpellcasting: { arcane: [] } }
+  assert.equal(M.hasSpellSheetAny(shinobi), true, 'ligado mesmo sem slots ainda')
+  assert.equal(M.isArcaneCasterAny(shinobi), true)
+  assert.equal(M.isDivineCasterAny(shinobi), false)
+  assert.equal(M.spellSheetAbility(shinobi), 15, 'só arcana: a folha guarda a INT')
+  const slots = R.computedSpellSlotAllotments({ ...ninja, kitSpellcasting: { arcane: [2, 1], divine: [1] } })
+  assert.deepEqual(
+    slots.map((s) => `${s.caster}${s.level}x${s.count}`).sort(),
+    ['arcane1x2', 'arcane2x1', 'divine1x1'],
+  )
 })

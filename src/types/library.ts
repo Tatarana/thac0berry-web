@@ -176,6 +176,13 @@ export interface ItemSpellUse {
   usedCount: number
 }
 
+export interface KitSpellcasting {
+  /** Magia arcana: slots por círculo (índice 0 = 1º círculo); ausente/null = sem magia arcana. */
+  arcane?: number[] | null
+  /** Magia divina: slots por círculo (índice 0 = 1º círculo); ausente/null = sem magia divina. */
+  divine?: number[] | null
+}
+
 export interface LevelChangeRow {
   by: string
   atLevels: string
@@ -354,6 +361,8 @@ export interface PlayerCharacter {
   formerClasses?: ClassLevel[] | null
   /** Retrato do motor de consequências: as classes anteriores no último estado revisado. */
   lastAppliedFormerClasses?: ClassLevel[] | null
+  /** Conjuração vinda de um kit (grimório e folhas de magia sem ser mago/sacerdote), com os slots à mão; ausente = nenhuma. */
+  kitSpellcasting?: KitSpellcasting | null
   /** Bloco psiônico do Psionicist (feito primeiro na web, 2026-10-06; o iPad ainda não tem). */
   psionics?: Psionics | null
 }

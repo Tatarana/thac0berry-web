@@ -24,6 +24,7 @@ import { backstabMultiplier, bonusLanguages, canonicalClass, dexDefenseAdjustmen
 import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
+import { KitSpellcastingWindow } from './KitSpellcasting'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -129,6 +130,7 @@ function RecordHeader({
 }) {
   const [pickingRace, setPickingRace] = useState(false)
   const [pickingKit, setPickingKit] = useState(false)
+  const [kitSpellsOpen, setKitSpellsOpen] = useState(false)
   // true = a aba padrão; 'dual' = abre direto na classe dupla.
   const [multiOpen, setMultiOpen] = useState<boolean | 'dual'>(false)
   const dualRestriction = dualClassRestriction(c)
@@ -182,6 +184,15 @@ function RecordHeader({
                 <button className="ink-picker-button" aria-label="Kit" onClick={() => setPickingKit(true)}>
                   <span className="rec-value">{c.kit || 'None'}</span>
                   <span className="ink-picker-caret" aria-hidden="true">▾</span>
+                </button>
+                {/* Conjuração vinda de um kit (ajuste 6): grimório e folhas sem ser mago/sacerdote. */}
+                <button
+                  className={c.kitSpellcasting ? 'mc-add mc-add-on kit-spells' : 'mc-add kit-spells'}
+                  title="Spellcasting from a kit"
+                  aria-label="Spellcasting from a kit"
+                  onClick={() => setKitSpellsOpen(true)}
+                >
+                  ✦
                 </button>
               </span>
               <span className="rec-cell-label">Class / Kit</span>
@@ -281,6 +292,16 @@ function RecordHeader({
                 setPickingRace(false)
               }}
               onClose={() => setPickingRace(false)}
+            />
+          )}
+          {kitSpellsOpen && edit && (
+            <KitSpellcastingWindow
+              c={c}
+              onChange={(next) => {
+                edit((x) => void (x.kitSpellcasting = next))
+                onClassChanged?.({ characterClass: c.characterClass, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses, kitSpellcasting: next })
+              }}
+              onClose={() => setKitSpellsOpen(false)}
             />
           )}
           {pickingKit && edit && (

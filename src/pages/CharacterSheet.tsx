@@ -198,6 +198,7 @@ export function CharacterSheet() {
       level: classes.level,
       multiClasses: classes.multiClasses ?? null,
       formerClasses: classes.formerClasses === undefined ? (c.formerClasses ?? null) : classes.formerClasses,
+      kitSpellcasting: classes.kitSpellcasting === undefined ? (c.kitSpellcasting ?? null) : classes.kitSpellcasting,
     })
 
   /** "+" das bolinhas: "Day N" na mesma sessão da folha aberta, herdando a última dela. */
@@ -254,7 +255,8 @@ export function CharacterSheet() {
    * da MC3a, ou feita no iPad): ganha o "First day" ao abrir. Classe
    * única segue o iPad (a folha só nasce na troca de classe ou na criação).
    */
-  const needsFirstDay = !!character && (isMultiClass(character) || isDualClass(character)) && hasSpellSheetAny(character) && sheets?.length === 0 && !!campaignID
+  const needsFirstDay =
+    !!character && (isMultiClass(character) || isDualClass(character) || !!character.kitSpellcasting) && hasSpellSheetAny(character) && sheets?.length === 0 && !!campaignID
   const firstDayTried = useRef<string | null>(null)
   const seedFirstDay = useEffectEvent(() => {
     // Uma tentativa por ficha (se falhar, o erro aparece e não repete a cada render).
