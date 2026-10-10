@@ -1,10 +1,10 @@
 {
   "name": "thac0berry-web",
   "private": true,
-  "version": "0.55.0",
+  "version": "0.55.1",
   "type": "module",
   "scripts": {
-    "data": "node scripts/build-data.mjs",
+    "data": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/build-data.mjs",
     "types": "node scripts/gen-types.mjs",
     "predev": "npm run data",
     "dev": "vite",

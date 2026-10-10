@@ -239,6 +239,14 @@ function revertComponent(c: Character, comp: EffectComponent) {
   }
 }
 
+/** PV temporários que ainda restam nos efeitos em curso (já somados aos PV atuais). */
+export function temporaryHitPoints(c: Pick<Character, 'activeEffects'>): number {
+  return (c.activeEffects ?? []).reduce(
+    (sum, effect) => sum + effect.components.reduce((s, comp) => s + (comp.kind === 'tempHP' ? Math.max(0, comp.tempHPRemaining) : 0), 0),
+    0,
+  )
+}
+
 /** applyActiveEffect + addActiveEffect: efeito novo entra já aplicado. */
 export function addEffect(c: Character, effect: ActiveEffect) {
   const applied = structuredClone(effect)

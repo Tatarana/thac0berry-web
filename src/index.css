@@ -5010,3 +5010,12 @@ button.slot-dot:hover {
 .paper-top-end {
   justify-content: flex-end;
 }
+
+/* Ajuste 8 (2026-10-10): PV temporários ao lado dos PV ("48/38 +10 temp"). */
+.rec-hp-temp {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}

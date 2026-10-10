@@ -294,6 +294,16 @@ export function dualClassSwitch(c: PlayerCharacter, next: CharacterClass, readMa
   setLevel(c, 1)
 }
 
+/**
+ * Troca livre de classe (o seletor do cabeçalho; ajuste 5, 2026-10-10): além
+ * do setClass, tira o kit — ele era da classe anterior. A troca de classe
+ * dupla não passa por aqui: lá o kit fica (CFH, CTH, CPrH).
+ */
+export function changeClass(c: PlayerCharacter, characterClass: CharacterClass, readMagic: { id: string; name: string } | null) {
+  setClass(c, characterClass, readMagic)
+  if (c.kit) c.kit = null
+}
+
 /** "Undo dual-class" só enquanto a classe nova está no nível 1 com 0 XP. */
 export function canUndoDualClass(c: Pick<PlayerCharacter, 'level' | 'experience' | 'formerClasses'>): boolean {
   return (c.formerClasses ?? []).length > 0 && c.level === 1 && c.experience === 0

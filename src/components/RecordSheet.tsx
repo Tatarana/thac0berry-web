@@ -6,13 +6,13 @@ import { dash } from '../lib/format'
 import { normalize } from '../lib/search'
 import {
   applyAutomatic,
+  changeClass,
   displaySummary,
   dualClassSwitch,
   hasPendingConsequences,
   markConsequencesReviewed,
   pendingConsequences,
   setAbility,
-  setClass,
   setLevel,
   setMultiClassLevel,
   setFormerClasses,
@@ -27,7 +27,7 @@ import { MultiClassWindow } from './MultiClass'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
-import { abilityEffect } from '../rules/effects'
+import { abilityEffect, temporaryHitPoints } from '../rules/effects'
 import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
 import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
 import { CompendiumPicker } from './CompendiumPicker'
@@ -154,7 +154,7 @@ function RecordHeader({
                 <ClassSelect
                   value={c.characterClass}
                   onChange={(cls, readMagic) => {
-                    edit((x) => setClass(x, cls, readMagic))
+                    edit((x) => changeClass(x, cls, readMagic))
                     onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses })
                   }}
                 />
@@ -660,6 +660,12 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                 <span className="rec-soft">/</span>
                 <span className="rec-value">{c.hitPointsMax}</span>
               </>
+            )}
+            {/* PV temporários (já somados aos atuais; podem passar do máximo). */}
+            {temporaryHitPoints(c) > 0 && (
+              <span className="rec-hp-temp" title="Temporary hit points from an active effect, already counted in the current HP">
+                +{temporaryHitPoints(c)} temp
+              </span>
             )}
           </span>
           {edit ? (

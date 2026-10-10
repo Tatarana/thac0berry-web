@@ -22,7 +22,7 @@ import { useConfirm } from '../lib/useConfirm'
 import type { ActiveEffect, EffectComponent, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import type { Edit } from './RecordSheet'
-import { InkInput, InkNumber, InkPicker, TallyMarks } from './SheetBits'
+import { InkInput, InkNumber, InkPicker, TallyBoard } from './SheetBits'
 
 // Efeitos ativos (ActiveEffectsView do iPad): magias, poções e outros com
 // duração, que entram e saem no meio da sessão. Na web, uma janela que abre
@@ -31,18 +31,9 @@ import { InkInput, InkNumber, InkPicker, TallyMarks } from './SheetBits'
 // aos números da ficha; "End" desfaz. Editar um efeito em curso reaplica com
 // os valores novos. Regras em src/rules/effects.ts.
 
+/** Contador de riscos padrão (TallyBoard): a caixa soma um, um risco tira um. */
 function Counter({ count, max, exhausted, label, onChange }: { count: number; max: number; exhausted: boolean; label: string; onChange: (delta: 1 | -1) => void }) {
-  return (
-    <span className="counter">
-      <button className="counter-btn" aria-label={`${label}: one less`} disabled={count <= 0} onClick={() => onChange(-1)}>
-        −
-      </button>
-      <TallyMarks count={count} exhausted={exhausted} />
-      <button className="counter-btn" aria-label={`${label}: one more`} disabled={count >= max} onClick={() => onChange(1)}>
-        +
-      </button>
-    </span>
-  )
+  return <TallyBoard count={count} max={max} exhausted={exhausted} label={label} onChange={(n) => onChange(n > count ? 1 : -1)} />
 }
 
 function ComponentLine({ effect, comp, edit }: { effect: ActiveEffect; comp: EffectComponent; edit: Edit }) {

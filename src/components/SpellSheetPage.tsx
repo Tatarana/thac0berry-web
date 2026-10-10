@@ -5,7 +5,7 @@ import { casterLevel, classLabel, formerLabel, levelLabel } from '../rules/multi
 import { bonusSpellTotals, canonicalClass, hasSpellSheet, isArcaneCaster } from '../rules/rules'
 import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent } from '../rules/spellSheets'
 import type { CharacterClass, ClassLevel, PlayerCharacter, SpellSlot } from '../types/library'
-import { InkInput, InkNumber, SheetBlock, TallyMarks } from './SheetBits'
+import { InkInput, InkNumber, SheetBlock, TallyBoard, TallyMarks } from './SheetBits'
 import { SlotEditor } from './SlotEditor'
 import { useSpellChoices, type Caster } from '../lib/spellChoices'
 import { SpellNameField, SpellSuggestions } from './SpellAutocomplete'
@@ -19,27 +19,17 @@ import { SpellDetail } from './SpellDetail'
 //
 // Com `edit` (W2.5c1): título do dia; bolinha do slot abre o seletor de magia
 // (SlotEditor); riscar a magia gasta (no iPad, um traço de caneta sobre a
-// linha; aqui, o botão ✕ da linha); contadores com − e + (no iPad, riscos de
-// caneta). W2.5c2: dia novo, registrar conjuração nas magias adicionais (com
+// linha; aqui, o botão ✕ da linha); contadores de riscos (TallyBoard: a caixa
+// soma, o risco tira; no iPad, riscos de caneta). W2.5c2: dia novo, registrar conjuração nas magias adicionais (com
 // sugestões), e incluir/remover magias adicionais, itens e magias de item.
 
 /** Aplica uma mudança nesta folha (a página grava sozinha). */
 export type SheetEdit = (mutate: (s: ServerSheet) => void) => void
 
-/** Marcas de contagem com − e +: o equivalente, no navegador, a riscar com a caneta. */
+/** Contador de riscos padrão (TallyBoard): a caixa soma um, um risco tira um; `min` é o piso. */
 function Counter({ count, exhausted, min = 0, label, onChange }: { count: number; exhausted: boolean; min?: number; label: string; onChange?: (n: number) => void }) {
   if (!onChange) return <TallyMarks count={count} exhausted={exhausted} />
-  return (
-    <span className="counter">
-      <button className="counter-btn" aria-label={`${label}: one less`} disabled={count <= min} onClick={() => onChange(count - 1)}>
-        −
-      </button>
-      <TallyMarks count={count} exhausted={exhausted} />
-      <button className="counter-btn" aria-label={`${label}: one more`} onClick={() => onChange(count + 1)}>
-        +
-      </button>
-    </span>
-  )
+  return <TallyBoard count={count} exhausted={exhausted} label={label} onChange={(n) => onChange(Math.max(min, n))} />
 }
 
 interface Resolved {

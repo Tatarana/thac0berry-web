@@ -198,9 +198,22 @@ export function TallyMarks({ count, exhausted }: { count: number; exhausted: boo
 
 /**
  * TallyBoard do iPad: clicar na caixa soma um uso; clicar num grupo de
- * pauzinhos tira um.
+ * pauzinhos tira um. É o contador de riscos padrão do app (ajuste 3,
+ * 2026-10-10): sem botões − e +. `max` impede passar do total de usos.
  */
-export function TallyBoard({ count, exhausted, label, onChange }: { count: number; exhausted: boolean; label: string; onChange: (n: number) => void }) {
+export function TallyBoard({
+  count,
+  exhausted,
+  label,
+  max,
+  onChange,
+}: {
+  count: number
+  exhausted: boolean
+  label: string
+  max?: number
+  onChange: (n: number) => void
+}) {
   const groups: number[] = []
   for (let left = count; left > 0; left -= 5) groups.push(Math.min(5, left))
   return (
@@ -209,7 +222,9 @@ export function TallyBoard({ count, exhausted, label, onChange }: { count: numbe
       className={exhausted ? 'tally tally-board tally-exhausted' : 'tally tally-board'}
       aria-label={`${label}: ${count} used. Click to add one; click a mark to remove one.`}
       title="Click to add a use; click a mark to remove one"
-      onClick={() => onChange(count + 1)}
+      onClick={() => {
+        if (max === undefined || count < max) onChange(count + 1)
+      }}
     >
       {groups.map((size, index) => (
         <span
