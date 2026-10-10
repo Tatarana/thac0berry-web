@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
 import { ModeSwitch } from '../components/ModeChooser'
+import { RegenerationFloat } from '../components/RegenerationFloat'
 import { PsionicsPanel } from '../components/PsionicsPanel'
 import { SessionReport } from '../components/SessionReport'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
@@ -413,6 +414,8 @@ export function CharacterSheet() {
             {view === 'notebook' && id && <Notebook characterID={id} userID={userID} />}
             {view === 'psionics' && hasClass(character, 'Psionicist') && <PsionicsPanel c={character} edit={edit} campaignID={campaignID} />}
             {effectsOpen && <ActiveEffectsWindow c={character} edit={edit} onClose={() => setEffectsOpen(false)} />}
+            {/* Regeneração em curso: janela flutuante em qualquer página da ficha (ajuste 4). */}
+            <RegenerationFloat c={character} edit={edit} />
             <AttackNegationFloat c={character} edit={edit} />
             {view === 'record' && (
               <>

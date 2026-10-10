@@ -5046,3 +5046,66 @@ button.slot-dot:hover {
 .settings-status {
   margin-top: 10px;
 }
+
+/* Janela flutuante da regeneração (ajuste 4, 2026-10-10). */
+.regen-float {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  width: min(340px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border: 1px solid rgb(47 39 28 / 0.35);
+  border-radius: 10px;
+  background: var(--sheet, #f3e7cf);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+}
+
+.regen-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.regen-title {
+  font-family: var(--font-hand);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2f6b3a;
+}
+
+.regen-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-top: 1px solid rgb(47 39 28 / 0.15);
+}
+
+.regen-tally {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.regen-hp {
+  margin: 6px 0 0;
+}
+
+.regen-pill {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  padding: 8px 12px;
+  border: 1px solid rgb(47 39 28 / 0.35);
+  border-radius: 999px;
+  background: var(--sheet, #f3e7cf);
+  color: #2f6b3a;
+  font: inherit;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+}

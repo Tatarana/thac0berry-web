@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import * as C from '../src/rules/consequences.ts'
 import * as E from '../src/rules/effects.ts'
 import * as R from '../src/rules/rules.ts'
+import * as S from '../src/rules/sheetEdits.ts'
 import type { PlayerCharacter } from '../src/types/library.ts'
 
 function cleric(): PlayerCharacter {
@@ -50,4 +51,22 @@ test('PV temporários: somados aos atuais (passam do máximo) e contados à part
   E.endEffect(c, effect.id)
   assert.equal(c.hitPointsCurrent, 38)
   assert.equal(E.temporaryHitPoints(c), 0)
+})
+
+test('regeneração: aparece quando dispara (dano ou manual) e some quando acaba', () => {
+  const c = cleric()
+  c.hitPointsCurrent = 30
+  const effect = E.newEffect()
+  effect.name = 'Regenerate'
+  effect.components = [{ ...E.newComponent(), kind: 'bankedHeal', maxUses: 2 }]
+  E.addEffect(c, effect)
+  assert.equal(E.activeRegenerations(c).length, 0, 'guardada: ainda não dispara')
+  S.applyDamage(c, 3)
+  const [r] = E.activeRegenerations(c)
+  assert.equal(r.name, 'Regenerate')
+  assert.equal(r.max, 2)
+  E.logBankedHeal(c, r.effectID, r.componentID, 1)
+  E.logBankedHeal(c, r.effectID, r.componentID, 1)
+  assert.equal(c.hitPointsCurrent, 29)
+  assert.equal(E.activeRegenerations(c).length, 0, 'curou tudo: a janela some')
 })

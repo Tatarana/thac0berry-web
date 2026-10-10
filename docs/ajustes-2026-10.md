@@ -33,7 +33,7 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
 |---|---|---|---|
 | U1 | Correções rápidas | 5, 8, 3 | feita (web v0.55.1; teste na tela com o usuário) |
 | U2 | Settings | 1, 2 (migração no backend) | feita (web v0.55.2; falta o `db push` e o teste na tela) |
-| U3 | Janela da regeneração | 4 | planejada |
+| U3 | Janela da regeneração | 4 | feita (web v0.55.3; teste na tela com o usuário) |
 | U4 | CA com DEX | 7 | planejada |
 | U5 | Conjuração por kit | 6 (extensão "web primeiro" no schema) | planejada |
 
@@ -63,3 +63,12 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
     grava pelo contrato (INSERT ou UPDATE com `version`);
   - personagem novo (`createCharacter`) recebe o nome padrão no campo Player;
     clonar e importar não mudam.
+- 2026-10-10, U3 feita (web v0.55.3):
+  - `activeRegenerations` (effects.ts): Banked Heal já disparado e com cura
+    sobrando;
+  - `RegenerationFloat`: janela no canto inferior direito, em qualquer página da
+    ficha; aparece sozinha quando a regeneração dispara (dano registrado ou
+    "Activate now" nos efeitos); contador de riscos (+1 PV por rodada, até o
+    total), "minimize" vira uma pílula "✚ 3/10 HP", e uma regeneração nova
+    reabre; some quando a cura acaba;
+  - teste: dispara com o dano, cura e some (175 testes).

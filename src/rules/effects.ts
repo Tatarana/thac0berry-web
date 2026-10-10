@@ -239,6 +239,30 @@ function revertComponent(c: Character, comp: EffectComponent) {
   }
 }
 
+export interface Regeneration {
+  effectID: string
+  componentID: string
+  name: string
+  used: number
+  max: number
+}
+
+/**
+ * Regenerações em curso (Banked Heal já disparado — por dano ou "Activate now" —
+ * e com cura sobrando): a ficha mostra a janela flutuante delas (ajuste 4).
+ */
+export function activeRegenerations(c: Pick<Character, 'activeEffects'>): Regeneration[] {
+  const out: Regeneration[] = []
+  for (const effect of c.activeEffects ?? []) {
+    for (const comp of effect.components) {
+      if (comp.kind === 'bankedHeal' && !comp.healIsBanked && comp.usedCount < comp.maxUses) {
+        out.push({ effectID: effect.id, componentID: comp.id, name: effect.name || 'Regeneration', used: comp.usedCount, max: comp.maxUses })
+      }
+    }
+  }
+  return out
+}
+
 /** PV temporários que ainda restam nos efeitos em curso (já somados aos PV atuais). */
 export function temporaryHitPoints(c: Pick<Character, 'activeEffects'>): number {
   return (c.activeEffects ?? []).reduce(
