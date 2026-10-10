@@ -34,7 +34,7 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
 | U1 | Correções rápidas | 5, 8, 3 | feita (web v0.55.1; teste na tela com o usuário) |
 | U2 | Settings | 1, 2 (migração no backend) | feita (web v0.55.2; falta o `db push` e o teste na tela) |
 | U3 | Janela da regeneração | 4 | feita (web v0.55.3; teste na tela com o usuário) |
-| U4 | CA com DEX | 7 | planejada |
+| U4 | CA com DEX | 7 | feita (web v0.55.4; teste na tela com o usuário) |
 | U5 | Conjuração por kit | 6 (extensão "web primeiro" no schema) | planejada |
 
 ## Log
@@ -72,3 +72,15 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
     total), "minimize" vira uma pílula "✚ 3/10 HP", e uma regeneração nova
     reabre; some quando a cura acaba;
   - teste: dispara com o dano, cura e some (175 testes).
+- 2026-10-10, U4 feita (web v0.55.4):
+  - `dexDefenseAdjustment` e `finalArmorClass` (rules.ts): ajuste da linha da
+    DEX na ficha (acompanha efeitos), ou da Tabela 2 pelo valor da DEX;
+  - ficha: o escudo mostra a CA final; embaixo, "Armor [5] · DEX −2" (a caixa
+    editável é a da armadura; os efeitos de CA continuam mexendo nela);
+  - aviso uma vez por personagem (por aparelho, `thac0berry.acDexReviewed.<id>`
+    no localStorage), só quando o ajuste não é 0: "It already included
+    Dexterity — set Armor to N" (tira a DEX da caixa) ou "It was armor only";
+  - Combat Tracker: o PC entra com a CA final (e a lista de PCs mostra ela);
+  - testes: 177;
+  - **pendente no iPad**: lá a caixa ainda é a CA final; quando o iPad voltar, a
+    ficha dele precisa somar a DEX do mesmo jeito (mesmo campo `armorClass`).

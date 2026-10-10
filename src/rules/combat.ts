@@ -3,6 +3,8 @@
 // Dados de rolagem pelo motor único (dice.ts).
 
 import { diceForRange, formatDice, rollDice, type DiceSpec, type Random } from './dice.ts'
+import { finalArmorClass } from './rules.ts'
+import type { AbilityScores } from '../types/library.ts'
 
 export type Side = 'party' | 'enemies' | 'others'
 export type CombatantKind = 'pc' | 'npc' | 'monster'
@@ -385,11 +387,13 @@ export function monsterCombatants(
 }
 
 /** Um PC do App: nome, CA, PV e THAC0 da ficha. */
-export function characterCombatant(id: string, pc: { name: string; armorClass: number; hitPointsMax: number; hitPointsCurrent: number; thac0: number }): Combatant {
+export function characterCombatant(id: string, pc: AppCharacter['data']): Combatant {
+  // CA final da ficha: a da armadura mais o ajuste da DEX (ajuste 7).
+  const ac = finalArmorClass(pc)
   return {
     ...blankCombatant('pc', 'party', pc.name || 'Unnamed Character'),
-    ac: pc.armorClass,
-    acText: String(pc.armorClass),
+    ac,
+    acText: String(ac),
     hp: pc.hitPointsCurrent,
     hpMax: pc.hitPointsMax,
     thac0: pc.thac0,
@@ -477,7 +481,15 @@ export function lastEncounterOf(encounters: Encounter[], campaignID: string | nu
 /** Personagem do App como vem do banco (só o que o combate usa). */
 export interface AppCharacter {
   id: string
-  data: { name: string; armorClass: number; hitPointsMax: number; hitPointsCurrent: number; thac0: number }
+  data: {
+    name: string
+    armorClass: number
+    hitPointsMax: number
+    hitPointsCurrent: number
+    thac0: number
+    abilities?: AbilityScores | null
+    details?: { dexterityDefense?: string | null } | null
+  }
 }
 
 /**

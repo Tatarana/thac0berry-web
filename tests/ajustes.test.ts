@@ -7,6 +7,7 @@ import * as C from '../src/rules/consequences.ts'
 import * as E from '../src/rules/effects.ts'
 import * as R from '../src/rules/rules.ts'
 import * as S from '../src/rules/sheetEdits.ts'
+import * as K from '../src/rules/combat.ts'
 import type { PlayerCharacter } from '../src/types/library.ts'
 
 function cleric(): PlayerCharacter {
@@ -69,4 +70,21 @@ test('regeneração: aparece quando dispara (dano ou manual) e some quando acaba
   E.logBankedHeal(c, r.effectID, r.componentID, 1)
   assert.equal(c.hitPointsCurrent, 29)
   assert.equal(E.activeRegenerations(c).length, 0, 'curou tudo: a janela some')
+})
+
+test('CA final = armadura + ajuste defensivo da DEX (linha da ficha, ou a tabela)', () => {
+  const base = { armorClass: 5, abilities: { strength: 10, dexterity: 16, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 } }
+  assert.equal(R.dexDefenseAdjustment(base), -2)
+  assert.equal(R.finalArmorClass(base), 3)
+  // A linha da DEX na ficha manda (acompanha efeitos como poções).
+  assert.equal(R.finalArmorClass({ ...base, details: { dexterityDefense: '-4' } }), 1)
+  // DEX baixa piora a CA.
+  assert.equal(R.finalArmorClass({ ...base, abilities: { ...base.abilities, dexterity: 5 } }), 7)
+  // Sem DEX conhecida: só a armadura.
+  assert.equal(R.finalArmorClass({ armorClass: 10 }), 10)
+})
+
+test('Combat Tracker usa a CA final do personagem', () => {
+  const pc = { name: 'Kel', armorClass: 5, hitPointsMax: 38, hitPointsCurrent: 38, thac0: 14, details: { dexterityDefense: '-2' } }
+  assert.equal(K.characterCombatant('x', pc).ac, 3)
 })

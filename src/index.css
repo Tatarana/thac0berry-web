@@ -5109,3 +5109,39 @@ button.slot-dot:hover {
   box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
   cursor: pointer;
 }
+
+/* CA com DEX (ajuste 7, 2026-10-10): CA final no escudo; armadura e DEX embaixo. */
+.rec-ac-parts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.rec-ac-parts .ink-input {
+  width: 2.2em;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.ac-notice {
+  margin: 6px 0 10px;
+  padding: 8px 10px;
+  border: 1px dashed #8a5a12;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #6b4510;
+}
+
+.ac-notice p {
+  margin: 0 0 6px;
+}
+
+.ac-notice-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+}

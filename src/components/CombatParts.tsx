@@ -1,3 +1,4 @@
+import { finalArmorClass } from '../rules/rules'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadMonster, loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
@@ -681,7 +682,7 @@ export function AddPersonWindow({
                 {fromApp.map(({ id, data }) => (
                   <li key={id}>
                     <button className="chip" onClick={() => onAdd([characterCombatant(id, data)])}>
-                      + {data.name || 'Unnamed Character'} · AC {data.armorClass} · HP {data.hitPointsCurrent}/{data.hitPointsMax}
+                      + {data.name || 'Unnamed Character'} · AC {finalArmorClass(data)} · HP {data.hitPointsCurrent}/{data.hitPointsMax}
                     </button>
                   </li>
                 ))}

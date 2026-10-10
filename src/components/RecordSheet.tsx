@@ -20,7 +20,7 @@ import {
   undoDualClass,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, bonusLanguages, canonicalClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { backstabMultiplier, bonusLanguages, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
@@ -595,6 +595,56 @@ function SavingThrowsBlock({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 
 // --- Combate ---------------------------------------------------------------
 
+const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
+
+/**
+ * Ajuste 7 (2026-10-10): a caixa ARMOR passou a ser só a CA da armadura, e a
+ * ficha soma a DEX. Ficha que já tinha a DEX somada contaria duas vezes: o
+ * aviso aparece uma vez por personagem (neste aparelho) até o jogador responder.
+ */
+function ArmorClassNotice({ c, dexAC, edit }: { c: PlayerCharacter; dexAC: number; edit: Edit }) {
+  const key = `thac0berry.acDexReviewed.${c.id.toUpperCase()}`
+  const [done, setDone] = useState(() => {
+    try {
+      return localStorage.getItem(key) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (done) return null
+  const dismiss = () => {
+    try {
+      localStorage.setItem(key, '1')
+    } catch {
+      // sem armazenamento: some só nesta visita
+    }
+    setDone(true)
+  }
+  const armorOnly = c.armorClass - dexAC
+  return (
+    <div className="ac-notice" role="note">
+      <p>
+        Armor Class now adds your Dexterity ({signed(dexAC)}): the box under the shield is your armor only. If the number you had
+        typed already included Dexterity, it would count twice.
+      </p>
+      <div className="slot-actions ac-notice-actions">
+        <button
+          className="paper-link"
+          onClick={() => {
+            edit((x) => void (x.armorClass = armorOnly))
+            dismiss()
+          }}
+        >
+          It already included Dexterity — set Armor to {armorOnly}
+        </button>
+        <button className="paper-link" onClick={dismiss}>
+          It was armor only — keep {c.armorClass}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const k = c.combat ?? {}
   type CombatKey = Exclude<keyof NonNullable<PlayerCharacter['combat']>, 'wounds' | 'hitDiceType'>
@@ -606,20 +656,28 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       <Cell label={label} value={dash(k[key])} />
     )
   const wounds = (k.wounds ?? '').split('\n').filter((w) => w.trim() !== '')
+  const dexAC = dexDefenseAdjustment(c)
   return (
     <section className="rec-section">
       <SectionTitle>Combat</SectionTitle>
+      {edit && dexAC !== 0 && <ArmorClassNotice c={c} dexAC={dexAC} edit={edit} />}
       <div className="rec-combat">
         <div className="rec-shield">
           <span>ARMOR</span>
-          <span className="rec-shield-shape">
-            {edit ? (
-              <InkNumber value={c.armorClass} min={-10} max={10} label="Armor Class" onChange={(v) => edit((x) => void (x.armorClass = v))} />
-            ) : (
-              <span className="rec-value">{c.armorClass}</span>
-            )}
+          {/* CA final = a da armadura (digitada) + o ajuste defensivo da DEX (ajuste 7). */}
+          <span className="rec-shield-shape" title={`Armor ${c.armorClass} ${signed(dexAC)} Dexterity`}>
+            <span className="rec-value">{finalArmorClass(c)}</span>
           </span>
           <span>CLASS</span>
+          <span className="rec-ac-parts">
+            Armor{' '}
+            {edit ? (
+              <InkNumber value={c.armorClass} min={-10} max={10} label="Armor Class (armor only)" onChange={(v) => edit((x) => void (x.armorClass = v))} />
+            ) : (
+              <span className="rec-value">{c.armorClass}</span>
+            )}{' '}
+            · DEX {signed(dexAC)}
+          </span>
         </div>
         <div className="rec-lines">
           {line('Surprised AC', 'surprisedAC')}

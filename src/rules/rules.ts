@@ -696,3 +696,19 @@ export function refreshLevelChanges(
   if (changed) c.levelChanges = table
   return changed
 }
+
+// --- Classe de armadura (ajuste 7, 2026-10-10) ------------------------------------
+// A caixa ARMOR da ficha é a CA da armadura (armadura, escudo, mágicos e os
+// efeitos que mexem na CA); a CA final soma o ajuste defensivo da DEX (PHB,
+// Tabela 2: −2 melhora, +2 piora). O ajuste é o da linha da DEX na ficha (que
+// acompanha efeitos como poções); vazio, vem da tabela pelo valor da DEX.
+
+const intOf = (text: string | null | undefined) => (text != null && /^\s*[+-]?\d+\s*$/.test(text) ? parseInt(text, 10) : null)
+
+export function dexDefenseAdjustment(c: { abilities?: AbilityScores | null; details?: { dexterityDefense?: string | null } | null }): number {
+  return intOf(c.details?.dexterityDefense) ?? (c.abilities ? intOf(abilityDetail('dexterityDefense', c.abilities)) : null) ?? 0
+}
+
+export function finalArmorClass(c: { armorClass: number; abilities?: AbilityScores | null; details?: { dexterityDefense?: string | null } | null }): number {
+  return c.armorClass + dexDefenseAdjustment(c)
+}
