@@ -45,7 +45,8 @@ entregas e pendências. Atualizar a cada entrega.
 | GT2 | Motor de rolagem (`src/rules/dice.ts`: notação, faixas, rolar, achar linha) + Roll e resultado digitado na ficha + histórico | feita (web v0.41.0) |
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
-| GT4 | Dados (thac0berry-data, com proposta e "ok" lá): tabelas que faltam do DMG, cenários (Ravenloft etc.), correções (dado da 88, títulos sem número) | tarefa para outro agente: `docs/gt4-tarefa.md` (precisa do data-mining, só no PC do usuário) |
+| GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
+| GT4b | Cenários (Ravenloft primeiro, um cenário por entrega), das páginas da wiki no dump do data-mining | a fazer |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Log
@@ -137,3 +138,33 @@ entregas e pendências. Atualizar a cada entrega.
     entram no Table Grimoire;
   - testes: 122 (6 novos).
 - 2026-10-09: ícone do Table Grimoire no hub DM Tools (arte do usuário; web v0.42.2; detalhes em `docs/ferramentas-dm.md`).
+- 2026-10-10, GT4 feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`):
+  - fonte: as páginas "DMG Table N" e de capítulo do DMG no dump da wiki
+    (`thac0berry-data-mining/dumps/adnd2e_pages_current.xml`); os JSON de
+    `rules_dmg` só citavam essas tabelas;
+  - decisões do usuário: tabela em dois passos vira seletor + subtabelas
+    (89 = d6 → 89A/89B/89C em d20; idem 90, 91, 96, 104, 108 e 110, esta em
+    d10 com A–D); 117 = parte A (Purpose), 117B = parte B (Power); as 89–110
+    em `dmg_ch10_magical_item_tables`; cenários ficam para a GT4b;
+  - thac0berry-data, `scripts/add_dmg_missing_tables.py` (idempotente):
+    54–56, 61–63, 66–70 e 89–110 entram com `[TABLE_REF]` e as notas de
+    rodapé; tabelas sem título ganham número (75, 78, 117, 117B) ou título
+    descritivo (exemplos do Desert of Shaar e do Targash, continuação da 84,
+    tipo de pergaminho); 75 e 117B refeitas pela wiki (sinais "+" perdidos);
+    88 `D20 Roll` → `D100 Roll`; "0" → "00" em 9 tabelas d100; CRH-21 (linha
+    8 saía "6") e CRH-65 (cabeçalho numa linha só);
+  - achado no navegador: o `[TABLE_REF]` só vale sozinho no parágrafo (parser
+    do iPad e da web), e as tabelas com notas logo abaixo sumiam da ficha da
+    regra; as notas foram para o parágrafo seguinte, como "(*) …" (segundo
+    commit no thac0berry-data);
+  - a 70 tem dois dados (d20 geral, d100 específico): fica d100 na primeira
+    coluna, com o traço geral repetido em cada linha;
+  - índice da web: 512 → 562 tabelas; citações entre tabelas 8 → 46, sem
+    destino 19 → 0; web sem mudança de código, só o teste de dados reais
+    (88 → 89 → 89A, 116 → 117, nenhuma citação 88–119 sem destino);
+  - pendente: o motor não rola soma de dados diferentes (2–20 = 1d8 + 1d12,
+    Tabela 54 e o exemplo do Desert of Shaar): rola 2d10, que tem outra
+    distribuição; a 105 "Special" não cita a 107 (a fonte também não);
+    GT4b (cenários: Ravenloft ~28 tabelas, Planescape ~100, Forgotten Realms
+    ~100, Dragonlance ~60, Council of Wyrms ~90, Birthright ~22, Al-Qadim ~60,
+    Thri-Kreen of Athas ~40); `sync_data.py` no iPad depois do merge.

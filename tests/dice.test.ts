@@ -116,3 +116,28 @@ test('dados reais: Tabela 88 rola d100 e as tabelas 115→116 se encadeiam', () 
   })
   assert.deepEqual(misses.map((t) => t.id), [])
 })
+
+test('dados reais (GT4): 88 → 89 → 89A, 116 → 117 e as citações do DMG 88–119 se resolvem', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')))
+  const byId = (id: string) => tables.find((t) => t.id === id)!
+  const targets = (id: string) =>
+    byId(id)
+      .rows.flatMap((row) => rowRefs(row, 'DMG'))
+      .map((r) => tables.find((t) => t.book === r.book && t.number === r.number)?.id ?? `faltando: ${r.book} ${r.number}`)
+  // A 88 rola d100 sem o aviso de cabeçalho trocado.
+  assert.equal(rollPlan(byId('dmg-88'))!.headerMismatch, false)
+  assert.ok(targets('dmg-88').includes('dmg-89'))
+  // A 89 é o seletor (d6) das subtabelas A–C, cada uma em d20.
+  assert.equal(formatDice(rollPlan(byId('dmg-89'))!.dice!), 'd6')
+  assert.deepEqual(targets('dmg-89'), ['dmg-89a', 'dmg-89b', 'dmg-89c'])
+  assert.equal(formatDice(rollPlan(byId('dmg-89a'))!.dice!), 'd20')
+  assert.ok(targets('dmg-116').includes('dmg-117'))
+  assert.equal(formatDice(rollPlan(byId('dmg-117'))!.dice!), 'd100')
+  // Nenhuma citação das tabelas de itens mágicos aponta para tabela que não existe.
+  const dangling = tables
+    .filter((t) => t.book === 'DMG' && Number.parseInt(t.number ?? '0', 10) >= 88 && Number.parseInt(t.number ?? '0', 10) <= 119)
+    .flatMap((t) => targets(t.id))
+    .filter((id) => id.startsWith('faltando'))
+  assert.deepEqual(dangling, [])
+})
