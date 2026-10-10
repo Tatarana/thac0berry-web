@@ -32,7 +32,7 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
 | # | Entrega | Itens | Estado |
 |---|---|---|---|
 | U1 | Correções rápidas | 5, 8, 3 | feita (web v0.55.1; teste na tela com o usuário) |
-| U2 | Settings | 1, 2 (migração no backend) | planejada |
+| U2 | Settings | 1, 2 (migração no backend) | feita (web v0.55.2; falta o `db push` e o teste na tela) |
 | U3 | Janela da regeneração | 4 | planejada |
 | U4 | CA com DEX | 7 | planejada |
 | U5 | Conjuração por kit | 6 (extensão "web primeiro" no schema) | planejada |
@@ -52,3 +52,14 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   - de passagem: `npm run data` quebrava no Node 22.16 deste PC (o
     `build-data.mjs` importa `src/rules/books.ts`); o script passa
     `--experimental-strip-types`, como os testes (o CI usa um Node 22 mais novo).
+- 2026-10-10, U2 feita (web v0.55.2; backend `ce175e9`):
+  - backend: coluna `user_preferences.default_player_name` (migração
+    `20261010120000_nome_do_jogador.sql`, teste pgTAP `04_preferencias`, CI
+    verde); **o usuário precisa rodar `npx supabase db push`** na pasta do
+    backend;
+  - web: Settings → card "Preferences" (só logado): nome do jogador (grava ao
+    sair do campo) e papel padrão do caderno (Plain/Lined/Grid, grava ao
+    tocar); `src/lib/preferences.ts` lê com `*` (não quebra antes do db push) e
+    grava pelo contrato (INSERT ou UPDATE com `version`);
+  - personagem novo (`createCharacter`) recebe o nome padrão no campo Player;
+    clonar e importar não mudam.

@@ -5019,3 +5019,30 @@ button.slot-dot:hover {
   color: var(--ink-soft);
   white-space: nowrap;
 }
+
+/* Settings → Preferences (2026-10-10). */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.settings-input {
+  max-width: 320px;
+  padding: 8px 10px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.25);
+  color: inherit;
+  font: inherit;
+}
+
+.btn.btn-on {
+  box-shadow: inset 0 0 0 1px var(--amber);
+  color: var(--amber);
+}
+
+.settings-status {
+  margin-top: 10px;
+}

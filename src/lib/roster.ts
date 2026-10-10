@@ -3,6 +3,7 @@ import { computedSpellSlotAllotments } from '../rules/rules'
 import { startSpellSheet } from '../rules/spellSheets'
 import type { PlayerCharacter } from '../types/library'
 import { loadValidators } from './libraryImport'
+import { defaultPlayerName } from './preferences'
 import { activeSessionID } from './sessions'
 import { supabase } from './supabase'
 import type { ServerCharacter } from './useCharacterDoc'
@@ -97,9 +98,13 @@ async function seedFirstSpellSheet(characterID: string, c: ServerCharacter, camp
   if (error) throw new Error(error.message)
 }
 
-/** addCharacter(campaignID:) do iPad: personagem em branco (Fighter 1), já na campanha. */
+/**
+ * addCharacter(campaignID:) do iPad: personagem em branco (Fighter 1), já na
+ * campanha. O campo "Player" vem do nome padrão da conta (Settings, 2026-10-10).
+ */
 export async function createCharacter(campaignID: string | null): Promise<string> {
   const data = blankCharacter(campaignID)
+  data.playerName = await defaultPlayerName()
   await checkCharacter(data)
   const { error } = await supabase.from('character').insert({ id: data.id, campaign_id: campaignID, data })
   if (error) throw new Error(error.message)
