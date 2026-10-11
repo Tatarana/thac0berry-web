@@ -46,7 +46,7 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (Ravenloft primeiro, um cenário por entrega), das páginas da wiki no dump do data-mining | a fazer |
+| GT4b | Cenários (Ravenloft primeiro, um cenário por entrega), das páginas da wiki no dump do data-mining | Ravenloft: dados feitos (web v0.58.0), classes jogáveis a fazer (`docs/ravenloft.md`) |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Log
@@ -168,3 +168,4 @@ entregas e pendências. Atualizar a cada entrega.
     GT4b (cenários: Ravenloft ~28 tabelas, Planescape ~100, Forgotten Realms
     ~100, Dragonlance ~60, Council of Wyrms ~90, Birthright ~22, Al-Qadim ~60,
     Thri-Kreen of Athas ~40); `sync_data.py` no iPad depois do merge.
+- 2026-10-10, GT4b Ravenloft R1 (web v0.58.0): livro DoD (cenário Ravenloft), 7 regras, 24 tabelas; plano e pendências em `docs/ravenloft.md`.
