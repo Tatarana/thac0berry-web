@@ -85,39 +85,42 @@ function turningColumnMatches(column: string, level: number): boolean {
   return Number.isFinite(a) && Number.isFinite(b) && level >= a && level <= b
 }
 
-function ClericTables({ c, level }: { c: PlayerCharacter; level: number }) {
+function ClericTables({ c, level, anchorite = false }: { c: PlayerCharacter; level: number; anchorite?: boolean }) {
   const levels = T['PriestTables.turningUndeadLevels']
   return (
     <>
       <Progression
-        title="Priest Spell Progression"
-        ruleID="phb_ch03_priest_tables"
+        title={anchorite ? 'Anchorite Spell Progression' : 'Priest Spell Progression'}
+        ruleID={anchorite ? 'dod_ch00_anchorite' : 'phb_ch03_priest_tables'}
         rows={T['PriestTables.spellProgressionRows']}
         circles={7}
         level={level}
         headers={['1', '2', '3', '4', '5', '6*', '7**']}
         footnotes={['* Usable only by priests with 17 or greater Wisdom.', '** Usable only by priests with 18 or greater Wisdom.']}
       />
-      <RefTable title="Turning Undead" footnotes={T['PriestTables.turningUndeadFootnotes']}>
-        <thead>
-          <tr>
-            <th className="ref-left">Type / HD</th>
-            {levels.map((l) => (
-              <th key={l} className={hl(turningColumnMatches(l, level))}>{l}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {T['PriestTables.turningUndeadRows'].map((row) => (
-            <tr key={row.type}>
-              <td className="ref-left">{row.type}</td>
-              {row.results.map((value, i) => (
-                <td key={i} className={hl(turningColumnMatches(levels[i], level))}>{value}</td>
+      {/* O Anchorite (Domains of Dread) não expulsa mortos-vivos: o livro não dá o poder. */}
+      {!anchorite && (
+        <RefTable title="Turning Undead" footnotes={T['PriestTables.turningUndeadFootnotes']}>
+          <thead>
+            <tr>
+              <th className="ref-left">Type / HD</th>
+              {levels.map((l) => (
+                <th key={l} className={hl(turningColumnMatches(l, level))}>{l}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </RefTable>
+          </thead>
+          <tbody>
+            {T['PriestTables.turningUndeadRows'].map((row) => (
+              <tr key={row.type}>
+                <td className="ref-left">{row.type}</td>
+                {row.results.map((value, i) => (
+                  <td key={i} className={hl(turningColumnMatches(levels[i], level))}>{value}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </RefTable>
+      )}
       <RefTable title="Wisdom">
         <thead>
           <tr>
@@ -384,7 +387,7 @@ function Section({ c, section, multiClass }: { c: PlayerCharacter; section: Refe
       {section.kind === 'Wizard' && <WizardTablesPage c={c} level={section.level} />}
       {section.kind === 'Warrior' && <WarriorTablesPage cls={section.characterClass} multiClass={multiClass} />}
       {section.kind === 'Rogue' && <RogueTablesPage cls={section.characterClass} level={section.level} multiClass={multiClass} />}
-      {section.kind === 'Cleric' && <ClericTables c={c} level={section.level} />}
+      {section.kind === 'Cleric' && <ClericTables c={c} level={section.level} anchorite={section.characterClass === 'Anchorite'} />}
     </>
   )
 }
@@ -402,7 +405,8 @@ export function RecordPageFour({ character: c }: { character: PlayerCharacter })
     if (!section) return null
     return (
       <div className="rec-sheet">
-        <h2 className="rec-title">{section.kind} Reference Tables</h2>
+        {/* O Anchorite usa as tabelas do Clérigo, mas o título fala da classe dele. */}
+        <h2 className="rec-title">{section.characterClass === 'Anchorite' ? 'Anchorite' : section.kind} Reference Tables</h2>
         <Section c={c} section={section} multiClass={multi} />
       </div>
     )

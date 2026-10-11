@@ -78,7 +78,7 @@ function swiftInt(text: string | undefined): number | null {
 
 // --- Classes -----------------------------------------------------------------------
 
-export type CanonicalClass = 'Fighter' | 'Paladin' | 'Ranger' | 'Mage' | 'Cleric' | 'Druid' | 'Thief' | 'Bard' | 'Ninja' | 'Psionicist'
+export type CanonicalClass = 'Fighter' | 'Paladin' | 'Ranger' | 'Mage' | 'Cleric' | 'Druid' | 'Thief' | 'Bard' | 'Ninja' | 'Psionicist' | 'Anchorite'
 
 const legacyClassNames: Record<string, CanonicalClass> = {
   Guerreiro: 'Fighter',
@@ -90,7 +90,7 @@ const legacyClassNames: Record<string, CanonicalClass> = {
   Ladino: 'Thief',
   Bardo: 'Bard',
 }
-const canonicalClasses: CanonicalClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist']
+const canonicalClasses: CanonicalClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist', 'Anchorite']
 
 /** Como o CharacterClass.init(from:) do iPad: nome antigo em português vira o atual; desconhecido vira Fighter. */
 export function canonicalClass(value: CharacterClass | string): CanonicalClass {
@@ -111,6 +111,7 @@ export function classGroup(value: CharacterClass | string): ClassGroup {
       return 'Wizard'
     case 'Cleric':
     case 'Druid':
+    case 'Anchorite':
       return 'Priest'
     case 'Psionicist':
       return 'Psionicist'
@@ -124,7 +125,7 @@ export function hitDieType(value: CharacterClass | string): string {
 }
 
 export function hasSpellSheet(value: CharacterClass | string): boolean {
-  return ['Cleric', 'Mage', 'Bard'].includes(canonicalClass(value))
+  return ['Cleric', 'Mage', 'Bard', 'Anchorite'].includes(canonicalClass(value))
 }
 
 export function isArcaneCaster(value: CharacterClass | string): boolean {
@@ -194,6 +195,18 @@ const psionicistProficiencies: ProficiencyRow = {
   initialNonweapon: '3',
   levelsNonweapon: '3',
 }
+
+// --- Anchorite (Domains of Dread, Ravenloft; docs/ravenloft.md) -----------------------
+//
+// Classe feita primeiro na web (2026-10-10). Pela tabela do livro, é um Cleric
+// com outra tabela de XP: THAC0, saves, dados de vida (d8 até o 9º, depois +2)
+// e slots de magia são os do sacerdote do PHB; o XP é próprio (igual ao do druida até o 16º).
+
+/** Tabela de progressão do Anchorite: XP por nível. */
+const anchoriteXP = [
+  0, 2000, 4000, 7500, 12500, 20000, 35000, 60000, 90000, 125000,
+  200000, 300000, 750000, 1500000, 3000000, 3500000, 4000000, 4500000, 5000000, 5500000,
+]
 
 // --- Atributos (Tabelas 1 a 6) -------------------------------------------------------
 
@@ -386,7 +399,8 @@ export function resolveRule(key: RuleKey, ctx: RuleContext): RuleValue | null {
     case 'savingThrows':
       return bestSaves(combat)
     case 'priestSpellSlots': {
-      const level = levelOf('Cleric')
+      // O Anchorite usa a progressão do sacerdote (a mesma tabela).
+      const level = levelOf('Cleric') ?? levelOf('Anchorite')
       return level === null ? null : anySlot(priestSpellProgression(level, ctx.abilities.wisdom))
     }
     case 'wizardSpellSlots': {
@@ -406,7 +420,7 @@ export function resolveRule(key: RuleKey, ctx: RuleContext): RuleValue | null {
 
 export function xpRequired(level: number, value: CharacterClass | string): number | null {
   const cls = canonicalClass(value)
-  const row = cls === 'Psionicist' ? psionicistXP : rulesData.experience.thresholds[cls]
+  const row = cls === 'Psionicist' ? psionicistXP : cls === 'Anchorite' ? anchoriteXP : rulesData.experience.thresholds[cls]
   if (level < 1 || level > 20 || !row || row.length < level) return null
   return row[level - 1]
 }
@@ -535,6 +549,7 @@ export function computedSpellSlotAllotments(c: {
   const forClass = (cls: CharacterClass | string, level: number): SlotAllotment[] => {
     switch (canonicalClass(cls)) {
       case 'Cleric':
+      case 'Anchorite':
         return toAllotments(priestSpellProgression(level, c.abilities.wisdom), 'divine')
       case 'Mage':
         // Especialista: +1 slot em todo círculo que já tem magia (Tabela 22).

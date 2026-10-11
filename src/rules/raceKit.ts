@@ -86,7 +86,8 @@ export function levelLimitWarning(race: RaceName, characterClass: CharacterClass
   const limit = levelLimit(race, characterClass)
   const cls = canonicalClass(characterClass)
   if (limit === 'unlimited') return null
-  if (limit === 'forbidden') return `${race} cannot normally be a ${cls} (PHB Table 7).`
+  // Anchorite (Domains of Dread): só humanos.
+  if (limit === 'forbidden') return `${race} cannot normally be a ${cls} (${cls === 'Anchorite' ? 'Domains of Dread' : 'PHB Table 7'}).`
   return level > limit ? `${race} ${cls}s are normally limited to level ${limit} (PHB Table 7) — this character is already level ${level}.` : null
 }
 

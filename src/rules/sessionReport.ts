@@ -88,6 +88,8 @@ export const primeRequisites: Record<string, Ability[]> = {
   Ranger: ['strength', 'dexterity', 'wisdom'],
   Mage: ['intelligence'],
   Cleric: ['wisdom'],
+  // Domains of Dread: Wisdom 16 dá os 10%.
+  Anchorite: ['wisdom'],
   Druid: ['wisdom', 'charisma'],
   Thief: ['dexterity'],
   Bard: ['dexterity', 'charisma'],
@@ -98,6 +100,7 @@ export const primeRequisites: Record<string, Ability[]> = {
 /** XP por nível de magia lançada, por classe (nada = a classe não ganha por magia). */
 const spellAward: Record<string, { perLevel: number; source: string }> = {
   Cleric: { perLevel: 100, source: 'DMG Table 34, priest' },
+  Anchorite: { perLevel: 100, source: 'DMG Table 34, priest' },
   Druid: { perLevel: 100, source: 'DMG Table 34, priest' },
   Mage: { perLevel: 50, source: 'DMG Table 34, wizard' },
   Bard: { perLevel: 25, source: "Complete Bard's Handbook" },

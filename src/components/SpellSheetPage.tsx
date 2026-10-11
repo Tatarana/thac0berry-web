@@ -312,6 +312,8 @@ export function SpellSheetPage({
     }))
   })
   const hasDivine = sheet.slotBoard.slots.some((s) => s.caster === 'divine')
+  // O Anchorite (Domains of Dread) conjura como sacerdote, mas não expulsa mortos-vivos.
+  const turnsUndead = hasDivine && !classes.every((k) => canonicalClass(k.characterClass) === 'Anchorite')
   // Classes que conjuram (multiclasse: cada tipo de magia pelo nível da sua classe).
   const who = { characterClass: classes[0].characterClass, level: classes[0].level, multiClasses: classes.slice(1) }
   const casters = classes.filter((k) => hasSpellSheet(k.characterClass))
@@ -371,7 +373,7 @@ export function SpellSheetPage({
             onStrike={edit && ((slot) => edit((s) => toggleSpent(s, slot.id)))}
           />
         ))}
-        {hasDivine && <TurnUndead used={sheet.turnUndeadUsed} onChange={edit && ((n) => edit((s) => void (s.turnUndeadUsed = n)))} />}
+        {turnsUndead && <TurnUndead used={sheet.turnUndeadUsed} onChange={edit && ((n) => edit((s) => void (s.turnUndeadUsed = n)))} />}
       </div>
       {circles.length === 0 && <p className="rec-soft">No spell slots on this sheet.</p>}
 

@@ -143,6 +143,8 @@ export function CharacterSheet() {
   const [reportOpen, setReportOpen] = useState(false)
   const { session, loading, signInWithGoogle } = useAuth()
   const [campaignName, setCampaignName] = useState<string | null>(null)
+  // Cenários da campanha (Ravenloft libera as classes do Domains of Dread).
+  const [campaignSettings, setCampaignSettings] = useState<string[] | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
   const userID = session?.user.id ?? null
   const { doc, loadError, save, conflict, dismissConflict, update, setPortrait: savePortrait, retry } = useCharacterDoc(id, userID)
@@ -175,11 +177,14 @@ export function CharacterSheet() {
     let cancelled = false
     void supabase
       .from('campaign')
-      .select('name')
+      .select('name, enabled_settings')
       .eq('id', campaignID)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled) setCampaignName((data as { name: string } | null)?.name ?? null)
+        if (cancelled) return
+        const row = data as { name: string; enabled_settings: string[] | null } | null
+        setCampaignName(row?.name ?? null)
+        setCampaignSettings(row?.enabled_settings ?? null)
       })
     return () => {
       cancelled = true
@@ -426,7 +431,7 @@ export function CharacterSheet() {
                   current={Number(page)}
                   onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
                 />
-                {page === '1' && <RecordSheet character={character} campaignName={campaignName} edit={edit} onClassChanged={(classes) => void afterClassChange(classes)} />}
+                {page === '1' && <RecordSheet character={character} campaignName={campaignName} campaignSettings={campaignSettings} edit={edit} onClassChanged={(classes) => void afterClassChange(classes)} />}
                 {page === '2' && <RecordPageTwo character={character} edit={edit} />}
                 {page === '3' && sheetError && <p className="paper-soft save-error">{sheetError}</p>}
                 {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} onPortrait={changePortrait} />}

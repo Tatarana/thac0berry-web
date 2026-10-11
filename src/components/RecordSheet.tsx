@@ -25,6 +25,7 @@ import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
+import { classOptionsFor, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -78,9 +79,19 @@ async function findReadMagic(): Promise<{ id: string; name: string } | null> {
   return entry ? { id: entry.id, name: entry.name } : null
 }
 
-function ClassSelect({ value, onChange }: { value: CharacterClass; onChange: (cls: CharacterClass, readMagic: { id: string; name: string } | null) => void }) {
-  const options = classOptions.map((cls) => ({ value: cls, label: cls }))
-  if (!classOptions.includes(value)) options.unshift({ value, label: value })
+function ClassSelect({
+  value,
+  campaignSettings,
+  onChange,
+}: {
+  value: CharacterClass
+  /** Cenários da campanha: Ravenloft libera as classes do Domains of Dread. */
+  campaignSettings: string[] | null
+  onChange: (cls: CharacterClass, readMagic: { id: string; name: string } | null) => void
+}) {
+  const allowed = classOptionsFor(classOptions, campaignSettings)
+  const options = allowed.map((cls) => ({ value: cls, label: cls }))
+  if (!allowed.includes(value)) options.unshift({ value, label: value })
   return (
     <InkPicker
       value={value}
@@ -118,12 +129,14 @@ function useMark(key: string) {
 function RecordHeader({
   c,
   campaignName,
+  campaignSettings,
   edit,
   onClassChanged,
   onApplied,
 }: {
   c: PlayerCharacter
   campaignName: string | null
+  campaignSettings: string[] | null
   edit?: Edit
   onClassChanged?: (classes: ClassChoice) => void
   onApplied?: (keys: string[]) => void
@@ -136,7 +149,8 @@ function RecordHeader({
   const dualRestriction = dualClassRestriction(c)
   const extraClasses = c.multiClasses ?? []
   // Multiclasse e demi-bardo (MC5): todos os avisos de classe e kit.
-  const multiWarnings = classWarnings(c)
+  // Ravenloft (docs/ravenloft.md): requisitos da classe e campanha sem o cenário.
+  const multiWarnings = [...classWarnings(c), ...ravenloftWarnings(c, campaignSettings)]
   const spheres = Object.entries(c.sphereAccess ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
@@ -155,6 +169,7 @@ function RecordHeader({
               <span className="rec-header-inline">
                 <ClassSelect
                   value={c.characterClass}
+                  campaignSettings={campaignSettings}
                   onChange={(cls, readMagic) => {
                     edit((x) => changeClass(x, cls, readMagic))
                     onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses })
@@ -610,7 +625,36 @@ function SavingThrowsBlock({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           </tr>
         </tbody>
       </table>
+      <ScareChecksTable c={c} />
     </section>
+  )
+}
+
+/** Fear, Horror and Madness Checks das classes de Ravenloft (Domains of Dread), pelo nível. */
+function ScareChecksTable({ c }: { c: PlayerCharacter }) {
+  const checks = scareChecks(c.characterClass, c.level)
+  if (!checks) return null
+  return (
+    <table className="rec-table rec-scare">
+      <thead>
+        <tr>
+          <th className="rec-row-label">
+            Ravenloft checks <RuleLink ruleID="dod_ch00_fear_horror_and_madness_checks" />
+          </th>
+          <th>Fear</th>
+          <th>Horror</th>
+          <th>Madness</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td className="rec-row-label">Level {c.level}</td>
+          <td className="rec-value rec-strong">{checks.fear}</td>
+          <td className="rec-value rec-strong">{checks.horror}</td>
+          <td className="rec-value rec-strong">{checks.madness}</td>
+        </tr>
+      </tbody>
+    </table>
   )
 }
 
@@ -1281,11 +1325,14 @@ function ActiveEffects({ c }: { c: PlayerCharacter }) {
 export function RecordSheet({
   character,
   campaignName,
+  campaignSettings = null,
   edit,
   onClassChanged,
 }: {
   character: PlayerCharacter
   campaignName: string | null
+  /** `enabled_settings` da campanha do personagem (null = nenhum ou sem campanha). */
+  campaignSettings?: string[] | null
   edit?: Edit
   /** Depois de trocar a classe (a página cria a primeira folha de magia, se for o caso). */
   onClassChanged?: (classes: ClassChoice) => void
@@ -1308,6 +1355,7 @@ export function RecordSheet({
       <RecordHeader
         c={character}
         campaignName={campaignName}
+        campaignSettings={campaignSettings}
         edit={edit}
         onClassChanged={onClassChanged}
         onApplied={(keys) => setFlashed(new Set(keys))}

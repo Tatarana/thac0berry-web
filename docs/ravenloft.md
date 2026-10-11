@@ -22,20 +22,19 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 5. Pontos de perícia de ladrão do Gypsy por nível: a fonte não diz → por
    enquanto, os do Thief (60 no 1º nível + 30 por nível), com aviso.
 
-Em aberto (perguntar antes da R2):
-
-- quando a classe aparece no seletor: proposta = só se a campanha do
-  personagem tem Ravenloft ligado (sem campanha ou sem cenário ligado: não
-  aparece; campanha que desliga Ravenloft depois: a classe fica, com aviso);
-- iPad: como o Psionicist, a classe é só da web por enquanto (um personagem
-  Anchorite/Gypsy não abre no iPad até o iPad aprender a classe).
+6. A classe só aparece no seletor quando a campanha do personagem tem
+   Ravenloft ligado (sem campanha ou sem cenário ligado: não aparece); se a
+   campanha desligar Ravenloft depois, a classe fica, com aviso na ficha.
+7. iPad: como o Psionicist, a classe é só da web por enquanto. O iPad lê
+   classe desconhecida como Fighter (`CharacterClass.init(from:)`): o
+   personagem abre lá como Fighter, e salvar no iPad gravaria Fighter.
 
 ## Entregas
 
 | # | Entrega | Estado |
 |---|---|---|
 | R1 | Dados: 7 regras do DoD (4 classes, Half-Vistani, perícias do Gypsy, Fear/Horror/Madness Checks), 24 tabelas, livro e cenário em `books.json` | feita (thac0berry-data `gt4b/ravenloft-dod`) |
-| R2 | Anchorite jogável: schema (gerador do iPad → thac0berry-data), XP, dados de vida, THAC0, saves, slots de magia, requisitos, raça, testes de medo na ficha | a fazer |
+| R2 | Anchorite jogável: schema (gerador do iPad → thac0berry-data), XP, dados de vida, THAC0, saves, slots de magia, requisitos, raça, testes de medo na ficha | feita (web v0.59.0) |
 | R3 | Gypsy jogável: o mesmo, mais perícias de ladrão, magias de adivinhação por dia (sem grimório, Tabela 104), Gypsy Lore (5%/nível), especialização em faca | a fazer |
 
 ## O que a fonte dá para cada classe jogável
@@ -58,6 +57,14 @@ Em aberto (perguntar antes da R2):
   os ajustes (Tabelas 97–100). Se aparecer a regra, trocar a do Thief.
 - **Regras centrais de Ravenloft** (powers checks, maldições, o texto dos
   testes de medo/horror/loucura): não estão no dump.
+- **Turn Undead do Anchorite**: a página da wiki é um esboço e não fala de
+  expulsar mortos-vivos; a web não dá o poder (sem tabela na página 4 nem
+  contador na folha de magia). Conferir no livro.
+- **Fora do Ravenloft, achado na R2:** a `PriestTables.spellProgressionRows`
+  do app (vem do `Character.swift` do iPad, linha do 19º nível, e dos
+  fixtures do thac0berry-data) tem 9 magias de 3º círculo no 19º nível; a
+  Tabela 24 do PHB (no rules.json) e o Domains of Dread têm 8. Afeta todo
+  sacerdote de 19º nível. Corrigir no iPad e regerar os fixtures.
 - Arcanist e Avenger: só como regra de consulta (o usuário pediu jogáveis só
   Anchorite e Gypsy).
 
@@ -72,3 +79,16 @@ Em aberto (perguntar antes da R2):
   embaralhadas), hifenização, nota solta no Avenger, milhar com ponto no
   Anchorite, sinal da Tabela 102. No Table Grimoire: 562 → 586 tabelas, chip
   Ravenloft com 24. Web sem mudança de código.
+- 2026-10-10, R2 feita (web v0.59.0; schema no thac0berry-data e gerador no iPad):
+  o Anchorite é, pela tabela do livro, um Cleric com XP próprio (igual ao do
+  druida até o 16º): grupo Priest, d8, THAC0, saves e slots de magia do
+  sacerdote (com o bônus de Sabedoria); requisitos WIS 12 e CHA 15, só
+  humano (avisos na ficha); prime requisite WIS (bônus de 10% com 16);
+  esferas como no Cleric (o jogador marca na ficha); sem kits de Cleric e
+  sem Turn Undead. Seletor de classe: só com Ravenloft na campanha
+  (`src/rules/ravenloft.ts`); caixa "Ravenloft checks" embaixo dos saves
+  (Fear/Horror/Madness pelo nível, tabela do grupo Priest); página 4 com
+  "Anchorite Spell Progression". Testes: `tests/ravenloft.test.ts` (5, um
+  deles confere as tabelas do código com o DoD no rules.json). Conferido no
+  navegador com o personagem de teste "Teste Anchorite" (campanha "Teste
+  W3.1b B"; Ravenloft ligado só durante o teste e desligado de novo).

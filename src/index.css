@@ -5185,3 +5185,8 @@ button.slot-dot:hover {
   width: 2em;
   text-align: center;
 }
+
+/* Ravenloft (Domains of Dread): testes de medo, horror e loucura embaixo dos saves. */
+.rec-scare {
+  margin-top: 6px;
+}
