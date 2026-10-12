@@ -25,12 +25,12 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 6. A classe só aparece no seletor quando a campanha do personagem tem
    Ravenloft ligado (sem campanha ou sem cenário ligado: não aparece); se a
    campanha desligar Ravenloft depois, a classe fica, com aviso na ficha.
-8. Magias do Gypsy (2026-10-12): lista de magias conhecidas (o grimório
-   reaproveitado, com o título "Known Spells"), só da escola Divination; a
-   folha de magia mostra as conhecidas no slot.
 7. iPad: como o Psionicist, a classe é só da web por enquanto. O iPad lê
    classe desconhecida como Fighter (`CharacterClass.init(from:)`): o
    personagem abre lá como Fighter, e salvar no iPad gravaria Fighter.
+8. Magias do Gypsy (2026-10-12): lista de magias conhecidas (o grimório
+   reaproveitado, com o título "Known Spells"), só da escola Divination; a
+   folha de magia mostra as conhecidas no slot.
 
 ## Entregas
 
