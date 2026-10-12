@@ -1,5 +1,6 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
+import { ActiveCampaignSync } from './lib/activeCampaign'
 import { CampaignDetail } from './pages/CampaignDetail'
 import { Campaigns } from './pages/Campaigns'
 import { Characters } from './pages/Characters'
@@ -29,6 +30,8 @@ import { Settings } from './pages/Settings'
 export default function App() {
   return (
     <AuthProvider>
+      {/* Campanha ativa do modo DM na conta (com login). */}
+      <ActiveCampaignSync />
       <HashRouter>
         <Routes>
           <Route path="/" element={<Home />} />
