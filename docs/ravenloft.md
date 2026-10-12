@@ -60,11 +60,14 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 - **Turn Undead do Anchorite**: a página da wiki é um esboço e não fala de
   expulsar mortos-vivos; a web não dá o poder (sem tabela na página 4 nem
   contador na folha de magia). Conferir no livro.
-- **Fora do Ravenloft, achado na R2:** a `PriestTables.spellProgressionRows`
-  do app (vem do `Character.swift` do iPad, linha do 19º nível, e dos
-  fixtures do thac0berry-data) tem 9 magias de 3º círculo no 19º nível; a
-  Tabela 24 do PHB (no rules.json) e o Domains of Dread têm 8. Afeta todo
-  sacerdote de 19º nível. Corrigir no iPad e regerar os fixtures.
+- **Fora do Ravenloft, achado na R2 (corrigido em dados e web, 2026-10-12):**
+  a `PriestTables.spellProgressionRows` do app tinha 9 magias de 3º círculo
+  no 19º nível; a Tabela 24 do PHB e o Domains of Dread têm 8. Decisão do
+  usuário: corrigir só dados e web. `thac0berry-data/scripts/fix_rules_fixtures.py`
+  corrige os fixtures (52 valores, no formato do Swift); a web lê de lá
+  (v0.59.1). **Pendente no iPad:** a linha do 19º em `Models/Character.swift`
+  continua com 9; até ela ser corrigida, o workflow "Regras (valores de
+  referência)" do iPad acusa DIFERE, e o iPad mostra 9 na ficha.
 - Arcanist e Avenger: só como regra de consulta (o usuário pediu jogáveis só
   Anchorite e Gypsy).
 
@@ -92,3 +95,6 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
   deles confere as tabelas do código com o DoD no rules.json). Conferido no
   navegador com o personagem de teste "Teste Anchorite" (campanha "Teste
   W3.1b B"; Ravenloft ligado só durante o teste e desligado de novo).
+- 2026-10-12, slots do sacerdote no 19º nível (web v0.59.1): fixtures
+  corrigidos no thac0berry-data por script (ver Pendências); o teste de dados
+  reais do Anchorite não precisa mais do ajuste no 19º nível.

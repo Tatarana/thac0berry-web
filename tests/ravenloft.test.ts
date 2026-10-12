@@ -77,9 +77,6 @@ test('dados reais: as tabelas do código batem com o Domains of Dread no rules.j
     assert.equal(R.xpRequired(level, 'Anchorite'), number(row[1]), `XP do nível ${level}`)
     // Com WIS 18 (libera os círculos 6 e 7), tirando o bônus de Sabedoria do PHB (+2/+2/+1/+1 nos círculos 1–4).
     const book = row.slice(4).map((cell) => (cell === '—' ? 0 : Number(cell)))
-    // Pendência conhecida (fora do Anchorite): a PriestTables do app (Character.swift do iPad)
-    // tem 9 no 3º círculo do 19º nível; a Tabela 24 do PHB e o Domains of Dread têm 8.
-    if (level === 19) book[2] = 9
     assert.deepEqual(R.priestSpellProgression(level, 18).map((n, c) => n - [2, 2, 1, 1, 0, 0, 0][c] * (n > 0 ? 1 : 0)), book, `slots do nível ${level}`)
   })
   // Testes do grupo Priest.
