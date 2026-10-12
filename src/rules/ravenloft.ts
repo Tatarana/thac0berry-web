@@ -27,6 +27,13 @@ export function classOptionsFor(base: CharacterClass[], settings: string[] | nul
   return campaignAllowsRavenloft(settings) ? [...base, ...(ravenloftClasses as CharacterClass[])] : base
 }
 
+/**
+ * Kits de Ravenloft (Denizens of Dread, `setting: "Ravenloft"` no kits.json):
+ * mesma regra das classes, só com o cenário ligado na campanha.
+ */
+export const kitAllowedInCampaign = (kit: { setting?: string | null }, settings: string[] | null | undefined) =>
+  kit.setting !== RAVENLOFT || campaignAllowsRavenloft(settings)
+
 /** Requisitos de cada classe (Domains of Dread): atributos mínimos e raças. */
 const requirements: Partial<
   Record<CanonicalClass, { plural: string; abilities: Partial<Record<keyof PlayerCharacter['abilities'], number>>; races: string[]; racesText: string }>

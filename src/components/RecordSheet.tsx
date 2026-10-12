@@ -322,6 +322,7 @@ function RecordHeader({
           {pickingKit && edit && (
             <KitPicker
               character={c}
+              campaignSettings={campaignSettings}
               onChoose={(kit) => {
                 setPickingKit(false)
                 if (!kit) {

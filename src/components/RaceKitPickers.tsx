@@ -4,6 +4,7 @@ import { loadKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
 import { allClasses, kitWarnings } from '../rules/multiclass'
 import { hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, races, raceWarnings, type RaceName } from '../rules/raceKit'
+import { kitAllowedInCampaign } from '../rules/ravenloft'
 import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import { KitDetail } from './KitDetail'
@@ -73,10 +74,13 @@ const loadAllKits = () => {
 
 export function KitPicker({
   character,
+  campaignSettings = null,
   onChoose,
   onClose,
 }: {
   character: Pick<PlayerCharacter, 'kit' | 'characterClass' | 'level' | 'race' | 'multiClasses' | 'formerClasses'>
+  /** Cenários da campanha: os kits de Ravenloft só aparecem com ele ligado. */
+  campaignSettings?: string[] | null
   /** null = "None" (sem kit). */
   onChoose: (kit: Kit | null) => void
   onClose: () => void
@@ -91,11 +95,14 @@ export function KitPicker({
     const classes = allClasses(character).map((k) => k.characterClass)
     void loadAllKits().then((all) => {
       const seen = new Set<string>()
-      const list = classes.flatMap((cls) => kitsAllowedFor(all, cls)).filter((k) => (seen.has(k.id) ? false : (seen.add(k.id), true)))
+      const list = classes
+        .flatMap((cls) => kitsAllowedFor(all, cls))
+        .filter((k) => kitAllowedInCampaign(k, campaignSettings))
+        .filter((k) => (seen.has(k.id) ? false : (seen.add(k.id), true)))
       setKits(list.sort((a, b) => a.name.localeCompare(b.name)))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character.characterClass, JSON.stringify(character.multiClasses ?? []), JSON.stringify(character.formerClasses ?? [])])
+  }, [character.characterClass, JSON.stringify(character.multiClasses ?? []), JSON.stringify(character.formerClasses ?? []), JSON.stringify(campaignSettings)])
   const filtered = useMemo(() => {
     const target = normalize(query)
     return (kits ?? []).filter((k) => target === '' || normalize(k.name).includes(target) || normalize(k.deity ?? '').includes(target))

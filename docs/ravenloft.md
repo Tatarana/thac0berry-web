@@ -39,6 +39,7 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 | R1 | Dados: 7 regras do DoD (4 classes, Half-Vistani, perícias do Gypsy, Fear/Horror/Madness Checks), 24 tabelas, livro e cenário em `books.json` | feita (thac0berry-data `gt4b/ravenloft-dod`) |
 | R2 | Anchorite jogável: schema (gerador do iPad → thac0berry-data), XP, dados de vida, THAC0, saves, slots de magia, requisitos, raça, testes de medo na ficha | feita (web v0.59.0) |
 | R3 | Gypsy jogável: o mesmo, mais perícias de ladrão, magias de adivinhação por dia (sem grimório, Tabela 104), Gypsy Lore (5%/nível), especialização em faca | feita (web v0.61.0) |
+| R4 | Kits de Ravenloft: os 6 do artigo "Denizens of Dread" (Dragon Annual 1998), só com Ravenloft na campanha | feita (web v0.62.0) |
 
 ## O que a fonte dá para cada classe jogável
 
@@ -71,6 +72,13 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
   (v0.59.1). **Pendente no iPad:** a linha do 19º em `Models/Character.swift`
   continua com 9; até ela ser corrigida, o workflow "Regras (valores de
   referência)" do iPad acusa DIFERE, e o iPad mostra 9 na ficha.
+- **Kits do "Champions of the Mists"** (15 kits de Ravenloft: Accursed, Cold
+  One, Fugitive, Ghostwatcher, Monster Hunter, Psychic, Redeemed, Pistoleer,
+  Green Hand, Order of the Guardian, Invisible, Knight of the Shadows, Eremit,
+  Spiritualist…): a wiki só lista os nomes (artigo "Harrowed Heroes"); entram
+  se o usuário trouxer o livro. O Domains of Dread não tem kits.
+- Kit de Ravenloft numa campanha que desligou o cenário: o kit fica (sem aviso
+  na ficha, diferente da classe).
 - Arcanist e Avenger: só como regra de consulta (o usuário pediu jogáveis só
   Anchorite e Gypsy).
 
@@ -114,3 +122,13 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
   Testes: 4 novos em `tests/ravenloft.test.ts` (um confere o código com as
   Tabelas 95, 97, 104 e a progressão no rules.json). Não conferido numa ficha
   no navegador: a sessão do app no navegador do agente expirou.
+- 2026-10-12, R4 feita (web v0.62.0; thac0berry-data `scripts/add_ravenloft_kits.py`):
+  os 6 kits do "Denizens of Dread" (Danseur, Dilettante, Investigator -
+  Ravenloft, Psychologue, Stalker - Ravenloft, Warder) estavam no data-mining
+  com a classe gravada como "Dragon Magazine" e nunca tinham entrado. Entraram
+  com as classes da linha "Class/Race" de cada kit, requisitos, proficiências
+  bônus/recomendadas (nomes do compêndio) e `setting: "Ravenloft"`. Decisões:
+  Psychologue também para Gypsy e Bard (a critério do mestre); Warder para os
+  grupos Warrior e Priest; kits só no seletor com Ravenloft na campanha
+  (`kitAllowedInCampaign`). Gypsy: Danseur, Investigator, Psychologue,
+  Stalker; Anchorite: Investigator, Psychologue, Stalker, Warder.

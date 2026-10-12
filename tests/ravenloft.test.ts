@@ -178,3 +178,30 @@ test('dados reais: o Gypsy do código bate com o Domains of Dread no rules.json'
     assert.equal(R.thievingBaseScore(name, 'Gypsy'), number(score.replace('%', '')), skill)
   }
 })
+
+// --- Kits de Ravenloft (Denizens of Dread) -------------------------------------------------
+
+test('kits de Ravenloft: só com o cenário na campanha; as classes certas', async () => {
+  assert.equal(V.kitAllowedInCampaign({ setting: 'Ravenloft' }, null), false)
+  assert.equal(V.kitAllowedInCampaign({ setting: 'Ravenloft' }, ['Dark Sun']), false)
+  assert.equal(V.kitAllowedInCampaign({ setting: 'Ravenloft' }, ['Ravenloft']), true)
+  assert.equal(V.kitAllowedInCampaign({ setting: null }, null), true)
+  const { kitsAllowedFor } = await import('../src/rules/raceKit.ts')
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const kits = JSON.parse(readFileSync(join(source, 'kits.json'), 'utf8')) as {
+    name: string
+    setting?: string | null
+    classEligibility: { classGroup: string; subclass: string; allowedClasses: string[] }
+    mechanics: { proficiencies: { bonus: string[] } }
+  }[]
+  const ravenloft = kits.filter((k) => k.setting === 'Ravenloft')
+  assert.equal(ravenloft.length, 6)
+  const names = (cls: string) => kitsAllowedFor(ravenloft, cls).map((k) => k.name).sort()
+  assert.deepEqual(names('Gypsy'), ['Danseur', 'Investigator - Ravenloft', 'Psychologue', 'Stalker - Ravenloft'])
+  assert.deepEqual(names('Anchorite'), ['Investigator - Ravenloft', 'Psychologue', 'Stalker - Ravenloft', 'Warder'])
+  // As proficiências bônus existem no compêndio (a ficha as acrescenta pelo nome).
+  const proficiencies = JSON.parse(readFileSync(join(source, 'proficiencies.json'), 'utf8')) as { name: string }[] | Record<string, { name: string }[]>
+  const list = Array.isArray(proficiencies) ? proficiencies : Object.values(proficiencies).flat()
+  const known = new Set(list.map((p) => p.name))
+  for (const k of ravenloft) for (const b of k.mechanics.proficiencies.bonus) assert.ok(known.has(b), `${k.name}: ${b}`)
+})
