@@ -35,11 +35,7 @@ tudo que fizesse seria para a campanha escolhida".
 
 ## Backlog
 
-- **Campanha ativa na conta** (Supabase), para valer em todos os aparelhos do
-  DM: hoje fica só no aparelho (decisão 3). Precisa de um lugar no backend (ex.:
-  preferências do usuário) e entra no documento de sync do backend.
-  O backend já tem o lugar (`user_preferences.dm_active_campaign_id` e
-  `dm_active_one_shot`, 2026-10-12); falta a web (S3).
+- ~~Campanha ativa na conta~~: feito em 2026-10-12 (web v0.65.0; ver o log).
 - ~~Guardar os encontros do Combat Tracker no Supabase~~: feito em 2026-10-12
   (web v0.64.0, `controle-de-combate.md`).
 - Campanha ativa no **modo Jogador** (ex.: abrir direto o personagem daquela
@@ -97,3 +93,18 @@ tudo que fizesse seria para a campanha escolhida".
   - conferido no navegador sem login (as três telas como antes); o caminho com
     a campanha depende do login (o cenário vem do Supabase) e ficou nos testes
     da regra.
+- 2026-10-12, campanha ativa na conta (backlog item 4, S3, web v0.65.0;
+  backend: `user_preferences.dm_active_campaign_id` e `dm_active_one_shot`).
+  Decisões do usuário: uma só campanha ativa por conta; sem login continua só
+  no aparelho.
+  - `ActiveCampaignSync` (montado no `App`): ao entrar e ao voltar para a aba,
+    lê a conta; na primeira vez numa conta, vale a escolha da conta e, se ela
+    não tiver, sobe a do aparelho; depois, a conta manda (campanha apagada em
+    outro aparelho volta a pedir a escolha);
+  - cada escolha do DM grava na conta; o aparelho marca a pendência
+    (`thac0berry.campaign.sync`) e, se a página fechar antes, ela sobe na
+    próxima abertura; erro tenta de novo em 5 s; renomear não grava (a conta
+    guarda só o id);
+  - regra pura em `src/rules/activeCampaignSync.ts`; conferido no navegador
+    (primeira subida, troca pelo chip, aparelho sem nada recebendo da conta
+    com o nome, pendência subindo ao recarregar); testes: 196 (2 novos).
