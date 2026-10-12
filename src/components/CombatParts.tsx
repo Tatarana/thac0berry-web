@@ -735,7 +735,18 @@ export function AddPersonWindow({
 
 // --- Configurações do DM ------------------------------------------------------------------
 
-export function CombatSettingsWindow({ settings, onChange, onClose }: { settings: CombatSettings; onChange: (s: CombatSettings) => void; onClose: () => void }) {
+export function CombatSettingsWindow({
+  settings,
+  onAccount = false,
+  onChange,
+  onClose,
+}: {
+  settings: CombatSettings
+  /** Com login, as configurações ficam na conta (todos os aparelhos). */
+  onAccount?: boolean
+  onChange: (s: CombatSettings) => void
+  onClose: () => void
+}) {
   const choice = <K extends keyof CombatSettings>(key: K, options: { value: CombatSettings[K]; label: string }[]) => (
     <div className="chip-row">
       {options.map((o) => (
@@ -746,7 +757,7 @@ export function CombatSettingsWindow({ settings, onChange, onClose }: { settings
     </div>
   )
   return createPortal(
-    <PaperModal title="Combat settings" subtitle="Your defaults on this device" onClose={onClose}>
+    <PaperModal title="Combat settings" subtitle={onAccount ? 'Your defaults, on every device of your account' : 'Your defaults on this device'} onClose={onClose}>
       <section className="add-section">
         <span className="paper-label">Initiative</span>
         {choice('initiative', [

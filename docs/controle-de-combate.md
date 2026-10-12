@@ -7,7 +7,8 @@ trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
 ## Decisões do usuário (2026-10-09)
 
 1. **Onde guardar**: no aparelho (localStorage) agora. No Supabase (todos os
-   aparelhos, parte da sessão da campanha) vai para o backlog.
+   aparelhos, parte da sessão da campanha) vai para o backlog. Feito em
+   2026-10-12 (web v0.64.0; ver o log).
 2. **Iniciativa**: o DM escolhe o padrão (por lado, a regra base do DMG, ou
    individual, a opcional) nas configurações.
 3. **Ideias do CT5**: decidir quando chegar a vez delas.
@@ -50,9 +51,6 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 - CT5 sem prioridade: distância e reação (Tabelas 58/59 já estão na faixa de
   tabelas) e efeitos com duração em vários combatentes de uma vez.
 - Lançar o XP do fim do encontro nas fichas do App.
-
-- Guardar os encontros no Supabase (todos os aparelhos; ligado à sessão da
-  campanha): tabela nova e mudança no documento de sync do backend.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
 ## Log
@@ -297,3 +295,25 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 - 2026-10-09: ícone do Combat Tracker no DM Tools (arte do usuário, recortada
   do fundo branco: `public/images/icon_combat_tracker.png`, 256 px, como os
   outros ícones do hub).
+- 2026-10-12, encontros e configurações na conta (backlog item 4, S2, web
+  v0.64.0; backend: tabela `encounter` e `user_preferences.combat_settings`,
+  migração `20261012120000`). Decisões do usuário: as configurações do DM vão
+  junto; sem login continua só no aparelho; conflito avisa, como na ficha.
+  - com login, o aparelho é o cache e a conta manda. Na primeira vez numa
+    conta, os encontros do aparelho que ela não tem sobem (fica a cópia
+    `thac0berry.combat.backup`), e as configurações também, se forem diferentes
+    das padrão e a conta não tiver;
+  - cada mudança grava só o encontro alterado, 1 s depois da última, com a
+    `version` conhecida (INSERT/UPDATE, nunca upsert); remover vira
+    `deleted_at`; erro tenta de novo em 5 s; grava também no `pagehide`;
+  - o que a conta ainda não recebeu fica marcado no aparelho (`unsynced`) e
+    sobe na próxima abertura (antes, recarregar logo depois de mudar perdia a
+    mudança); aba visível de novo, sem pendências, busca a conta;
+  - avisos na tela: erro de sincronização e conflito (outro aparelho gravou
+    antes: a última vence, a outra fica no histórico);
+  - "delete encounter" com a confirmação da página (`useConfirm`): o
+    `window.confirm` não aparece no navegador embutido; textos "on this
+    device" × "your account" pelo login;
+  - funções puras em `src/rules/combatSync.ts`; conferido no navegador
+    (criar, apagar o cache e voltar da conta, subida dos encontros locais,
+    pendências, configurações, delete com `deleted_at`); testes: 194 (4 novos).

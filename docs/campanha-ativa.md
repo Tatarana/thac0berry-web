@@ -38,9 +38,10 @@ tudo que fizesse seria para a campanha escolhida".
 - **Campanha ativa na conta** (Supabase), para valer em todos os aparelhos do
   DM: hoje fica só no aparelho (decisão 3). Precisa de um lugar no backend (ex.:
   preferências do usuário) e entra no documento de sync do backend.
-- Guardar os encontros do Combat Tracker no Supabase (já no backlog de
-  `controle-de-combate.md`); com isso, a campanha ativa e os encontros dela
-  passam a valer em qualquer aparelho.
+  O backend já tem o lugar (`user_preferences.dm_active_campaign_id` e
+  `dm_active_one_shot`, 2026-10-12); falta a web (S3).
+- ~~Guardar os encontros do Combat Tracker no Supabase~~: feito em 2026-10-12
+  (web v0.64.0, `controle-de-combate.md`).
 - Campanha ativa no **modo Jogador** (ex.: abrir direto o personagem daquela
   campanha), se fizer sentido depois (decisão 1).
 
