@@ -129,6 +129,7 @@ function casterTitle(characterClass: CharacterClass): string {
   const cls = canonicalClass(characterClass)
   if (cls === 'Mage') return 'Wizard'
   if (cls === 'Bard') return 'Bard'
+  if (cls === 'Gypsy') return 'Gypsy'
   return 'Priest'
 }
 

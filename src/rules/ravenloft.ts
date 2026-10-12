@@ -3,6 +3,7 @@
 // (o iPad lê valor desconhecido como Fighter). Só funções puras.
 
 import type { CharacterClass, PlayerCharacter } from '../types/library.ts'
+import { hasClass, type ClassChoice } from './multiclass.ts'
 import { matchRace } from './raceKit.ts'
 import { canonicalClass, type CanonicalClass } from './rules.ts'
 
@@ -10,7 +11,7 @@ import { canonicalClass, type CanonicalClass } from './rules.ts'
 export const RAVENLOFT = 'Ravenloft'
 
 /** Classes do Domains of Dread que o jogador pode escolher (decisão do usuário: Anchorite e Gypsy). */
-export const ravenloftClasses: CanonicalClass[] = ['Anchorite']
+export const ravenloftClasses: CanonicalClass[] = ['Anchorite', 'Gypsy']
 
 export const isRavenloftClass = (cls: CharacterClass | string) => ravenloftClasses.includes(canonicalClass(cls))
 
@@ -27,8 +28,17 @@ export function classOptionsFor(base: CharacterClass[], settings: string[] | nul
 }
 
 /** Requisitos de cada classe (Domains of Dread): atributos mínimos e raças. */
-const requirements: Partial<Record<CanonicalClass, { abilities: Partial<Record<keyof PlayerCharacter['abilities'], number>>; races: string[] }>> = {
-  Anchorite: { abilities: { wisdom: 12, charisma: 15 }, races: ['Human'] },
+const requirements: Partial<
+  Record<CanonicalClass, { plural: string; abilities: Partial<Record<keyof PlayerCharacter['abilities'], number>>; races: string[]; racesText: string }>
+> = {
+  Anchorite: { plural: 'Anchorites', abilities: { wisdom: 12, charisma: 15 }, races: ['Human'], racesText: 'human' },
+  // Half-Vistani é raça do Domains of Dread que o app ainda não tem: fica fora do aviso.
+  Gypsy: {
+    plural: 'Gypsies',
+    abilities: { constitution: 13, intelligence: 13, wisdom: 13, charisma: 15 },
+    races: ['Human', 'Half-Elf'],
+    racesText: 'human, half-elf or Half-Vistani',
+  },
 }
 
 const abilityName: Record<string, string> = {
@@ -56,10 +66,10 @@ export function ravenloftWarnings(
   if (req) {
     for (const [ability, min] of Object.entries(req.abilities)) {
       const score = c.abilities[ability as keyof PlayerCharacter['abilities']] as number
-      if (score < (min ?? 0)) warnings.push(`${cls}s need ${abilityName[ability]} ${min} or more (Domains of Dread); this character has ${score}.`)
+      if (score < (min ?? 0)) warnings.push(`${req.plural} need ${abilityName[ability]} ${min} or more (Domains of Dread); this character has ${score}.`)
     }
     const race = matchRace(c.race)
-    if (race && !req.races.includes(race)) warnings.push(`${cls}s must be ${req.races.join(' or ').toLowerCase()} (Domains of Dread).`)
+    if (race && !req.races.includes(race)) warnings.push(`${req.plural} must be ${req.racesText} (Domains of Dread).`)
   }
   return warnings
 }
@@ -92,8 +102,24 @@ const priestChecks = [
   band(20, 2, 3, 8),
 ]
 
+/** Grupo Rogue (Tabela 95, a do Gypsy). */
+const rogueChecks = [
+  band(0, 16, 16, 19),
+  band(2, 15, 15, 18),
+  band(4, 14, 14, 17),
+  band(6, 13, 13, 16),
+  band(8, 12, 12, 15),
+  band(10, 11, 11, 14),
+  band(12, 9, 10, 13),
+  band(14, 7, 9, 12),
+  band(16, 5, 7, 11),
+  band(18, 3, 5, 10),
+  band(20, 2, 3, 8),
+]
+
 const checksByClass: Partial<Record<CanonicalClass, typeof priestChecks>> = {
   Anchorite: priestChecks,
+  Gypsy: rogueChecks,
 }
 
 /** Os números dos testes da classe no nível; null fora das classes de Ravenloft ou acima do 20º. */
@@ -101,3 +127,20 @@ export function scareChecks(cls: CharacterClass | string, level: number): ScareC
   const table = checksByClass[canonicalClass(cls)]
   return table?.find((b) => level <= b.maxLevel)?.values ?? null
 }
+
+// --- Habilidades do Gypsy -----------------------------------------------------------------
+
+/** Gypsy Lore: 5% por nível de saber algo sobre um tema (Domains of Dread), até 100%. */
+export const gypsyLore = (level: number) => Math.max(0, Math.min(100, 5 * level))
+
+/**
+ * Especialização do Gypsy: só na faca ("the knife"), +1 no ataque e +2 no
+ * dano, sem ataque extra (Domains of Dread, Knife Fighting).
+ */
+export const gypsyCanSpecialize = (weaponName: string) => /\bknife\b/i.test(weaponName)
+
+/** Só o Gypsy (sem Mage nem Bard): o grimório vira a lista de magias conhecidas, só de adivinhação. */
+export const gypsyKnownSpellsOnly = (c: ClassChoice) => hasClass(c, 'Gypsy') && !hasClass(c, 'Mage') && !hasClass(c, 'Bard')
+
+/** Só a magia de adivinhação conta para o Gypsy (lesser e greater divination: a escola Divination). */
+export const isGypsySpell = (schools: string[] | null | undefined) => (schools ?? []).includes('Divination')

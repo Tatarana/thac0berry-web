@@ -22,7 +22,7 @@ test('o Anchorite só aparece no seletor com Ravenloft ligado na campanha', () =
   assert.deepEqual(V.classOptionsFor(base, null), base)
   assert.deepEqual(V.classOptionsFor(base, []), base)
   assert.deepEqual(V.classOptionsFor(base, ['Dark Sun']), base)
-  assert.deepEqual(V.classOptionsFor(base, ['Ravenloft', 'Dark Sun']), [...base, 'Anchorite'])
+  assert.deepEqual(V.classOptionsFor(base, ['Ravenloft', 'Dark Sun']), [...base, 'Anchorite', 'Gypsy'])
 })
 
 test('avisos do Anchorite: campanha sem Ravenloft, WIS/CHA abaixo do mínimo, raça', () => {
@@ -85,5 +85,96 @@ test('dados reais: as tabelas do código batem com o Domains of Dread no rules.j
     const level = Number(levels.split('-').pop())
     if (level === 0) continue
     assert.deepEqual(V.scareChecks('Anchorite', level), { fear: Number(fear), horror: Number(horror), madness: Number(madness) }, `nível ${levels}`)
+  }
+})
+
+// --- Gypsy (R3) ---------------------------------------------------------------------------
+
+function gypsy(over: Partial<PlayerCharacter> = {}): PlayerCharacter {
+  return {
+    characterClass: 'Gypsy',
+    level: 5,
+    race: 'Human',
+    abilities: { strength: 10, dexterity: 16, constitution: 13, intelligence: 13, wisdom: 13, charisma: 16 },
+    ...over,
+  } as unknown as PlayerCharacter
+}
+
+test('Gypsy: no seletor só com Ravenloft; avisos de atributos e raça', () => {
+  assert.deepEqual(V.classOptionsFor(base, ['Ravenloft']), [...base, 'Anchorite', 'Gypsy'])
+  assert.deepEqual(V.ravenloftWarnings(gypsy(), ['Ravenloft']), [])
+  assert.deepEqual(V.ravenloftWarnings(gypsy({ race: 'Half-Elf' }), ['Ravenloft']), [])
+  const all = V.ravenloftWarnings(gypsy({ race: 'Dwarf', abilities: { strength: 10, dexterity: 16, constitution: 12, intelligence: 13, wisdom: 13, charisma: 14 } }), ['Ravenloft'])
+  assert.deepEqual(all.length, 3)
+  assert.match(all[0], /Gypsies need Constitution 13/)
+  assert.match(all[1], /Gypsies need Charisma 15/)
+  assert.match(all[2], /human, half-elf or Half-Vistani/)
+  assert.equal(levelLimitWarning('Half-Elf', 'Gypsy', 15), null)
+  assert.match(levelLimitWarning('Halfling', 'Gypsy', 1)!, /Domains of Dread/)
+})
+
+test('Gypsy: Rogue em dados de vida, THAC0, saves, XP, proficiências e perícias', () => {
+  assert.equal(R.classGroup('Gypsy'), 'Rogue')
+  assert.equal(R.hitDieType('Gypsy'), 'd6')
+  assert.equal(R.isArcaneCaster('Gypsy'), true)
+  assert.equal(R.hasSpellSheet('Gypsy'), true)
+  for (let level = 1; level <= 20; level++) {
+    const ctx = (cls: string) => ({ level, characterClass: cls, abilities })
+    assert.deepEqual(R.resolveRule('thac0', ctx('Gypsy')), R.resolveRule('thac0', ctx('Thief')))
+    assert.deepEqual(R.resolveRule('savingThrows', ctx('Gypsy')), R.resolveRule('savingThrows', ctx('Thief')))
+    assert.equal(R.xpRequired(level, 'Gypsy'), R.xpRequired(level, 'Thief'))
+    assert.equal(R.totalWeaponSlots('Gypsy', level), R.totalWeaponSlots('Thief', level))
+  }
+  assert.deepEqual(R.thievingSkillsFor('Gypsy'), R.allThievingSkills)
+  assert.equal(R.thievingSeedTotal('Climb Walls', 'Gypsy', 'Human', 10), '60%')
+  assert.deepEqual(S.primeRequisites.Gypsy, ['dexterity', 'charisma'])
+})
+
+test('Gypsy: magias da Tabela 104 (arcanas, só adivinhação), Lore e faca', () => {
+  const slots = (level: number) => R.computedSpellSlotAllotments({ characterClass: 'Gypsy', level, abilities })
+  assert.deepEqual(slots(1), [{ caster: 'arcane', level: 1, count: 1 }])
+  assert.deepEqual(
+    slots(19).map((a) => a.count),
+    [3, 3, 2, 1],
+  )
+  assert.equal(V.isGypsySpell(['Divination']), true)
+  assert.equal(V.isGypsySpell(['Evocation']), false)
+  assert.equal(V.gypsyKnownSpellsOnly({ characterClass: 'Gypsy', level: 3 }), true)
+  assert.equal(V.gypsyLore(12), 60)
+  assert.equal(V.gypsyLore(25), 100)
+  assert.equal(V.gypsyCanSpecialize('Knife'), true)
+  assert.equal(V.gypsyCanSpecialize('Knife, buckle'), true)
+  assert.equal(V.gypsyCanSpecialize('Dagger'), false)
+  assert.deepEqual(V.scareChecks('Gypsy', 11), { fear: 9, horror: 10, madness: 13 })
+})
+
+test('dados reais: o Gypsy do código bate com o Domains of Dread no rules.json', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const rules = JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')) as { id: string; tables: { title: string; rows: string[][] }[] }[]
+  const table = (ruleID: string, title: string) => rules.find((r) => r.id === ruleID)!.tables.find((t) => t.title === title)!
+  const number = (text: string) => Number(text.replace(/,/g, ''))
+  // XP, THAC0 e proficiências da progressão do Gypsy.
+  table('dod_ch00_gypsy', 'Gypsy Progression').rows.forEach((row, i) => {
+    const level = i + 1
+    assert.equal(R.xpRequired(level, 'Gypsy'), number(row[1]), `XP do nível ${level}`)
+    assert.deepEqual(R.resolveRule('thac0', { level, characterClass: 'Gypsy', abilities }), number(row[3]), `THAC0 do nível ${level}`)
+    assert.equal(R.totalWeaponSlots('Gypsy', level), number(row[4]), `slots de arma do nível ${level}`)
+  })
+  // Tabela 104: magias por faixa de nível.
+  for (const row of table('dod_ch00_gypsy', 'Table 104: Gypsy Spell Progression').rows) {
+    const level = Number(row[0].split('-')[0].replace('+', ''))
+    const book = row.slice(1).map((cell) => (cell === '—' ? 0 : Number(cell))).filter((n) => n > 0)
+    assert.deepEqual(R.gypsySpellProgression(level), book, `magias do nível ${row[0]}`)
+  }
+  // Tabela 95: testes de medo.
+  for (const [levels, fear, horror, madness] of table('dod_ch00_gypsy', 'Table 95: Gypsy Fear, Horror and Madness Checks').rows) {
+    const level = Number(levels.split('-').pop())
+    if (level === 0) continue
+    assert.deepEqual(V.scareChecks('Gypsy', level), { fear: Number(fear), horror: Number(horror), madness: Number(madness) }, `nível ${levels}`)
+  }
+  // Tabela 97: bases das perícias = as do ladrão do PHB.
+  for (const [skill, score] of table('dod_ch00_gypsy_thieving_skills', 'Table 97: Thieving Skill Base Scores').rows) {
+    const name = skill === 'Remove Traps' ? 'Find/Remove Traps' : skill
+    assert.equal(R.thievingBaseScore(name, 'Gypsy'), number(score.replace('%', '')), skill)
   }
 })

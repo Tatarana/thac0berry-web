@@ -74,7 +74,8 @@ export function levelLimit(race: RaceName, characterClass: CharacterClass | stri
     Dwarf: { Cleric: 10, Fighter: 15, Thief: 12, Ninja: 'unlimited', Psionicist: 8 },
     Elf: { Cleric: 12, Fighter: 12, Mage: 15, Ranger: 15, Thief: 12, Psionicist: 7 },
     Gnome: { Cleric: 9, Fighter: 11, Thief: 13, Psionicist: 9 },
-    'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12, Psionicist: 7 },
+    // Gypsy (Domains of Dread): humano, meio-elfo e Half-Vistani; o livro não dá limite de nível.
+    'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12, Psionicist: 7, Gypsy: 'unlimited' },
     Halfling: { Cleric: 8, Fighter: 9, Thief: 15, Ninja: 'unlimited', Psionicist: 10 },
   }
   if (race === 'Human') return 'unlimited'
@@ -86,8 +87,8 @@ export function levelLimitWarning(race: RaceName, characterClass: CharacterClass
   const limit = levelLimit(race, characterClass)
   const cls = canonicalClass(characterClass)
   if (limit === 'unlimited') return null
-  // Anchorite (Domains of Dread): só humanos.
-  if (limit === 'forbidden') return `${race} cannot normally be a ${cls} (${cls === 'Anchorite' ? 'Domains of Dread' : 'PHB Table 7'}).`
+  // Anchorite e Gypsy (Domains of Dread): as raças vêm do livro.
+  if (limit === 'forbidden') return `${race} cannot normally be a ${cls} (${cls === 'Anchorite' || cls === 'Gypsy' ? 'Domains of Dread' : 'PHB Table 7'}).`
   return level > limit ? `${race} ${cls}s are normally limited to level ${limit} (PHB Table 7) — this character is already level ${level}.` : null
 }
 

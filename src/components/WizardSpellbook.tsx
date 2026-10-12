@@ -3,6 +3,7 @@ import { loadSpellIndex, type SpellIndexEntry } from '../data/spells'
 import { normalize, similarity } from '../lib/search'
 import { hasClass } from '../rules/multiclass'
 import { computedSpellSlotAllotments } from '../rules/rules'
+import { gypsyKnownSpellsOnly, isGypsySpell } from '../rules/ravenloft'
 import { isOpposedBySchool, wizardSchools } from '../rules/spellSheets'
 import { useConfirm } from '../lib/useConfirm'
 import type { PlayerCharacter } from '../types/library'
@@ -16,6 +17,8 @@ import { InkPicker, SectionTitle } from './SheetBits'
 // opostas); o que não está no compêndio entra como "free entry" com o
 // círculo escolhido. O mago escolhe a especialização: as escolas opostas
 // ficam bloqueadas e as magias delas saem do grimório (A5).
+// Gypsy (Domains of Dread): não tem grimório; a mesma lista vira "Known
+// Spells", só com magias de adivinhação (decisão do usuário, 2026-10-12).
 
 const circleLabel = (level: number) => (level === 0 ? 'Cantrip' : `Circle ${level}`)
 
@@ -44,9 +47,12 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
     const base = substring.length > 0 ? substring : index.filter((s) => similarity(target, normalize(s.name)) >= 0.5).slice(0, 30)
     return [...base].sort((a, b) => (a.level === b.level ? (a.name < b.name ? -1 : 1) : a.level - b.level))
   }, [index, typed])
-  const results = allMatches.filter((s) => s.level <= maxCircle && !isOpposedBySchool(school, s.schools))
+  // Só o Gypsy (sem Mage nem Bard): lista de magias conhecidas, só de adivinhação.
+  const gypsyOnly = gypsyKnownSpellsOnly(c)
+  const allowedSchool = (s: SpellIndexEntry) => !isOpposedBySchool(school, s.schools) && (!gypsyOnly || isGypsySpell(s.schools))
+  const results = allMatches.filter((s) => s.level <= maxCircle && allowedSchool(s))
   const beyond = allMatches.filter((s) => s.level > maxCircle).length
-  const opposed = allMatches.filter((s) => s.level <= maxCircle && isOpposedBySchool(school, s.schools)).length
+  const opposed = allMatches.filter((s) => s.level <= maxCircle && !allowedSchool(s)).length
 
   const groups = useMemo(() => {
     const levelOf = (e: PlayerCharacter['wizardSpellbook'][number]) => (e.matchedSpellID ? byID.get(e.matchedSpellID)?.level : undefined) ?? e.level ?? 0
@@ -86,9 +92,10 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
   return (
     <div className="rec-sheet spellbook">
       {dialog}
-      <SectionTitle>My Spellbook</SectionTitle>
+      <SectionTitle>{gypsyOnly ? 'Known Spells' : 'My Spellbook'}</SectionTitle>
       <p className="rec-soft">
         {c.wizardSpellbook.length} spell(s) known — can cast up to circle {maxCircle}
+        {gypsyOnly && ' · divination spells only, no spellbook, 3 turns to cast'}
       </p>
 
       {isMage && (
@@ -127,7 +134,7 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
             <ul className="slot-choices">
               {results.length === 0 && (beyond > 0 || opposed > 0) && (
                 <li className="paper-soft">
-                  No usable match — {[beyond > 0 && `${beyond} beyond circle ${maxCircle}`, opposed > 0 && `${opposed} from an opposition school`].filter(Boolean).join(', ')} found, but blocked.
+                  No usable match — {[beyond > 0 && `${beyond} beyond circle ${maxCircle}`, opposed > 0 && (gypsyOnly ? `${opposed} not divination` : `${opposed} from an opposition school`)].filter(Boolean).join(', ')} found, but blocked.
                 </li>
               )}
               {results.map((spell) => (
@@ -135,7 +142,7 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
                   <button className="slot-choice" onClick={() => toggle(spell)}>
                     <span className="rec-value">{spell.name}</span>
                     <span className="rec-soft">{circleLabel(spell.level)}</span>
-                    <span className="spellbook-action">{known.has(spell.id) ? 'in book ✓' : 'add'}</span>
+                    <span className="spellbook-action">{known.has(spell.id) ? (gypsyOnly ? 'known ✓' : 'in book ✓') : 'add'}</span>
                   </button>
                 </li>
               ))}
@@ -191,9 +198,15 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
           </table>
         </section>
       ))}
-      {c.wizardSpellbook.length === 0 && <p className="rec-soft">Your spellbook is empty — search above to add spells from the Grimoire.</p>}
+      {c.wizardSpellbook.length === 0 && (
+        <p className="rec-soft">
+          {gypsyOnly ? 'No known spells yet' : 'Your spellbook is empty'} — search above to add spells from the Grimoire.
+        </p>
+      )}
       <p className="rec-soft">
-        Only spells in your spellbook can be memorized on the Spell Sheet — unlike a priest's spheres, you have to actually learn a spell first.
+        {gypsyOnly
+          ? 'Gypsies keep no spellbook, but they learn their spells: only known divination spells go on the Spell Sheet, and they need not be chosen ahead of time (Domains of Dread).'
+          : "Only spells in your spellbook can be memorized on the Spell Sheet — unlike a priest's spheres, you have to actually learn a spell first."}
       </p>
     </div>
   )

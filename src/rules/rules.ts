@@ -78,7 +78,7 @@ function swiftInt(text: string | undefined): number | null {
 
 // --- Classes -----------------------------------------------------------------------
 
-export type CanonicalClass = 'Fighter' | 'Paladin' | 'Ranger' | 'Mage' | 'Cleric' | 'Druid' | 'Thief' | 'Bard' | 'Ninja' | 'Psionicist' | 'Anchorite'
+export type CanonicalClass = 'Fighter' | 'Paladin' | 'Ranger' | 'Mage' | 'Cleric' | 'Druid' | 'Thief' | 'Bard' | 'Ninja' | 'Psionicist' | 'Anchorite' | 'Gypsy'
 
 const legacyClassNames: Record<string, CanonicalClass> = {
   Guerreiro: 'Fighter',
@@ -90,7 +90,7 @@ const legacyClassNames: Record<string, CanonicalClass> = {
   Ladino: 'Thief',
   Bardo: 'Bard',
 }
-const canonicalClasses: CanonicalClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist', 'Anchorite']
+const canonicalClasses: CanonicalClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist', 'Anchorite', 'Gypsy']
 
 /** Como o CharacterClass.init(from:) do iPad: nome antigo em português vira o atual; desconhecido vira Fighter. */
 export function canonicalClass(value: CharacterClass | string): CanonicalClass {
@@ -125,11 +125,12 @@ export function hitDieType(value: CharacterClass | string): string {
 }
 
 export function hasSpellSheet(value: CharacterClass | string): boolean {
-  return ['Cleric', 'Mage', 'Bard', 'Anchorite'].includes(canonicalClass(value))
+  return ['Cleric', 'Mage', 'Bard', 'Anchorite', 'Gypsy'].includes(canonicalClass(value))
 }
 
+/** Magia arcana: Mage, Bard e o Gypsy (só adivinhação, sem grimório: lista de magias conhecidas). */
 export function isArcaneCaster(value: CharacterClass | string): boolean {
-  return ['Mage', 'Bard'].includes(canonicalClass(value))
+  return ['Mage', 'Bard', 'Gypsy'].includes(canonicalClass(value))
 }
 
 export function hasThievingSkills(value: CharacterClass | string): boolean {
@@ -207,6 +208,31 @@ const anchoriteXP = [
   0, 2000, 4000, 7500, 12500, 20000, 35000, 60000, 90000, 125000,
   200000, 300000, 750000, 1500000, 3000000, 3500000, 4000000, 4500000, 5000000, 5500000,
 ]
+
+// --- Gypsy (Domains of Dread, Ravenloft; docs/ravenloft.md) ---------------------------
+//
+// Classe feita primeiro na web (2026-10-12). Pelas tabelas do livro (94, 96,
+// 97–99 e a de progressão), é um Thief em XP, dados de vida, THAC0, saves,
+// slots de proficiência e bases das perícias. As magias são as da Tabela 104:
+// arcanas, só de adivinhação, sem grimório (decisão do usuário: uma lista de
+// magias conhecidas).
+
+/** Tabela 104: magias por dia (círculos 1–4), por faixa de nível. */
+const gypsySpellRows: { maxLevel: number; slots: number[] }[] = [
+  { maxLevel: 3, slots: [1] },
+  { maxLevel: 6, slots: [2] },
+  { maxLevel: 9, slots: [2, 1] },
+  { maxLevel: 12, slots: [3, 2] },
+  { maxLevel: 15, slots: [3, 2, 1] },
+  { maxLevel: 18, slots: [3, 2, 2] },
+  { maxLevel: Number.POSITIVE_INFINITY, slots: [3, 3, 2, 1] },
+]
+
+/** Magias do Gypsy por círculo no nível (Tabela 104). */
+export function gypsySpellProgression(level: number): number[] {
+  if (level < 1) return []
+  return gypsySpellRows.find((r) => level <= r.maxLevel)!.slots
+}
 
 // --- Atributos (Tabelas 1 a 6) -------------------------------------------------------
 
@@ -420,7 +446,9 @@ export function resolveRule(key: RuleKey, ctx: RuleContext): RuleValue | null {
 
 export function xpRequired(level: number, value: CharacterClass | string): number | null {
   const cls = canonicalClass(value)
-  const row = cls === 'Psionicist' ? psionicistXP : cls === 'Anchorite' ? anchoriteXP : rulesData.experience.thresholds[cls]
+  // Gypsy: a Tabela 96 do Domains of Dread é a do ladrão.
+  const row =
+    cls === 'Psionicist' ? psionicistXP : cls === 'Anchorite' ? anchoriteXP : cls === 'Gypsy' ? rulesData.experience.thresholds.Thief : rulesData.experience.thresholds[cls]
   if (level < 1 || level > 20 || !row || row.length < level) return null
   return row[level - 1]
 }
@@ -473,7 +501,8 @@ export const allThievingSkills = [
 export function thievingSkillsFor(value: CharacterClass | string): string[] {
   const cls = canonicalClass(value)
   if (cls === 'Bard') return ['Climb Walls', 'Detect Noise', 'Pick Pockets', 'Read Languages']
-  if (cls === 'Thief' || cls === 'Ninja') return [...allThievingSkills]
+  // Gypsy: as oito, com as bases do ladrão (Tabela 97 do Domains of Dread).
+  if (cls === 'Thief' || cls === 'Ninja' || cls === 'Gypsy') return [...allThievingSkills]
   return []
 }
 
@@ -556,6 +585,8 @@ export function computedSpellSlotAllotments(c: {
         return toAllotments(wizardSpellProgression(level, c.abilities.intelligence), 'arcane', c.wizardSchool ? 1 : 0)
       case 'Bard':
         return toAllotments(bardSpellProgression(level, c.abilities.intelligence), 'arcane')
+      case 'Gypsy':
+        return toAllotments(gypsySpellProgression(level), 'arcane')
       default:
         return []
     }

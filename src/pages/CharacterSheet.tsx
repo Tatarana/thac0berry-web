@@ -5,6 +5,7 @@ import { RecordPageFour } from '../components/RecordPageFour'
 import { RecordPageThree } from '../components/RecordPageThree'
 import { RecordPageTwo } from '../components/RecordPageTwo'
 import { RecordSheet } from '../components/RecordSheet'
+import { gypsyKnownSpellsOnly } from '../rules/ravenloft'
 import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
@@ -408,8 +409,8 @@ export function CharacterSheet() {
               {isArcaneCasterAny(character) && (
                 <button
                   className={view === 'spellbook' ? 'paper-tab paper-tab-on' : 'paper-tab'}
-                  title="My Spellbook"
-                  aria-label="My Spellbook"
+                  title={gypsyKnownSpellsOnly(character) ? 'Known Spells' : 'My Spellbook'}
+                  aria-label={gypsyKnownSpellsOnly(character) ? 'Known Spells' : 'My Spellbook'}
                   aria-current={view === 'spellbook' ? 'page' : undefined}
                   onClick={() => setParams({ view: 'spellbook' }, { replace: true })}
                 >

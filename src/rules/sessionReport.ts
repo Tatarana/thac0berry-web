@@ -92,6 +92,8 @@ export const primeRequisites: Record<string, Ability[]> = {
   Anchorite: ['wisdom'],
   Druid: ['wisdom', 'charisma'],
   Thief: ['dexterity'],
+  // Domains of Dread: Dexterity e Charisma 16 dão os 10%.
+  Gypsy: ['dexterity', 'charisma'],
   Bard: ['dexterity', 'charisma'],
   // CPsiH: Constitution e Wisdom.
   Psionicist: ['constitution', 'wisdom'],

@@ -25,7 +25,7 @@ import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
-import { classOptionsFor, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
+import { classOptionsFor, gypsyCanSpecialize, gypsyLore, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -653,6 +653,16 @@ function ScareChecksTable({ c }: { c: PlayerCharacter }) {
           <td className="rec-value rec-strong">{checks.horror}</td>
           <td className="rec-value rec-strong">{checks.madness}</td>
         </tr>
+        {canonicalClass(c.characterClass) === 'Gypsy' && (
+          <tr>
+            <td className="rec-row-label" title="Chance to know a little about a domain, person, place or object (Domains of Dread)">
+              Gypsy Lore
+            </td>
+            <td className="rec-value rec-strong" colSpan={3}>
+              {gypsyLore(c.level)}%
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
   )
@@ -1057,6 +1067,9 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const [picking, setPicking] = useState(false)
   // Especialização: só guerreiro de classe única (PHB cap. 5; multiclasse não especializa).
   const isFighter = canonicalClass(c.characterClass) === 'Fighter' && !isMultiClass(c)
+  // Gypsy (Domains of Dread): especializa só na faca (+1/+2, sem ataque extra).
+  const isGypsy = canonicalClass(c.characterClass) === 'Gypsy' && !isMultiClass(c)
+  const canSpecialize = (name: string) => isFighter || (isGypsy && gypsyCanSpecialize(name))
   const field = (w: PlayerCharacter['weapons'][number], key: WeaponKey, label: string) =>
     edit ? (
       <InkInput
@@ -1077,7 +1090,7 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           <thead>
             <tr>
               <th className="rec-row-label weapon-col-name">Weapon</th>
-              <th className="weapon-col-spec" title="Weapon specialization (Fighter only)">★</th>
+              <th className="weapon-col-spec" title={isGypsy ? 'Weapon specialization (gypsy: knife only)' : 'Weapon specialization (Fighter only)'}>★</th>
               <th>#AT</th>
               <th>Size</th>
               <th>Type</th>
@@ -1100,7 +1113,7 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                   {edit ? field(w, 'name', 'name') : w.name || '…'}
                 </td>
                 <td className="weapon-col-spec">
-                  {edit && isFighter ? (
+                  {edit && canSpecialize(w.name) ? (
                     // Só o Fighter especializa (CFH cap. 4); ligar preenche os ajustes do livro.
                     <button
                       className={w.isSpecialized ? 'spec-toggle spec-on' : 'spec-toggle'}
