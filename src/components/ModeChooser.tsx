@@ -49,22 +49,21 @@ export function ModeChooser({ onChosen }: { onChosen?: () => void }) {
   )
 }
 
-/** Botão do topo: mostra o modo atual e abre a tela de escolha. */
+/** Rosto de cada modo no botão do topo (arte do usuário, 2026-10-12). */
+const icons: Record<AppMode, string> = {
+  player: 'mode_icon_player.png',
+  dm: 'mode_icon_dm.png',
+}
+
+/** Botão do topo: o rosto do modo atual; abre a tela de escolha. */
 export function ModeSwitch() {
   const mode = useMode()
   const location = useLocation()
   if (!mode) return null
+  const label = `Mode: ${modeLabels[mode].title}. Change mode`
   return (
-    <Link
-      to="/mode"
-      state={{ from: location.pathname + location.search }}
-      className="mode-button"
-      title="Change mode"
-      aria-label={`Mode: ${modeLabels[mode].title}. Change mode`}
-    >
-      <span className={`mode-button-dot mode-button-dot-${mode}`} aria-hidden="true" />
-      {modeLabels[mode].short}
-      <span className="mode-button-arrows" aria-hidden="true">⇄</span>
+    <Link to="/mode" state={{ from: location.pathname + location.search }} className={`mode-button mode-button-${mode}`} title={label} aria-label={label}>
+      <img className="mode-button-face" src={`${import.meta.env.BASE_URL}images/${icons[mode]}`} alt="" />
     </Link>
   )
 }

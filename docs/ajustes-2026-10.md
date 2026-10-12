@@ -107,3 +107,12 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (vermelho, como em Treasure). Agora ele mantém a caixinha de tinta escura
   do contador de leitura (`.tally`, igual ao iPad); só a borda tracejada
   indica que é clicável. Todos os contadores ficam iguais.
+- 2026-10-12, botão do modo com rosto (web v0.60.0, pedido do usuário): o
+  botão do topo ("● Player ⇄") virou um ícone redondo com o rosto do modo
+  atual, num aro de latão (tinta no papel), abrindo a mesma tela de escolha.
+  Arte do usuário: foto = Dungeon Master, ilustração = Player
+  (`public/images/mode_icon_dm.png`, `mode_icon_player.png`, 128 px). O fundo
+  xadrez das imagens foi removido por script: cor exata do xadrez ∩ fecho
+  convexo da área principal na foto (o cabelo grisalho tem a cor do fundo).
+  O chip da campanha ativa, que reaproveitava `.mode-button`, ganhou a classe
+  própria `.top-chip` com o formato de antes.

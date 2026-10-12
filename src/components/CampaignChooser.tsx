@@ -86,10 +86,10 @@ export function CampaignSwitch() {
   if (mode !== 'dm') return null
   return (
     <>
-      <button className="mode-button campaign-button" title="Change campaign" aria-label={`Campaign: ${active?.name ?? 'none'}. Change campaign`} onClick={() => setOpen(true)}>
+      <button className="top-chip campaign-button" title="Change campaign" aria-label={`Campaign: ${active?.name ?? 'none'}. Change campaign`} onClick={() => setOpen(true)}>
         <span aria-hidden="true">⚔</span>
         <span className="campaign-button-name">{active ? (active.id === null ? 'One-shot' : active.name || 'Unnamed campaign') : 'Choose a campaign'}</span>
-        <span className="mode-button-arrows" aria-hidden="true">▾</span>
+        <span className="top-chip-arrows" aria-hidden="true">▾</span>
       </button>
       {open &&
         createPortal(

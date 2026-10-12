@@ -3618,8 +3618,36 @@ button.slot-dot:hover {
   gap: 12px;
 }
 
+/* Botão do modo: o rosto do modo atual num círculo com aro (2026-10-12). */
 .mode-button {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgb(201 162 39 / 0.65);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.25);
+  overflow: hidden;
+  text-decoration: none;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.mode-button:hover {
+  border-color: var(--brass);
+  transform: scale(1.06);
+}
+
+.mode-button-face {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+/* Chip do topo com texto (campanha ativa): o formato que o botão do modo tinha. */
+.top-chip {
+  display: inline-flex;
+  align-self: center;
   align-items: center;
   gap: 7px;
   padding: 5px 12px;
@@ -3632,38 +3660,23 @@ button.slot-dot:hover {
   text-decoration: none;
 }
 
-.mode-button:hover {
+.top-chip:hover {
   border-color: var(--brass);
   background: rgb(201 162 39 / 0.15);
 }
 
-.mode-button-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.mode-button-dot-player {
-  background: var(--mint-glow);
-}
-
-.mode-button-dot-dm {
-  background: var(--glow-bright);
-}
-
-.mode-button-arrows {
+.top-chip-arrows {
   color: var(--brass);
 }
 
-/* No papel (ficha): tinta em vez de latão. */
-.paper-top .mode-button {
-  border-color: rgb(47 39 28 / 0.4);
-  background: rgb(255 255 255 / 0.25);
+.paper-top .top-chip-arrows {
   color: var(--ink);
 }
 
-.paper-top .mode-button-arrows {
-  color: var(--ink);
+/* No papel (ficha): aro de tinta em vez de latão. */
+.paper-top .mode-button {
+  border-color: rgb(47 39 28 / 0.5);
+  background: rgb(255 255 255 / 0.3);
 }
 
 /* Na tela de escolha: o modo atual fica marcado. */
