@@ -45,6 +45,28 @@ export function useCampaigns() {
   return { signedIn: !!session, campaigns, error }
 }
 
+/** Quantos personagens a conta tem (subtítulo da tela inicial; null enquanto carrega ou sem login). */
+export function useCharacterCount(): number | null {
+  const { session } = useAuth()
+  const [count, setCount] = useState<number | null>(null)
+  useEffect(() => {
+    if (!session) return
+    let cancelled = false
+    // Só a contagem (head: true), sem baixar as fichas.
+    void supabase
+      .from('character')
+      .select('id', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .then(({ count: n }) => {
+        if (!cancelled) setCount(n ?? null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [session])
+  return session ? count : null
+}
+
 /** Personagens da campanha que a conta lê. */
 export async function loadCampaignCharacters(campaignID: string): Promise<CampaignCharacter[]> {
   const { data, error } = await supabase.from('character').select('id, data').eq('campaign_id', campaignID).is('deleted_at', null)

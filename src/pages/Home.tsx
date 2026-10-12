@@ -4,6 +4,7 @@ import { HomeTile } from '../components/HomeTile'
 import { ModeChooser, ModeSwitch } from '../components/ModeChooser'
 import { CampaignChooserPage, CampaignSwitch } from '../components/CampaignChooser'
 import { useCheckedActiveCampaign } from '../lib/activeCampaign'
+import { useCampaigns, useCharacterCount } from '../lib/campaignCharacters'
 import { useMode } from '../lib/mode'
 
 export function Home() {
@@ -11,6 +12,10 @@ export function Home() {
   const { session } = useAuth()
   const mode = useMode()
   const campaign = useCheckedActiveCampaign()
+  // Subtítulos como no HomeView do iPad: "N running" e "N total".
+  const { campaigns } = useCampaigns()
+  const characterCount = useCharacterCount()
+  const counted = (n: number | null | undefined, label: string) => (!session ? 'Sign in to start' : n == null ? '…' : `${n} ${label}`)
   // Primeiro acesso neste aparelho, já logado: escolher o modo (Jogador ou Mestre).
   if (session && !mode) {
     return (
@@ -42,8 +47,8 @@ export function Home() {
       <div className="home-spacer" />
       <hr className="divider" />
       <div className="tile-grid">
-        <HomeTile to="/campaigns" image="icon_campaigns" title="Campaigns" subtitle="Coming soon" accent="var(--amber)" />
-        <HomeTile to="/characters" image="icon_characters" title="Characters" subtitle="Coming soon" accent="var(--crimson)" />
+        <HomeTile to="/campaigns" image="icon_campaigns" title="Campaigns" subtitle={counted(campaigns?.length, 'running')} accent="var(--amber)" />
+        <HomeTile to="/characters" image="icon_characters" title="Characters" subtitle={counted(characterCount, 'total')} accent="var(--crimson)" />
         <HomeTile to="/compendium" image="icon_compendium" title="Compendium" subtitle="Grimoires & references" accent="var(--teal)" />
         {/* Ferramentas do DM: só no modo DM (o jogador não as vê no app). */}
         {mode === 'dm' && <HomeTile to="/dm" image="icon_dm_tools" title="DM Tools" subtitle={campaign ? (campaign.id === null ? 'One-shot' : `Running ${campaign.name || 'a campaign'}`) : 'Monsters & more'} accent="var(--crimson)" />}

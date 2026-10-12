@@ -116,3 +116,8 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   convexo da área principal na foto (o cabelo grisalho tem a cor do fundo).
   O chip da campanha ativa, que reaproveitava `.mode-button`, ganhou a classe
   própria `.top-chip` com o formato de antes.
+- 2026-10-12, tela inicial (web v0.62.1, backlog item 6): os cards Campaigns e
+  Characters diziam "Coming soon", mas as telas já existem. Agora mostram as
+  contagens como o HomeView do iPad ("N running" com todas as campanhas da
+  conta, como no iPad; "N total" de personagens, por contagem sem baixar as
+  fichas); sem login, "Sign in to start".
