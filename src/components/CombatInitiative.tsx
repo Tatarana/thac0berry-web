@@ -25,6 +25,7 @@ import {
   type Side,
 } from '../rules/combat'
 import { PaperModal } from './DetailBits'
+import { useConfirm } from '../lib/useConfirm'
 
 // Iniciativa e rodadas do Combat Tracker (CT2, docs/controle-de-combate.md):
 // por lado (regra base do DMG) ou individual (opcional), d10 rolado ou
@@ -276,21 +277,24 @@ export function RoundsWindow({
       })
       .filter(Boolean)
       .join(' · ')
-  const goBack = (round: number) => {
+  // Confirmação na página (o window.confirm não aparece em navegadores embutidos).
+  const { confirm, dialog } = useConfirm()
+  const goBack = async (round: number) => {
     const later = round < encounter.round ? ` Rounds ${round + 1} to ${encounter.round} will be forgotten.` : ''
-    if (!window.confirm(`Go back to the start of round ${round}? Hit points, conditions, morale and initiative return to how they were.${later}`)) return
+    if (!(await confirm(`Go back to the start of round ${round}? Hit points, conditions, morale and initiative return to how they were.${later}`, 'Go back'))) return
     onChange(goBackToRound(encounter, round))
     onClose()
   }
   return createPortal(
     <PaperModal title="Rounds" subtitle="Go back to the start of any round (time-bending magic)" onClose={onClose}>
+      {dialog}
       {history.length === 0 && <p className="paper-soft">No rounds saved yet: each round is saved when it starts.</p>}
       <ul className="rounds-list">
         {history.map((h) => (
           <li key={h.round}>
             <span className="rounds-name">Round {h.round}</span>
             <span className="paper-soft">{standing(h)} standing</span>
-            <button className="chip" onClick={() => goBack(h.round)}>
+            <button className="chip" onClick={() => void goBack(h.round)}>
               {h.round === encounter.round ? 'Restart this round' : `Go back to round ${h.round}`}
             </button>
           </li>

@@ -6,6 +6,7 @@ import { useCampaigns } from '../lib/campaignCharacters'
 import { readCombatStore } from '../lib/combatStore'
 import { encounterInProgress } from '../rules/combat'
 import { useMode } from '../lib/mode'
+import { useConfirm } from '../lib/useConfirm'
 import { PaperModal } from './DetailBits'
 import { ModeSwitch } from './ModeChooser'
 
@@ -18,10 +19,12 @@ export function CampaignPicker({ onChosen }: { onChosen?: (campaign: ActiveCampa
   const { signedIn, campaigns, error } = useCampaigns()
   const active = useActiveCampaign()
   const [showArchived, setShowArchived] = useState(false)
-  const choose = (campaign: ActiveCampaign) => {
+  // Confirmação na página (o window.confirm não aparece em navegadores embutidos).
+  const { confirm, dialog } = useConfirm()
+  const choose = async (campaign: ActiveCampaign) => {
     // Encontro começado na campanha que fica para trás: ele continua lá; só avisa (CA2).
     const running = active && active.id !== campaign.id ? encounterInProgress(readCombatStore().encounters, active.id) : null
-    if (running && !window.confirm(`“${running.name}” is still in progress in ${active?.id === null ? 'the one-shot' : active?.name}. It stays there for when you come back. Switch anyway?`)) return
+    if (running && !(await confirm(`“${running.name}” is still in progress in ${active?.id === null ? 'the one-shot' : active?.name}. It stays there for when you come back. Switch anyway?`, 'Switch'))) return
     setActiveCampaign(campaign)
     onChosen?.(campaign)
   }
@@ -29,7 +32,7 @@ export function CampaignPicker({ onChosen }: { onChosen?: (campaign: ActiveCampa
   const archived = (campaigns ?? []).filter((c) => c.is_archived)
   const row = (c: ActiveCampaign, note?: string) => (
     <li key={c.id ?? 'one-shot'}>
-      <button className={active && active.id === c.id ? 'campaign-choice campaign-choice-on' : 'campaign-choice'} aria-pressed={!!active && active.id === c.id} onClick={() => choose(c)}>
+      <button className={active && active.id === c.id ? 'campaign-choice campaign-choice-on' : 'campaign-choice'} aria-pressed={!!active && active.id === c.id} onClick={() => void choose(c)}>
         <span className="campaign-choice-name">{c.id === null ? 'One-shot (no campaign)' : c.name || 'Unnamed campaign'}</span>
         {active && active.id === c.id ? <span className="campaign-choice-note">current</span> : note ? <span className="campaign-choice-note">{note}</span> : null}
       </button>
@@ -37,6 +40,7 @@ export function CampaignPicker({ onChosen }: { onChosen?: (campaign: ActiveCampa
   )
   return (
     <div className="campaign-picker">
+      {dialog}
       {error && <p className="paper-soft save-error">Could not load your campaigns: {error}</p>}
       {!signedIn && <p className="paper-soft">Sign in to run one of your campaigns; without signing in you can run a one-shot.</p>}
       {signedIn && !campaigns && !error && <p className="paper-soft">Loading your campaigns…</p>}
