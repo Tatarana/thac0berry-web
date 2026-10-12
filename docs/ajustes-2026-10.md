@@ -100,3 +100,10 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   - pendente no iPad: ler `kitSpellcasting` quando ele voltar.
 - Com a U5, os oito ajustes estão feitos. Falta o usuário testar na tela (e
   rodar o `db push` da U2). Próximo do backlog: GT4.
+- 2026-10-12, achado do usuário no teste (web v0.59.2): o db push da U2 foi
+  aplicado (nome padrão salva). Ajuste 3 incompleto: o contador clicável
+  (`TallyBoard`, classe `.tally-board`) tinha fundo transparente, e os riscos
+  creme sumiam no papel (Efeitos Temporários); só apareciam quando esgotados
+  (vermelho, como em Treasure). Agora ele mantém a caixinha de tinta escura
+  do contador de leitura (`.tally`, igual ao iPad); só a borda tracejada
+  indica que é clicável. Todos os contadores ficam iguais.

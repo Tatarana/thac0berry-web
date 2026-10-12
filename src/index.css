@@ -3172,11 +3172,12 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
-/* Caixa de pauzinhos clicável. */
+/* Caixa de pauzinhos clicável: o mesmo poço de tinta do .tally (os riscos são
+   claros e sumiam no papel com fundo transparente); só a borda tracejada diz
+   que dá para clicar. */
 .tally-board {
   font: inherit;
-  border: 1px dashed rgb(107 92 70 / 0.45);
-  background: transparent;
+  border: 1px dashed rgb(233 220 190 / 0.45);
   cursor: copy;
 }
 
