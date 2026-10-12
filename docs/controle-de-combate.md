@@ -317,3 +317,9 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   - funções puras em `src/rules/combatSync.ts`; conferido no navegador
     (criar, apagar o cache e voltar da conta, subida dos encontros locais,
     pendências, configurações, delete com `deleted_at`); testes: 194 (4 novos).
+- 2026-10-12, confirmações na página (web v0.65.1): os três `window.confirm`
+  que sobravam no combate (trocar de campanha com encontro em andamento,
+  voltar a uma rodada, fechar "Add monsters" sem adicionar) viraram
+  `useConfirm`; no navegador embutido eles não apareciam e devolviam "não".
+  Não sobrou nenhum `window.confirm`/`alert`/`prompt` na web. Conferido no
+  navegador (cancelar e confirmar em cada um).

@@ -29,6 +29,7 @@ import {
 } from '../rules/combat'
 import { filterMonsters, xpLabel } from '../rules/monsters'
 import { PaperModal } from './DetailBits'
+import { useConfirm } from '../lib/useConfirm'
 import { InkInput } from './SheetBits'
 
 // Peças do Combat Tracker (docs/controle-de-combate.md): a linha de cada
@@ -490,14 +491,17 @@ export function AddMonsterWindow({
     onClose()
   }
   // Fechar com um monstro escolhido e não adicionado pede confirmação (pedido do usuário, 2026-10-09).
-  const close = () => {
-    if (picked && !window.confirm(`${picked.name} was not added to the encounter. Close anyway?`)) return
+  // Confirmação na página (o window.confirm não aparece em navegadores embutidos).
+  const { confirm, dialog } = useConfirm()
+  const close = async () => {
+    if (picked && !(await confirm(`${picked.name} was not added to the encounter. Close anyway?`, 'Close'))) return
     onClose()
   }
   const book = (text: string | undefined) => (text ? <span className="paper-soft add-book">book: {text.split('\n').join(' · ')}</span> : null)
 
   return createPortal(
-    <PaperModal title="Add monsters" subtitle="From the monster catalog" onClose={close}>
+    <PaperModal title="Add monsters" subtitle="From the monster catalog" onClose={() => void close()}>
+      {dialog}
       {error && <p className="paper-soft save-error">{error}</p>}
       {!picked ? (
         <>
