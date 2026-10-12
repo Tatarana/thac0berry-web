@@ -6,6 +6,7 @@ import { tableLabel, type GrimoireTable } from '../rules/tableIndex'
 import { findRow, rollPlan, rowRefs, tableRefs, typedResult, type TableRef } from '../rules/tableRoll'
 import { PaperModal } from './DetailBits'
 import { RuleDetail } from './RuleDetail'
+import { BookCode } from './BookCode'
 
 /** Uma rolagem ou consulta do histórico da sessão (vale para todas as tabelas). */
 export interface RollRecord {
@@ -123,7 +124,11 @@ export function TableDetail({
 
   return createPortal(
     <>
-      <PaperModal title={tableLabel(table)} subtitle={`${table.book} · Ch. ${table.chapterNumber}: ${table.chapterTitle}`} onClose={onClose} wide>
+      <PaperModal title={tableLabel(table)} subtitle={
+        <>
+          <BookCode id={table.book} /> · Ch. {table.chapterNumber}: {table.chapterTitle}
+        </>
+      } onClose={onClose} wide>
         {table.setting !== 'Core' && <p className="paper-soft">Campaign setting: {table.setting}</p>}
         {pin && (
           <button className={pin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'} onClick={pin.onToggle} title={pin.pinned ? 'Remove from the Combat Tracker tables' : 'Show this table in the Combat Tracker'}>
@@ -175,7 +180,7 @@ export function TableDetail({
                 </button>
               ) : (
                 <p key={i} className="paper-soft">
-                  Table {ref.number} ({ref.book}) is not in the data yet.
+                  Table {ref.number} (<BookCode id={ref.book} />) is not in the data yet.
                 </p>
               )
             })}
@@ -216,7 +221,7 @@ export function TableDetail({
               <span key={rule.id}>
                 {index > 0 && ', '}
                 <button className="paper-link" onClick={() => setOpenRule(rule)}>
-                  {rule.book}: {rule.topic}
+                  <BookCode id={rule.book} />: {rule.topic}
                 </button>
               </span>
             ))}

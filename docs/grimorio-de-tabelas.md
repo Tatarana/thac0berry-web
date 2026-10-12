@@ -46,7 +46,7 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (Ravenloft primeiro, um cenário por entrega), das páginas da wiki no dump do data-mining | Ravenloft: dados feitos (web v0.58.0), classes jogáveis a fazer (`docs/ravenloft.md`) |
+| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); a fazer: Forgotten Realms, Council of Wyrms, Dragonlance, Al-Qadim, Thri-Kreen, Birthright |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Log
@@ -169,3 +169,22 @@ entregas e pendências. Atualizar a cada entrega.
     ~100, Dragonlance ~60, Council of Wyrms ~90, Birthright ~22, Al-Qadim ~60,
     Thri-Kreen of Athas ~40); `sync_data.py` no iPad depois do merge.
 - 2026-10-10, GT4b Ravenloft R1 (web v0.58.0): livro DoD (cenário Ravenloft), 7 regras, 24 tabelas; plano e pendências em `docs/ravenloft.md`.
+- 2026-10-12, GT4b Planescape (web v0.63.0; thac0berry-data `scripts/add_planescape.py`):
+  livros PCS (Planescape Campaign Setting), PWH (The Planewalker's Handbook)
+  e TIP (The Inner Planes), cenário "Planescape"; 35 regras (só as páginas
+  com tabelas, com o texto inteiro, decisão do usuário) e 64 tabelas, várias
+  roláveis (tiefling d100, tempestades e correntes d20, maelstroms d10,
+  ácido d6, venenos e bolsões d8, itens novos d100). Fora: citação de
+  abertura, fichas de NPC de Sigil, magias soltas, legendas dos planos e as
+  páginas de plano do TIP (a mini-tabela de escolas está na Tabela 2 do PWH).
+  Correções explícitas: cabeçalhos em dois níveis ou ausentes, tabela sem
+  fechamento (ácido de Ooze, que escondia a tabela de venenos), OCR de dados
+  ("1d1O", "2dl0", "1dl2", "2d 10"), cimitarra de aço verde "11d10" (1d10),
+  marcação da wiki; idiomas planares numa coluna só. O script ganhou
+  `--refresh` (refaz no lugar as regras já importadas).
+  Pedido do usuário junto: **tooltip com o título completo das siglas dos
+  livros** (`src/components/BookCode.tsx`, títulos de `data/books.json` via
+  `src/lib/bookTitles.ts`) nas listas do Table Grimoire e do Rules Reference,
+  no subtítulo da tabela e da regra, no "?" de regra, nas citações "Table N
+  (livro)" e nas tabelas do Combat Tracker; os chips de livro já tinham.
+  Teste de dados reais: livros, ≥ 60 tabelas e o dado das roláveis.

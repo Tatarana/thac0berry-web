@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { loadRulesIndex, type RuleIndexEntry } from '../data/rules'
 import { PaperModal } from './DetailBits'
 import { RuleDetail } from './RuleDetail'
+import { BookCode } from './BookCode'
 
 // Atalho "?" (RuleLinkButton do iPad): círculo pequeno ao lado de um rótulo da
 // ficha que abre a regra direto, sem passar pelo Compêndio. Sem `children`,
@@ -38,12 +39,18 @@ export function RuleLink({ ruleID, title, children }: { ruleID: string; title?: 
       </button>
       {open === 'explain' &&
         createPortal(
-          <PaperModal title={label} subtitle={entry ? `${entry.book} · ${entry.topic}` : undefined} onClose={() => setOpen(null)}>
+          <PaperModal title={label} subtitle={
+              entry ? (
+                <>
+                  <BookCode id={entry.book} /> · {entry.topic}
+                </>
+              ) : undefined
+            } onClose={() => setOpen(null)}>
             {children}
             {entry && (
               <p>
                 <button className="paper-link" onClick={() => setOpen('rule')}>
-                  Read the rule: {entry.book}, {entry.topic}
+                  Read the rule: <BookCode id={entry.book} />, {entry.topic}
                 </button>
               </p>
             )}

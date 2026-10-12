@@ -30,7 +30,7 @@ export function PaperModal({
   wide = false,
 }: {
   title: string
-  subtitle?: string
+  subtitle?: ReactNode
   onClose: () => void
   children: ReactNode
   /** Janela grande (editores com muitos campos). */

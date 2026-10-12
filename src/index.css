@@ -5204,3 +5204,10 @@ button.slot-dot:hover {
 .rec-scare {
   margin-top: 6px;
 }
+
+/* Sigla de livro com o título completo no tooltip (BookCode). */
+.book-code {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}

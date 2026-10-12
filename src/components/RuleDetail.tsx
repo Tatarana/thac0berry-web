@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { loadRule, parseRuleContent, type RuleEntry, type RuleIndexEntry, type RuleTable } from '../data/rules'
 import { PaperModal } from './DetailBits'
 import { InlineMarkdown } from './InlineMarkdown'
+import { BookCode } from './BookCode'
 
 // Tabela de regra (RuleTableView do iPad): cabeçalho escuro, linhas alternadas,
 // rolagem horizontal quando é larga.
@@ -91,7 +92,13 @@ export function RuleDetail({ entry, onClose }: { entry: RuleIndexEntry; onClose:
   }, [entry])
 
   return (
-    <PaperModal title={entry.topic} subtitle={rule?.breadcrumbs ?? `${entry.book} · Ch. ${entry.chapterNumber}: ${entry.chapterTitle}`} onClose={onClose}>
+    <PaperModal title={entry.topic} subtitle={
+        rule?.breadcrumbs ?? (
+          <>
+            <BookCode id={entry.book} /> · Ch. {entry.chapterNumber}: {entry.chapterTitle}
+          </>
+        )
+      } onClose={onClose}>
       {error && <p className="paper-soft">Could not load the rule: {error}</p>}
       {!rule && !error && <p className="paper-soft">Loading…</p>}
       {rule && <RuleBody rule={rule} />}

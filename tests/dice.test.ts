@@ -141,3 +141,22 @@ test('dados reais (GT4): 88 → 89 → 89A, 116 → 117 e as citações do DMG 8
     .filter((id) => id.startsWith('faltando'))
   assert.deepEqual(dangling, [])
 })
+
+test('dados reais (GT4b Planescape): livros PCS/PWH/TIP e as tabelas roláveis com o dado certo', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  assert.deepEqual(books.filter((b) => b.setting === 'Planescape').map((b) => b.id), ['PCS', 'PWH', 'TIP'])
+  const planescape = tables.filter((t) => t.setting === 'Planescape')
+  assert.ok(planescape.length >= 60, `${planescape.length} tabelas`)
+  const dieOf = (title: string) => {
+    const t = planescape.find((x) => x.title === title)!
+    return formatDice(rollPlan(t)!.dice!)
+  }
+  assert.equal(dieOf('Tiefling Abilities'), 'd100')
+  assert.equal(dieOf('Air: Storms (Force)'), 'd20')
+  assert.equal(dieOf('Air: Maelstroms'), 'd10')
+  assert.equal(dieOf('Ooze: Toxic Regions (Poison)'), 'd8')
+  // Sem resto de OCR nos dados ("1d1O", "2dl0").
+  assert.ok(!planescape.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O/.test(c))))
+})

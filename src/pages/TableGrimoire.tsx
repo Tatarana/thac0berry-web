@@ -4,6 +4,7 @@ import { CampaignSwitch } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { loadBooks } from '../data/books'
+import { BookCode } from '../components/BookCode'
 import { loadTables } from '../data/tables'
 import { useCombatStore } from '../lib/combatStore'
 import { booksInSetting, settingsOf, type Book } from '../rules/books'
@@ -185,7 +186,9 @@ function TableList() {
                   <span className="spell-meta">{dice.get(t.id) ? `roll ${formatDice(dice.get(t.id)!)}` : `${t.rows.length} rows`}</span>
                 </span>
                 <span className="kit-summary">
-                  <span className="monster-collection">{t.book}</span>
+                  <span className="monster-collection">
+                    <BookCode id={t.book} />
+                  </span>
                   {` — Ch. ${t.chapterNumber}: ${t.chapterTitle}`}
                   {t.setting !== 'Core' ? ` · ${t.setting}` : ''}
                 </span>

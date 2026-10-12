@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { quickTableIDs, quickTableLabel, resolveQuickTables, toggleQuickTable } from '../rules/quickTables'
 import { filterTables, tableLabel, type GrimoireTable } from '../rules/tableIndex'
 import { PaperModal } from './DetailBits'
+import { BookCode } from './BookCode'
+import { useBookTitles } from '../lib/bookTitles'
 
 // Tabelas rápidas do Combat Tracker (CT4, docs/controle-de-combate.md): a
 // faixa de chips com as tabelas de combate; cada uma abre a janela do Table
@@ -24,13 +26,14 @@ export function QuickTables({
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState(false)
   const list = resolveQuickTables(quickTableIDs(saved), tables)
+  const bookTitles = useBookTitles()
   return (
     <div className="quick-tables">
       <span className="paper-label">Tables</span>
       <div className="chip-row quick-tables-row">
         {list.map((t) => (
           <span key={t.id} className="quick-table">
-            <button className="chip" title={`${tableLabel(t)} · ${t.book}`} onClick={() => onOpen(t)}>
+            <button className="chip" title={`${tableLabel(t)} · ${bookTitles.get(t.book) ?? t.book}`} onClick={() => onOpen(t)}>
               {quickTableLabel(t)}
             </button>
             {editing && (
@@ -83,7 +86,7 @@ function AddTableWindow({ tables, chosen, onPick, onClose }: { tables: GrimoireT
               >
                 <span className="kit-row-top">
                   <span className="spell-name">{tableLabel(t)}</span>
-                  <span className="spell-meta">{on ? 'already in the list' : t.book}</span>
+                  <span className="spell-meta">{on ? 'already in the list' : <BookCode id={t.book} />}</span>
                 </span>
                 <span className="kit-summary">
                   Ch. {t.chapterNumber}: {t.chapterTitle}

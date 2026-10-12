@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { GroupSection } from '../components/GroupSection'
 import { RuleDetail } from '../components/RuleDetail'
 import { loadBooks } from '../data/books'
+import { BookCode } from '../components/BookCode'
 import { loadRulesIndex, searchRules, type RuleIndexEntry } from '../data/rules'
 import { booksInSetting, settingsOf, type Book } from '../rules/books'
 import { useActiveCampaignSettings } from '../lib/activeCampaign'
@@ -14,7 +15,9 @@ function RuleRow({ entry, onSelect }: { entry: RuleIndexEntry; onSelect: () => v
       <button className="spell-row kit-row" onClick={onSelect}>
         <span className="kit-row-top">
           <span className="spell-name">{entry.topic}</span>
-          <span className="spell-meta">{entry.book}</span>
+          <span className="spell-meta">
+            <BookCode id={entry.book} />
+          </span>
         </span>
         <span className="kit-summary">{entry.summary}</span>
       </button>
