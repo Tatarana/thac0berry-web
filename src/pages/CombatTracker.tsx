@@ -13,6 +13,7 @@ import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { loadTables } from '../data/tables'
 import { useActiveCampaign } from '../lib/activeCampaign'
 import { useCombatStore } from '../lib/combatStore'
+import { useConfirm } from '../lib/useConfirm'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
   actingNow as actingIDs,
@@ -48,7 +49,9 @@ export function CombatTracker() {
 }
 
 function Tracker() {
-  const { store, update, saveError } = useCombatStore()
+  const { store, update, saveError, syncError, conflict, dismissConflict, signedIn } = useCombatStore()
+  // Confirmação na página (o window.confirm não aparece em navegadores embutidos).
+  const { confirm, dialog } = useConfirm()
   const [adding, setAdding] = useState<'monster' | 'pc' | 'npc' | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [monsterIndex, setMonsterIndex] = useState<MonsterIndexEntry[] | null>(null)
@@ -125,8 +128,10 @@ function Tracker() {
     navigate('/dm')
   }
 
-  const remove = () => {
-    if (!current || !window.confirm(`Delete "${current.name}"? It is only on this device and cannot be recovered.`)) return
+  const remove = async () => {
+    if (!current) return
+    const where = signedIn ? 'It leaves your account on every device.' : 'It is only on this device and cannot be recovered.'
+    if (!(await confirm(`Delete "${current.name}"? ${where}`, 'Delete'))) return
     update((draft) => {
       draft.encounters = draft.encounters.filter((e) => e.id !== current.id)
       draft.currentID = nextActive(draft.encounters)
@@ -164,7 +169,17 @@ function Tracker() {
           </span>
         </div>
         <h1 className="paper-title">Combat Tracker</h1>
+        {dialog}
         {saveError && <p className="paper-soft save-error">Could not save on this device: {saveError}</p>}
+        {syncError && <p className="paper-soft save-error">Could not sync with your account (kept on this device; it will try again): {syncError}</p>}
+        {conflict && (
+          <div className="conflict-note" role="status">
+            This encounter was also changed on another device. Your version was saved; the other one is kept in the history.{' '}
+            <button className="paper-link" onClick={dismissConflict}>
+              OK
+            </button>
+          </div>
+        )}
 
         {legacy.length > 0 && (
           <p className="paper-soft combat-legacy">
@@ -207,7 +222,7 @@ function Tracker() {
         </div>
 
         {!current ? (
-          <p className="paper-soft">No encounters in progress. Create one to prepare a fight — it is kept on this device.</p>
+          <p className="paper-soft">No encounters in progress. Create one to prepare a fight — {signedIn ? 'it is saved to your account.' : 'it is kept on this device.'}</p>
         ) : (
           <>
             {current.endedAt && (
@@ -237,7 +252,7 @@ function Tracker() {
                   End encounter
                 </button>
               )}
-              <button className="paper-link combat-delete" onClick={remove}>
+              <button className="paper-link combat-delete" onClick={() => void remove()}>
                 delete encounter
               </button>
             </div>
@@ -295,7 +310,7 @@ function Tracker() {
           onClose={() => setAdding(null)}
         />
       )}
-      {settingsOpen && <CombatSettingsWindow settings={store.settings} onChange={(s) => update((d) => void (d.settings = s))} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <CombatSettingsWindow settings={store.settings} onAccount={signedIn} onChange={(s) => update((d) => void (d.settings = s))} onClose={() => setSettingsOpen(false)} />}
       {moraleTarget && current && (
         <MoraleWindow key={moraleTarget.id} combatant={moraleTarget} encounter={current} settings={store.settings} onChange={replace} onClose={() => setMoraleID(null)} />
       )}

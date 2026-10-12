@@ -2,12 +2,18 @@
 // Mesmo contrato de sempre: INSERT da linha que não existe, UPDATE com o
 // `version` conhecido. Lê com `*` para não quebrar se uma coluna nova ainda não
 // foi aplicada no banco (ex.: `default_player_name`, migração de 2026-10-10).
+import type { CombatSettings } from '../rules/combat'
 import type { PaperStyle } from './notebook'
 import { supabase } from './supabase'
 
 export interface Preferences {
   default_notebook_paper_style: PaperStyle | null
   default_player_name: string | null
+  /** Campanha ativa do modo DM (migração de 2026-10-12); com `dm_active_one_shot`, One-shot. */
+  dm_active_campaign_id: string | null
+  dm_active_one_shot: boolean
+  /** Configurações do Combat Tracker (null = as padrão). */
+  combat_settings: Partial<CombatSettings> | null
 }
 
 export async function loadPreferences(userID: string): Promise<Partial<Preferences>> {
