@@ -130,5 +130,6 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (": ** This award…", ":* Only if…") ganharam resumo de verdade e dois
   resumos cortados perderam a marca sem par (`scripts/fix_rule_summaries.py`).
   Pendente: no iPad, `RulesCompendiumView` mostra o resumo com
-  `Text(String)` (asteriscos crus; backlog do `TODO.md` do iPad); 7 resumos
-  são uma tabela markdown inteira (CFH, CBH, WATW), não um texto.
+  `Text(String)` (asteriscos crus; backlog do `TODO.md` do iPad). Depois,
+  no mesmo dia, 7 resumos que eram as linhas de uma tabela markdown (CFH,
+  CBH, WATW) ganharam uma frase no `thac0berry-data`; a web não muda.
