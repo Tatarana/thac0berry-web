@@ -193,3 +193,22 @@ test('dados reais (GT4b Dragonlance): livro TotL, deuses com a ficha do avatar n
   assert.deepEqual(avatars.find((t) => t.title === 'Paladine: Avatar')!.rows[0], ['Str', '15'])
   assert.ok(!krynn.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[/.test(c))))
 })
+
+test('dados reais (GT4b Council of Wyrms): livro CWS e os geradores roláveis com o dado certo', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  assert.deepEqual(books.filter((b) => b.setting === 'Council of Wyrms').map((b) => b.id), ['CWS'])
+  const wyrms = tables.filter((t) => t.setting === 'Council of Wyrms')
+  assert.ok(wyrms.length >= 85, `${wyrms.length} tabelas`)
+  const dieOf = (title: string) => {
+    const t = wyrms.find((x) => x.title === title)!
+    return formatDice(rollPlan(t)!.dice!)
+  }
+  // Os geradores vinham dentro de uma tabela de layout: cada nível é uma tabela d100.
+  assert.equal(wyrms.filter((t) => t.title.startsWith('Random ') && t.title.includes(' Spells: ')).length, 15)
+  assert.equal(dieOf('Random Wizard Spells: Ninth Level'), 'd100')
+  assert.equal(dieOf('Dragon Magical Items'), 'd20')
+  assert.equal(dieOf('Ability Losses'), 'd100')
+  assert.ok(!wyrms.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[|\{\|/.test(c))))
+})
