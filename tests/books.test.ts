@@ -23,11 +23,11 @@ test('ordem, cenários (Core primeiro), livros de um cenário, cenário de um li
   assert.deepEqual(unlistedBooks(books, ['PHB', 'XYZ', 'XYZ', 'ABC']), ['ABC', 'XYZ'])
 })
 
-test('dados reais: todo livro das regras está em books.json; Dark Sun tem DSC, DK e WatW', () => {
+test('dados reais: todo livro das regras está em books.json; Dark Sun tem DSC, DK, WatW e TKA', () => {
   const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
   const real: Book[] = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8'))
   const rules: { book: string }[] = JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8'))
   assert.deepEqual(unlistedBooks(real, rules.map((r) => r.book)), [])
-  assert.deepEqual(booksInSetting(real, 'Dark Sun').map((b) => b.id), ['DSC', 'DK', 'WatW'])
+  assert.deepEqual(booksInSetting(real, 'Dark Sun').map((b) => b.id), ['DSC', 'DK', 'WatW', 'TKA'])
   assert.equal(sortBooks(real)[0].id, 'PHB')
 })

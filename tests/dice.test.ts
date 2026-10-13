@@ -226,3 +226,17 @@ test('dados reais (GT4b Al-Qadim): livros AA/CShaH e as listas de preço pedido/
   assert.ok(!prices.some((t) => t.rows.some((r) => r.slice(1, 4).some((c) => /pp|pg/.test(c)))))
   assert.ok(!zakhara.some((t) => t.rows.flat().some((c) => /\{\{|\[\[|\{\|/.test(c))))
 })
+
+test('dados reais (GT4b Thri-Kreen): livro TKA no cenário Dark Sun, sem as caixas de texto como tabelas', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  assert.equal(books.find((b) => b.id === 'TKA')?.setting, 'Dark Sun')
+  const kreen = tables.filter((t) => t.book === 'TKA')
+  assert.equal(kreen.length, 10)
+  // As caixas ("Jeral vs. To'ksa", "Molting") viraram texto: nenhuma tabela de uma célula com título de seção.
+  assert.ok(kreen.every((t) => t.headers.length >= 1 && t.rows.length >= 3))
+  const stages = kreen.find((t) => t.number === '2.1')!
+  assert.equal(stages.title, 'Thri-Kreen Stages of Growth')
+  assert.deepEqual(stages.rows[2].slice(-2), ['175', 'leap'])
+})

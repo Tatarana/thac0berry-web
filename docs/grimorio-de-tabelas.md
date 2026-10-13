@@ -46,13 +46,12 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); Al-Qadim feito (web v0.69.0); a fazer: Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
+| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); Al-Qadim feito (web v0.69.0); Thri-Kreen feito (web v0.70.0, livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras. **GT4b concluída** |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Backlog
 
-- GT4b, um cenário por entrega: Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
-  (sem livro de regras no dump).
+- Birthright: sem livro de regras no dump (fora da GT4b).
 - **Deuses de Krynn no compêndio de divindades** (decisão do usuário,
   2026-10-12): na GT4b eles entram como regras do Tales of the Lance (TotL);
   levá-los a `deities.json` (formato do FA/PP) fica para uma tarefa própria.
@@ -277,3 +276,17 @@ entregas e pendências. Atualizar a cada entrega.
   a via), os grupos de kits da Tabela 1 (linhas de cabeçalho que se
   perderiam). Teste de dados reais: livros, ≥ 28 tabelas, 12 listas de
   preço sem resto de OCR.
+- 2026-10-12, GT4b Thri-Kreen (web v0.70.0; thac0berry-data
+  `scripts/add_thri_kreen.py`): livro TKA (Thri-Kreen of Athas) no cenário
+  Dark Sun (decisão do usuário: sem cenário próprio); 8 regras e 10
+  tabelas: ajustes de atributos e características físicas, limites de nível
+  (Tabela 7.1) e multiclasses, estágios de crescimento (2.1), ataques com
+  chatkcha (3.1), armas (3.2), mordida e garra (3.3), nomes e glossário. Quase
+  todas as "tabelas" do livro na wiki são caixas de texto (os quadros "Jeral
+  vs. To'ksa", "Molting"…): nas páginas que entram viram texto, e as 15
+  páginas só com caixas ficam de fora. Na Tabela 2.1 o XP e a habilidade
+  vinham na mesma célula ("175 leap"). Web: o índice do Table Grimoire aceita
+  número com ponto ("Table 7.1", antes virava "Table 7" com título "1: …") e
+  ordena 7.1 depois de 7. Com isso a **GT4b está concluída** (Ravenloft,
+  Planescape, Forgotten Realms, Dragonlance, Council of Wyrms, Al-Qadim e
+  Thri-Kreen; Birthright sem fonte).

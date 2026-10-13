@@ -26,6 +26,8 @@ const rule = (id: string, book: string, content: string, tables: SourceRule['tab
 
 test('título: número e nome; "Table" sozinho fica sem título', () => {
   assert.deepEqual(splitTableTitle('Table 84: Treasure Types'), { number: '84', title: 'Treasure Types' })
+  // Numeração com ponto (Thri-Kreen of Athas).
+  assert.deepEqual(splitTableTitle('Table 7.1: Thri-Kreen Level Limits'), { number: '7.1', title: 'Thri-Kreen Level Limits' })
   assert.deepEqual(splitTableTitle('**Table 61: Experience Levels (1st Edition)**'), { number: '61', title: 'Experience Levels (1st Edition)' })
   assert.deepEqual(splitTableTitle('Table', ''), { number: null, title: '' })
   assert.deepEqual(splitTableTitle('Standard Costs to Manufacture Armor'), { number: null, title: 'Standard Costs to Manufacture Armor' })
