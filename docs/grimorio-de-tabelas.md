@@ -62,8 +62,6 @@ entregas e pendências. Atualizar a cada entrega.
 - Al-Qadim: quatro preços sem número na fonte da wiki (pão, perdiz, pavão
   e funda nas listas de equipamento do AA); precisa do livro.
 - Raças jogáveis de Planescape na ficha (opcional).
-- Rolador com soma de dados diferentes (2–20 = 1d8 + 1d12; Tabela 54 e o
-  exemplo do Desert of Shaar): hoje rola 2d10.
 - Resumos das regras com o markdown cru na lista ("**vision**", 83 regras):
   tarefa separada aberta em 2026-10-12.
 - GT5: tabelas do mestre (adiada).
@@ -290,3 +288,11 @@ entregas e pendências. Atualizar a cada entrega.
   ordena 7.1 depois de 7. Com isso a **GT4b está concluída** (Ravenloft,
   Planescape, Forgotten Realms, Dragonlance, Council of Wyrms, Al-Qadim e
   Thri-Kreen; Birthright sem fonte).
+- 2026-10-13, soma de dados diferentes (web v0.71.0; backlog): o motor de
+  dados (`src/rules/dice.ts`) lê, rola, mostra e calcula a faixa de somas
+  como "1d8+1d12" ou "2d4+1d6+3" (`DiceSpec.extra`, ausente no caso comum;
+  só o modificador pode ser negativo). O cabeçalho da tabela manda: "Dice
+  Roll (1d8+1d12)". thac0berry-data `scripts/fix_sum_dice_headers.py`: a
+  Tabela 54 do DMG e o exemplo 2–20 do Desert of Shaar ganharam esse
+  cabeçalho (antes a web deduzia 2d10 pela faixa, outra distribuição).
+  Conferido no navegador ("Roll d8+d12" → "8 (7 + 1) → Uncommon*").
