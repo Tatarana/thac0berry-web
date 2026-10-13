@@ -121,3 +121,14 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   contagens como o HomeView do iPad ("N running" com todas as campanhas da
   conta, como no iPad; "N total" de personagens, por contagem sem baixar as
   fichas); sem login, "Sign in to start".
+- 2026-10-13, resumo das regras sem asteriscos (web v0.70.1, pedido do
+  usuário): a lista do Rules Reference mostrava o `summary` como texto puro,
+  com `**negrito**` e `*itálico*` crus (83 regras). Agora usa o
+  `InlineMarkdown`, como o detalhe da regra; o parser saiu para
+  `src/lib/inlineMarkdown.ts` (função pura, com teste, inclusive com os dados
+  reais). No `thac0berry-data`, 12 resumos que eram nota de rodapé de tabela
+  (": ** This award…", ":* Only if…") ganharam resumo de verdade e dois
+  resumos cortados perderam a marca sem par (`scripts/fix_rule_summaries.py`).
+  Pendente: no iPad, `RulesCompendiumView` mostra o resumo com
+  `Text(String)` (asteriscos crus; backlog do `TODO.md` do iPad); 7 resumos
+  são uma tabela markdown inteira (CFH, CBH, WATW), não um texto.
