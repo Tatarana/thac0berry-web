@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
-import { diceForRange, formatDice, parseDice, rollDice } from '../src/rules/dice.ts'
+import { diceForRange, diceRange, formatDice, parseDice, rollDice } from '../src/rules/dice.ts'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
 import { findRow, parseRange, rollPlan, rowRefs, tableRefs, typedResult } from '../src/rules/tableRoll.ts'
 
@@ -24,6 +24,26 @@ test('notação: d100, d%, 2d10, 3d6+2, 1d6-1; inválida = null', () => {
   assert.equal(parseDice('0d6'), null)
   assert.equal(formatDice({ count: 1, sides: 100, modifier: 0 }), 'd100')
   assert.equal(formatDice({ count: 2, sides: 6, modifier: -1 }), '2d6-1')
+})
+
+test('soma de dados diferentes: 1d8+1d12 (tabela 2–20 do DMG), faixa, rolagem e texto', () => {
+  const spec = parseDice('1d8 + 1d12')!
+  assert.deepEqual(spec, { count: 1, sides: 8, modifier: 0, extra: [{ count: 1, sides: 12 }] })
+  assert.equal(formatDice(spec), 'd8+d12')
+  assert.deepEqual(diceRange(spec), [2, 20])
+  assert.equal(formatDice(parseDice('2d4+1d6+3')!), '2d4+d6+3')
+  assert.deepEqual(diceRange(parseDice('2d4+1d6+3')!), [6, 17])
+  // Um dado por grupo, na ordem: d8 = 8, d12 = 12.
+  const roll = rollDice(spec, () => 0.999)
+  assert.deepEqual(roll.dice, [8, 12])
+  assert.equal(roll.total, 20)
+  // Só o modificador pode ser negativo, e vem por último.
+  assert.equal(parseDice('1d8-1d12'), null)
+  assert.equal(parseDice('1d8+2+1d12'), null)
+  // O cabeçalho com a soma manda no plano da tabela (antes: 2d10, pela faixa 2–20).
+  const rows = Array.from({ length: 19 }, (_, i) => [String(i + 2), 'x'])
+  assert.equal(formatDice(rollPlan({ headers: ['Dice Roll (1d8+1d12)', 'Frequency'], rows })!.dice!), 'd8+d12')
+  assert.equal(formatDice(rollPlan({ headers: ['Dice Roll', 'Frequency'], rows })!.dice!), '2d10')
 })
 
 test('rolar: cada dado de 1 a N, soma com modificador', () => {
@@ -239,4 +259,14 @@ test('dados reais (GT4b Thri-Kreen): livro TKA no cenário Dark Sun, sem as caix
   const stages = kreen.find((t) => t.number === '2.1')!
   assert.equal(stages.title, 'Thri-Kreen Stages of Growth')
   assert.deepEqual(stages.rows[2].slice(-2), ['175', 'leap'])
+})
+
+test('dados reais: as tabelas 2–20 do DMG rolam 1d8+1d12', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  const t54 = tables.find((t) => t.book === 'DMG' && t.number === '54')!
+  assert.equal(formatDice(rollPlan(t54)!.dice!), 'd8+d12')
+  const shaar = tables.find((t) => t.title === 'Example: 2-20 Encounter Table for the Desert of Shaar')!
+  assert.equal(formatDice(rollPlan(shaar)!.dice!), 'd8+d12')
 })

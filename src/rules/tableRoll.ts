@@ -61,7 +61,8 @@ export function rollPlan(table: TableLike): RollPlan | null {
 
   const low = Math.min(...real.map((r) => r.low))
   const high = Math.max(...real.map((r) => (Number.isFinite(r.high) ? r.high : r.low)))
-  const fromHeader = parseDice(/\d*d(?:\d+|%)/i.exec(header)?.[0] ?? '')
+  // O dado do cabeçalho, inclusive uma soma ("Dice Roll (1d8+1d12)").
+  const fromHeader = parseDice(/\d*d(?:\d+|%)(?:\s*\+\s*\d*d(?:\d+|%))*/i.exec(header)?.[0] ?? '')
   const fromRanges = diceForRange(low, high)
   if (fromHeader && high <= 2 * diceRange(fromHeader)[1]) plan.dice = fromHeader
   else {
@@ -81,7 +82,7 @@ export function typedResult(text: string, dice: DiceSpec | null): number | null 
   const clean = text.trim()
   if (!/^-?\d{1,4}$/.test(clean)) return null
   const value = Number(clean)
-  return value === 0 && dice?.sides === 100 && dice.count === 1 ? 100 : value
+  return value === 0 && dice?.sides === 100 && dice.count === 1 && !dice.extra ? 100 : value
 }
 
 // --- GT3: citações a outras tabelas -------------------------------------------------
