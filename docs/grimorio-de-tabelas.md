@@ -46,16 +46,20 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); a fazer: Council of Wyrms, Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
+| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); a fazer: Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Backlog
 
-- GT4b, um cenário por entrega: Council of Wyrms, Al-Qadim, Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
+- GT4b, um cenário por entrega: Al-Qadim, Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
   (sem livro de regras no dump).
 - **Deuses de Krynn no compêndio de divindades** (decisão do usuário,
   2026-10-12): na GT4b eles entram como regras do Tales of the Lance (TotL);
   levá-los a `deities.json` (formato do FA/PP) fica para uma tarefa própria.
+- Geradores de magia do Council of Wyrms com falha na fonte da wiki: o de
+  mago do 6º nível não existe; o de sacerdote do 6º tem uma faixa sobrando
+  ("16-19 Conjure Fire Elemental"); o de mago do 9º não tem 37-48 nem 54-58.
+  Precisa do livro para completar.
 - Raças jogáveis de Planescape na ficha (opcional).
 - Rolador com soma de dados diferentes (2–20 = 1d8 + 1d12; Tabela 54 e o
   exemplo do Desert of Shaar): hoje rola 2d10.
@@ -243,3 +247,18 @@ entregas e pendências. Atualizar a cada entrega.
   pula o apelido em itálico de abertura (raças do TotL); o `--refresh` não
   acusa mudança só pelo número do capítulo. Teste de dados reais: livro, ≥ 50
   tabelas e as 21 fichas de avatar no mesmo formato.
+- 2026-10-12, GT4b Council of Wyrms (web v0.68.0; thac0berry-data
+  `scripts/add_council_of_wyrms.py`): livro CWS (Council of Wyrms Setting),
+  cenário "Council of Wyrms"; 18 regras e 90 tabelas, em seis capítulos:
+  personagens (requisitos e ajustes das raças, limites de classe e nível,
+  dados por idade de cada um dos 15 dragões, kindred, meio-dragões, DV,
+  filhotes aleatórios d20, XP), perícias de dragão, combate, habilidades e
+  magia (psiônica dos dragões de gema, magias por idade, armas e itens
+  mágicos d20, poções d100, geradores de magia d100 de sacerdote e mago),
+  vida dos dragões (expectativa de vida, tesouro ligado, ninhadas, prefixos
+  de nome) e tabelas gerais (THAC0, salvamentos). Fora: a aventura "Not the
+  Draca". Os geradores vinham dentro de uma tabela de layout (saiu); as
+  tabelas de expectativa de vida vinham deitadas (viraram duas colunas).
+  Correções: faixas do gerador de sacerdote do 3º nível, CA "o", "1dl00",
+  "lawful gold". Pendente da fonte: ver o backlog. Teste de dados reais:
+  livro, ≥ 85 tabelas, 15 geradores e o dado das roláveis.
