@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '../auth/context'
 import { createPortal } from 'react-dom'
 import { campaignTitle, dateFromInput, dateInputValue } from '../lib/campaigns'
 import { assignToCampaign, bringBack, cloneCharacter, deleteCharacter, markDead, toggleArchived } from '../lib/roster'
@@ -49,14 +50,21 @@ function MarkDeadWindow({ name, onConfirm, onClose }: { name: string; onConfirm:
   )
 }
 
-/** "Assign to campaign" do iPad: as campanhas da conta, mais o Sandbox. */
+/**
+ * "Assign to campaign" do iPad: as campanhas da conta, mais o Sandbox. Só as
+ * que a conta mestra: pôr a ficha na campanha de outro mestre é a Fase 2b.
+ */
 function MoveWindow({ current, onChoose, onClose }: { current: string | null; onChoose: (campaignID: string | null) => void; onClose: () => void }) {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; is_archived: boolean }[] | null>(null)
+  const { session } = useAuth()
+  const userID = session?.user.id ?? null
   useEffect(() => {
+    if (!userID) return
     let cancelled = false
     void supabase
       .from('campaign')
       .select('id, name, is_archived')
+      .eq('owner_id', userID)
       .is('deleted_at', null)
       .order('name')
       .then(({ data }) => {
@@ -65,7 +73,7 @@ function MoveWindow({ current, onChoose, onClose }: { current: string | null; on
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [userID])
   const same = (id: string) => current?.toUpperCase() === id.toUpperCase()
   return createPortal(
     <PaperModal title="Move to…" onClose={onClose}>
