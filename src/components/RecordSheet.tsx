@@ -302,6 +302,7 @@ function RecordHeader({
           {pickingRace && edit && (
             <RacePicker
               character={c}
+              campaignSettings={campaignSettings}
               onChoose={(race) => {
                 edit((x) => applyRace(x, race))
                 setPickingRace(false)

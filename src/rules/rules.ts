@@ -522,10 +522,17 @@ export function thievingBaseScore(skill: string, value: CharacterClass | string)
  * casa por trecho do nome. Testa do nome mais longo para o mais curto, para
  * "Half-Elf" não cair em "Elf" (diferença intencional do iPad, ver topo).
  */
+/** PWH, "Planar Races: Racial Adjustment for Thieves" (as raças planares que mudam algo). */
+const planarThiefAdjustments: Record<string, Record<string, number>> = {
+  Aasimar: { 'Find/Remove Traps': 10, 'Move Silently': 5, 'Hide in Shadows': 10, 'Detect Noise': 5 },
+  'Genasi (water)': { 'Move Silently': 5, 'Hide in Shadows': 10 },
+  Tiefling: { 'Find/Remove Traps': 5, 'Move Silently': 10, 'Hide in Shadows': 10, 'Read Languages': 5 },
+}
+
 export function racialAdjustment(skill: string, race: string): number {
   const target = normalize(race)
   if (target === '') return 0
-  const table = T['ThievingSkillsTable.racialAdjustments']
+  const table = { ...T['ThievingSkillsTable.racialAdjustments'], ...planarThiefAdjustments }
   const keys = Object.keys(table).sort((a, b) => normalize(b).length - normalize(a).length)
   for (const key of keys) {
     if (target.includes(normalize(key))) return table[key][skill] ?? 0
