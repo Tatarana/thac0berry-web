@@ -61,7 +61,6 @@ entregas e pendências. Atualizar a cada entrega.
   Precisa do livro para completar.
 - Al-Qadim: quatro preços sem número na fonte da wiki (pão, perdiz, pavão
   e funda nas listas de equipamento do AA); precisa do livro.
-- Raças jogáveis de Planescape na ficha (opcional).
 - Resumos das regras com o markdown cru na lista ("**vision**", 83 regras):
   tarefa separada aberta em 2026-10-12.
 - GT5: tabelas do mestre (adiada).
@@ -308,3 +307,20 @@ entregas e pendências. Atualizar a cada entrega.
   Power", hub com "101 deities · Forgotten Realms & Dragonlance".
   `src/data/deities.ts` importa `search.ts` com a extensão (para rodar nos
   testes, como o `raceKit.ts`).
+- 2026-10-13, raças de Planescape na ficha (web v0.73.0; backlog). Decisões
+  do usuário: só em campanhas com o cenário Planescape; Modron entra;
+  Bariaur e Genasi como opções separadas (macho/fêmea, ar/terra/fogo/água).
+  `src/rules/raceKit.ts`: as 10 raças planares com os números das tabelas
+  "Planar Races" do PWH (requisitos e ajustes de atributo, limites de nível;
+  classe fora da tabela = não pode), movimento, resistência à magia e o texto
+  das habilidades raciais (da página de cada raça). Notas da tabela: só o
+  bariaur macho é ranger/paladino e só a fêmea é maga; aasimar e tiefling de
+  uma classe só sobem dois níveis além do limite; genasi da terra paladino
+  só como stone champion. Multiclasse (`multiclass.ts`): as combinações do
+  PWH (o aasimar com bardo não depende de kit, como no CBH); bariaur, genasi
+  da terra e modron não podem. Ladrão (`rules.ts`): os ajustes raciais do PWH
+  (aasimar, genasi da água, tiefling). O seletor de raça mostra o grupo
+  "Planescape · The Planewalker's Handbook" quando a campanha da ficha tem o
+  cenário; os avisos citam o PWH no lugar da Tabela 7 do PHB. Fora: altura,
+  peso e idade (a web não preenche esses campos para nenhuma raça) e a tabela
+  de habilidades aleatórias do tiefling (fica no Table Grimoire).

@@ -13,7 +13,7 @@
 import type { CharacterClass, ClassLevel, KitSpellcasting, PlayerCharacter } from '../types/library.ts'
 import { normalize } from '../lib/search.ts'
 import { primeRequisites } from './sessionReport.ts'
-import { demiBardKits, demiBardWarning, levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
+import { demiBardKits, demiBardWarning, isPlanarRace, levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
 import {
   bestSaves,
   bestTHAC0,
@@ -252,6 +252,17 @@ const combos: Partial<Record<RaceName, Combo[]>> = {
     // "Druid pode ocupar o lugar de Cleric" (asterisco da tabela).
     ['Fighter', 'Druid'], ['Druid', 'Ranger'], ['Druid', 'Mage'], ['Fighter', 'Mage', 'Druid'],
   ],
+  // Raças planares (PWH, a página de cada raça; campanha Planescape). Bariaur,
+  // genasi da terra e modron não podem ser multiclasse.
+  Aasimar: [
+    ['Fighter', 'Cleric'], ['Fighter', 'Mage'], ['Fighter', 'Bard'], ['Ranger', 'Mage'], ['Ranger', 'Cleric'],
+    ['Mage', 'Cleric'], ['Mage', 'Thief'], ['Mage', 'Bard'], ['Cleric', 'Bard'],
+  ],
+  'Genasi (air)': [['Fighter', 'Cleric'], ['Fighter', 'Mage']],
+  'Genasi (fire)': [['Fighter', 'Mage']],
+  'Genasi (water)': [['Fighter', 'Cleric'], ['Fighter', 'Thief']],
+  Githzerai: [['Fighter', 'Mage']],
+  Tiefling: [['Fighter', 'Mage'], ['Fighter', 'Cleric'], ['Fighter', 'Thief'], ['Mage', 'Thief'], ['Cleric', 'Thief']],
 }
 
 /** As combinações da raça, para o seletor. */
@@ -284,14 +295,15 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
     warnings.push('Choose a race: multi-class combinations depend on it (PHB, Chapter 3).')
   } else if (race === 'Human') {
     warnings.push('Humans cannot be multi-class (they can be dual-class instead) — PHB, Chapter 3.')
-  } else if (names.includes('Bard')) {
-    // CBH cap. 3: o multiclasse de bardo vem ligado a kits.
+  } else if (names.includes('Bard') && !(combos[race] ?? []).some((combo) => sameSet(combo, names))) {
+    // CBH cap. 3: o multiclasse de bardo vem ligado a kits (o do aasimar, PWH, não).
     if (!bard) warnings.push(`${names.join('/')} is not a standard ${race} bard multi-class (CBH, Chapter 3).`)
     else if (!kitMatchesAny(c.kit, bard.kits)) {
       warnings.push(`A ${race} ${names.join('/')} must take the ${bard.kits.map(kitLabel).join(' or ')} kit (CBH, Chapter 3).`)
     }
   } else if (!(combos[race] ?? []).some((combo) => sameSet(combo, names))) {
-    warnings.push(`${names.join('/')} is not a standard ${race} multi-class combination (${names.includes('Psionicist') ? 'CPsiH, Chapter 1' : 'PHB, Chapter 3'}).`)
+    const source = names.includes('Psionicist') ? 'CPsiH, Chapter 1' : isPlanarRace(race) ? "The Planewalker's Handbook" : 'PHB, Chapter 3'
+    warnings.push(`${names.join('/')} is not a standard ${race} multi-class combination (${source}).`)
   }
   if (c.wizardSchool && names.includes('Mage')) {
     warnings.push('Specialist wizards cannot be multi-class (the gnome illusionist is the only exception).')
@@ -384,6 +396,16 @@ export function kitAllowsRace(racesText: string | null | undefined, race: string
     Gnome: ['gnome', 'gnomes'],
     'Half-Elf': ['halfelf'],
     Halfling: ['halfling', 'halflings'],
+    Aasimar: ['aasimar'],
+    'Bariaur (male)': ['bariaur'],
+    'Bariaur (female)': ['bariaur'],
+    'Genasi (air)': ['genasi'],
+    'Genasi (earth)': ['genasi'],
+    'Genasi (fire)': ['genasi'],
+    'Genasi (water)': ['genasi'],
+    Githzerai: ['githzerai'],
+    Modron: ['modron', 'modrons'],
+    Tiefling: ['tiefling', 'tieflings'],
   }
   // Palavras do texto; "half-elf(ves)" vira uma palavra só, para "elf" não casar dentro dela.
   const words = (part: string) => part.replace(/half[\s-]?el(f|ves)/g, 'halfelf').split(/[^a-z]+/)

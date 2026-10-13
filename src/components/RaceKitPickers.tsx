@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { loadKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
 import { allClasses, kitWarnings } from '../rules/multiclass'
-import { hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, races, raceWarnings, type RaceName } from '../rules/raceKit'
+import { hasAbilityRequirements, isPlanarRace, kitsAllowedFor, matchRace, raceAdjustmentsText, racesForCampaign, raceWarnings, type RaceName } from '../rules/raceKit'
 import { kitAllowedInCampaign } from '../rules/ravenloft'
 import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -15,10 +15,13 @@ import { KitDetail } from './KitDetail'
 
 export function RacePicker({
   character,
+  campaignSettings = null,
   onChoose,
   onClose,
 }: {
   character: Pick<PlayerCharacter, 'race' | 'abilities' | 'characterClass' | 'level' | 'kit'>
+  /** Cenários da campanha da ficha: com Planescape, aparecem as raças planares (PWH). */
+  campaignSettings?: string[] | null
   onChoose: (race: RaceName) => void
   onClose: () => void
 }) {
@@ -42,8 +45,9 @@ export function RacePicker({
         </div>
       ) : (
         <ul className="slot-choices">
-          {races.map((race) => (
+          {racesForCampaign(campaignSettings).map((race, i, list) => (
             <li key={race}>
+              {isPlanarRace(race) && !isPlanarRace(list[i - 1]) && <p className="paper-label">Planescape · The Planewalker's Handbook</p>}
               <button
                 className="slot-choice"
                 onClick={() => (raceWarnings(race, character).length > 0 ? setPending(race) : onChoose(race))}

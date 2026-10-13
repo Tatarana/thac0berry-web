@@ -2,7 +2,9 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import * as M from '../src/rules/multiclass.ts'
 import * as K from '../src/rules/raceKit.ts'
+import * as R from '../src/rules/rules.ts'
 import type { PlayerCharacter } from '../src/types/library.ts'
 
 const base = () =>
@@ -76,4 +78,44 @@ test('seletor de raça: bardo semi-humano recebe o aviso do CBH, não o "cannot 
   assert.ok(K.raceWarnings('Elf', { ...bard, level: 10, kit: 'Gypsy' }).some((w) => w.includes('limited to level 9')))
   // Meio-elfo continua pelo PHB (pode ser bardo sem kit).
   assert.deepEqual(K.raceWarnings('Half-Elf', bard), [])
+})
+
+test('raças planares (PWH): só em campanha Planescape; ajustes, limites, multiclasse e ladrão', () => {
+  assert.equal(K.racesForCampaign(null).length, 6)
+  assert.equal(K.racesForCampaign(['Ravenloft']).length, 6)
+  assert.equal(K.racesForCampaign(['Planescape']).length, 16)
+  assert.equal(K.matchRace('genasi (water)'), 'Genasi (water)')
+
+  const c = base()
+  K.applyRace(c, 'Tiefling')
+  assert.deepEqual([c.abilities.strength, c.abilities.intelligence, c.abilities.wisdom, c.abilities.charisma], [11, 11, 9, 11])
+  assert.match(c.racialAbilities ?? '', /Darkness 15-ft/)
+  const g = base()
+  K.applyRace(g, 'Githzerai')
+  assert.equal(g.saves.spellResistance, '5% per level, max. 95% (warriors & thieves)')
+  const b = base()
+  K.applyRace(b, 'Bariaur (male)')
+  assert.equal(b.page2Movement?.base, '15"')
+
+  // Bariaur: só a fêmea pode ser maga; só o macho, ranger (nota ** do PWH).
+  assert.equal(K.levelLimit('Bariaur (male)', 'Mage'), 'forbidden')
+  assert.equal(K.levelLimit('Bariaur (female)', 'Mage'), 13)
+  assert.equal(K.levelLimit('Bariaur (female)', 'Ranger'), 'forbidden')
+  // Aasimar de uma classe só: dois níveis além da tabela (Cleric 12 → 14).
+  assert.equal(K.levelLimitWarning('Aasimar', 'Cleric', 14), null)
+  assert.match(K.levelLimitWarning('Aasimar', 'Cleric', 15) ?? '', /limited to level 12; 2 more if single-classed \(The Planewalker's Handbook\)/)
+  assert.match(K.levelLimitWarning('Modron', 'Thief', 1) ?? '', /cannot normally be a Thief \(The Planewalker's Handbook\)/)
+  assert.match(K.abilityWarnings('Aasimar', base().abilities)[0], /Intelligence 10 is outside the 11–18 range Aasimar requires/)
+
+  // Multiclasse: as combinações do PWH (o aasimar fighter/bard não depende de kit).
+  const fm = { characterClass: 'Fighter' as const, level: 3, wizardSchool: null }
+  assert.deepEqual(M.multiClassWarnings({ ...fm, race: 'Aasimar', multiClasses: [{ characterClass: 'Bard', level: 3 }] }), [])
+  assert.deepEqual(M.multiClassWarnings({ ...fm, race: 'Githzerai', multiClasses: [{ characterClass: 'Mage', level: 3 }] }), [])
+  assert.match(M.multiClassWarnings({ ...fm, race: 'Modron', multiClasses: [{ characterClass: 'Mage', level: 3 }] })[0], /not a standard Modron multi-class combination \(The Planewalker's Handbook\)/)
+  assert.equal(M.kitAllowsRace('Human, tiefling', 'Tiefling'), true)
+
+  // Ladrão: ajuste racial do PWH (Tiefling: Hide in Shadows +10).
+  assert.equal(R.racialAdjustment('Hide in Shadows', 'Tiefling'), 10)
+  assert.equal(R.racialAdjustment('Hide in Shadows', 'Genasi (water)'), 10)
+  assert.equal(R.racialAdjustment('Hide in Shadows', 'Genasi (fire)'), 0)
 })
