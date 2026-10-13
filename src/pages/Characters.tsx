@@ -44,10 +44,12 @@ export function Characters() {
       supabase
         .from('character')
         .select('id, name, character_class, level, status, campaign_id')
+        // Só as fichas da conta: as dos jogadores ficam na página da campanha do mestre (Fase 2b).
+        .eq('owner_id', userID)
         .is('deleted_at', null)
         .order('name'),
-      // Só as campanhas que a conta mestra (as de jogador entram com a Fase 2b).
-      supabase.from('campaign').select('id, name, is_archived').eq('owner_id', userID).is('deleted_at', null).order('name'),
+      // As campanhas que a conta mestra e as em que joga (Fase 2b: as fichas dela podem estar nas duas).
+      supabase.from('campaign').select('id, name, is_archived').is('deleted_at', null).order('name'),
     ]).then(([chars, camps]) => {
       if (cancelled) return
       if (chars.error || camps.error) {
