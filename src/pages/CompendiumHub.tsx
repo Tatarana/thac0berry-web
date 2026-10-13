@@ -21,7 +21,7 @@ const entries: HubEntry[] = [
   { title: 'Warrior Kits', subtitle: '114 kits · Fighter, Paladin, Ranger & Barbarian', to: '/compendium/kits/warrior', image: 'icon_warrior_kits', accent: 'var(--crimson)' },
   { title: 'Rogue Kits', subtitle: '73 kits · Thief, Bard & Ninja', to: '/compendium/kits/rogue', image: 'icon_rogue_kits', accent: 'var(--mint-glow)' },
   { title: 'Psionicist Kits', subtitle: '33 kits · The Will and the Way & Dragon Magazine', to: '/compendium/kits/psionicist', image: 'icon_psionicist_kits', accent: 'var(--teal)' },
-  { title: 'Deities', subtitle: '79 deities · Faiths & Avatars, Powers & Pantheons', to: '/compendium/deities', image: 'icon_deities', accent: 'var(--brass)' },
+  { title: 'Deities', subtitle: '101 deities · Forgotten Realms & Dragonlance', to: '/compendium/deities', image: 'icon_deities', accent: 'var(--brass)' },
   { title: 'Rules Reference', subtitle: '888 rules · PHB, DMG, 8 Complete Handbooks & Psionics', to: '/compendium/rules', image: 'icon_rules_reference', accent: 'var(--brass)' },
   { title: 'Proficiencies', subtitle: '372 proficiencies · general, class & racial', to: '/compendium/proficiencies', image: 'icon_proficiencies', accent: 'var(--teal)' },
   { title: 'Weapons', subtitle: '75 weapons · PHB & CPrH', to: '/compendium/weapons', image: 'icon_weapons', accent: 'var(--crimson)' },

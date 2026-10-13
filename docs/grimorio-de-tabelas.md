@@ -52,9 +52,9 @@ entregas e pendências. Atualizar a cada entrega.
 ## Backlog
 
 - Birthright: sem livro de regras no dump (fora da GT4b).
-- **Deuses de Krynn no compêndio de divindades** (decisão do usuário,
-  2026-10-12): na GT4b eles entram como regras do Tales of the Lance (TotL);
-  levá-los a `deities.json` (formato do FA/PP) fica para uma tarefa própria.
+- iPad: o hub diz "79 deities · Faiths & Avatars, Powers & Pantheons"
+  (texto fixo em `CompendiumHubView.swift`); com o `sync_data.py`, passam a
+  ser 101 (os deuses de Krynn).
 - Geradores de magia do Council of Wyrms com falha na fonte da wiki: o de
   mago do 6º nível não existe; o de sacerdote do 6º tem uma faixa sobrando
   ("16-19 Conjure Fire Elemental"); o de mago do 9º não tem 37-48 nem 54-58.
@@ -296,3 +296,15 @@ entregas e pendências. Atualizar a cada entrega.
   Tabela 54 do DMG e o exemplo 2–20 do Desert of Shaar ganharam esse
   cabeçalho (antes a web deduzia 2d10 pela faixa, outra distribuição).
   Conferido no navegador ("Roll d8+d12" → "8 (7 + 1) → Uncommon*").
+- 2026-10-13, deuses de Krynn no compêndio de divindades (web v0.72.0;
+  backlog): thac0berry-data `scripts/add_krynn_deities.py` põe o High God e
+  os 21 deuses do Tales of the Lance em `deities.json`, no formato do FA
+  (rank como no livro, "Greater God"; plano; AL, WAL, AoC e SY das
+  estatísticas; outros nomes; avatar com a ficha em texto; o resto da página
+  no texto). Aliados, inimigos, superior e domínio ficam vazios (o livro não
+  os separa). As 21 regras de deus saem do Rules Reference (decisão do
+  usuário); fica "Descriptions of the True Gods", com a lista. Web: os livros
+  do filtro vêm dos dados (antes, fixos), "Greater God" agrupa com "Greater
+  Power", hub com "101 deities · Forgotten Realms & Dragonlance".
+  `src/data/deities.ts` importa `search.ts` com a extensão (para rodar nos
+  testes, como o `raceKit.ts`).

@@ -1,6 +1,7 @@
 // Divindades (schemas/deity.schema.json no thac0berry-data; Models/Deity.swift
-// no iPad): Faiths & Avatars e Powers & Pantheons.
-import { normalize } from '../lib/search'
+// no iPad): Faiths & Avatars e Powers & Pantheons (Forgotten Realms) e, desde
+// 2026-10-13, os deuses de Krynn do Tales of the Lance (Dragonlance).
+import { normalize } from '../lib/search.ts'
 
 export interface Deity {
   id: string
@@ -29,9 +30,15 @@ export interface Deity {
 /** Ordem dos grupos por posto, igual ao DeityCompendiumView do iPad. */
 export const rankOrder = ['Over-power', 'Greater Power', 'Intermediate Power', 'Lesser Power', 'Demipower', 'Other']
 
+/** Posto divino do grupo; o TotL diz "Greater God", o FA "Greater Power": mesmo grupo. */
 export function rankGroup(rank: string | null | undefined): string {
-  return rank && rankOrder.includes(rank) ? rank : 'Other'
+  const god = /^(Greater|Intermediate|Lesser) God(?:dess)?$/.exec(rank ?? '')
+  const name = god ? `${god[1]} Power` : rank === 'Demigod' ? 'Demipower' : rank
+  return name && rankOrder.includes(name) ? name : 'Other'
 }
+
+/** Livros na ordem em que aparecem nos dados (filtro do compêndio). */
+export const deityBooks = (deities: Pick<Deity, 'book'>[]) => [...new Set(deities.map((d) => d.book))]
 
 let promise: Promise<Deity[]> | null = null
 
