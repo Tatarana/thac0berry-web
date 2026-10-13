@@ -2,11 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { DeityDetail } from '../components/DeityDetail'
 import { GroupSection } from '../components/GroupSection'
-import { loadDeities, rankGroup, rankOrder, type Deity } from '../data/deities'
+import { deityBooks, loadDeities, rankGroup, rankOrder, type Deity } from '../data/deities'
 import { normalize } from '../lib/search'
 import { useGroupToggle } from '../lib/useGroupToggle'
-
-const books = ['Faiths & Avatars', 'Powers & Pantheons']
 
 // Compêndio de divindades (DeityCompendiumView do iPad): filtro por livro,
 // busca por nome, apelidos ou portfólio; grupos por posto divino.
@@ -47,6 +45,8 @@ export function DeityCompendium() {
   )
 
   const { isExpanded, toggle } = useGroupToggle(query.trim() !== '')
+  // Os livros vêm dos dados (antes, uma lista fixa com os dois do Forgotten Realms).
+  const books = useMemo(() => deityBooks(deities ?? []), [deities])
 
   return (
     <div className="paper-page">
@@ -57,7 +57,7 @@ export function DeityCompendium() {
         <h1 className="paper-title">Deities</h1>
         <p className="paper-soft">
           {deities
-            ? `${filtered.length} of ${deities.length} deities · Faiths & Avatars, Powers & Pantheons`
+            ? `${filtered.length} of ${deities.length} deities · ${books.join(', ')}`
             : error
               ? `Could not load deities: ${error}`
               : 'Loading deities…'}

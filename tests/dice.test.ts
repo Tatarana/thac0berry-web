@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { diceForRange, diceRange, formatDice, parseDice, rollDice } from '../src/rules/dice.ts'
 import { buildTableIndex } from '../src/rules/tableIndex.ts'
+import { deityBooks, rankGroup, type Deity } from '../src/data/deities.ts'
 import { findRow, parseRange, rollPlan, rowRefs, tableRefs, typedResult } from '../src/rules/tableRoll.ts'
 
 /** Gerador fixo: devolve os valores na ordem (cada um em [0, 1)). */
@@ -199,19 +200,26 @@ test('dados reais (GT4b Forgotten Realms): livros SofS/FA/PP e as tabelas roláv
   assert.ok(!realms.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[|\x97/.test(c))))
 })
 
-test('dados reais (GT4b Dragonlance): livro TotL, deuses com a ficha do avatar no mesmo formato', () => {
+test('dados reais (GT4b Dragonlance): livro TotL; os deuses saíram das regras para o compêndio de divindades', () => {
   const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
   const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
   const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
   assert.deepEqual(books.filter((b) => b.setting === 'Dragonlance').map((b) => b.id), ['TotL'])
   const krynn = tables.filter((t) => t.setting === 'Dragonlance')
-  assert.ok(krynn.length >= 50, `${krynn.length} tabelas`)
-  // As 21 fichas de avatar (três formatos na wiki) viram Stat | Value com 15 linhas.
-  const avatars = krynn.filter((t) => t.title.endsWith(': Avatar'))
-  assert.equal(avatars.length, 21)
-  assert.ok(avatars.every((t) => t.headers.join('|') === 'Stat|Value' && t.rows.length === 15))
-  assert.deepEqual(avatars.find((t) => t.title === 'Paladine: Avatar')!.rows[0], ['Str', '15'])
+  assert.ok(krynn.length >= 30, `${krynn.length} tabelas`)
+  assert.equal(krynn.filter((t) => t.title.endsWith(': Avatar')).length, 0)
+  assert.ok(krynn.some((t) => t.title === 'The True Gods of Krynn'))
   assert.ok(!krynn.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[/.test(c))))
+  // Os 21 deuses e o High God no deities.json, no formato do Faiths & Avatars.
+  const deities = JSON.parse(readFileSync(join(source, 'deities.json'), 'utf8')) as Deity[]
+  const gods = deities.filter((d) => d.book === 'Tales of the Lance')
+  assert.equal(gods.length, 22)
+  const paladine = gods.find((d) => d.name === 'Paladine')!
+  assert.equal(paladine.alignment, 'LG')
+  assert.equal(rankGroup(paladine.rank), 'Greater Power')
+  assert.match(paladine.avatarDescription ?? '', /Str 15, Dex 18, Con 18/)
+  assert.equal(gods.find((d) => d.name === 'Branchala')!.worshiperAlignments, 'Any non-Evil')
+  assert.deepEqual(deityBooks(deities), ['Faiths & Avatars', 'Powers & Pantheons', 'Tales of the Lance'])
 })
 
 test('dados reais (GT4b Council of Wyrms): livro CWS e os geradores roláveis com o dado certo', () => {
