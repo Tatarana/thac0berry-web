@@ -49,6 +49,21 @@ entregas e pendências. Atualizar a cada entrega.
 | GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); a fazer: Dragonlance, Council of Wyrms, Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
+## Backlog
+
+- GT4b, um cenário por entrega: Dragonlance (em andamento), Council of
+  Wyrms, Al-Qadim, Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
+  (sem livro de regras no dump).
+- **Deuses de Krynn no compêndio de divindades** (decisão do usuário,
+  2026-10-12): na GT4b eles entram como regras do Tales of the Lance (TotL);
+  levá-los a `deities.json` (formato do FA/PP) fica para uma tarefa própria.
+- Raças jogáveis de Planescape na ficha (opcional).
+- Rolador com soma de dados diferentes (2–20 = 1d8 + 1d12; Tabela 54 e o
+  exemplo do Desert of Shaar): hoje rola 2d10.
+- Resumos das regras com o markdown cru na lista ("**vision**", 83 regras):
+  tarefa separada aberta em 2026-10-12.
+- GT5: tabelas do mestre (adiada).
+
 ## Log
 
 - 2026-10-08: plano aprovado (decisões 1 a 5). Início da GT1.
