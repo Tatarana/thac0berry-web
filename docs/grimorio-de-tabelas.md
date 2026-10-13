@@ -46,7 +46,7 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); a fazer: Forgotten Realms, Council of Wyrms, Dragonlance, Al-Qadim, Thri-Kreen, Birthright |
+| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); a fazer: Dragonlance, Council of Wyrms, Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Log
@@ -188,3 +188,29 @@ entregas e pendências. Atualizar a cada entrega.
   no subtítulo da tabela e da regra, no "?" de regra, nas citações "Table N
   (livro)" e nas tabelas do Combat Tracker; os chips de livro já tinham.
   Teste de dados reais: livros, ≥ 60 tabelas e o dado das roláveis.
+- 2026-10-12, GT4b: levantamento dos cenários que faltam no dump e decisões
+  do usuário: ordem Forgotten Realms → Dragonlance → Council of Wyrms →
+  Al-Qadim → Thri-Kreen; Thri-Kreen of Athas (TKA) entra no cenário Dark Sun;
+  Birthright sai (não há livro de regras no dump; o "GRCS" é o *Glory of Rome
+  Campaign Sourcebook*); os deuses de Dragonlance (TotL, fora de
+  deities.json) ficam para decidir na vez dele.
+- 2026-10-12, GT4b Forgotten Realms (web v0.66.0; thac0berry-data
+  `scripts/add_forgotten_realms.py`): livros SofS (Sea of Fallen Stars), FA
+  (Faiths & Avatars) e PP (Powers & Pantheons), cenário "Forgotten Realms";
+  28 regras e 56 tabelas. SofS: visão e profundidade, combate, magia e
+  equipamento debaixo d'água, Dukars (XP, perícias, magias, caminhos),
+  raças de Serôs, dinheiro de pérolas, calendário, dinastias, prédios de Myth
+  Nantar (roláveis d4/d6/d8/d10). FA: classes de sacerdote (cleric, crusader,
+  druid, monk, mystic, shaman), tabelas estendidas de THAC0 e de magias, e o
+  índice de magias. PP: apelidos dos deuses e magias novas. Fora: as páginas
+  de cada deus (já em deities.json), a letra "S" da enciclopédia do SofS, a
+  legenda do mapa de Myth Nantar, o "Format of Deity Entries" do PP (igual
+  ao do FA), o índice de magias com páginas e a lista de locais do PP.
+  Correções: linha de tabela com as duas classes numa célula (função dos
+  prédios), calendário com parênteses quebrados, BOM e travessão do cp1252,
+  OCR do Crusader, linha "… Article" de abertura.
+  Junto: os livros importados da wiki (DoD, PCS, PWH, TIP e os novos) tinham
+  todas as regras no capítulo 0, e o Rules Reference as juntava num capítulo
+  só, com o nome do primeiro; agora cada capítulo tem o seu número
+  (`number_chapters`). Teste de dados reais: livros, ≥ 50 tabelas, dado das
+  roláveis e nada de marcação da wiki.
