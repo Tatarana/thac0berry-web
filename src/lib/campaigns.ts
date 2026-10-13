@@ -19,9 +19,11 @@ export interface CampaignRow {
   notes: string
   is_archived: boolean
   enabled_settings: string[] | null
+  /** O mestre (quem criou); com a Fase 2a, quem não é o dono é jogador. */
+  owner_id?: string
 }
 
-export type CampaignFields = Omit<CampaignRow, 'id'>
+export type CampaignFields = Omit<CampaignRow, 'id' | 'owner_id'>
 
 /** Campaign.displayTitle do iPad. */
 export const campaignTitle = (c: Pick<CampaignRow, 'name'>) => (c.name.trim() === '' ? 'Unnamed Campaign' : c.name)
@@ -92,7 +94,7 @@ export function useCampaignDoc(id: string | undefined, userID: string | null) {
     void (async () => {
       const { data, error } = await supabase
         .from('campaign')
-        .select('id, name, started_date, notes, is_archived, enabled_settings, version, updated_at')
+        .select('id, name, started_date, notes, is_archived, enabled_settings, owner_id, version, updated_at')
         .eq('id', id)
         .is('deleted_at', null)
         .maybeSingle()

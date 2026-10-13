@@ -46,7 +46,8 @@ export function Characters() {
         .select('id, name, character_class, level, status, campaign_id')
         .is('deleted_at', null)
         .order('name'),
-      supabase.from('campaign').select('id, name, is_archived').is('deleted_at', null).order('name'),
+      // Só as campanhas que a conta mestra (as de jogador entram com a Fase 2b).
+      supabase.from('campaign').select('id, name, is_archived').eq('owner_id', userID).is('deleted_at', null).order('name'),
     ]).then(([chars, camps]) => {
       if (cancelled) return
       if (chars.error || camps.error) {

@@ -57,11 +57,14 @@ function SessionItem({
   session,
   casters,
   sheets,
+  canEdit,
   onChange,
   onDelete,
   onStartDay,
 }: {
   session: SessionRow
+  /** Quem criou a sessão, ou o mestre; os outros membros só leem (Fase 2a). */
+  canEdit: boolean
   casters: Member[]
   sheets: SheetRef[]
   onChange: (patch: Partial<SessionRow>, now?: boolean) => void
@@ -77,14 +80,19 @@ function SessionItem({
           value={session.title}
           placeholder="unnamed session"
           aria-label="Session title"
+          readOnly={!canEdit}
           onChange={(e) => onChange({ title: e.target.value })}
         />
-        <button className="btn btn-small" onClick={() => onChange({ is_archived: !session.is_archived }, true)}>
-          {session.is_archived ? 'Reopen' : 'Close'}
-        </button>
-        <button className="btn btn-small btn-danger" onClick={onDelete}>
-          Delete
-        </button>
+        {canEdit && (
+          <>
+            <button className="btn btn-small" onClick={() => onChange({ is_archived: !session.is_archived }, true)}>
+              {session.is_archived ? 'Reopen' : 'Close'}
+            </button>
+            <button className="btn btn-small btn-danger" onClick={onDelete}>
+              Delete
+            </button>
+          </>
+        )}
       </div>
       <textarea
         className="ember-input ember-notes session-summary"
@@ -92,6 +100,7 @@ function SessionItem({
         placeholder="what happened at the table…"
         rows={2}
         aria-label="Session summary"
+        readOnly={!canEdit}
         onChange={(e) => onChange({ summary: e.target.value })}
       />
       {casters.length > 0 && (
@@ -118,7 +127,18 @@ function SessionItem({
   )
 }
 
-export function CampaignSessions({ campaignID, userID, cast }: { campaignID: string; userID: string | null; cast: Member[] }) {
+export function CampaignSessions({
+  campaignID,
+  userID,
+  cast,
+  isGM = true,
+}: {
+  campaignID: string
+  userID: string | null
+  cast: Member[]
+  /** O mestre edita todas; o jogador, só as que criou (Fase 2a). */
+  isGM?: boolean
+}) {
   const { sessions, sheets, error, saving, update, createSession, deleteSession } = useCampaignSessions(campaignID, userID)
   const [showOld, setShowOld] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -161,6 +181,7 @@ export function CampaignSessions({ campaignID, userID, cast }: { campaignID: str
     <SessionItem
       key={s.id}
       session={s}
+      canEdit={isGM || s.owner_id === userID}
       casters={casters}
       sheets={sheets}
       onChange={(patch, now) => update(s.id, patch, now)}

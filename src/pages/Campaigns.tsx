@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/context'
 import { PageHeader } from '../components/PageHeader'
+import { joinCampaign } from '../lib/campaignMembers'
 import { campaignTitle, createCampaign, type CampaignRow } from '../lib/campaigns'
+import { defaultPlayerName } from '../lib/preferences'
 import { supabase } from '../lib/supabase'
 
 // Lista de campanhas (CampaignListView do iPad): as ativas primeiro, as
 // arquivadas num grupo recolhido; "+ New campaign" cria uma campanha sem nome
-// e abre o detalhe, onde o nome se escreve direto (como no iPad).
+// e abre o detalhe, onde o nome se escreve direto (como no iPad). Fase 2a do
+// backend (2026-10-13): as campanhas em que a conta é jogadora vêm à parte, e
+// "Join a campaign" entra com o código do mestre.
 
 interface Counts {
   sessions: Map<string, number>
@@ -28,6 +32,9 @@ export function Campaigns() {
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [joinCode, setJoinCode] = useState('')
+  const [joining, setJoining] = useState(false)
+  const [joinError, setJoinError] = useState<string | null>(null)
   const userID = session?.user.id ?? null
 
   useEffect(() => {
@@ -36,7 +43,7 @@ export function Campaigns() {
     void Promise.all([
       supabase
         .from('campaign')
-        .select('id, name, started_date, notes, is_archived, enabled_settings')
+        .select('id, name, started_date, notes, is_archived, enabled_settings, owner_id')
         .is('deleted_at', null)
         .order('started_date', { ascending: false }),
       supabase.from('session').select('campaign_id').is('deleted_at', null),
@@ -67,8 +74,23 @@ export function Campaigns() {
     }
   }
 
-  const active = (campaigns ?? []).filter((c) => !c.is_archived)
-  const archived = (campaigns ?? []).filter((c) => c.is_archived)
+  const join = async () => {
+    setJoining(true)
+    setJoinError(null)
+    try {
+      // O nome que o mestre e o grupo veem: o "nome padrão do jogador" de Settings.
+      const id = await joinCampaign(joinCode, await defaultPlayerName())
+      navigate(`/campaigns/${id}`)
+    } catch (reason) {
+      setJoinError(reason instanceof Error ? reason.message : String(reason))
+      setJoining(false)
+    }
+  }
+
+  const mine = (campaigns ?? []).filter((c) => c.owner_id === userID)
+  const playing = (campaigns ?? []).filter((c) => c.owner_id !== userID)
+  const active = mine.filter((c) => !c.is_archived)
+  const archived = mine.filter((c) => c.is_archived)
 
   const row = (c: CampaignRow) => {
     const sessions = counts.sessions.get(c.id) ?? 0
@@ -137,6 +159,47 @@ export function Campaigns() {
               {showArchived && <ul className="import-list">{archived.map(row)}</ul>}
             </section>
           )}
+          <section className="ember-card">
+            <h2 className="card-title">Campaigns you play in</h2>
+            {campaigns !== null && playing.length === 0 && <p className="soft">None yet. Ask your DM for the campaign’s invite code.</p>}
+            {playing.length > 0 && (
+              <ul className="import-list">
+                {playing.map((c) => (
+                  <li key={c.id} className="import-row">
+                    <Link className="character-link" to={`/campaigns/${c.id}`}>
+                      <span className="import-name">{campaignTitle(c)}</span>
+                      {c.is_archived && <span className="import-tag">archived</span>}
+                      <div className="soft import-detail">
+                        {c.started_date ? `since ${new Date(c.started_date).toLocaleDateString()}` : 'player'}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="invite-choose">
+              <input
+                className="ember-input"
+                value={joinCode}
+                placeholder="invite code"
+                aria-label="Invite code"
+                maxLength={24}
+                onChange={(e) => setJoinCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && joinCode.trim() !== '' && !joining) void join()
+                }}
+              />
+              <button className="btn" disabled={joining || joinCode.trim() === ''} onClick={() => void join()}>
+                {joining ? 'Joining…' : 'Join a campaign'}
+              </button>
+            </div>
+            {joinError && (
+              <div className="result-line">
+                <span className="result-fail">✖</span>
+                <span>{joinError}</span>
+              </div>
+            )}
+          </section>
         </>
       )}
     </div>

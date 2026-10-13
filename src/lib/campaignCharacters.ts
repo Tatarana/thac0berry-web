@@ -20,7 +20,11 @@ export interface CampaignCharacter {
   data: PlayerCharacter
 }
 
-/** Campanhas da conta (null enquanto carrega ou sem login). */
+/**
+ * Campanhas que a conta mestra (null enquanto carrega ou sem login). Com a
+ * Fase 2a, a conta também lê as campanhas em que é jogadora; estas ficam de
+ * fora (campanha ativa do DM, Combat Tracker, contagem da tela inicial).
+ */
 export function useCampaigns() {
   const { session } = useAuth()
   const [campaigns, setCampaigns] = useState<CampaignOption[] | null>(null)
@@ -31,6 +35,7 @@ export function useCampaigns() {
     void supabase
       .from('campaign')
       .select('id, name, is_archived, enabled_settings')
+      .eq('owner_id', session.user.id)
       .is('deleted_at', null)
       .order('name')
       .then(({ data, error: e }) => {

@@ -11,6 +11,7 @@ import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, setting
 import { assignToCampaign, createCharacter, deleteCampaign } from '../lib/roster'
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
+import { CampaignPlayers } from '../components/CampaignPlayers'
 import { useMode } from '../lib/mode'
 import type { SaveState } from '../lib/useCharacterDoc'
 
@@ -187,6 +188,9 @@ export function CampaignDetail() {
   const dead = (cast ?? []).filter((c) => c.status === 'dead')
   const archived = (cast ?? []).filter((c) => c.status === 'archived')
 
+  // Fase 2a: quem entrou por convite é jogador e só lê a campanha (editar é do mestre).
+  const isGM = !!campaign && campaign.owner_id === userID
+
   const toggleSetting = (setting: string) => {
     if (!campaign) return
     const current = new Set(campaign.enabled_settings ?? [])
@@ -229,9 +233,13 @@ export function CampaignDetail() {
               </span>
             </div>
           )}
+          {!isGM && (
+            <p className="soft">You play in this campaign; only its DM can change it.</p>
+          )}
           <section className="ember-card">
             <input
               className="ember-input campaign-name"
+              readOnly={!isGM}
               value={campaign.name}
               placeholder="unnamed campaign"
               aria-label="Campaign name"
@@ -243,6 +251,7 @@ export function CampaignDetail() {
                 <span className="smallcaps">Started</span>
                 <input
                   type="date"
+                  readOnly={!isGM}
                   className="ember-input ember-date"
                   value={dateInputValue(campaign.started_date)}
                   onChange={(e) => {
@@ -251,12 +260,15 @@ export function CampaignDetail() {
                   }}
                 />
               </label>
-              <button className="btn" onClick={() => update({ is_archived: !campaign.is_archived })}>
-                {campaign.is_archived ? 'Unarchive' : 'Archive'}
-              </button>
+              {isGM && (
+                <button className="btn" onClick={() => update({ is_archived: !campaign.is_archived })}>
+                  {campaign.is_archived ? 'Unarchive' : 'Archive'}
+                </button>
+              )}
               {campaign.is_archived && <span className="import-tag">archived</span>}
-              {/* Modo DM: tornar esta a campanha ativa (docs/campanha-ativa.md). */}
+              {/* Modo DM: tornar esta a campanha ativa (docs/campanha-ativa.md); só a do próprio mestre. */}
               {mode === 'dm' &&
+                isGM &&
                 (active?.id === campaign.id ? (
                   <span className="import-tag">running</span>
                 ) : (
@@ -265,13 +277,14 @@ export function CampaignDetail() {
                   </button>
                 ))}
             </div>
-            <SaveLine save={save} onRetry={() => void retry()} />
+            {isGM && <SaveLine save={save} onRetry={() => void retry()} />}
           </section>
 
           <section className="ember-card">
             <h2 className="card-title">Notes</h2>
             <textarea
               className="ember-input ember-notes"
+              readOnly={!isGM}
               value={campaign.notes}
               placeholder="the party, the patron, the plot so far…"
               rows={5}
@@ -288,14 +301,20 @@ export function CampaignDetail() {
               {campaignSettings.map((setting) => {
                 const on = campaign.enabled_settings?.includes(setting) ?? false
                 return (
-                  <button key={setting} className={`setting-chip${on ? ' setting-chip-on' : ''}`} aria-pressed={on} onClick={() => toggleSetting(setting)}>
+                  <button
+                    key={setting}
+                    className={`setting-chip${on ? ' setting-chip-on' : ''}`}
+                    aria-pressed={on}
+                    disabled={!isGM}
+                    onClick={() => toggleSetting(setting)}
+                  >
                     <span className="setting-logo" style={{ maskImage: `url(${settingLogo(setting)})`, WebkitMaskImage: `url(${settingLogo(setting)})` }} />
                     {setting}
                   </button>
                 )
               })}
             </div>
-            {(campaign.enabled_settings?.length ?? 0) > 0 && (
+            {isGM && (campaign.enabled_settings?.length ?? 0) > 0 && (
               <div className="btn-row">
                 <button className="btn btn-small" onClick={() => update({ enabled_settings: null })}>
                   clear filter (show everything)
@@ -304,6 +323,10 @@ export function CampaignDetail() {
             )}
           </section>
 
+          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} />}
+
+          {/* As fichas dos jogadores na campanha entram na Fase 2b; por ora o elenco é do mestre. */}
+          {isGM && (
           <section className="ember-card">
             <h2 className="card-title">Cast</h2>
             <div className="btn-row">
@@ -340,14 +363,17 @@ export function CampaignDetail() {
               </>
             )}
           </section>
+          )}
 
-          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} />}
+          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} isGM={isGM} />}
 
-          <div className="btn-row">
-            <button className="btn btn-danger" disabled={busy} onClick={() => void removeCampaign()}>
-              Delete campaign
-            </button>
-          </div>
+          {isGM && (
+            <div className="btn-row">
+              <button className="btn btn-danger" disabled={busy} onClick={() => void removeCampaign()}>
+                Delete campaign
+              </button>
+            </div>
+          )}
           {picking && <SandboxPicker onChoose={addFromSandbox} onClose={() => setPicking(false)} />}
           {dialog}
         </>
