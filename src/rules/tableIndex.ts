@@ -47,8 +47,8 @@ export interface GrimoireTable {
 /** "Table 84: Treasure Types" → número "84" e título "Treasure Types" ("Table II: …" → "II"). */
 export function splitTableTitle(raw: string, tableNumber?: string): { number: string | null; title: string } {
   const text = raw.replace(/\*+/g, '').trim().replace(/:$/, '').trim()
-  // Número arábico ("84", "61a") ou romano ("II", do CPsiH).
-  const match = /^Table\s+(\d+[A-Za-z]?)\s*[:.–-]?\s*(.*)$/i.exec(text) ?? /^Table\s+([IVXL]+)\b\s*[:.–-]?\s*(.*)$/.exec(text)
+  // Número arábico ("84", "61a", "7.1" do TKA) ou romano ("II", do CPsiH).
+  const match = /^Table\s+(\d+(?:\.\d+)?[A-Za-z]?)\s*[:.–-]?\s*(.*)$/i.exec(text) ?? /^Table\s+([IVXL]+)\b\s*[:.–-]?\s*(.*)$/.exec(text)
   if (match) return { number: match[1], title: match[2].trim() }
   const fromField = /(\d+[A-Za-z]?)/.exec(tableNumber ?? '')
   return { number: fromField ? fromField[1] : null, title: /^table$/i.test(text) ? '' : text }
@@ -177,7 +177,8 @@ export interface TableFilter {
 /** "Table 84: Treasure Types" (sem número, só o título). */
 export const tableLabel = (t: Pick<GrimoireTable, 'number' | 'title'>) => (t.number ? `Table ${t.number}: ${t.title}` : t.title)
 
-const numberValue = (n: string | null) => (n === null ? Number.POSITIVE_INFINITY : Number.parseInt(n, 10))
+// parseFloat: "7.1" vem depois de "7" (e "61a" vale 61).
+const numberValue = (n: string | null) => (n === null ? Number.POSITIVE_INFINITY : Number.parseFloat(n))
 
 /**
  * Filtra e ordena: livro, cenário e capítulo; a busca casa o número ("88",
