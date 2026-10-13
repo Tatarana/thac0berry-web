@@ -178,3 +178,18 @@ test('dados reais (GT4b Forgotten Realms): livros SofS/FA/PP e as tabelas roláv
   // Sem resto de OCR nem da marcação da wiki nos dados.
   assert.ok(!realms.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[|\x97/.test(c))))
 })
+
+test('dados reais (GT4b Dragonlance): livro TotL, deuses com a ficha do avatar no mesmo formato', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  assert.deepEqual(books.filter((b) => b.setting === 'Dragonlance').map((b) => b.id), ['TotL'])
+  const krynn = tables.filter((t) => t.setting === 'Dragonlance')
+  assert.ok(krynn.length >= 50, `${krynn.length} tabelas`)
+  // As 21 fichas de avatar (três formatos na wiki) viram Stat | Value com 15 linhas.
+  const avatars = krynn.filter((t) => t.title.endsWith(': Avatar'))
+  assert.equal(avatars.length, 21)
+  assert.ok(avatars.every((t) => t.headers.join('|') === 'Stat|Value' && t.rows.length === 15))
+  assert.deepEqual(avatars.find((t) => t.title === 'Paladine: Avatar')!.rows[0], ['Str', '15'])
+  assert.ok(!krynn.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[/.test(c))))
+})

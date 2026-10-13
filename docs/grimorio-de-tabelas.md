@@ -46,8 +46,22 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); a fazer: Dragonlance, Council of Wyrms, Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
+| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); a fazer: Council of Wyrms, Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
+
+## Backlog
+
+- GT4b, um cenário por entrega: Council of Wyrms, Al-Qadim, Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
+  (sem livro de regras no dump).
+- **Deuses de Krynn no compêndio de divindades** (decisão do usuário,
+  2026-10-12): na GT4b eles entram como regras do Tales of the Lance (TotL);
+  levá-los a `deities.json` (formato do FA/PP) fica para uma tarefa própria.
+- Raças jogáveis de Planescape na ficha (opcional).
+- Rolador com soma de dados diferentes (2–20 = 1d8 + 1d12; Tabela 54 e o
+  exemplo do Desert of Shaar): hoje rola 2d10.
+- Resumos das regras com o markdown cru na lista ("**vision**", 83 regras):
+  tarefa separada aberta em 2026-10-12.
+- GT5: tabelas do mestre (adiada).
 
 ## Log
 
@@ -214,3 +228,18 @@ entregas e pendências. Atualizar a cada entrega.
   só, com o nome do primeiro; agora cada capítulo tem o seu número
   (`number_chapters`). Teste de dados reais: livros, ≥ 50 tabelas, dado das
   roláveis e nada de marcação da wiki.
+- 2026-10-12, GT4b Dragonlance (web v0.67.0; thac0berry-data
+  `scripts/add_dragonlance.py`): livro TotL (Tales of the Lance), cenário
+  "Dragonlance"; 47 regras e 56 tabelas, em seis capítulos: raças (limites
+  de atributos de bárbaros, anões, elfos, gnomos, anões-do-esgoto, kender,
+  minotauros e irda; combinações de raça e classe), classes (bárbaro,
+  cavalier, marinheiro, cavaleiros de Solamnia, magos da Alta Feitiçaria e
+  as luas, Ordens Sagradas das Estrelas, normais), os 21 deuses de Krynn
+  (decisão do usuário: como regras; a ficha do avatar vinha em três
+  formatos e virou sempre Stat | Value), calendário e câmbio, tesouro e o
+  Talis Deck (cada naipe como linha de seção). As tabelas dos "normais"
+  repetidas no Commoner e no Tinker ficam só em "Normal Group Classes"; a
+  lista de guildas do Tinker virou lista. Junto: o resumo das regras da wiki
+  pula o apelido em itálico de abertura (raças do TotL); o `--refresh` não
+  acusa mudança só pelo número do capítulo. Teste de dados reais: livro, ≥ 50
+  tabelas e as 21 fichas de avatar no mesmo formato.
