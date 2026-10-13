@@ -1,21 +1,20 @@
-import type { ReactNode } from 'react'
+import { parseInlineMarkdown } from '../lib/inlineMarkdown'
 
-// Negrito (**…**) e itálico (*…*) dentro do texto das regras — o mesmo que o
-// Text(LocalizedStringKey) do iPad mostra. Monta elementos React (nunca HTML
-// cru), então nenhum texto dos dados vira marcação executável.
-const pattern = /\*\*(.+?)\*\*|\*(?!\s)(.+?)\*/g
-
+// Negrito e itálico do texto das regras (ver src/lib/inlineMarkdown.ts). Monta
+// elementos React (nunca HTML cru), então nenhum texto dos dados vira marcação
+// executável.
 export function InlineMarkdown({ text }: { text: string }) {
-  const parts: ReactNode[] = []
-  let last = 0
-  let index = 0
-  for (const match of text.matchAll(pattern)) {
-    const start = match.index ?? 0
-    if (start > last) parts.push(text.slice(last, start))
-    if (match[1] !== undefined) parts.push(<strong key={index++}>{match[1]}</strong>)
-    else parts.push(<em key={index++}>{match[2]}</em>)
-    last = start + match[0].length
-  }
-  if (last < text.length) parts.push(text.slice(last))
-  return <>{parts}</>
+  return (
+    <>
+      {parseInlineMarkdown(text).map((part, index) =>
+        part.style === 'bold' ? (
+          <strong key={index}>{part.text}</strong>
+        ) : part.style === 'italic' ? (
+          <em key={index}>{part.text}</em>
+        ) : (
+          part.text
+        ),
+      )}
+    </>
+  )
 }

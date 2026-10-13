@@ -4,6 +4,7 @@ import { GroupSection } from '../components/GroupSection'
 import { RuleDetail } from '../components/RuleDetail'
 import { loadBooks } from '../data/books'
 import { BookCode } from '../components/BookCode'
+import { InlineMarkdown } from '../components/InlineMarkdown'
 import { loadRulesIndex, searchRules, type RuleIndexEntry } from '../data/rules'
 import { booksInSetting, settingsOf, type Book } from '../rules/books'
 import { useActiveCampaignSettings } from '../lib/activeCampaign'
@@ -19,7 +20,9 @@ function RuleRow({ entry, onSelect }: { entry: RuleIndexEntry; onSelect: () => v
             <BookCode id={entry.book} />
           </span>
         </span>
-        <span className="kit-summary">{entry.summary}</span>
+        <span className="kit-summary">
+          <InlineMarkdown text={entry.summary} />
+        </span>
       </button>
     </li>
   )
