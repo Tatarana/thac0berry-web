@@ -160,3 +160,21 @@ test('dados reais (GT4b Planescape): livros PCS/PWH/TIP e as tabelas roláveis c
   // Sem resto de OCR nos dados ("1d1O", "2dl0").
   assert.ok(!planescape.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O/.test(c))))
 })
+
+test('dados reais (GT4b Forgotten Realms): livros SofS/FA/PP e as tabelas roláveis com o dado certo', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  assert.deepEqual(books.filter((b) => b.setting === 'Forgotten Realms').map((b) => b.id), ['SofS', 'FA', 'PP'])
+  const realms = tables.filter((t) => t.setting === 'Forgotten Realms')
+  assert.ok(realms.length >= 50, `${realms.length} tabelas`)
+  const dieOf = (title: string) => {
+    const t = realms.find((x) => x.title === title)!
+    return formatDice(rollPlan(t)!.dice!)
+  }
+  assert.equal(dieOf('Myth Nantar Buildings: Depth and Clearing Time (Class A, 1d4)'), 'd4')
+  assert.equal(dieOf('Myth Nantar Buildings: Height (Class B, 1d8)'), 'd8')
+  assert.equal(dieOf('Myth Nantar Buildings: Function (1d10)'), 'd10')
+  // Sem resto de OCR nem da marcação da wiki nos dados.
+  assert.ok(!realms.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[|\x97/.test(c))))
+})
