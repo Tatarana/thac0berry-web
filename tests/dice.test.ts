@@ -212,3 +212,17 @@ test('dados reais (GT4b Council of Wyrms): livro CWS e os geradores roláveis co
   assert.equal(dieOf('Ability Losses'), 'd100')
   assert.ok(!wyrms.some((t) => t.rows.flat().some((c) => /\dd[lIO]|\dd1O|\{\{|\[\[|\{\|/.test(c))))
 })
+
+test('dados reais (GT4b Al-Qadim): livros AA/CShaH e as listas de preço pedido/normal/barganha', () => {
+  const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
+  const books = JSON.parse(readFileSync(join(source, 'books.json'), 'utf8')) as { id: string; setting: string }[]
+  const tables = buildTableIndex(JSON.parse(readFileSync(join(source, 'rules.json'), 'utf8')), books)
+  assert.deepEqual(books.filter((b) => b.setting === 'Al-Qadim').map((b) => b.id), ['AA', 'CShaH'])
+  const zakhara = tables.filter((t) => t.setting === 'Al-Qadim')
+  assert.ok(zakhara.length >= 28, `${zakhara.length} tabelas`)
+  const prices = zakhara.filter((t) => t.headers.slice(1, 4).join('|') === 'Asking|Normal|Bargain')
+  assert.equal(prices.length, 12)
+  // OCR da moeda ("15 pp", "6 pg") corrigido para gp.
+  assert.ok(!prices.some((t) => t.rows.some((r) => r.slice(1, 4).some((c) => /pp|pg/.test(c)))))
+  assert.ok(!zakhara.some((t) => t.rows.flat().some((c) => /\{\{|\[\[|\{\|/.test(c))))
+})

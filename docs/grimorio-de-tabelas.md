@@ -46,12 +46,12 @@ entregas e pendências. Atualizar a cada entrega.
 | GT3 | Encadear: linha que cita outra tabela vira link e o Roll continua nela | feita (web v0.41.0) |
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
-| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); a fazer: Al-Qadim, Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
+| GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); Al-Qadim feito (web v0.69.0); a fazer: Thri-Kreen (livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras |
 | GT5 | Tabelas do mestre (decisão 1) | adiada |
 
 ## Backlog
 
-- GT4b, um cenário por entrega: Al-Qadim, Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
+- GT4b, um cenário por entrega: Thri-Kreen (TKA, no cenário Dark Sun). Birthright fora
   (sem livro de regras no dump).
 - **Deuses de Krynn no compêndio de divindades** (decisão do usuário,
   2026-10-12): na GT4b eles entram como regras do Tales of the Lance (TotL);
@@ -60,6 +60,8 @@ entregas e pendências. Atualizar a cada entrega.
   mago do 6º nível não existe; o de sacerdote do 6º tem uma faixa sobrando
   ("16-19 Conjure Fire Elemental"); o de mago do 9º não tem 37-48 nem 54-58.
   Precisa do livro para completar.
+- Al-Qadim: quatro preços sem número na fonte da wiki (pão, perdiz, pavão
+  e funda nas listas de equipamento do AA); precisa do livro.
 - Raças jogáveis de Planescape na ficha (opcional).
 - Rolador com soma de dados diferentes (2–20 = 1d8 + 1d12; Tabela 54 e o
   exemplo do Desert of Shaar): hoje rola 2d10.
@@ -262,3 +264,16 @@ entregas e pendências. Atualizar a cada entrega.
   Correções: faixas do gerador de sacerdote do 3º nível, CA "o", "1dl00",
   "lawful gold". Pendente da fonte: ver o backlog. Teste de dados reais:
   livro, ≥ 85 tabelas, 15 geradores e o dado das roláveis.
+- 2026-10-12, GT4b Al-Qadim (web v0.69.0; thac0berry-data
+  `scripts/add_al_qadim.py`): livros AA (Arabian Adventures) e CShaH (The
+  Complete Sha'ir's Handbook), cenário "Al-Qadim"; 14 regras e 30 tabelas:
+  posição social por kit (Tabela 1), cruzamento de perícias, resumo dos
+  kits, perícias novas, nomes zakharanos, armaduras no calor, as 12 listas
+  de equipamento (preço pedido, normal e de barganha), desidratação, chance
+  do sha'ir pedir uma magia, tarefas do gênio, magias de mago do AA e do
+  CShaH e os mecânicos do clockwork mage. Fora: o guia das ilustrações.
+  Correções: moeda com OCR nos preços ("15 pp", "6 pg" → gp; o livro não
+  usa platina nessas listas), a tabela recuada do gênio (":{|", o leitor não
+  a via), os grupos de kits da Tabela 1 (linhas de cabeçalho que se
+  perderiam). Teste de dados reais: livros, ≥ 28 tabelas, 12 listas de
+  preço sem resto de OCR.
