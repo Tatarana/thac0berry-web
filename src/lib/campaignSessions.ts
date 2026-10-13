@@ -19,6 +19,8 @@ export interface SessionRow {
   title: string
   summary: string
   is_archived: boolean
+  /** Quem criou (Fase 2a: só quem criou, ou o mestre, edita, fecha e apaga). */
+  owner_id?: string
 }
 
 type Editable = Partial<Pick<SessionRow, 'title' | 'summary' | 'is_archived'>>
@@ -50,7 +52,7 @@ export function useCampaignSessions(campaignID: string | undefined, userID: stri
     void (async () => {
       const found = await supabase
         .from('session')
-        .select('id, date, title, summary, is_archived, version')
+        .select('id, date, title, summary, is_archived, owner_id, version')
         .eq('campaign_id', campaignID)
         .is('deleted_at', null)
         .order('date', { ascending: false })

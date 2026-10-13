@@ -365,7 +365,7 @@ export function CampaignDetail() {
           </section>
           )}
 
-          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} />}
+          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} isGM={isGM} />}
 
           {isGM && (
             <div className="btn-row">

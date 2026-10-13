@@ -9,7 +9,11 @@ import { inviteCodeProblem } from '../rules/invites'
 // revoga, e vê e remove os jogadores; o jogador vê o grupo e pode sair. As
 // fichas dos jogadores na campanha são a Fase 2b.
 
-const memberName = (m: CampaignMember, isMe: boolean) => (m.display_name.trim() || (isMe ? 'You' : 'Unnamed player')) + (isMe ? ' (you)' : '')
+const memberName = (m: CampaignMember, isMe: boolean) => {
+  const name = m.display_name.trim()
+  if (!name) return isMe ? 'You' : 'Unnamed player'
+  return isMe ? `${name} (you)` : name
+}
 
 export function CampaignPlayers({ campaignID, userID, isGM }: { campaignID: string; userID: string; isGM: boolean }) {
   const [members, setMembers] = useState<CampaignMember[] | null>(null)
