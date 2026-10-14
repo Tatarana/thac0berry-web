@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
 import { AttackWindow, EndEncounterWindow, LogWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
 import { MoraleWindow } from '../components/CombatMorale'
+import { EffectWindow } from '../components/CombatEffects'
 import { DistanceWindow, ReactionWindow } from '../components/CombatStart'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
@@ -78,6 +79,7 @@ function Tracker() {
   const [showPast, setShowPast] = useState(false)
   const [surpriseOpen, setSurpriseOpen] = useState(false)
   const [startWindow, setStartWindow] = useState<'distance' | 'reaction' | null>(null)
+  const [effectOpen, setEffectOpen] = useState(false)
   const [ending, setEnding] = useState(false)
   const [saveID, setSaveID] = useState<string | null>(null)
   const [attackID, setAttackID] = useState<string | null>(null)
@@ -275,6 +277,11 @@ function Tracker() {
                 <button className="chip chip-on" onClick={() => setAdding('npc')}>
                   + NPC
                 </button>
+                {current.combatants.length > 0 && (
+                  <button className="chip chip-on" title="The same condition on several combatants at once" onClick={() => setEffectOpen(true)}>
+                    + Effect
+                  </button>
+                )}
               </div>
               {!current.endedAt && (
                 <button className="chip chip-on combat-end" onClick={() => setEnding(true)}>
@@ -349,6 +356,9 @@ function Tracker() {
         <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
       {creating && <NewEncounterWindow encounters={store.encounters} campaignID={campaignID} campaignName={campaignName} onCreate={create} onClose={() => setCreating(false)} />}
+      {effectOpen && current && (
+        <EffectWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setEffectOpen(false)} />
+      )}
       {startWindow === 'distance' && current && (
         <DistanceWindow encounter={current} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setStartWindow(null)} />
       )}

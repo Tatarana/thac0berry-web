@@ -4759,6 +4759,30 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
+/* CT7: efeitos em vários combatentes. */
+.effect-targets {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  columns: 2 14rem;
+}
+
+.effect-targets li {
+  break-inside: avoid;
+  padding: 2px 0;
+}
+
+.effect-active {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(107 92 70 / 0.2);
+}
+
+.effect-active ul {
+  margin: 4px 0;
+  padding-left: 1.1rem;
+}
+
 /* CT6: distância e reação. */
 .initiative-reaction {
   font-weight: 700;

@@ -5,6 +5,7 @@
 
 import { sideLabels, statusOf, type Combatant, type Encounter, type Side } from './combat.ts'
 import { distanceText, reactionText } from './encounterStart.ts'
+import { roundsText } from './groupEffects.ts'
 
 export interface LogEntry {
   id: number
@@ -72,13 +73,43 @@ function combatantChanges(before: Combatant, after: Combatant, deathAt: number):
   if (s0 !== s1) out.push({ text: `${after.name} ${statusText[s1]}`, about: after.id })
   const names = (c: Combatant) => new Set(c.conditions.map((x) => x.id))
   const [c0, c1] = [names(before), names(after)]
-  for (const x of after.conditions) if (!c0.has(x.id)) out.push({ text: `${after.name}: + ${x.name}${x.rounds !== null ? ` (${x.rounds} round${x.rounds === 1 ? '' : 's'})` : ''}` })
-  for (const x of before.conditions) if (!c1.has(x.id)) out.push({ text: `${after.name}: − ${x.name}` })
+  // Os efeitos de grupo (CT7) viram uma linha só, em `groupLines`.
+  for (const x of after.conditions) if (!x.groupID && !c0.has(x.id)) out.push({ text: `${after.name}: + ${x.name}${x.rounds !== null ? ` (${x.rounds} round${x.rounds === 1 ? '' : 's'})` : ''}` })
+  for (const x of before.conditions) if (!x.groupID && !c1.has(x.id)) out.push({ text: `${after.name}: − ${x.name}` })
   const m = after.lastMorale
   if (m && (m.round !== before.lastMorale?.round || m.count !== before.lastMorale?.count || m.roll !== before.lastMorale?.roll)) {
     out.push({ text: `Morale: ${after.name} rolled ${m.roll} vs ${m.target} — ${m.holds ? 'holds' : 'fails'}` })
   }
   return out
+}
+
+/**
+ * Efeitos de grupo (CT7): uma linha por efeito com todos os nomes ("Bless (6
+ * rounds) on Rufus, Zé"); no fim da rodada, "Bless ends on Rufus, Zé".
+ */
+function groupLines(before: Encounter, after: Encounter, ending: boolean): NewEntry[] {
+  const added = new Map<string, { name: string; rounds: number | null; who: string[] }>()
+  const removed = new Map<string, { name: string; who: string[] }>()
+  for (const c of after.combatants) {
+    const old = before.combatants.find((x) => x.id === c.id)
+    if (!old) continue
+    for (const x of c.conditions) {
+      if (!x.groupID || old.conditions.some((y) => y.id === x.id)) continue
+      const g = added.get(x.groupID) ?? { name: x.name, rounds: x.rounds, who: [] }
+      g.who.push(c.name)
+      added.set(x.groupID, g)
+    }
+    for (const x of old.conditions) {
+      if (!x.groupID || c.conditions.some((y) => y.id === x.id)) continue
+      const g = removed.get(x.groupID) ?? { name: x.name, who: [] }
+      g.who.push(c.name)
+      removed.set(x.groupID, g)
+    }
+  }
+  return [
+    ...[...added.values()].map((g) => ({ text: `${g.name} (${roundsText(g.rounds)}) on ${g.who.join(', ')}` })),
+    ...[...removed.values()].map((g) => ({ text: `${g.name} ${ending ? 'ends on' : 'removed from'} ${g.who.join(', ')}` })),
+  ]
 }
 
 /** As linhas que uma mudança no encontro gera. */
@@ -91,8 +122,9 @@ export function describeChanges(before: Encounter, after: Encounter, deathAt: nu
     // No fim da rodada, só as condições que acabaram (o resto é a contagem das rodadas).
     for (const c of before.combatants) {
       const now = after.combatants.find((x) => x.id === c.id)
-      for (const x of c.conditions) if (now && !now.conditions.some((y) => y.id === x.id)) out.push({ text: `${c.name}: ${x.name} ends` })
+      for (const x of c.conditions) if (!x.groupID && now && !now.conditions.some((y) => y.id === x.id)) out.push({ text: `${c.name}: ${x.name} ends` })
     }
+    out.push(...groupLines(before, after, true))
     return out
   }
   if (after.round < before.round) return [{ text: `Back to the start of round ${after.round} (time reversed)` }]
@@ -114,6 +146,7 @@ export function describeChanges(before: Encounter, after: Encounter, deathAt: nu
   const joined = after.combatants.filter((c) => !ids0.has(c.id))
   if (joined.length) out.push({ text: `Joined: ${joined.map((c) => c.name).join(', ')}` })
   for (const c of before.combatants) if (!ids1.has(c.id)) out.push({ text: `Removed: ${c.name}` })
+  out.push(...groupLines(before, after, false))
   // Cada combatente.
   for (const c of after.combatants) {
     const old = before.combatants.find((x) => x.id === c.id)

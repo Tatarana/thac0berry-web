@@ -14,6 +14,8 @@ export interface Condition {
   name: string
   /** Rodadas que faltam; null = sem prazo. */
   rounds: number | null
+  /** Efeito posto em vários de uma vez (CT7, "+ Effect"); ausente nas condições individuais. */
+  groupID?: string
 }
 
 /** "Steady (11-12)": a faixa de moral do Monstrous Manual (DMG cap. 9, Tabela 49). */

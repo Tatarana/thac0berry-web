@@ -46,10 +46,12 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT5a | Surpresa, salvamentos de monstro, XP no fim (decisão do usuário: a sugestão) | feita (web v0.51.0) |
 | CT5b | "Acerta?" (ataque contra a CA, Tabela 35, dano) e log do combate | feita (web v0.52.0) |
 | CT6 | Distância (Tabela 58) e reação (Tabela 59, com o Carisma de quem fala) antes da rodada 1 | feita (web v0.82.0) |
+| CT7 | Efeitos em vários combatentes de uma vez ("+ Effect": rodadas ou turnos, alvos por lado, tirar de todos) | feita (web v0.83.0) |
 
 ## Backlog
 
-- Efeitos com duração em vários combatentes de uma vez.
+- Salvamento por alvo num efeito de grupo (Sleep, Hold Person: cada um rola e
+  só quem falha recebe); hoje o DM desmarca quem salvou antes do Apply.
 - Lançar o XP do fim do encontro nas fichas do App.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
@@ -362,3 +364,23 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     mostra os dois e o log ganhou as duas linhas; encontro de teste apagado.
     O Carisma lido da ficha está coberto pelo teste (o One-shot não tem
     personagens do App).
+- 2026-10-14, CT7 feita (web v0.83.0; decisões do usuário: o botão fica no
+  topo, com + PC/Monster/NPC; turnos guardados em rodadas, 1 turno = 10
+  rodadas):
+  - `src/rules/groupEffects.ts` (com testes): prazo em rodadas, turnos ou sem
+    prazo (`effectRounds`), alvos pelos atalhos (um lado ou todos de pé),
+    `applyGroupEffect` (cada combatente com a sua cópia da condição, todas com
+    o mesmo `groupID`, campo opcional novo em `Condition`), `removeGroupEffect`,
+    `activeGroupEffects` e as sugestões de nome (condições já usadas);
+  - log (`src/rules/combatLog.ts`): uma linha por efeito de grupo ("Bless (10
+    rounds) on Rufus, Ana", "Bless removed from …", "Bless ends on …" no fim
+    da rodada); as condições individuais seguem como antes;
+  - janela **+ Effect** (`src/components/CombatEffects.tsx`): nome com
+    sugestões, duração (rounds / turns ×10 / no limit, com "= N rounds"),
+    alvos com caixas e atalhos (Party, Enemies, Others, Everyone standing,
+    Clear), "Apply to N" e os efeitos ativos com "remove from all"; o × de um
+    combatente tira só dele;
+  - conferido no navegador (One-shot, dois PCs sem App): Bless 1 turno no
+    grupo → "Bless 10" nos dois e uma linha no log; "remove from all" tirou
+    dos dois; encontro de teste apagado. A contagem e o fim juntos estão nos
+    testes; testes: 221 (3 novos).
