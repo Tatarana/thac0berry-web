@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SpellSheet } from '../types/library'
 import { loadValidators } from './libraryImport'
+import { subscribeRows, uuidFilter } from './realtime'
 import { supabase } from './supabase'
 import type { SaveState } from './useCharacterDoc'
 
 // Folhas de magia de um personagem (tabela spell_sheet), com gravação
 // automática por folha: mesmo contrato da ficha (useCharacterDoc), UPDATE com
 // o `version` conhecido, 1 s depois da última mudança, e validação pelo
-// $defs/SpellSheet do library.schema.json antes de gravar.
+// $defs/SpellSheet do library.schema.json antes de gravar. Ao vivo (Fase 3,
+// R1): folha criada, mudada ou apagada em outro lugar relê as folhas, se não
+// houver edição pendente aqui (mesma regra da ficha).
 
 /** spell_sheet.data: o SpellSheet do iPad sem `inkNotes` (vira anexo). */
 export type ServerSheet = Omit<SpellSheet, 'inkNotes'>
@@ -18,6 +21,8 @@ export function useSpellSheets(characterID: string | undefined, userID: string |
   const [sheets, setSheets] = useState<ServerSheet[] | null>(null)
   const [save, setSave] = useState<SaveState>({ kind: 'saved', at: '' })
   const [conflict, setConflict] = useState(false)
+  /** Hora em que as folhas receberam uma gravação de outro lugar (o aviso); null = nada. */
+  const [remoteChange, setRemoteChange] = useState<string | null>(null)
 
   const versions = useRef(new Map<string, number>())
   const drafts = useRef(new Map<string, ServerSheet>())
@@ -28,20 +33,33 @@ export function useSpellSheets(characterID: string | undefined, userID: string |
   useEffect(() => {
     if (!userID || !characterID) return
     let cancelled = false
-    void supabase
-      .from('spell_sheet')
-      .select('id, data, version')
-      .eq('character_id', characterID)
-      .is('deleted_at', null)
-      .then(({ data, error }) => {
-        if (cancelled || error) return
-        const rows = data as { id: string; data: ServerSheet; version: number }[]
-        for (const row of rows) versions.current.set(row.id, row.version)
-        // Em ordem de data: cada folha é um dia de jogo.
-        setSheets(rows.map((r) => r.data).sort((a, b) => a.date.localeCompare(b.date)))
-      })
+    const busy = () => drafts.current.size > 0 || inFlight.current.size > 0 || timers.current.size > 0
+    const load = async (remote: boolean) => {
+      const { data, error } = await supabase
+        .from('spell_sheet')
+        .select('id, data, version, updated_at')
+        .eq('character_id', characterID)
+        .is('deleted_at', null)
+      if (cancelled || error || (remote && busy())) return
+      const rows = data as { id: string; data: ServerSheet; version: number; updated_at: string }[]
+      versions.current = new Map(rows.map((row) => [row.id, row.version]))
+      // Em ordem de data: cada folha é um dia de jogo.
+      setSheets(rows.map((r) => r.data).sort((a, b) => a.date.localeCompare(b.date)))
+      if (remote) setRemoteChange(new Date().toISOString())
+    }
+    void load(false)
+    const unsubscribe = subscribeRows('spell_sheet', uuidFilter('character_id', characterID), ({ event, row }) => {
+      const sheetID = String(row.id ?? '').toLowerCase()
+      const known = [...versions.current.entries()].find(([k]) => k.toLowerCase() === sheetID)
+      // Eco das próprias gravações: folha que já conhecemos, na versão que já temos.
+      if (event === 'INSERT' && known) return
+      if (event === 'UPDATE' && known && Number(row.version) <= known[1] && !row.deleted_at) return
+      if (busy()) return
+      void load(true)
+    })
     return () => {
       cancelled = true
+      unsubscribe()
     }
   }, [userID, characterID])
 
@@ -162,5 +180,16 @@ export function useSpellSheets(characterID: string | undefined, userID: string |
     }
   }, [flushAll])
 
-  return { sheets, save, conflict, dismissConflict: () => setConflict(false), update, createSheet, deleteSheet, retry: flushAll }
+  return {
+    sheets,
+    save,
+    conflict,
+    dismissConflict: () => setConflict(false),
+    remoteChange,
+    dismissRemoteChange: () => setRemoteChange(null),
+    update,
+    createSheet,
+    deleteSheet,
+    retry: flushAll,
+  }
 }

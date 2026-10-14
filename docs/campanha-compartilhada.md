@@ -30,8 +30,13 @@ pendências. Atualizar a cada entrega.
 | F2a | Membros e convite: gerar, escolher, copiar e revogar o código; entrar com o código; ver o grupo; sair; o mestre remove; a campanha do jogador só para leitura; sessões só de quem criou ou do mestre | feita (web v0.74.0; backend `20261013120000` e `20261013150000`) |
 | F2b | O jogador põe a ficha na campanha do mestre; o mestre lê e edita a ficha completa e as folhas de magia; elenco da campanha com o dono de cada ficha | feita (web v0.75.0; backend `20261013180000`) |
 | F2c | Resumo do grupo (nome, classe, nível, PV) para os jogadores; acesso temporário (`character_grant`, 24 h ou até revogar) | feita (web v0.76.0; backend `20261013210000`) — **Fase 2 concluída** |
+| R1 | Fase 3: ficha ao vivo — a ficha aberta e as folhas de magia se atualizam quando outra pessoa ou outro aparelho grava | feita (web v0.77.0; backend `20261014120000`) |
+| R2 | Fase 3: página da campanha ao vivo — elenco, grupo (PV), sessões e jogadores, por um "pulso" da campanha | a fazer |
 
 ## Backlog
+
+- Fase 3: o Combat Tracker ao vivo (os encontros são só do mestre e já sincronizam
+  ao voltar para a aba); o aviso de "atualizado" com o nome de quem gravou.
 
 - Dados de teste da F2b: a ficha "Teste F2b" ficou no Sandbox da segunda conta
   Google do usuário (a jogadora de teste), depois de removida da campanha.
@@ -103,3 +108,19 @@ pendências. Atualizar a cada entrega.
     dela volta ao Sandbox. **O empréstimo não foi testado no navegador** (precisa
     de dois jogadores além do mestre, e o usuário tem duas contas): fica coberto
     pelos testes do banco (dar, editar, não apagar, devolver, expirar, cair ao sair).
+- 2026-10-14: Fase 3 (tempo real) aprovada. Decisões do usuário: R1 (ficha) e
+  depois R2 (campanha), o Combat Tracker fica para depois; mudança de fora sem
+  edição pendente entra na hora com um aviso; com edição pendente, a daqui é
+  gravada por cima e o conflito é avisado como sempre; o aviso não diz quem gravou.
+- 2026-10-14, R1 feita (web v0.77.0; backend `20261014120000_fase3_r1_ficha_ao_vivo.sql`):
+  - **backend:** `character` e `spell_sheet` na publicação `supabase_realtime`
+    (o Realtime respeita o RLS: cada um só é avisado das fichas que já pode ler);
+  - **web:** `src/lib/realtime.ts` (`subscribeRows`, filtro por uuid em
+    minúsculas); `useCharacterDoc` e `useSpellSheets` assinam a ficha e as
+    folhas do personagem; o eco da própria gravação (versão já conhecida) é
+    ignorado; sem edição pendente, relê a linha e mostra "Updated on another
+    device just now" (`.remote-note`); com edição pendente, não mexe;
+  - conferido no navegador com a mesma ficha de teste ("Teste MC") em duas abas:
+    a edição numa aparece na outra com o aviso, sem conflito, nos dois sentidos;
+    a aba que gravou não mostra aviso. O caso "edição pendente quando chega o
+    aviso" (janela de 1 s) não foi reproduzido no navegador.

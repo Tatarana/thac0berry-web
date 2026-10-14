@@ -148,7 +148,7 @@ export function CharacterSheet() {
   const [campaignSettings, setCampaignSettings] = useState<string[] | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
   const userID = session?.user.id ?? null
-  const { doc, loadError, save, conflict, dismissConflict, update, setPortrait: savePortrait, retry } = useCharacterDoc(id, userID)
+  const { doc, loadError, save, conflict, dismissConflict, remoteChange, dismissRemoteChange, update, setPortrait: savePortrait, retry } = useCharacterDoc(id, userID)
   const campaignID = doc?.campaignID ?? null
 
   const spellSheets = useSpellSheets(id, userID)
@@ -328,6 +328,21 @@ export function CharacterSheet() {
             />
           )}
         </div>
+        {/* Fase 3, R1: a ficha recebeu, ao vivo, uma gravação de outro lugar. */}
+        {(remoteChange || spellSheets.remoteChange) && !(conflict || spellSheets.conflict) && (
+          <div className="remote-note" role="status">
+            Updated on another device just now.{' '}
+            <button
+              className="paper-link"
+              onClick={() => {
+                dismissRemoteChange()
+                spellSheets.dismissRemoteChange()
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
         {(conflict || spellSheets.conflict) && (
           <div className="conflict-note" role="status">
             This sheet was also changed somewhere else. Your version was saved; the other one is kept in the history.{' '}
