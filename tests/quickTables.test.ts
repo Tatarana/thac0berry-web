@@ -31,3 +31,12 @@ test('dados reais: todas as tabelas da lista padrão existem', () => {
   assert.deepEqual(resolved.map((t) => t.id), defaultQuickTables)
   assert.deepEqual(resolveQuickTables(['dmg-35', 'nope-1'], tables).map((t) => t.id), ['dmg-35'])
 })
+
+test('tabela do mestre (GT5c): fixa pelo id dm-<uuid>, rótulo "DM <título>", e some quando não é da campanha ativa', () => {
+  const dm = { id: 'dm-abc', book: 'DM', setting: 'Core', number: null, title: 'Forest', chapterNumber: 0, chapterTitle: 'X', ruleID: '', ruleTopic: '', headers: ['d6 Roll', 'Encounter'], rows: [['1-6', 'Wolves']], alsoIn: [] }
+  const saved = toggleQuickTable(null, 'dm-abc')
+  assert.equal(saved?.at(-1), 'dm-abc')
+  assert.equal(quickTableLabel(dm), 'DM Forest')
+  assert.deepEqual(resolveQuickTables(['dm-abc'], [dm]).map((t) => t.id), ['dm-abc'])
+  assert.deepEqual(resolveQuickTables(['dm-abc'], []), [])
+})

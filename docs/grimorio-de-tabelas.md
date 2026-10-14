@@ -64,8 +64,6 @@ entregas e pendências. Atualizar a cada entrega.
   e funda nas listas de equipamento do AA); precisa do livro.
 - Resumos das regras com o markdown cru na lista ("**vision**", 83 regras):
   tarefa separada aberta em 2026-10-12.
-- Tabelas do mestre na faixa de tabelas rápidas do Combat Tracker (decisão do
-  usuário, 2026-10-14: depois da GT5).
 
 ## Log
 
@@ -359,3 +357,13 @@ entregas e pendências. Atualizar a cada entrega.
   "Copied from DMG Table 54"), rolando igual, e dela uma cópia para "Teste W3.1b
   B" (as duas no banco, cada uma na sua campanha); as cópias de teste foram
   apagadas depois. Com isso a **GT5 está concluída**.
+- 2026-10-14, G5c feita (web v0.81.0; só web): as tabelas do mestre na faixa
+  de tabelas rápidas do Combat Tracker. No Table Grimoire, a tabela do mestre
+  também tem "☆ Combat Tracker" (o id `dm-<uuid>` entra em
+  `settings.quickTables`, como os de livro); o Combat Tracker carrega as
+  tabelas do mestre da campanha ativa e as junta às de livro, para a faixa, a
+  busca "+ Table" e a janela da tabela. Fixada em outra campanha, a tabela não
+  aparece (o id fica guardado e volta com a campanha dela). Chip "DM <título>".
+  Teste em `tests/quickTables.test.ts`. Conferido no navegador (One-shot): criar
+  um d6, fixar, ver o chip na faixa de um encontro, abrir e rolar
+  ("2 → 2"), desafixar; encontro e tabela de teste apagados.
