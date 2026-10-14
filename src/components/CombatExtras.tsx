@@ -44,7 +44,7 @@ const d10 = { count: 1, sides: 10, modifier: 0 }
 const d20 = { count: 1, sides: 20, modifier: 0 }
 
 /** Uma tabela do Table Grimoire (null enquanto carrega). */
-function useTable(id: string) {
+export function useTable(id: string) {
   const [table, setTable] = useState<GrimoireTable | null>(null)
   useEffect(() => {
     void loadTables().then((all) => setTable(all.find((t) => t.id === id) ?? null))

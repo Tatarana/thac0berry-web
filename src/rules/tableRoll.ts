@@ -4,20 +4,28 @@
 import { diceForRange, diceRange, parseDice, type DiceSpec } from './dice.ts'
 
 export interface Range {
+  /** -Infinity em "2 or less". */
   low: number
-  /** Infinity em "13+". */
+  /** Infinity em "13+" e "20 or more". */
   high: number
 }
 
 type TableLike = { headers: string[]; rows: string[][] }
 
 const rangePattern = /^\s*(\d{1,3})\s*(?:([-–—])\s*(\d{1,3}))?\s*(\+)?\s*$/
+const openPattern = /^\s*(\d{1,3})\s+or\s+(less|more)\s*$/i
 
 /**
  * Faixa da primeira coluna: "01-05", "96-00" (00 = 100), "00", "7", "2–3",
- * "13+". null se a célula não é uma faixa.
+ * "13+", "2 or less" e "20 or more" (rolagens modificadas, como a Tabela 59
+ * do DMG). null se a célula não é uma faixa.
  */
 export function parseRange(cell: string): Range | null {
+  const open = openPattern.exec(cell)
+  if (open) {
+    const value = Number(open[1])
+    return open[2].toLowerCase() === 'less' ? { low: Number.NEGATIVE_INFINITY, high: value } : { low: value, high: Number.POSITIVE_INFINITY }
+  }
   const match = rangePattern.exec(cell)
   if (!match) return null
   const value = (text: string) => (text === '00' ? 100 : Number(text))

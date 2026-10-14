@@ -68,6 +68,10 @@ export interface Encounter {
   endedAt?: string | null
   /** Teste de surpresa antes da rodada 1 (CT5a); o lado surpreso não age na rodada 1. */
   surprise?: SurpriseResult | null
+  /** Distância do encontro (CT6, DMG Tabela 58); ausente em encontros antigos. */
+  distance?: import('./encounterStart.ts').DistanceResult | null
+  /** Reação das criaturas (CT6, DMG Tabela 59); ausente em encontros antigos. */
+  reaction?: import('./encounterStart.ts').ReactionResult | null
   /** XP do fim do encontro (CT5a), guardado ao encerrar. */
   xpAward?: XpAward | null
   /** Log do combate (CT5b, src/rules/combatLog.ts); ausente em encontros antigos. */

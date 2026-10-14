@@ -83,7 +83,7 @@ export function dmTableProblems(data: DmTableData): string[] {
     const high = Number.isFinite(last.high) ? last.high : max
     if (low > min) problems.push(`No row for ${low - 1 === min ? min : `${min}–${low - 1}`} (${formatDice(spec)} starts at ${min}).`)
     if (high < max) problems.push(`No row for ${high + 1 === max ? max : `${high + 1}–${max}`} (${formatDice(spec)} goes up to ${max}).`)
-    if (low < min || high > max) problems.push(`Some rows fall outside ${formatDice(spec)} (${min}–${max}).`)
+    if ((Number.isFinite(low) && low < min) || high > max) problems.push(`Some rows fall outside ${formatDice(spec)} (${min}–${max}).`)
   }
   return problems
 }

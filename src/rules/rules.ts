@@ -772,6 +772,11 @@ export function dexDefenseAdjustment(c: { abilities?: AbilityScores | null; deta
   return intOf(c.details?.dexterityDefense) ?? (c.abilities ? intOf(abilityDetail('dexterityDefense', c.abilities)) : null) ?? 0
 }
 
+/** Ajuste de reação do Carisma (PHB, Tabela 6: +5 é melhor); como o da DEX, o da ficha vale primeiro. */
+export function charismaReactionAdjustment(c: { abilities?: AbilityScores | null; details?: { charismaReaction?: string | null } | null }): number {
+  return intOf(c.details?.charismaReaction) ?? (c.abilities ? intOf(abilityDetail('charismaReaction', c.abilities)) : null) ?? 0
+}
+
 export function finalArmorClass(c: { armorClass: number; abilities?: AbilityScores | null; details?: { dexterityDefense?: string | null } | null }): number {
   return c.armorClass + dexDefenseAdjustment(c)
 }
