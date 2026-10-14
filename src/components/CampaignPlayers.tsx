@@ -20,10 +20,13 @@ export function CampaignPlayers({
   userID,
   isGM,
   onMembersChanged,
+  live = 0,
 }: {
   campaignID: string
   userID: string
   isGM: boolean
+  /** Muda quando a campanha muda em outro lugar (Fase 3, R2). */
+  live?: number
   /** Um jogador saiu: as fichas dele deixaram a campanha (o elenco recarrega). */
   onMembersChanged?: () => void
 }) {
@@ -52,7 +55,7 @@ export function CampaignPlayers({
     return () => {
       cancelled = true
     }
-  }, [campaignID, isGM, reload])
+  }, [campaignID, isGM, reload, live])
 
   async function run(action: () => Promise<void>) {
     setBusy(true)

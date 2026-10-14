@@ -132,14 +132,17 @@ export function CampaignSessions({
   userID,
   cast,
   isGM = true,
+  live = 0,
 }: {
   campaignID: string
   userID: string | null
   cast: Member[]
+  /** Muda quando a campanha muda em outro lugar (Fase 3, R2). */
+  live?: number
   /** O mestre edita todas; o jogador, só as que criou (Fase 2a). */
   isGM?: boolean
 }) {
-  const { sessions, sheets, error, saving, update, createSession, deleteSession } = useCampaignSessions(campaignID, userID)
+  const { sessions, sheets, error, saving, update, createSession, deleteSession } = useCampaignSessions(campaignID, userID, live)
   const [showOld, setShowOld] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const { confirm, dialog } = useConfirm()
