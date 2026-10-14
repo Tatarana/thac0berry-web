@@ -32,6 +32,7 @@ export function TableDetail({
   onOpen,
   onClose,
   pin,
+  onEdit,
 }: {
   table: GrimoireTable
   /** Todas as tabelas (para achar as citadas). */
@@ -44,6 +45,8 @@ export function TableDetail({
   onClose: () => void
   /** Fixar a tabela na faixa do Combat Tracker (CT4). */
   pin?: { pinned: boolean; onToggle: () => void }
+  /** Tabela do mestre (GT5): abre o editor. */
+  onEdit?: () => void
 }) {
   const plan = useMemo(() => rollPlan(table), [table])
   const [value, setValue] = useState<number | null>(null)
@@ -125,11 +128,20 @@ export function TableDetail({
   return createPortal(
     <>
       <PaperModal title={tableLabel(table)} subtitle={
-        <>
-          <BookCode id={table.book} /> · Ch. {table.chapterNumber}: {table.chapterTitle}
-        </>
+        onEdit ? (
+          <>Your table · {table.chapterTitle}</>
+        ) : (
+          <>
+            <BookCode id={table.book} /> · Ch. {table.chapterNumber}: {table.chapterTitle}
+          </>
+        )
       } onClose={onClose} wide>
-        {table.setting !== 'Core' && <p className="paper-soft">Campaign setting: {table.setting}</p>}
+        {!onEdit && table.setting !== 'Core' && <p className="paper-soft">Campaign setting: {table.setting}</p>}
+        {onEdit && (
+          <button className="chip table-pin" onClick={onEdit}>
+            ✎ Edit table
+          </button>
+        )}
         {pin && (
           <button className={pin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'} onClick={pin.onToggle} title={pin.pinned ? 'Remove from the Combat Tracker tables' : 'Show this table in the Combat Tracker'}>
             {pin.pinned ? '★ In the Combat Tracker' : '☆ Combat Tracker'}

@@ -13,7 +13,12 @@ import { filterTables, tableChapters, tableLabel, type GrimoireTable } from '../
 import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import { rollPlan } from '../rules/tableRoll'
 import { campaignFilterLabel, campaignSettingSet } from '../rules/campaignFilter'
-import { useActiveCampaignSettings } from '../lib/activeCampaign'
+import { useActiveCampaign, useActiveCampaignSettings } from '../lib/activeCampaign'
+import { useAuth } from '../auth/context'
+import { DmTableEditor } from '../components/DmTableEditor'
+import { createDmTable, deleteDmTable, fetchDmTables, updateDmTable, type DmTableRow } from '../lib/dmTables'
+import { asGrimoireTable, emptyDmTable, type DmTableData } from '../rules/dmTables'
+import { normalize } from '../lib/search'
 
 /** Valor do filtro de cenário "da campanha ativa" (CA3). */
 const CAMPAIGN = 'campaign'
@@ -55,6 +60,56 @@ function TableList() {
   const open = (table: GrimoireTable, autoRoll: boolean) => setSelected((current) => ({ table, autoRoll, opened: (current?.opened ?? 0) + 1 }))
 
   const [bookList, setBookList] = useState<Book[]>([])
+
+  // Tabelas do mestre (GT5): as da campanha ativa (ou do One-shot), só dele.
+  const { session } = useAuth()
+  const userID = session?.user.id ?? null
+  const active = useActiveCampaign()
+  const activeID = active?.id ?? null
+  const activeName = active ? (active.id === null ? 'One-shot' : active.name || 'Unnamed campaign') : ''
+  const [dmRows, setDmRows] = useState<DmTableRow[] | null>(null)
+  const [dmError, setDmError] = useState<string | null>(null)
+  const [dmReload, setDmReload] = useState(0)
+  // Editor aberto: a linha que se edita, ou `null` para uma tabela nova.
+  const [editing, setEditing] = useState<{ row: DmTableRow | null; data: DmTableData } | null>(null)
+
+  useEffect(() => {
+    if (!userID || !active) return
+    let cancelled = false
+    fetchDmTables(userID, activeID)
+      .then((rows) => {
+        if (!cancelled) setDmRows(rows)
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) setDmError(reason instanceof Error ? reason.message : String(reason))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userID, activeID, active, dmReload])
+
+  const dmTables = useMemo(() => (dmRows ?? []).map((row) => ({ row, table: asGrimoireTable(row.id, row.data, activeName) })), [dmRows, activeName])
+  const dmShown = useMemo(() => {
+    const q = normalize(query)
+    return q === '' ? dmTables : dmTables.filter(({ table: t }) => normalize([t.title, ...t.headers, ...t.rows.flat()].join(' ')).includes(q))
+  }, [dmTables, query])
+
+  async function saveDmTable(data: DmTableData) {
+    if (!editing) return
+    const saved = editing.row ? await updateDmTable(editing.row, data) : await createDmTable(activeID, data)
+    setEditing(null)
+    setDmReload((v) => v + 1)
+    // A tabela aberta mostra a versão nova.
+    setSelected((current) => (current && editing.row && current.table.id === `dm-${editing.row.id}` ? { ...current, table: asGrimoireTable(saved.id, data, activeName) } : current))
+  }
+
+  async function removeDmTable() {
+    if (!editing?.row) return
+    await deleteDmTable(editing.row)
+    setEditing(null)
+    setSelected(null)
+    setDmReload((v) => v + 1)
+  }
   // Fixar tabelas na faixa do Combat Tracker (CT4): a lista fica nas configurações dele.
   const { store: combat, update: updateCombat } = useCombatStore()
 
@@ -79,12 +134,12 @@ function TableList() {
   // Dado de cada tabela que rola (motor de rolagem, src/rules/tableRoll.ts).
   const dice = useMemo(() => {
     const map = new Map<string, DiceSpec>()
-    for (const t of all) {
+    for (const t of [...all, ...dmTables.map((d) => d.table)]) {
       const spec = rollPlan(t)?.dice
       if (spec) map.set(t.id, spec)
     }
     return map
-  }, [all])
+  }, [all, dmTables])
   const filtered = useMemo(
     () =>
       filterTables(all, { query, book, setting: byCampaign ? null : setting, chapter }, bookOrder).filter(
@@ -176,6 +231,35 @@ function TableList() {
           </div>
         )}
 
+        {/* Tabelas do mestre (GT5): só dele, da campanha ativa. */}
+        {active && userID && (
+          <section className="dm-tables">
+            <div className="dm-tables-head">
+              <span className="paper-label">Your tables · {activeName}</span>
+              <button className="chip" onClick={() => setEditing({ row: null, data: emptyDmTable() })}>
+                + New table
+              </button>
+            </div>
+            {dmError && <p className="paper-soft save-error">Could not load your tables: {dmError}</p>}
+            {dmRows !== null && dmRows.length === 0 && <p className="paper-soft">None yet — create one, or copy a book table.</p>}
+            {dmShown.length > 0 && (
+              <ul className="monster-list">
+                {dmShown.map(({ table: t }) => (
+                  <li key={t.id}>
+                    <button className="spell-row kit-row" onClick={() => open(t, false)}>
+                      <span className="kit-row-top">
+                        <span className="spell-name">{t.title}</span>
+                        <span className="spell-meta">{dice.get(t.id) ? `roll ${formatDice(dice.get(t.id)!)}` : `${t.rows.length} rows`}</span>
+                      </span>
+                      <span className="kit-summary">Your table · {activeName}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
         {tables && filtered.length === 0 && <p className="paper-soft">No tables match — try a different search or filter.</p>}
         <ul className="monster-list">
           {rows.map((t) => (
@@ -208,16 +292,35 @@ function TableList() {
         <TableDetail
           key={`${selected.table.id}-${selected.opened}`}
           table={selected.table}
-          tables={all}
+          tables={[...all, ...dmTables.map((d) => d.table)]}
           autoRoll={selected.autoRoll}
           history={history}
           onRecord={(record) => setHistory((list) => [{ ...record, id: (list[0]?.id ?? 0) + 1 }, ...list].slice(0, 50))}
           onOpen={open}
           onClose={() => setSelected(null)}
-          pin={{
-            pinned: quickTableIDs(combat.settings.quickTables).includes(selected.table.id),
-            onToggle: () => updateCombat((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, selected.table.id))),
-          }}
+          pin={
+            // Tabelas do mestre na faixa do Combat Tracker: backlog (GT5).
+            selected.table.book === 'DM'
+              ? undefined
+              : {
+                  pinned: quickTableIDs(combat.settings.quickTables).includes(selected.table.id),
+                  onToggle: () => updateCombat((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, selected.table.id))),
+                }
+          }
+          onEdit={(() => {
+            const found = dmTables.find((d) => d.table.id === selected.table.id)
+            return found ? () => setEditing({ row: found.row, data: found.row.data }) : undefined
+          })()}
+        />
+      )}
+      {editing && (
+        <DmTableEditor
+          initial={editing.data}
+          campaignName={activeName}
+          isNew={editing.row === null}
+          onSave={saveDmTable}
+          onDelete={editing.row ? removeDmTable : undefined}
+          onClose={() => setEditing(null)}
         />
       )}
     </div>
