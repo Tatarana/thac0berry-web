@@ -363,7 +363,7 @@ export function CampaignDetail() {
             )}
           </section>
 
-          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} />}
+          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} onMembersChanged={() => setCastVersion((v) => v + 1)} />}
 
           {/* Fase 2b: o jogador põe as fichas dele aqui; o mestre vê as de todos. */}
           <section className="ember-card">

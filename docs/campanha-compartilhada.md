@@ -28,11 +28,13 @@ pendências. Atualizar a cada entrega.
 | # | Entrega | Estado |
 |---|---|---|
 | F2a | Membros e convite: gerar, escolher, copiar e revogar o código; entrar com o código; ver o grupo; sair; o mestre remove; a campanha do jogador só para leitura; sessões só de quem criou ou do mestre | feita (web v0.74.0; backend `20261013120000` e `20261013150000`) |
-| F2b | O jogador põe a ficha na campanha do mestre; o mestre lê e edita a ficha completa e as folhas de magia; elenco da campanha com o dono de cada ficha | a fazer |
+| F2b | O jogador põe a ficha na campanha do mestre; o mestre lê e edita a ficha completa e as folhas de magia; elenco da campanha com o dono de cada ficha | feita (web v0.75.0; backend `20261013180000`) |
 | F2c | Resumo do grupo (nome, classe, nível, PV) para os jogadores; acesso temporário (`character_grant`, 24 h ou até revogar) | a fazer |
 
 ## Backlog
 
+- Dados de teste da F2b: a ficha "Teste F2b" ficou no Sandbox da segunda conta
+  Google do usuário (a jogadora de teste), depois de removida da campanha.
 - Login: o Google entra direto com a conta já conectada no navegador, sem mostrar a
   lista de contas (para trocar de conta, sair do Google em
   `accounts.google.com/Logout`). Opção: pedir sempre a lista (`prompt:
@@ -60,3 +62,24 @@ pendências. Atualizar a cada entrega.
     avisa e desativa o botão), código errado, entrar em minúsculas, a campanha só
     leitura, fora da escolha de campanha do DM do jogador, sair, entrar de novo, o
     mestre vê e remove o jogador, revogar. Corrigido no teste: "You (you)" → "You".
+- 2026-10-13, F2b feita (web v0.75.0; backend `20261013180000_fase2b_fichas_na_campanha.sql`,
+  17 verificações pgTAP):
+  - **backend:** o dono põe a ficha numa campanha de que é membro; o mestre lê e
+    edita a ficha e as folhas de magia; só o dono apaga ou tira da campanha e
+    ninguém troca o dono (`character_guard`); a folha criada pelo mestre fica no
+    nome do dono da ficha; retrato e tinta seguem a ficha (também no Storage); o
+    caderno continua só do autor;
+  - **página da campanha:** o elenco do mestre mostra as fichas dos jogadores com
+    "played by <nome>" e sem o "⋯" (apagar, mover, clonar ficam com o dono); o
+    jogador tem "Your characters here", com "New character" e "Add from Sandbox";
+    remover um jogador recarrega o elenco (a ficha dele sai junto);
+  - **Assign to campaign** inclui as campanhas em que a conta joga; a lista de
+    personagens e a contagem da tela inicial mostram só as fichas da conta;
+  - o "+ PC" do Combat Tracker lista as fichas dos jogadores sem mudar o código
+    (é a consulta "fichas da campanha");
+  - conferido no navegador com duas contas: a jogadora entra, não vê as fichas do
+    mestre, cria "Teste F2b" na campanha; o mestre a vê no elenco ("played by a
+    player": a conta de teste não tem nome padrão), abre e edita (Place of Origin;
+    versão 3, sem conflito, `updated_by` = mestre, dona inalterada), ela aparece na
+    consulta do "+ PC"; o mestre remove a jogadora e a ficha deixa a campanha.
+    Corrigido no teste: o elenco não recarregava depois de remover um jogador.

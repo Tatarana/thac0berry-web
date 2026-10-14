@@ -15,7 +15,18 @@ const memberName = (m: CampaignMember, isMe: boolean) => {
   return isMe ? `${name} (you)` : name
 }
 
-export function CampaignPlayers({ campaignID, userID, isGM }: { campaignID: string; userID: string; isGM: boolean }) {
+export function CampaignPlayers({
+  campaignID,
+  userID,
+  isGM,
+  onMembersChanged,
+}: {
+  campaignID: string
+  userID: string
+  isGM: boolean
+  /** Um jogador saiu: as fichas dele deixaram a campanha (o elenco recarrega). */
+  onMembersChanged?: () => void
+}) {
   const [members, setMembers] = useState<CampaignMember[] | null>(null)
   const [code, setCode] = useState<string | null>(null)
   const [choosing, setChoosing] = useState(false)
@@ -94,6 +105,7 @@ export function CampaignPlayers({ campaignID, userID, isGM }: { campaignID: stri
     await run(async () => {
       await removeMember(campaignID, member.user_id)
       setReload((v) => v + 1)
+      onMembersChanged?.()
     })
   }
 
