@@ -11,6 +11,7 @@ import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, setting
 import { assignToCampaign, createCharacter, deleteCampaign } from '../lib/roster'
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
+import { CampaignParty } from '../components/CampaignParty'
 import { CampaignPlayers } from '../components/CampaignPlayers'
 import { fetchMembers } from '../lib/campaignMembers'
 import { useMode } from '../lib/mode'
@@ -364,6 +365,8 @@ export function CampaignDetail() {
           </section>
 
           {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} onMembersChanged={() => setCastVersion((v) => v + 1)} />}
+
+          {userID && <CampaignParty campaignID={campaign.id} userID={userID} isGM={isGM} version={castVersion} />}
 
           {/* Fase 2b: o jogador põe as fichas dele aqui; o mestre vê as de todos. */}
           <section className="ember-card">

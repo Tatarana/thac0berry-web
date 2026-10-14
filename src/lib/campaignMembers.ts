@@ -57,3 +57,58 @@ export async function removeMember(campaignID: string, userID: string) {
   const { error } = await supabase.rpc('remove_campaign_member', { p_campaign: campaignID, p_user: userID })
   fail(error)
 }
+
+// --- Fase 2c: resumo do grupo e acesso temporário ---------------------------
+
+/** Uma ficha da campanha no resumo do grupo (função `campaign_party`). */
+export interface PartyMember {
+  id: string
+  owner_id: string
+  player_name: string
+  name: string | null
+  character_class: string | null
+  level: number | null
+  status: string | null
+  hit_points_current: number | null
+  hit_points_max: number | null
+  /** A conta pode abrir a ficha completa (dona, mestre ou acesso temporário). */
+  can_edit: boolean
+}
+
+export interface CharacterGrant {
+  id: string
+  character_id: string
+  grantee_id: string
+  expires_at: string
+}
+
+export async function fetchParty(campaignID: string): Promise<PartyMember[]> {
+  const { data, error } = await supabase.rpc('campaign_party', { p_campaign: campaignID })
+  fail(error)
+  return (data ?? []) as PartyMember[]
+}
+
+/** Acessos temporários em vigor que a conta vê (o mestre: os da campanha; o jogador: os dele). */
+export async function fetchGrants(characterIDs: string[]): Promise<CharacterGrant[]> {
+  if (characterIDs.length === 0) return []
+  const { data, error } = await supabase
+    .from('character_grant')
+    .select('id, character_id, grantee_id, expires_at')
+    .in('character_id', characterIDs)
+    .is('revoked_at', null)
+    .gt('expires_at', new Date().toISOString())
+  fail(error)
+  return (data ?? []) as CharacterGrant[]
+}
+
+/** O mestre dá a um jogador acesso de edição à ficha (padrão: 24 h). */
+export async function grantAccess(characterID: string, granteeID: string, hours = 24) {
+  const { error } = await supabase.rpc('grant_character_access', { p_character: characterID, p_grantee: granteeID, p_hours: hours })
+  fail(error)
+}
+
+/** O mestre revoga, ou quem recebeu devolve. */
+export async function revokeAccess(grantID: string) {
+  const { error } = await supabase.rpc('revoke_character_access', { p_grant: grantID })
+  fail(error)
+}
