@@ -23,6 +23,9 @@ const messages: Record<string, string> = {
   invalid_invite: 'No campaign uses this code. Check it with your DM.',
   not_member: 'This player is no longer in the campaign.',
   not_authenticated: 'Sign in first.',
+  invalid_grantee: 'Choose another player of this campaign (not the character’s own player).',
+  invalid_hours: 'The access lasts from 1 to 168 hours.',
+  not_found: 'This access no longer exists.',
 }
 
 /** A mensagem para o erro de uma das funções (o banco manda o nome do erro). */
