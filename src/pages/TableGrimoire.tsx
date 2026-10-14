@@ -15,9 +15,10 @@ import { rollPlan } from '../rules/tableRoll'
 import { campaignFilterLabel, campaignSettingSet } from '../rules/campaignFilter'
 import { useActiveCampaign, useActiveCampaignSettings } from '../lib/activeCampaign'
 import { useAuth } from '../auth/context'
+import { CopyTableWindow } from '../components/CopyTableWindow'
 import { DmTableEditor } from '../components/DmTableEditor'
 import { createDmTable, deleteDmTable, fetchDmTables, updateDmTable, type DmTableRow } from '../lib/dmTables'
-import { asGrimoireTable, emptyDmTable, type DmTableData } from '../rules/dmTables'
+import { asGrimoireTable, emptyDmTable, fromBookTable, type DmTableData } from '../rules/dmTables'
 import { normalize } from '../lib/search'
 
 /** Valor do filtro de cenário "da campanha ativa" (CA3). */
@@ -72,6 +73,9 @@ function TableList() {
   const [dmReload, setDmReload] = useState(0)
   // Editor aberto: a linha que se edita, ou `null` para uma tabela nova.
   const [editing, setEditing] = useState<{ row: DmTableRow | null; data: DmTableData } | null>(null)
+  // GT5b: copiar uma tabela do mestre para outra campanha (a janela de escolha) e o aviso do resultado.
+  const [copying, setCopying] = useState<DmTableRow | null>(null)
+  const [dmNotice, setDmNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (!userID || !active) return
@@ -101,6 +105,18 @@ function TableList() {
     setDmReload((v) => v + 1)
     // A tabela aberta mostra a versão nova.
     setSelected((current) => (current && editing.row && current.table.id === `dm-${editing.row.id}` ? { ...current, table: asGrimoireTable(saved.id, data, activeName) } : current))
+  }
+
+  async function copyToCampaign(campaignID: string | null, name: string) {
+    if (!copying) return
+    const row = copying
+    setCopying(null)
+    try {
+      await createDmTable(campaignID, structuredClone(row.data))
+      setDmNotice(`Copied “${row.data.title}” to ${name}.`)
+    } catch (reason) {
+      setDmNotice(`Could not copy: ${reason instanceof Error ? reason.message : String(reason)}`)
+    }
   }
 
   async function removeDmTable() {
@@ -241,6 +257,12 @@ function TableList() {
               </button>
             </div>
             {dmError && <p className="paper-soft save-error">Could not load your tables: {dmError}</p>}
+            {dmNotice && (
+              <p className="paper-soft">
+                {dmNotice}{' '}
+                <button className="paper-link" onClick={() => setDmNotice(null)}>OK</button>
+              </p>
+            )}
             {dmRows !== null && dmRows.length === 0 && <p className="paper-soft">None yet — create one, or copy a book table.</p>}
             {dmShown.length > 0 && (
               <ul className="monster-list">
@@ -311,6 +333,22 @@ function TableList() {
             const found = dmTables.find((d) => d.table.id === selected.table.id)
             return found ? () => setEditing({ row: found.row, data: found.row.data }) : undefined
           })()}
+          onCopy={(() => {
+            if (!active || !userID) return undefined
+            const found = dmTables.find((d) => d.table.id === selected.table.id)
+            if (found) return () => setCopying(found.row)
+            // Tabela de livro: o editor abre com a cópia (só grava ao salvar).
+            const book = selected.table
+            return () => setEditing({ row: null, data: fromBookTable(book, `${book.book} ${tableLabel(book)}`) })
+          })()}
+        />
+      )}
+      {copying && (
+        <CopyTableWindow
+          title={copying.data.title}
+          currentID={activeID}
+          onChoose={(id, name) => void copyToCampaign(id, name)}
+          onClose={() => setCopying(null)}
         />
       )}
       {editing && (

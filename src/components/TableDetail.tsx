@@ -33,6 +33,7 @@ export function TableDetail({
   onClose,
   pin,
   onEdit,
+  onCopy,
 }: {
   table: GrimoireTable
   /** Todas as tabelas (para achar as citadas). */
@@ -47,6 +48,8 @@ export function TableDetail({
   pin?: { pinned: boolean; onToggle: () => void }
   /** Tabela do mestre (GT5): abre o editor. */
   onEdit?: () => void
+  /** GT5b: de uma tabela de livro, "Copy to my tables"; de uma do mestre, "Copy to another campaign…". */
+  onCopy?: () => void
 }) {
   const plan = useMemo(() => rollPlan(table), [table])
   const [value, setValue] = useState<number | null>(null)
@@ -140,6 +143,11 @@ export function TableDetail({
         {onEdit && (
           <button className="chip table-pin" onClick={onEdit}>
             ✎ Edit table
+          </button>
+        )}
+        {onCopy && (
+          <button className="chip table-pin" onClick={onCopy} title={onEdit ? 'Make an independent copy in another campaign' : 'Make an editable copy in your tables of the active campaign'}>
+            {onEdit ? '⧉ Copy to another campaign…' : '⧉ Copy to my tables'}
           </button>
         )}
         {pin && (

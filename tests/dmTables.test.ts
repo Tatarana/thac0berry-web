@@ -33,3 +33,23 @@ test('avisos do editor: título, dado, faixa inválida, buraco, sobreposição, 
   assert.match(D.dmTableProblems(table('2d6', [['1-12', 'a']])).join(' | '), /outside 2d6/)
   assert.deepEqual(D.dmTableProblems(D.emptyDmTable()).filter((p) => !/title/.test(p)), [])
 })
+
+test('copiar uma tabela de livro: título, dado do Roll, cabeçalho sem a notação, linhas e a origem', () => {
+  const book = {
+    id: 'dmg-54', book: 'DMG', setting: 'Core', number: '54', title: '2-20 Encounter Table', chapterNumber: 11, chapterTitle: 'Encounters',
+    ruleID: 'r', ruleTopic: 't', headers: ['Dice Roll (1d8+1d12)', 'Frequency'],
+    rows: Array.from({ length: 19 }, (_, i) => [String(i + 2), i < 3 ? 'Very rare' : 'Common']), alsoIn: [],
+  }
+  const copy = D.fromBookTable(book, 'DMG Table 54')
+  assert.equal(copy.title, '2-20 Encounter Table')
+  assert.equal(copy.dice, 'd8+d12')
+  assert.deepEqual(copy.headers, ['Dice Roll', 'Frequency'])
+  assert.equal(copy.rows.length, 19)
+  assert.equal(copy.source, 'DMG Table 54')
+  assert.deepEqual(D.dmTableProblems(copy), [])
+  // Copiada, rola igual ao livro.
+  assert.equal(formatDice(rollPlan(D.asGrimoireTable('c', copy, 'X'))!.dice!), 'd8+d12')
+  // A cópia é independente: mudar a cópia não muda o livro.
+  copy.rows[0][1] = 'mudei'
+  assert.equal(book.rows[0][1], 'Very rare')
+})
