@@ -29,7 +29,7 @@ pendências. Atualizar a cada entrega.
 |---|---|---|
 | F2a | Membros e convite: gerar, escolher, copiar e revogar o código; entrar com o código; ver o grupo; sair; o mestre remove; a campanha do jogador só para leitura; sessões só de quem criou ou do mestre | feita (web v0.74.0; backend `20261013120000` e `20261013150000`) |
 | F2b | O jogador põe a ficha na campanha do mestre; o mestre lê e edita a ficha completa e as folhas de magia; elenco da campanha com o dono de cada ficha | feita (web v0.75.0; backend `20261013180000`) |
-| F2c | Resumo do grupo (nome, classe, nível, PV) para os jogadores; acesso temporário (`character_grant`, 24 h ou até revogar) | a fazer |
+| F2c | Resumo do grupo (nome, classe, nível, PV) para os jogadores; acesso temporário (`character_grant`, 24 h ou até revogar) | feita (web v0.76.0; backend `20261013210000`) — **Fase 2 concluída** |
 
 ## Backlog
 
@@ -83,3 +83,23 @@ pendências. Atualizar a cada entrega.
     versão 3, sem conflito, `updated_by` = mestre, dona inalterada), ela aparece na
     consulta do "+ PC"; o mestre remove a jogadora e a ficha deixa a campanha.
     Corrigido no teste: o elenco não recarregava depois de remover um jogador.
+- 2026-10-13, F2c feita (web v0.76.0; backend `20261013210000_fase2c_grupo_e_acesso_temporario.sql`,
+  18 verificações pgTAP). Com ela, a **Fase 2 está concluída**:
+  - **backend:** `campaign_party(campanha)` (só membros): de cada ficha da campanha,
+    quem joga, nome, classe, nível, estado, PV e se a conta pode abrir a ficha;
+    `character_grant` com `grant_character_access` (só o mestre, para outro
+    jogador da campanha, de 1 a 168 h, padrão 24 h) e `revoke_character_access`
+    (o mestre, ou quem recebeu devolvendo); o acesso cai ao expirar, ser revogado
+    ou o jogador sair; com ele, lê e edita a ficha e as folhas, sem apagar nem
+    tirar da campanha;
+  - **web, cartão Party** (`src/components/CampaignParty.tsx`): todos veem as
+    fichas da campanha com classe, nível, PV e "played by" (you / o nome / the
+    DM); só as que a conta pode abrir têm link; o mestre tem "Lend 24 h to…" nas
+    fichas dos jogadores (com mais de um jogador na campanha) e o acesso ativo com
+    "Revoke"; quem recebeu vê "You can edit until …" e "Give back";
+  - conferido no navegador com duas contas: o mestre vê o grupo; a jogadora vê as
+    fichas do mestre só como resumo (sem link, "played by the DM") e a dela com
+    link; abrir a ficha do mestre pelo endereço é recusado; ao sair, a ficha
+    dela volta ao Sandbox. **O empréstimo não foi testado no navegador** (precisa
+    de dois jogadores além do mestre, e o usuário tem duas contas): fica coberto
+    pelos testes do banco (dar, editar, não apagar, devolver, expirar, cair ao sair).
