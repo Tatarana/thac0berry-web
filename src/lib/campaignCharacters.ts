@@ -58,9 +58,11 @@ export function useCharacterCount(): number | null {
     if (!session) return
     let cancelled = false
     // Só a contagem (head: true), sem baixar as fichas.
+    // Só as da conta (com a Fase 2b, o mestre também lê as dos jogadores).
     void supabase
       .from('character')
       .select('id', { count: 'exact', head: true })
+      .eq('owner_id', session.user.id)
       .is('deleted_at', null)
       .then(({ count: n }) => {
         if (!cancelled) setCount(n ?? null)

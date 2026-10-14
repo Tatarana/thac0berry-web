@@ -12,6 +12,7 @@ import { assignToCampaign, createCharacter, deleteCampaign } from '../lib/roster
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
 import { CampaignPlayers } from '../components/CampaignPlayers'
+import { fetchMembers } from '../lib/campaignMembers'
 import { useMode } from '../lib/mode'
 import type { SaveState } from '../lib/useCharacterDoc'
 
@@ -27,6 +28,8 @@ interface CastMember {
   character_class: string | null
   level: number | null
   status: string | null
+  /** Dono da ficha (Fase 2b: o mestre vê as fichas dos jogadores, com o nome de quem joga). */
+  owner_id?: string
 }
 
 function SaveLine({ save, onRetry }: { save: SaveState; onRetry: () => void }) {
@@ -46,21 +49,41 @@ function SaveLine({ save, onRetry }: { save: SaveState; onRetry: () => void }) {
   }
 }
 
-/** Elenco com o "⋯" de ações em cada personagem (castMenu do iPad). */
-function CastList({ members, campaignID, onChanged }: { members: CastMember[]; campaignID: string; onChanged: () => void }) {
+/**
+ * Elenco com o "⋯" de ações em cada personagem (castMenu do iPad). Fase 2b:
+ * as fichas dos jogadores aparecem para o mestre com o nome de quem joga, e
+ * as ações (apagar, mover, clonar…) ficam só para o dono.
+ */
+function CastList({
+  members,
+  campaignID,
+  userID,
+  players,
+  onChanged,
+}: {
+  members: CastMember[]
+  campaignID: string
+  userID: string | null
+  players: Map<string, string>
+  onChanged: () => void
+}) {
   return (
     <ul className="import-list">
-      {members.map((c) => (
-        <li key={c.id} className="import-row cast-row">
-          <Link className="character-link" to={`/characters/${c.id}`}>
-            <span className="import-name">{c.name || 'Unnamed character'}</span>
-            <div className="soft import-detail">
-              {c.character_class ?? '—'} {c.level ?? ''}
-            </div>
-          </Link>
-          <CharacterActions character={{ ...c, campaign_id: campaignID }} onChanged={onChanged} />
-        </li>
-      ))}
+      {members.map((c) => {
+        const mine = !c.owner_id || c.owner_id === userID
+        return (
+          <li key={c.id} className="import-row cast-row">
+            <Link className="character-link" to={`/characters/${c.id}`}>
+              <span className="import-name">{c.name || 'Unnamed character'}</span>
+              <div className="soft import-detail">
+                {c.character_class ?? '—'} {c.level ?? ''}
+                {!mine && ` · played by ${players.get(c.owner_id!) || 'a player'}`}
+              </div>
+            </Link>
+            {mine && <CharacterActions character={{ ...c, campaign_id: campaignID }} onChanged={onChanged} />}
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -118,6 +141,8 @@ export function CampaignDetail() {
   const [picking, setPicking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  // Nome de quem joga cada ficha (os membros da campanha), para o elenco do mestre.
+  const [players, setPlayers] = useState<Map<string, string>>(new Map())
   const { confirm, dialog } = useConfirm()
   const navigate = useNavigate()
 
@@ -126,12 +151,27 @@ export function CampaignDetail() {
     let cancelled = false
     void supabase
       .from('character')
-      .select('id, name, character_class, level, status')
+      .select('id, name, character_class, level, status, owner_id')
       .eq('campaign_id', id)
       .is('deleted_at', null)
       .order('name')
       .then(({ data }) => {
         if (!cancelled) setCast((data ?? []) as CastMember[])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userID, id, castVersion])
+
+  useEffect(() => {
+    if (!userID || !id) return
+    let cancelled = false
+    void fetchMembers(id)
+      .then((list) => {
+        if (!cancelled) setPlayers(new Map(list.map((m) => [m.user_id, m.display_name.trim()])))
+      })
+      .catch(() => {
+        // Sem a lista, o elenco mostra "a player".
       })
     return () => {
       cancelled = true
@@ -323,12 +363,11 @@ export function CampaignDetail() {
             )}
           </section>
 
-          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} />}
+          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} onMembersChanged={() => setCastVersion((v) => v + 1)} />}
 
-          {/* As fichas dos jogadores na campanha entram na Fase 2b; por ora o elenco é do mestre. */}
-          {isGM && (
+          {/* Fase 2b: o jogador põe as fichas dele aqui; o mestre vê as de todos. */}
           <section className="ember-card">
-            <h2 className="card-title">Cast</h2>
+            <h2 className="card-title">{isGM ? 'Cast' : 'Your characters here'}</h2>
             <div className="btn-row">
               <button className="btn" disabled={busy} onClick={() => void newCharacter()}>
                 + New character
@@ -344,14 +383,16 @@ export function CampaignDetail() {
               </div>
             )}
             {cast === null && <p className="soft">Loading characters…</p>}
-            {cast !== null && alive.length === 0 && <p className="soft">No characters in this campaign yet.</p>}
-            {alive.length > 0 && <CastList members={alive} campaignID={campaign.id} onChanged={() => setCastVersion((v) => v + 1)} />}
+            {cast !== null && alive.length === 0 && (
+              <p className="soft">{isGM ? 'No characters in this campaign yet.' : 'None of your characters is in this campaign yet. Its DM will see and can edit the ones you add.'}</p>
+            )}
+            {alive.length > 0 && <CastList members={alive} campaignID={campaign.id} userID={userID} players={players} onChanged={() => setCastVersion((v) => v + 1)} />}
             {dead.length > 0 && (
               <>
                 <button className="disclosure" aria-expanded={open.dead} onClick={() => setOpen((o) => ({ ...o, dead: !o.dead }))}>
                   {open.dead ? '▾' : '▸'} Dead ({dead.length})
                 </button>
-                {open.dead && <CastList members={dead} campaignID={campaign.id} onChanged={() => setCastVersion((v) => v + 1)} />}
+                {open.dead && <CastList members={dead} campaignID={campaign.id} userID={userID} players={players} onChanged={() => setCastVersion((v) => v + 1)} />}
               </>
             )}
             {archived.length > 0 && (
@@ -359,11 +400,10 @@ export function CampaignDetail() {
                 <button className="disclosure" aria-expanded={open.archived} onClick={() => setOpen((o) => ({ ...o, archived: !o.archived }))}>
                   {open.archived ? '▾' : '▸'} Archived ({archived.length})
                 </button>
-                {open.archived && <CastList members={archived} campaignID={campaign.id} onChanged={() => setCastVersion((v) => v + 1)} />}
+                {open.archived && <CastList members={archived} campaignID={campaign.id} userID={userID} players={players} onChanged={() => setCastVersion((v) => v + 1)} />}
               </>
             )}
           </section>
-          )}
 
           {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} isGM={isGM} />}
 

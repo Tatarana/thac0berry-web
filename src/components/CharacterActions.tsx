@@ -51,8 +51,9 @@ function MarkDeadWindow({ name, onConfirm, onClose }: { name: string; onConfirm:
 }
 
 /**
- * "Assign to campaign" do iPad: as campanhas da conta, mais o Sandbox. Só as
- * que a conta mestra: pôr a ficha na campanha de outro mestre é a Fase 2b.
+ * "Assign to campaign" do iPad: as campanhas da conta, mais o Sandbox. Com a
+ * Fase 2b, também as campanhas em que a conta joga (o mestre dela passa a
+ * ver e poder editar a ficha).
  */
 function MoveWindow({ current, onChoose, onClose }: { current: string | null; onChoose: (campaignID: string | null) => void; onClose: () => void }) {
   const [campaigns, setCampaigns] = useState<{ id: string; name: string; is_archived: boolean }[] | null>(null)
@@ -64,7 +65,6 @@ function MoveWindow({ current, onChoose, onClose }: { current: string | null; on
     void supabase
       .from('campaign')
       .select('id, name, is_archived')
-      .eq('owner_id', userID)
       .is('deleted_at', null)
       .order('name')
       .then(({ data }) => {
