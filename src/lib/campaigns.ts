@@ -76,7 +76,8 @@ export function dateFromInput(value: string): string | null {
 const SAVE_DELAY_MS = 1000
 
 /** Campanha aberta para edição, com gravação automática. */
-export function useCampaignDoc(id: string | undefined, userID: string | null) {
+/** `live`: muda quando a campanha muda em outro lugar (Fase 3, R2); relê se não houver edição pendente. */
+export function useCampaignDoc(id: string | undefined, userID: string | null, live = 0) {
   const [campaign, setCampaign] = useState<CampaignRow | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [save, setSave] = useState<SaveState>({ kind: 'saved', at: '' })
@@ -90,6 +91,8 @@ export function useCampaignDoc(id: string | undefined, userID: string | null) {
 
   useEffect(() => {
     if (!userID || !id) return
+    // Ao vivo: com uma edição pendente aqui, fica a edição (ela grava por cima, como sempre).
+    if (live > 0 && (draft.current || inFlight.current)) return
     let cancelled = false
     void (async () => {
       const { data, error } = await supabase
@@ -101,6 +104,7 @@ export function useCampaignDoc(id: string | undefined, userID: string | null) {
       if (cancelled) return
       if (error) return setLoadError(error.message)
       if (!data) return setLoadError('This campaign is not on your account.')
+      if (live > 0 && (draft.current || inFlight.current)) return
       const { version: v, updated_at, ...row } = data as CampaignRow & { version: number; updated_at: string }
       version.current = v
       setCampaign(row)
@@ -109,7 +113,7 @@ export function useCampaignDoc(id: string | undefined, userID: string | null) {
     return () => {
       cancelled = true
     }
-  }, [userID, id])
+  }, [userID, id, live])
 
   const flushRef = useRef<() => Promise<void>>(() => Promise.resolve())
 

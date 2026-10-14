@@ -14,6 +14,7 @@ import { useConfirm } from '../lib/useConfirm'
 import { CampaignParty } from '../components/CampaignParty'
 import { CampaignPlayers } from '../components/CampaignPlayers'
 import { fetchMembers } from '../lib/campaignMembers'
+import { useCampaignPulse } from '../lib/campaignPulse'
 import { useMode } from '../lib/mode'
 import type { SaveState } from '../lib/useCharacterDoc'
 
@@ -133,7 +134,9 @@ export function CampaignDetail() {
   const { id } = useParams()
   const { session, loading, signInWithGoogle } = useAuth()
   const userID = session?.user.id ?? null
-  const { campaign, loadError, save, conflict, dismissConflict, update, retry } = useCampaignDoc(id, userID)
+  // Fase 3, R2: o pulso da campanha (outra pessoa ou outro aparelho mudou algo) recarrega a página.
+  const live = useCampaignPulse(id, userID)
+  const { campaign, loadError, save, conflict, dismissConflict, update, retry } = useCampaignDoc(id, userID, live)
   const mode = useMode()
   const active = useActiveCampaign()
   const [cast, setCast] = useState<CastMember[] | null>(null)
@@ -162,7 +165,7 @@ export function CampaignDetail() {
     return () => {
       cancelled = true
     }
-  }, [userID, id, castVersion])
+  }, [userID, id, castVersion, live])
 
   useEffect(() => {
     if (!userID || !id) return
@@ -177,7 +180,7 @@ export function CampaignDetail() {
     return () => {
       cancelled = true
     }
-  }, [userID, id, castVersion])
+  }, [userID, id, castVersion, live])
 
   /** Roda uma ação do elenco, mostrando o erro se falhar. */
   async function run(action: () => Promise<void>) {
@@ -364,9 +367,9 @@ export function CampaignDetail() {
             )}
           </section>
 
-          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} onMembersChanged={() => setCastVersion((v) => v + 1)} />}
+          {userID && <CampaignPlayers campaignID={campaign.id} userID={userID} isGM={isGM} onMembersChanged={() => setCastVersion((v) => v + 1)} live={live} />}
 
-          {userID && <CampaignParty campaignID={campaign.id} userID={userID} isGM={isGM} version={castVersion} />}
+          {userID && <CampaignParty campaignID={campaign.id} userID={userID} isGM={isGM} version={castVersion + live} />}
 
           {/* Fase 2b: o jogador põe as fichas dele aqui; o mestre vê as de todos. */}
           <section className="ember-card">
@@ -408,7 +411,7 @@ export function CampaignDetail() {
             )}
           </section>
 
-          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} isGM={isGM} />}
+          {id && <CampaignSessions campaignID={id} userID={userID} cast={cast ?? []} isGM={isGM} live={live} />}
 
           {isGM && (
             <div className="btn-row">

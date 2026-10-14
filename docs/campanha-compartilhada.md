@@ -31,7 +31,7 @@ pendências. Atualizar a cada entrega.
 | F2b | O jogador põe a ficha na campanha do mestre; o mestre lê e edita a ficha completa e as folhas de magia; elenco da campanha com o dono de cada ficha | feita (web v0.75.0; backend `20261013180000`) |
 | F2c | Resumo do grupo (nome, classe, nível, PV) para os jogadores; acesso temporário (`character_grant`, 24 h ou até revogar) | feita (web v0.76.0; backend `20261013210000`) — **Fase 2 concluída** |
 | R1 | Fase 3: ficha ao vivo — a ficha aberta e as folhas de magia se atualizam quando outra pessoa ou outro aparelho grava | feita (web v0.77.0; backend `20261014120000`) |
-| R2 | Fase 3: página da campanha ao vivo — elenco, grupo (PV), sessões e jogadores, por um "pulso" da campanha | a fazer |
+| R2 | Fase 3: página da campanha ao vivo — elenco, grupo (PV), sessões e jogadores, por um "pulso" da campanha | feita (web v0.78.0; backend `20261014150000`) |
 
 ## Backlog
 
@@ -124,3 +124,20 @@ pendências. Atualizar a cada entrega.
     a edição numa aparece na outra com o aviso, sem conflito, nos dois sentidos;
     a aba que gravou não mostra aviso. O caso "edição pendente quando chega o
     aviso" (janela de 1 s) não foi reproduzido no navegador.
+- 2026-10-14, R2 feita (web v0.78.0; backend `20261014150000_fase3_r2_campanha_ao_vivo.sql`,
+  8 verificações pgTAP):
+  - **backend:** `campaign_pulse` (uma linha por campanha com a hora da última
+    mudança), atualizado por gatilhos na campanha, nas fichas (inclusive ao entrar
+    e sair), nas folhas de magia, nas sessões, nos membros e nos acessos
+    temporários; só os membros o leem, e ele não leva dado nenhum; está na
+    publicação do Realtime;
+  - **web:** `src/lib/campaignPulse.ts` (`useCampaignPulse`: assina o pulso e,
+    depois de 1 s de calma, sobe um contador `live`); a página da campanha relê o
+    elenco, os nomes dos jogadores, o Party, as sessões e os campos da campanha;
+    `useCampaignDoc` e `useCampaignSessions` não releem com uma edição pendente;
+  - conferido no navegador com a campanha de teste em duas abas: notas, PV da
+    "Teste MC" no Party (6 → 3 → 6) e sessão nova (criada e apagada) aparecem na
+    outra aba, nos dois sentidos. Uma aba aberta antes da troca de código (hot
+    reload) não recebia — o React reclamou do tamanho das dependências dos hooks;
+    recarregada, funcionou: é coisa do servidor de desenvolvimento, não do app
+    publicado.

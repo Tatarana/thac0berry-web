@@ -36,7 +36,8 @@ export interface SheetRef {
 
 const SAVE_DELAY_MS = 1000
 
-export function useCampaignSessions(campaignID: string | undefined, userID: string | null) {
+/** `live`: muda quando a campanha muda em outro lugar (Fase 3, R2); recarrega se não houver edição pendente. */
+export function useCampaignSessions(campaignID: string | undefined, userID: string | null, live = 0) {
   const [sessions, setSessions] = useState<SessionRow[] | null>(null)
   const [sheets, setSheets] = useState<SheetRef[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -48,6 +49,8 @@ export function useCampaignSessions(campaignID: string | undefined, userID: stri
 
   useEffect(() => {
     if (!userID || !campaignID) return
+    // Ao vivo: com uma sessão sendo editada aqui, fica a edição (a próxima mudança recarrega).
+    if (live > 0 && (drafts.current.size > 0 || timers.current.size > 0)) return
     let cancelled = false
     void (async () => {
       const found = await supabase
@@ -72,7 +75,7 @@ export function useCampaignSessions(campaignID: string | undefined, userID: stri
     return () => {
       cancelled = true
     }
-  }, [userID, campaignID])
+  }, [userID, campaignID, live])
 
   const flush = useCallback(async (sessionID: string) => {
     const timer = timers.current.get(sessionID)
