@@ -4,7 +4,7 @@
 
 import { diceRange, formatDice, parseDice } from './dice.ts'
 import type { GrimoireTable } from './tableIndex.ts'
-import { parseRange } from './tableRoll.ts'
+import { parseRange, rollPlan } from './tableRoll.ts'
 
 /** `dm_table.data` no servidor. */
 export interface DmTableData {
@@ -86,4 +86,21 @@ export function dmTableProblems(data: DmTableData): string[] {
     if (low < min || high > max) problems.push(`Some rows fall outside ${formatDice(spec)} (${min}–${max}).`)
   }
   return problems
+}
+
+/**
+ * "Copy to my tables" (GT5b): a tabela do livro vira uma tabela do mestre
+ * editável. O dado sai do plano de rolagem (o mesmo do Roll); o primeiro
+ * cabeçalho perde a notação de dado, que volta ao abrir (`asGrimoireTable`).
+ */
+export function fromBookTable(table: GrimoireTable, label: string): DmTableData {
+  const plan = rollPlan(table)
+  const first = (table.headers[0] ?? '').replace(/\(?\s*\d*d(?:\d+|%)(?:\s*\+\s*\d*d(?:\d+|%))*\s*\)?/gi, ' ').replace(/\s+/g, ' ').trim()
+  return {
+    title: table.title,
+    dice: plan?.dice ? formatDice(plan.dice) : '',
+    headers: [first || 'Roll', ...table.headers.slice(1)],
+    rows: table.rows.map((row) => [...row]),
+    source: label,
+  }
 }

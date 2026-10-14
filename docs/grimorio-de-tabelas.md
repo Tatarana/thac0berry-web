@@ -48,7 +48,7 @@ entregas e pendências. Atualizar a cada entrega.
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
 | GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); Al-Qadim feito (web v0.69.0); Thri-Kreen feito (web v0.70.0, livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras. **GT4b concluída** |
 | GT5a | Tabelas do mestre: na conta (`dm_table`), só do mestre, da campanha ativa ou do One-shot; editor (título, dado, colunas, linhas, avisos de faixa); "Your tables" no Table Grimoire, rolando com o mesmo motor | feita (web v0.79.0; backend `20261014180000`) |
-| GT5b | "Copy to my tables" a partir de uma tabela de livro; "Copy to another campaign…" (cópia independente) | a fazer |
+| GT5b | "Copy to my tables" a partir de uma tabela de livro; "Copy to another campaign…" (cópia independente) | feita (web v0.80.0) — **GT5 concluída** |
 
 ## Backlog
 
@@ -348,3 +348,14 @@ entregas e pendências. Atualizar a cada entrega.
     tirar a última linha, corrigir para 5-6, salvar, rolar ("2 → Wolves", linha
     em destaque, histórico), editar o título (versão 2, sem conflito) e apagar
     (`deleted_at`).
+- 2026-10-14, G5b feita (web v0.80.0; só web): `fromBookTable` em
+  `src/rules/dmTables.ts` (título, o dado do Roll, o primeiro cabeçalho sem a
+  notação de dado, as linhas copiadas e a origem "DMG Table 54: …"), com teste;
+  na tabela de livro, "⧉ Copy to my tables" abre o editor com a cópia (só grava
+  ao salvar); na tabela do mestre, "⧉ Copy to another campaign…"
+  (`src/components/CopyTableWindow.tsx`: as campanhas do mestre e o One-shot,
+  menos a atual) cria uma cópia independente e avisa. Conferido no navegador: a
+  Tabela 54 do DMG copiada para o One-shot (d8+d12, 19 linhas, sem avisos,
+  "Copied from DMG Table 54"), rolando igual, e dela uma cópia para "Teste W3.1b
+  B" (as duas no banco, cada uma na sua campanha); as cópias de teste foram
+  apagadas depois. Com isso a **GT5 está concluída**.
