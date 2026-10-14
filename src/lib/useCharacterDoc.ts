@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PlayerCharacter } from '../types/library'
 import { loadValidators } from './libraryImport'
+import { subscribeRows, uuidFilter } from './realtime'
 import { supabase } from './supabase'
 
 // Ficha aberta para edição, com gravação automática (decisão do usuário:
@@ -14,6 +15,12 @@ import { supabase } from './supabase'
 //
 // Antes de gravar, a ficha passa pelo library.schema.json: a web nunca grava
 // algo que o iPad descartaria ao ler.
+//
+// Ao vivo (Fase 3, R1, 2026-10-14): quando outra pessoa (o mestre, quem tem
+// acesso temporário) ou outro aparelho grava, o banco avisa. Sem edição
+// pendente aqui, a ficha relê a linha e mostra o aviso `remoteChange`; com
+// edição pendente, nada muda: a gravação daqui sai por cima e o conflito é
+// avisado como sempre (decisões do usuário).
 
 /** `character.data` no servidor: o PlayerCharacter sem folhas de magia e retrato. */
 export type ServerCharacter = Omit<PlayerCharacter, 'spellSheets' | 'portraitImageData'>
@@ -37,6 +44,8 @@ export function useCharacterDoc(id: string | undefined, userID: string | null) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [save, setSave] = useState<SaveState>({ kind: 'saved', at: '' })
   const [conflict, setConflict] = useState(false)
+  /** Hora em que a ficha recebeu a gravação de outro lugar (o aviso na tela); null = nada a avisar. */
+  const [remoteChange, setRemoteChange] = useState<string | null>(null)
 
   // Estado de gravação fora do React: versão conhecida, rascunho pendente e o timer.
   const version = useRef<number | null>(null)
@@ -70,6 +79,45 @@ export function useCharacterDoc(id: string | undefined, userID: string | null) {
     })()
     return () => {
       cancelled = true
+    }
+  }, [userID, id])
+
+  // Ao vivo: outra gravação da mesma ficha.
+  useEffect(() => {
+    if (!userID || !id) return
+    let cancelled = false
+    const unsubscribe = subscribeRows('character', uuidFilter('id', id), ({ row }) => {
+      const remote = Number(row.version)
+      // Eco da própria gravação (ou aviso atrasado): a versão já é a conhecida.
+      if (version.current !== null && remote <= version.current) return
+      // Edição pendente aqui: ela sai por cima, e o conflito é avisado ao gravar.
+      if (draft.current || inFlight.current || timer.current !== null) return
+      void (async () => {
+        const { data, error } = await supabase
+          .from('character')
+          .select('data, version, campaign_id, portrait_attachment, updated_at, deleted_at')
+          .eq('id', id)
+          .maybeSingle()
+        if (cancelled || error || !data) return
+        const fresh = data as {
+          data: ServerCharacter
+          version: number
+          campaign_id: string | null
+          portrait_attachment: string | null
+          updated_at: string
+          deleted_at: string | null
+        }
+        // Algo foi editado aqui enquanto relia: fica a edição daqui.
+        if (draft.current || inFlight.current || fresh.deleted_at) return
+        version.current = fresh.version
+        setDoc({ character: fresh.data, campaignID: fresh.campaign_id, portraitAttachment: fresh.portrait_attachment })
+        setSave({ kind: 'saved', at: fresh.updated_at })
+        setRemoteChange(fresh.updated_at)
+      })()
+    })
+    return () => {
+      cancelled = true
+      unsubscribe()
     }
   }, [userID, id])
 
@@ -180,5 +228,16 @@ export function useCharacterDoc(id: string | undefined, userID: string | null) {
     }
   }, [flush])
 
-  return { doc, loadError, save, conflict, dismissConflict: () => setConflict(false), update, setPortrait, retry: flush }
+  return {
+    doc,
+    loadError,
+    save,
+    conflict,
+    dismissConflict: () => setConflict(false),
+    remoteChange,
+    dismissRemoteChange: () => setRemoteChange(null),
+    update,
+    setPortrait,
+    retry: flush,
+  }
 }

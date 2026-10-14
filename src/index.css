@@ -5258,3 +5258,12 @@ button.slot-dot:hover {
 .member-row .btn {
   margin-left: auto;
 }
+
+/* Fase 3, R1: a ficha recebeu uma gravação de outro lugar (ao vivo). */
+.remote-note {
+  padding: 6px 10px;
+  border: 1px solid var(--brass-dim);
+  background: rgb(201 162 39 / 0.1);
+  font-size: 0.82rem;
+  color: var(--ink);
+}
