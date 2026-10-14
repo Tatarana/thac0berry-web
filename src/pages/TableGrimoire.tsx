@@ -320,15 +320,11 @@ function TableList() {
           onRecord={(record) => setHistory((list) => [{ ...record, id: (list[0]?.id ?? 0) + 1 }, ...list].slice(0, 50))}
           onOpen={open}
           onClose={() => setSelected(null)}
-          pin={
-            // Tabelas do mestre na faixa do Combat Tracker: backlog (GT5).
-            selected.table.book === 'DM'
-              ? undefined
-              : {
-                  pinned: quickTableIDs(combat.settings.quickTables).includes(selected.table.id),
-                  onToggle: () => updateCombat((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, selected.table.id))),
-                }
-          }
+          pin={{
+            // Também as do mestre (GT5c): na faixa, aparecem só com a campanha delas ativa.
+            pinned: quickTableIDs(combat.settings.quickTables).includes(selected.table.id),
+            onToggle: () => updateCombat((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, selected.table.id))),
+          }}
           onEdit={(() => {
             const found = dmTables.find((d) => d.table.id === selected.table.id)
             return found ? () => setEditing({ row: found.row, data: found.row.data }) : undefined

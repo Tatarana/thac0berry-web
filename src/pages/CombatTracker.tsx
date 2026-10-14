@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
 import { AttackWindow, EndEncounterWindow, LogWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
@@ -11,7 +11,9 @@ import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { loadTables } from '../data/tables'
+import { useAuth } from '../auth/context'
 import { useActiveCampaign } from '../lib/activeCampaign'
+import { fetchDmTables, type DmTableRow } from '../lib/dmTables'
 import { useCombatStore } from '../lib/combatStore'
 import { useConfirm } from '../lib/useConfirm'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
@@ -32,6 +34,7 @@ import {
   type XpAward,
 } from '../rules/combat'
 import { appendLog, describeChanges } from '../rules/combatLog'
+import { asGrimoireTable } from '../rules/dmTables'
 import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import type { GrimoireTable } from '../rules/tableIndex'
 
@@ -60,13 +63,13 @@ function Tracker() {
   const [initiativeOpen, setInitiativeOpen] = useState(false)
   const [roundsOpen, setRoundsOpen] = useState(false)
   // Tabelas rápidas (CT4): a janela é a do Table Grimoire; o histórico vale para a visita.
-  const [tables, setTables] = useState<GrimoireTable[]>([])
+  const [bookTables, setBookTables] = useState<GrimoireTable[]>([])
   const [openTable, setOpenTable] = useState<{ table: GrimoireTable; autoRoll: boolean; opened: number } | null>(null)
   const [rollHistory, setRollHistory] = useState<RollRecord[]>([])
   const showTable = (table: GrimoireTable, autoRoll = false) => setOpenTable((now) => ({ table, autoRoll, opened: (now?.opened ?? 0) + 1 }))
 
   useEffect(() => {
-    void loadTables().then(setTables)
+    void loadTables().then(setBookTables)
   }, [])
 
   const navigate = useNavigate()
@@ -82,6 +85,30 @@ function Tracker() {
   const campaign = useActiveCampaign()
   const campaignID = campaign?.id ?? null
   const campaignName = campaign?.id === null ? 'One-shot' : campaign?.name || 'Unnamed campaign'
+  // Tabelas do mestre da campanha ativa (GT5c): entram na faixa e na busca
+  // "+ Table" como as de livro; fixadas em outra campanha, somem daqui.
+  const { session } = useAuth()
+  const userID = session?.user.id ?? null
+  const [dmRows, setDmRows] = useState<DmTableRow[]>([])
+  useEffect(() => {
+    if (!userID || !campaign) return
+    let cancelled = false
+    fetchDmTables(userID, campaignID)
+      .then((rows) => {
+        if (!cancelled) setDmRows(rows)
+      })
+      .catch(() => {
+        // Sem as tabelas do mestre, a faixa segue só com as de livro.
+        if (!cancelled) setDmRows([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userID, campaignID, campaign])
+  const tables = useMemo(
+    () => (bookTables.length > 0 ? [...bookTables, ...dmRows.map((row) => asGrimoireTable(row.id, row.data, campaignName))] : bookTables),
+    [bookTables, dmRows, campaignName],
+  )
   const mine = encountersOf(store.encounters, campaignID)
   const active = mine.filter((e) => !e.endedAt)
   const past = mine.filter((e) => e.endedAt)

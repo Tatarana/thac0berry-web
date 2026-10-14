@@ -323,3 +323,13 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   `useConfirm`; no navegador embutido eles não apareciam e devolviam "não".
   Não sobrou nenhum `window.confirm`/`alert`/`prompt` na web. Conferido no
   navegador (cancelar e confirmar em cada um).
+- 2026-10-14, tabelas do mestre na faixa (G5c, docs/grimorio-de-tabelas.md;
+  web v0.81.0). No Table Grimoire, a tabela do mestre
+  também tem "☆ Combat Tracker" (o id `dm-<uuid>` entra em
+  `settings.quickTables`, como os de livro); o Combat Tracker carrega as
+  tabelas do mestre da campanha ativa e as junta às de livro, para a faixa, a
+  busca "+ Table" e a janela da tabela. Fixada em outra campanha, a tabela não
+  aparece (o id fica guardado e volta com a campanha dela). Chip "DM <título>".
+  Teste em `tests/quickTables.test.ts`. Conferido no navegador (One-shot): criar
+  um d6, fixar, ver o chip na faixa de um encontro, abrir e rolar
+  ("2 → 2"), desafixar; encontro e tabela de teste apagados.
