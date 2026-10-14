@@ -5267,3 +5267,59 @@ button.slot-dot:hover {
   font-size: 0.82rem;
   color: var(--ink);
 }
+
+/* Tabelas do mestre (GT5). */
+.dm-tables {
+  margin: 10px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgb(47 39 28 / 0.15);
+}
+
+.dm-tables-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dm-table-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dm-table-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dm-table-dice {
+  max-width: 12rem;
+}
+
+.dm-table-cell {
+  width: 100%;
+  min-width: 6rem;
+  border: none;
+  border-bottom: 1px dashed rgb(47 39 28 / 0.25);
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.dm-table-range {
+  min-width: 3.5rem;
+  max-width: 5rem;
+}
+
+.dm-table-actions {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.dm-table-problems {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--red-ink);
+}

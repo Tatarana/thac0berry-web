@@ -47,7 +47,8 @@ entregas e pendências. Atualizar a cada entrega.
 | GT4a | Lista de livros nos dados (`thac0berry-data/data/books.json`: título, cenário, ordem) + filtro de cenário no Rules Reference e no Table Grimoire | feita (web v0.42.0; data PR #2) |
 | GT4 | Dados (thac0berry-data): tabelas que faltam do DMG e correções (dado da 88, títulos sem número, "0" → "00") | feita (web v0.57.0; thac0berry-data `gt4/tabelas-dmg`) |
 | GT4b | Cenários (um por entrega), das páginas da wiki no dump do data-mining | Ravenloft feito (web v0.58–0.62, `docs/ravenloft.md`); Planescape feito (web v0.63.0); Forgotten Realms feito (web v0.66.0); Dragonlance feito (web v0.67.0); Council of Wyrms feito (web v0.68.0); Al-Qadim feito (web v0.69.0); Thri-Kreen feito (web v0.70.0, livro TKA no cenário Dark Sun). Birthright fora: o dump não tem o livro de regras. **GT4b concluída** |
-| GT5 | Tabelas do mestre (decisão 1) | adiada |
+| GT5a | Tabelas do mestre: na conta (`dm_table`), só do mestre, da campanha ativa ou do One-shot; editor (título, dado, colunas, linhas, avisos de faixa); "Your tables" no Table Grimoire, rolando com o mesmo motor | feita (web v0.79.0; backend `20261014180000`) |
+| GT5b | "Copy to my tables" a partir de uma tabela de livro; "Copy to another campaign…" (cópia independente) | a fazer |
 
 ## Backlog
 
@@ -63,7 +64,8 @@ entregas e pendências. Atualizar a cada entrega.
   e funda nas listas de equipamento do AA); precisa do livro.
 - Resumos das regras com o markdown cru na lista ("**vision**", 83 regras):
   tarefa separada aberta em 2026-10-12.
-- GT5: tabelas do mestre (adiada).
+- Tabelas do mestre na faixa de tabelas rápidas do Combat Tracker (decisão do
+  usuário, 2026-10-14: depois da GT5).
 
 ## Log
 
@@ -324,3 +326,25 @@ entregas e pendências. Atualizar a cada entrega.
   cenário; os avisos citam o PWH no lugar da Tabela 7 do PHB. Fora: altura,
   peso e idade (a web não preenche esses campos para nenhuma raça) e a tabela
   de habilidades aleatórias do tiefling (fica no Table Grimoire).
+- 2026-10-14, GT5 aprovada (decisões do usuário): a tabela é **só do mestre**
+  (os jogadores não veem); fica **na campanha ativa** (ou no One-shot), com a
+  opção de **copiar para outra campanha** (cópia independente); pode **começar
+  copiando uma tabela de livro**. Entregas G5a e G5b; a faixa do Combat Tracker
+  fica para depois.
+- 2026-10-14, G5a feita (web v0.79.0; backend `20261014180000_gt5_tabelas_do_mestre.sql`,
+  8 verificações pgTAP):
+  - **backend:** `dm_table` (o JSON da tabela em `data`; `name` gerado do título),
+    só o dono lê e grava, com campanha dele ou nula (One-shot); contrato de sempre;
+  - **web:** `src/rules/dmTables.ts` (a tabela do mestre no formato das tabelas
+    dos livros: o dado vai no primeiro cabeçalho, onde o motor o procura; sem dado,
+    só consulta — o cabeçalho perde "roll"/"dice" para não virar rolável pelo
+    nome; avisos de faixa: inválida, buraco, sobreposição, fora do dado), com
+    testes; `src/lib/dmTables.ts`; `src/components/DmTableEditor.tsx` (título,
+    dado com sugestões, colunas e linhas, notas, avisos que não impedem gravar,
+    "delete table" com confirmação); no Table Grimoire, "Your tables ·
+    <campanha>" com "+ New table" (a busca vale para as duas listas) e, na tabela
+    aberta, "✎ Edit table";
+  - conferido no navegador (One-shot): criar um d6, o aviso "No row for 6" ao
+    tirar a última linha, corrigir para 5-6, salvar, rolar ("2 → Wolves", linha
+    em destaque, histórico), editar o título (versão 2, sem conflito) e apagar
+    (`deleted_at`).
