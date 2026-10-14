@@ -45,11 +45,11 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT4 | Tabelas rápidas: faixa com as tabelas de combate (35, 36, 39, 40/41, 43, 44, 46, 47, 48, 49/50, 51, 57, 58, 59), janela do Table Grimoire (com Roll) e lista do DM | feita (web v0.49.0) |
 | CT5a | Surpresa, salvamentos de monstro, XP no fim (decisão do usuário: a sugestão) | feita (web v0.51.0) |
 | CT5b | "Acerta?" (ataque contra a CA, Tabela 35, dano) e log do combate | feita (web v0.52.0) |
+| CT6 | Distância (Tabela 58) e reação (Tabela 59, com o Carisma de quem fala) antes da rodada 1 | feita (web v0.82.0) |
 
 ## Backlog
 
-- CT5 sem prioridade: distância e reação (Tabelas 58/59 já estão na faixa de
-  tabelas) e efeitos com duração em vários combatentes de uma vez.
+- Efeitos com duração em vários combatentes de uma vez.
 - Lançar o XP do fim do encontro nas fichas do App.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
@@ -333,3 +333,32 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
   Teste em `tests/quickTables.test.ts`. Conferido no navegador (One-shot): criar
   um d6, fixar, ver o chip na faixa de um encontro, abrir e rolar
   ("2 → 2"), desafixar; encontro e tabela de teste apagados.
+- 2026-10-14, CT6 feita (web v0.82.0; decisões do usuário: botões separados,
+  como o Surprise; o resultado da reação aparece na linha até a rodada 1
+  começar, e fica no log):
+  - **dados primeiro** (thac0berry-data `scripts/fix_dmg_table_59.py`): a
+    Tabela 59 do DMG tinha perdido a coluna dos PCs hostis (os "Flight"): na
+    wiki o cabeçalho tem duas linhas e a importação cortou as linhas na largura
+    da segunda. Cabeçalho novo: "Modified Die Roll (2d10)", "Friendly PCs" …
+    "Hostile PCs" (conferido no dump);
+  - `src/rules/tableRoll.ts`: faixas "2 or less" e "20 or more" (a 59 passa a
+    rolar no Grimoire também);
+  - `src/rules/encounterStart.ts` (com testes nos dados reais): linhas da
+    Tabela 58 com dado e multiplicador ("2d6 x 10"; "Limit of sight" sem dado),
+    a linha que a surpresa já decidiu (os dois lados surpresos 3d6, um 4d6),
+    atitudes dos PCs pelas colunas da 59, total = 2d10 + modificador − ajuste
+    de reação do Carisma (na tabela, número baixo é amistoso), resultado com
+    as pontas valendo para abaixo de 2 e acima de 20;
+    `charismaReactionAdjustment` em `src/rules/rules.ts` (o da ficha primeiro,
+    como o ajuste da DEX);
+  - janelas **Distance** e **Reaction** (`src/components/CombatStart.tsx`) ao
+    lado do Surprise: terreno em chips com o dado, Roll ou valor digitado;
+    atitude dos PCs, quem fala pelo grupo (o lado Party; o Carisma vem da
+    ficha dos personagens do App, editável), outro modificador (descrição da
+    criatura ou Tabela 50), 2d10 rolado ou digitado; o encontro guarda
+    `distance` e `reaction` (campos opcionais) e o log registra os dois;
+  - conferido no navegador (One-shot, PC sem App): floresta clara 2d6 × 10 →
+    40 ft; PCs hostis, Rufus com Carisma +2, 2d10 = 5 → 3 → Flight; a linha
+    mostra os dois e o log ganhou as duas linhas; encontro de teste apagado.
+    O Carisma lido da ficha está coberto pelo teste (o One-shot não tem
+    personagens do App).

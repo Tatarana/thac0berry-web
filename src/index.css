@@ -4759,6 +4759,15 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
+/* CT6: distância e reação. */
+.initiative-reaction {
+  font-weight: 700;
+}
+
+.start-result {
+  margin-top: 10px;
+}
+
 .surprise-side {
   padding: 8px 0;
   border-bottom: 1px solid rgb(107 92 70 / 0.2);

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/CombatInitiative'
 import { AttackWindow, EndEncounterWindow, LogWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
 import { MoraleWindow } from '../components/CombatMorale'
+import { DistanceWindow, ReactionWindow } from '../components/CombatStart'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
 import { AddMonsterWindow, AddPersonWindow, CombatSettingsWindow, CombatTable, NewEncounterWindow } from '../components/CombatParts'
@@ -76,6 +77,7 @@ function Tracker() {
   const [creating, setCreating] = useState(false)
   const [showPast, setShowPast] = useState(false)
   const [surpriseOpen, setSurpriseOpen] = useState(false)
+  const [startWindow, setStartWindow] = useState<'distance' | 'reaction' | null>(null)
   const [ending, setEnding] = useState(false)
   const [saveID, setSaveID] = useState<string | null>(null)
   const [attackID, setAttackID] = useState<string | null>(null)
@@ -296,6 +298,8 @@ function Tracker() {
                 onOpen={() => setInitiativeOpen(true)}
                 onRounds={current.history?.length ? () => setRoundsOpen(true) : undefined}
                 onSurprise={() => setSurpriseOpen(true)}
+                onDistance={() => setStartWindow('distance')}
+                onReaction={() => setStartWindow('reaction')}
                 onLog={() => setLogOpen(true)}
               />
             )}
@@ -345,6 +349,12 @@ function Tracker() {
         <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
       {creating && <NewEncounterWindow encounters={store.encounters} campaignID={campaignID} campaignName={campaignName} onCreate={create} onClose={() => setCreating(false)} />}
+      {startWindow === 'distance' && current && (
+        <DistanceWindow encounter={current} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setStartWindow(null)} />
+      )}
+      {startWindow === 'reaction' && current && (
+        <ReactionWindow encounter={current} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setStartWindow(null)} />
+      )}
       {surpriseOpen && current && (
         <SurpriseWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setSurpriseOpen(false)} />
       )}

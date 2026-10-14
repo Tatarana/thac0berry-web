@@ -4,6 +4,7 @@
 // rolagens que não mudam nada (ataque, salvamento) entram como nota.
 
 import { sideLabels, statusOf, type Combatant, type Encounter, type Side } from './combat.ts'
+import { distanceText, reactionText } from './encounterStart.ts'
 
 export interface LogEntry {
   id: number
@@ -104,6 +105,9 @@ export function describeChanges(before: Encounter, after: Encounter, deathAt: nu
   if (after.surprise && JSON.stringify(after.surprise) !== JSON.stringify(before.surprise ?? null)) {
     out.push({ text: after.surprise.surprised.length ? `Surprise: ${after.surprise.surprised.map((s) => sideLabels[s]).join(' and ')} surprised` : 'Surprise: no one surprised' })
   }
+  // Distância e reação (CT6).
+  if (after.distance && JSON.stringify(after.distance) !== JSON.stringify(before.distance ?? null)) out.push({ text: distanceText(after.distance) })
+  if (after.reaction && JSON.stringify(after.reaction) !== JSON.stringify(before.reaction ?? null)) out.push({ text: reactionText(after.reaction) })
   // Quem entrou e saiu.
   const ids0 = new Set(before.combatants.map((c) => c.id))
   const ids1 = new Set(after.combatants.map((c) => c.id))

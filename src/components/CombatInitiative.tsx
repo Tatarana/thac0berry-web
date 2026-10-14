@@ -24,6 +24,7 @@ import {
   type RoundSnapshot,
   type Side,
 } from '../rules/combat'
+import { distanceText, reactionText } from '../rules/encounterStart'
 import { PaperModal } from './DetailBits'
 import { useConfirm } from '../lib/useConfirm'
 
@@ -56,6 +57,8 @@ export function InitiativeBar({
   onOpen,
   onRounds,
   onSurprise,
+  onDistance,
+  onReaction,
   onLog,
 }: {
   encounter: Encounter
@@ -70,6 +73,9 @@ export function InitiativeBar({
   onRounds?: () => void
   /** Teste de surpresa (antes da rodada 1). */
   onSurprise: () => void
+  /** Distância e reação (CT6, antes da rodada 1). */
+  onDistance: () => void
+  onReaction: () => void
   /** Log do combate (CT5b). */
   onLog: () => void
 }) {
@@ -105,9 +111,17 @@ export function InitiativeBar({
           {!started && !canStart ? 'Roll initiative' : 'Initiative'}
         </button>
         {encounter.round === 0 && !started && (
-          <button className="chip" onClick={onSurprise}>
-            Surprise
-          </button>
+          <>
+            <button className="chip" onClick={onSurprise}>
+              Surprise
+            </button>
+            <button className="chip" onClick={onDistance}>
+              Distance
+            </button>
+            <button className="chip" onClick={onReaction}>
+              Reaction
+            </button>
+          </>
         )}
         {onRounds && (
           <button className="chip" onClick={onRounds}>
@@ -125,6 +139,9 @@ export function InitiativeBar({
             : 'No one surprised'}
         </span>
       )}
+      {/* CT6: até a rodada 1 começar (depois, ficam no log). */}
+      {encounter.round === 0 && encounter.distance && <span className="paper-soft">{distanceText(encounter.distance)}</span>}
+      {encounter.round === 0 && encounter.reaction && <span className="initiative-reaction">{reactionText(encounter.reaction)}</span>}
     </div>
   )
 }
