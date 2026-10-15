@@ -4760,6 +4760,80 @@ button.slot-dot:hover {
 }
 
 /* Combat Tracker ao vivo. */
+.live-card .btn {
+  align-self: flex-start;
+}
+
+.live-round {
+  margin: 0;
+}
+
+.live-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.live-now {
+  font-weight: 700;
+}
+
+.live-alert {
+  margin: 0;
+  font-weight: 700;
+}
+
+.live-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.live-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.live-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgb(201 162 39 / 0.18);
+}
+
+.live-name {
+  min-width: 9rem;
+  font-weight: 700;
+}
+
+.live-acting .live-name {
+  text-decoration: underline;
+}
+
+.live-down {
+  opacity: 0.75;
+}
+
+.live-dead {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.live-conds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.live-updated {
+  font-size: 0.85rem;
+}
+
 .cg-hidden {
   font-weight: 700;
   font-style: italic;

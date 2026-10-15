@@ -14,13 +14,14 @@ let counter = 0
 
 /**
  * Assina as mudanças de uma tabela, com um filtro do Realtime ("id=eq.<uuid>",
- * "character_id=eq.<uuid>"). Devolve a função que cancela a assinatura.
+ * "character_id=eq.<uuid>"; vazio = sem filtro — o Realtime não filtra DELETE
+ * por coluna). Devolve a função que cancela a assinatura.
  */
 export function subscribeRows(table: string, filter: string, onChange: (change: RowChange) => void): () => void {
   // Nome único: o supabase-js reaproveita canais de mesmo nome.
   const channel = supabase
     .channel(`${table}:${filter}:${++counter}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table, filter }, (payload) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table, ...(filter ? { filter } : {}) }, (payload) => {
       onChange({ event: payload.eventType, row: (payload.new ?? {}) as Record<string, unknown> })
     })
     .subscribe()

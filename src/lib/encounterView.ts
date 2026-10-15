@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Encounter } from '../rules/combat'
 import { isShared, playerView, type PlayerView } from '../rules/playerView'
+import { subscribeRows, uuidFilter } from './realtime'
 import { supabase } from './supabase'
 
 // Combat Tracker ao vivo (backend `encounter_view`): o app do mestre publica a
@@ -80,4 +81,46 @@ export function usePlayerViewPublisher(encounters: Encounter[], campaignID: stri
   }, [encounters, campaignID, deathAt, userID, loaded, retry])
 
   return { error }
+}
+
+// --- Lado dos jogadores (L3) ---------------------------------------------------------------
+
+export interface LiveEncounter {
+  encounterID: string
+  data: PlayerView
+  updatedAt: string
+}
+
+/** As vistas ao vivo de uma campanha (null enquanto carrega), relidas a cada aviso do Realtime. */
+export function useLiveEncounters(campaignID: string | null) {
+  const [views, setViews] = useState<LiveEncounter[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    if (!campaignID) return
+    let cancelled = false
+    const load = () =>
+      void supabase
+        .from('encounter_view')
+        .select('encounter_id, data, updated_at')
+        .eq('campaign_id', campaignID)
+        .order('updated_at', { ascending: false })
+        .then(({ data, error: e }) => {
+          if (cancelled) return
+          if (e) setError(e.message)
+          else {
+            setError(null)
+            setViews((data as { encounter_id: string; data: PlayerView; updated_at: string }[]).map((r) => ({ encounterID: r.encounter_id, data: r.data, updatedAt: r.updated_at })))
+          }
+        })
+    load()
+    const stop = subscribeRows('encounter_view', uuidFilter('campaign_id', campaignID), load)
+    // O mestre tirou a vista: o DELETE não passa pelo filtro de coluna; vem só com o id.
+    const stopDeletes = subscribeRows('encounter_view', '', (change) => change.event === 'DELETE' && load())
+    return () => {
+      cancelled = true
+      stop()
+      stopDeletes()
+    }
+  }, [campaignID])
+  return { views, error }
 }
