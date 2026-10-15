@@ -4,6 +4,7 @@ import { InitiativeBar, InitiativeWindow, RoundsWindow } from '../components/Com
 import { AttackWindow, EndEncounterWindow, LogWindow, SaveWindow, SurpriseWindow } from '../components/CombatExtras'
 import { MoraleWindow } from '../components/CombatMorale'
 import { EffectWindow } from '../components/CombatEffects'
+import { XpToSheetsWindow } from '../components/CombatXp'
 import { DistanceWindow, ReactionWindow } from '../components/CombatStart'
 import { QuickTables } from '../components/CombatTables'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
@@ -37,6 +38,7 @@ import {
 } from '../rules/combat'
 import { appendLog, describeChanges } from '../rules/combatLog'
 import { asGrimoireTable } from '../rules/dmTables'
+import { xpAppliedText } from '../rules/xpToSheets'
 import { quickTableIDs, toggleQuickTable } from '../rules/quickTables'
 import type { GrimoireTable } from '../rules/tableIndex'
 
@@ -80,6 +82,8 @@ function Tracker() {
   const [surpriseOpen, setSurpriseOpen] = useState(false)
   const [startWindow, setStartWindow] = useState<'distance' | 'reaction' | null>(null)
   const [effectOpen, setEffectOpen] = useState(false)
+  // CT9: "end" = aberta pelo fim do encontro (ao fechar, segue para DM Tools); "later" = pelo encontro encerrado.
+  const [xpOpen, setXpOpen] = useState<'end' | 'later' | null>(null)
   const [ending, setEnding] = useState(false)
   const [saveID, setSaveID] = useState<string | null>(null)
   const [attackID, setAttackID] = useState<string | null>(null)
@@ -152,11 +156,17 @@ function Tracker() {
   }
 
   // Encerra com o XP do resumo (fica guardado em "Past encounters") e volta à tela anterior.
-  const finish = (award: XpAward) => {
-    if (!current) return
-    editEncounter((e) => Object.assign(e, endEncounter(e, new Date().toISOString(), award)))
+  const leave = () => {
     update((draft) => void (draft.currentID = nextActive(draft.encounters)))
     navigate('/dm')
+  }
+  const finish = (award: XpAward, toSheets: boolean) => {
+    if (!current) return
+    editEncounter((e) => Object.assign(e, endEncounter(e, new Date().toISOString(), award)))
+    setEnding(false)
+    // Lançar nas fichas: o encontro encerrado fica na tela até a janela fechar.
+    if (toSheets) setXpOpen('end')
+    else leave()
   }
 
   const remove = async () => {
@@ -260,6 +270,11 @@ function Tracker() {
               <p className="paper-soft combat-ended">
                 Ended on {new Date(current.endedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}, round {current.round}
                 {current.xpAward ? ` · ${current.xpAward.total.toLocaleString('en-US')} XP, ${current.xpAward.each.toLocaleString('en-US')} each` : ''}.{' '}
+                {current.xpAward && current.xpAward.each > 0 && (
+                  <button className="chip" onClick={() => setXpOpen('later')}>
+                    {current.xpApplied ? 'XP added to the sheets' : 'Add XP to the sheets'}
+                  </button>
+                )}{' '}
                 <button className="chip" onClick={() => editEncounter((e) => Object.assign(e, reopenEncounter(e)))}>
                   Reopen
                 </button>
@@ -356,6 +371,17 @@ function Tracker() {
         <InitiativeWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setInitiativeOpen(false)} />
       )}
       {creating && <NewEncounterWindow encounters={store.encounters} campaignID={campaignID} campaignName={campaignName} onCreate={create} onClose={() => setCreating(false)} />}
+      {xpOpen && current && (
+        <XpToSheetsWindow
+          encounter={current}
+          onApplied={(applied) => editEncounter((e) => void (e.xpApplied = applied), [xpAppliedText(applied)])}
+          onClose={() => {
+            const from = xpOpen
+            setXpOpen(null)
+            if (from === 'end') leave()
+          }}
+        />
+      )}
       {effectOpen && current && (
         <EffectWindow encounter={current} settings={store.settings} onChange={(next, notes) => editEncounter((e) => Object.assign(e, next), notes)} onClose={() => setEffectOpen(false)} />
       )}

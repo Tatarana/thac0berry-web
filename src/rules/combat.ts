@@ -76,6 +76,8 @@ export interface Encounter {
   reaction?: import('./encounterStart.ts').ReactionResult | null
   /** XP do fim do encontro (CT5a), guardado ao encerrar. */
   xpAward?: XpAward | null
+  /** XP lançado nas fichas (CT9); ausente/null = ainda não lançado. */
+  xpApplied?: import('./xpToSheets.ts').XpApplied | null
   /** Log do combate (CT5b, src/rules/combatLog.ts); ausente em encontros antigos. */
   log?: import('./combatLog.ts').LogEntry[]
 }

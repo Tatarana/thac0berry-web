@@ -4759,6 +4759,16 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
+/* CT9: XP nas fichas. */
+.xp-amount {
+  width: 4.5rem;
+}
+
+.end-plain {
+  display: block;
+  margin: 8px auto 0;
+}
+
 /* CT7: efeitos em vários combatentes. */
 .effect-targets {
   list-style: none;
