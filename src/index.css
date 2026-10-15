@@ -4759,6 +4759,12 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
+/* Combat Tracker ao vivo. */
+.cg-hidden {
+  font-weight: 700;
+  font-style: italic;
+}
+
 /* CT9: XP nas fichas. */
 .xp-amount {
   width: 4.5rem;

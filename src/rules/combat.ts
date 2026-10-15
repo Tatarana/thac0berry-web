@@ -52,6 +52,8 @@ export interface Combatant {
   thac0Text?: string
   /** Último teste de moral (CT3); ausente em combatentes de antes do CT3. */
   lastMorale?: MoraleCheck | null
+  /** Fora da vista dos jogadores (Combat Tracker ao vivo): a emboscada que ainda não apareceu. */
+  hidden?: boolean
 }
 
 export interface Encounter {
@@ -76,6 +78,8 @@ export interface Encounter {
   reaction?: import('./encounterStart.ts').ReactionResult | null
   /** XP do fim do encontro (CT5a), guardado ao encerrar. */
   xpAward?: XpAward | null
+  /** "Show to players" (Combat Tracker ao vivo): a vista filtrada vai para os membros da campanha. */
+  sharedWithPlayers?: boolean
   /** XP lançado nas fichas (CT9); ausente/null = ainda não lançado. */
   xpApplied?: import('./xpToSheets.ts').XpApplied | null
   /** Log do combate (CT5b, src/rules/combatLog.ts); ausente em encontros antigos. */
