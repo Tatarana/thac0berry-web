@@ -357,7 +357,7 @@ function Tracker() {
       )}
       {creating && <NewEncounterWindow encounters={store.encounters} campaignID={campaignID} campaignName={campaignName} onCreate={create} onClose={() => setCreating(false)} />}
       {effectOpen && current && (
-        <EffectWindow encounter={current} settings={store.settings} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setEffectOpen(false)} />
+        <EffectWindow encounter={current} settings={store.settings} onChange={(next, notes) => editEncounter((e) => Object.assign(e, next), notes)} onClose={() => setEffectOpen(false)} />
       )}
       {startWindow === 'distance' && current && (
         <DistanceWindow encounter={current} onChange={(next) => editEncounter((e) => Object.assign(e, next))} onClose={() => setStartWindow(null)} />

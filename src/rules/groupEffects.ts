@@ -61,3 +61,59 @@ export function conditionSuggestions(e: Pick<Encounter, 'combatants'>): string[]
 }
 
 export const roundsText = (rounds: number | null) => (rounds === null ? 'no limit' : `${rounds} round${rounds === 1 ? '' : 's'}`)
+
+// --- CT8: salvamento por alvo ----------------------------------------------------------------
+
+/** As 5 categorias do PHB, na ordem da Tabela 46 do DMG e da ficha. */
+export const saveCategoryKeys = [
+  { id: 'ppd', key: 'paralyzationPoisonDeath', label: 'Paralyzation, poison or death' },
+  { id: 'rsw', key: 'rodStaffWand', label: 'Rod, staff or wand' },
+  { id: 'pp', key: 'petrificationPolymorph', label: 'Petrification or polymorph' },
+  { id: 'bw', key: 'breathWeapon', label: 'Breath weapon' },
+  { id: 'sp', key: 'spell', label: 'Spell' },
+] as const
+
+/** O que acontece com quem salva: não recebe o efeito, ou só fica anotado (metade do dano, lançado à mão). */
+export type SaveMode = 'negates' | 'half'
+
+type SheetSaves = Partial<Record<(typeof saveCategoryKeys)[number]['key'], number>> & { modifiers?: Record<string, number> | null }
+
+/** Valor de salvamento do PC pela ficha: o da linha menos o modificador (como na ficha); null sem o valor. */
+export function sheetSaveTarget(saves: SheetSaves | null | undefined, category: number): number | null {
+  const cat = saveCategoryKeys[category]
+  const base = saves?.[cat.key]
+  if (typeof base !== 'number' || !Number.isFinite(base)) return null
+  return base - (saves?.modifiers?.[cat.id] ?? 0)
+}
+
+/** Uma linha da lista de salvamentos: o valor a tirar e o d20 (null = falta). */
+export interface TargetSave {
+  id: string
+  target: number | null
+  roll: number | null
+}
+
+/** Salvou: d20 + modificador ≥ valor; null enquanto falta o valor ou o d20. */
+export function saveSucceeds(s: TargetSave, modifier: number): boolean | null {
+  if (s.target === null || s.roll === null) return null
+  return s.roll + modifier >= s.target
+}
+
+/** Quem recebe o efeito: em "negates", só quem falhou; em "half", todos (quem salvou só fica no log). */
+export function affectedIDs(saves: TargetSave[], modifier: number, mode: SaveMode): string[] {
+  return saves.filter((s) => mode === 'half' || saveSucceeds(s, modifier) === false).map((s) => s.id)
+}
+
+/** A nota do log: "Save vs Spell (−2) for Hold Person: Orc 2 saved (15); Orc 1 failed (6)". */
+export function saveNote(effect: string, category: number, modifier: number, saves: (TargetSave & { name: string })[]): string {
+  const mod = modifier === 0 ? '' : ` (${modifier > 0 ? '+' : '−'}${Math.abs(modifier)})`
+  const part = (ok: boolean) =>
+    saves
+      .filter((s) => saveSucceeds(s, modifier) === ok)
+      .map((s) => `${s.name} (${s.roll})`)
+      .join(', ')
+  const saved = part(true)
+  const failed = part(false)
+  const what = effect.trim() ? ` for ${effect.trim()}` : ''
+  return `Save vs ${saveCategoryKeys[category].label.toLowerCase()}${mod}${what}: ${[saved && `saved ${saved}`, failed && `failed ${failed}`].filter(Boolean).join('; ')}`
+}
