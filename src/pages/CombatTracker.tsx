@@ -18,6 +18,7 @@ import { useAuth } from '../auth/context'
 import { useActiveCampaign } from '../lib/activeCampaign'
 import { fetchDmTables, type DmTableRow } from '../lib/dmTables'
 import { useCombatStore } from '../lib/combatStore'
+import { usePlayerViewPublisher } from '../lib/encounterView'
 import { useConfirm } from '../lib/useConfirm'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
@@ -113,6 +114,8 @@ function Tracker() {
       cancelled = true
     }
   }, [userID, campaignID, campaign])
+  // Combat Tracker ao vivo: a vista dos jogadores dos encontros compartilhados.
+  const { error: viewError } = usePlayerViewPublisher(store.encounters, campaignID, store.settings.deathAt, userID)
   const tables = useMemo(
     () => (bookTables.length > 0 ? [...bookTables, ...dmRows.map((row) => asGrimoireTable(row.id, row.data, campaignName))] : bookTables),
     [bookTables, dmRows, campaignName],
@@ -213,6 +216,7 @@ function Tracker() {
         {dialog}
         {saveError && <p className="paper-soft save-error">Could not save on this device: {saveError}</p>}
         {syncError && <p className="paper-soft save-error">Could not sync with your account (kept on this device; it will try again): {syncError}</p>}
+        {viewError && <p className="paper-soft save-error">Could not update what the players see (it will try again): {viewError}</p>}
         {conflict && (
           <div className="conflict-note" role="status">
             This encounter was also changed on another device. Your version was saved; the other one is kept in the history.{' '}
@@ -298,6 +302,15 @@ function Tracker() {
                   </button>
                 )}
               </div>
+              {campaignID && signedIn && !current.endedAt && (
+                <button
+                  className={current.sharedWithPlayers ? 'chip chip-on combat-share' : 'chip combat-share'}
+                  title={current.sharedWithPlayers ? 'The players of this campaign see this encounter live (no enemy hit points, notes or morale). Tap to stop.' : 'Let the players of this campaign follow this encounter live'}
+                  onClick={() => editEncounter((e) => void (e.sharedWithPlayers = !e.sharedWithPlayers))}
+                >
+                  {current.sharedWithPlayers ? '◉ Shown to players' : 'Show to players'}
+                </button>
+              )}
               {!current.endedAt && (
                 <button className="chip chip-on combat-end" onClick={() => setEnding(true)}>
                   End encounter
@@ -336,6 +349,7 @@ function Tracker() {
                 initiative={initiative}
                 beforeFight={current.round === 0}
                 surprised={current.round <= 1 ? (current.surprise?.surprised ?? []) : []}
+                sharing={!!current.sharedWithPlayers && !current.endedAt}
                 onChange={replace}
                 onRemove={drop}
                 onOpenMonster={(c) => {

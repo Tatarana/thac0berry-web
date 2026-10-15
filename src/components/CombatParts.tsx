@@ -75,6 +75,7 @@ export function CombatTable({
   initiative,
   beforeFight = false,
   surprised = [],
+  sharing = false,
   onChange,
   onRemove,
   onOpenMonster,
@@ -92,6 +93,8 @@ export function CombatTable({
   surprised?: Side[]
   /** Antes da rodada 1: só então os PV dos monstros podem ser rolados de novo. */
   beforeFight?: boolean
+  /** Encontro mostrado aos jogadores (ao vivo): cada um pode ficar escondido. */
+  sharing?: boolean
   onChange: (next: Combatant) => void
   onRemove: (id: string) => void
   /** Ficha do monstro (quando o índice já carregou). */
@@ -147,7 +150,7 @@ export function CombatTable({
                 </th>
               </tr>
               {list.map((c) => (
-                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} beforeFight={beforeFight} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} onAttack={() => onAttack(c)} />
+                <CombatRow key={c.id} c={c} settings={settings} acting={acting.has(c.id)} init={initiative[c.id]} surprised={surprised.includes(c.side)} beforeFight={beforeFight} sharing={sharing} onChange={onChange} onRemove={() => onRemove(c.id)} onOpenMonster={onOpenMonster(c)} onMorale={() => onMorale(c)} onSave={() => onSave(c)} onAttack={() => onAttack(c)} />
               ))}
             </tbody>
           )
@@ -212,6 +215,7 @@ function CombatRow({
   init,
   surprised,
   beforeFight,
+  sharing,
   onChange,
   onRemove,
   onOpenMonster,
@@ -225,6 +229,7 @@ function CombatRow({
   init?: { score: number; place: number }
   surprised?: boolean
   beforeFight?: boolean
+  sharing?: boolean
   onChange: (next: Combatant) => void
   onRemove: () => void
   onOpenMonster?: () => void
@@ -302,6 +307,16 @@ function CombatRow({
           {c.hitDice ? ` · HD ${c.hitDice}` : ''}
           {c.xp !== null ? ` · ${c.xp.toLocaleString('en-US')} XP` : ''}
           {status !== 'ok' && <strong className="cg-status"> · {status === 'down' ? 'Down' : 'Dead'}</strong>}
+          {sharing && (
+            <button
+              className={c.hidden ? 'cg-link cg-save cg-hidden' : 'cg-link cg-save'}
+              aria-label={`${c.name}: ${c.hidden ? 'show to players' : 'hide from players'}`}
+              title={c.hidden ? 'Hidden from players: tap to show' : 'Players see this one: tap to hide'}
+              onClick={() => onChange({ ...c, hidden: !c.hidden })}
+            >
+              {c.hidden ? 'hidden' : 'hide'}
+            </button>
+          )}
           {status === 'ok' && (
             <button className="cg-link cg-save" aria-label={`${c.name}: attack`} title="Attack: does it hit? (THAC0 − AC)" onClick={onAttack}>
               atk

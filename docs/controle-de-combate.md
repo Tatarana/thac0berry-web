@@ -49,10 +49,13 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT7 | Efeitos em vários combatentes de uma vez ("+ Effect": rodadas ou turnos, alvos por lado, tirar de todos) | feita (web v0.83.0) |
 | CT8 | Salvamento por alvo no "+ Effect" (ficha, Tabela 46 ou digitado; "negates" ou "half") | feita (web v0.84.0) |
 | CT9 | XP do encontro nas fichas (com o +10% do atributo principal), no fim ou depois | feita (web v0.85.0) |
+| L1 | Ao vivo: `encounter_view` no backend (vista filtrada; membros leem, só o mestre publica) | feita (backend `20261014210000`) |
+| L2 | Ao vivo: o mestre publica ("Show to players", "hide" por combatente) | feita (web v0.86.0) |
+| L3 | Ao vivo: a tela dos jogadores (cartão na campanha, só leitura) | a fazer |
 
 ## Backlog
 
-- Combat Tracker ao vivo (os jogadores veem o encontro).
+- Ao vivo, depois da L3: os jogadores interagirem (digitar a própria iniciativa, o d20 do salvamento).
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
 ## Log
@@ -427,3 +430,32 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     Teste W3.1b: a ficha foi de 0 para 3 XP, o encontro mostrou "XP added to
     the sheets" com o registro; a ficha voltou a 0 à mão, o encontro de teste
     foi apagado e a campanha ativa voltou ao One-shot; testes: 224 (2 novos).
+- 2026-10-14, Combat Tracker ao vivo aprovado (decisões do usuário: estado dos
+  inimigos em palavras, sem PV — unhurt, wounded até a metade, badly wounded
+  abaixo, down, dead; a reação não vai para os jogadores, a distância sim;
+  entregas L1, L2 e L3). O encontro tem segredos no JSON e a RLS não filtra
+  campos: o app do mestre publica uma vista filtrada em `encounter_view`.
+- 2026-10-14, L1 feita (backend `20261014210000_combate_ao_vivo_l1_vista_dos_jogadores.sql`,
+  12 verificações pgTAP): `encounter_view`, uma linha por encontro, escrita só
+  por `publish_encounter_view` / `unpublish_encounter_view` (o dono do encontro,
+  de campanha dele); os membros leem; no Realtime.
+- 2026-10-14, L2 feita (web v0.86.0):
+  - `src/rules/playerView.ts` (com testes, inclusive um que procura cada
+    segredo no JSON — notas, CA, THAC0, moral, XP, reação, log, os escondidos):
+    nome, rodada, a ordem da rodada (lados ou nomes; o passo de agora), lados
+    surpresos, distância e os combatentes: PV só do grupo, os outros em
+    palavras (`woundsOf`), condições com as rodadas, quem age;
+  - campos opcionais novos: `Encounter.sharedWithPlayers` e
+    `Combatant.hidden`;
+  - `src/lib/encounterView.ts`: ao abrir, lê o que a conta já publicou na
+    campanha ativa; publica só o que mudou, 1 s depois da última mudança, e
+    tira o que deixou de ser compartilhado (desligado, encerrado, apagado);
+    erro tenta de novo em 5 s e aparece na tela. Encontros compartilhados de
+    outra campanha continuam publicados até o mestre voltar a ela;
+  - no topo do encontro de campanha, "Show to players" / "◉ Shown to
+    players"; com ele ligado, cada combatente ganha "hide" / "hidden";
+  - conferido no navegador (campanha "Teste W3.1b B", o Kelmonito, real,
+    tirado do encontro antes; lendo `encounter_view` pelo cliente do app):
+    ligar publicou só o grupo; o orc entrou como "unhurt" sem PV; "hide" o
+    tirou da vista; desligar e apagar o encontro tiraram a linha; a campanha
+    ativa voltou ao One-shot; testes: 228 (4 novos).
