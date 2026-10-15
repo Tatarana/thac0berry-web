@@ -47,11 +47,11 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT5b | "Acerta?" (ataque contra a CA, Tabela 35, dano) e log do combate | feita (web v0.52.0) |
 | CT6 | Distância (Tabela 58) e reação (Tabela 59, com o Carisma de quem fala) antes da rodada 1 | feita (web v0.82.0) |
 | CT7 | Efeitos em vários combatentes de uma vez ("+ Effect": rodadas ou turnos, alvos por lado, tirar de todos) | feita (web v0.83.0) |
+| CT8 | Salvamento por alvo no "+ Effect" (ficha, Tabela 46 ou digitado; "negates" ou "half") | feita (web v0.84.0) |
 
 ## Backlog
 
-- Salvamento por alvo num efeito de grupo (Sleep, Hold Person: cada um rola e
-  só quem falha recebe); hoje o DM desmarca quem salvou antes do Apply.
+- Combat Tracker ao vivo (os jogadores veem o encontro).
 - Lançar o XP do fim do encontro nas fichas do App.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
@@ -384,3 +384,23 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     grupo → "Bless 10" nos dois e uma linha no log; "remove from all" tirou
     dos dois; encontro de teste apagado. A contagem e o fim juntos estão nos
     testes; testes: 221 (3 novos).
+- 2026-10-14, CT8 feita (web v0.84.0; decisões do usuário: uma coisa de cada
+  vez no item do backlog — o XP nas fichas e o Combat Tracker ao vivo depois;
+  "save for half" só registra no log quem salvou):
+  - `src/rules/groupEffects.ts` (com testes): as 5 categorias na ordem da
+    Tabela 46 e da ficha, `sheetSaveTarget` (o valor da ficha menos o
+    modificador, como a ficha mostra), `saveSucceeds` (d20 + modificador ≥
+    valor), `affectedIDs` ("negates": só quem falhou; "half": todos) e
+    `saveNote` (a linha do log com quem salvou e quem falhou, com o d20);
+  - janela **+ Effect**: "Saving throw for each target" com a categoria, um
+    modificador para todos, "save negates" / "save for half" e a lista dos
+    alvos: valor de salvamento da ficha (PC do App), da Tabela 46 pelos DV
+    (monstros e NPCs, como a janela "save") ou digitado; d20 digitado (PCs: o
+    jogador rola) ou "Roll the rest"; saved/failed em cada linha; "Apply to N
+    (who failed)". Em "half", o nome do efeito é opcional ("Log the saves");
+  - conferido no navegador (One-shot, 3 orcs de 1 DV): Hold Person 5 rodadas,
+    salvamento contra magia 17 (guerreiro de nível 1 na Tabela 46), "Roll the
+    rest" → um salvou e dois falharam; só os dois receberam "Hold Person 5"; o
+    log ganhou a linha do salvamento e a do efeito; encontro de teste apagado.
+    O valor lido da ficha está nos testes (o One-shot não tem personagens do
+    App); testes: 222 (1 novo).

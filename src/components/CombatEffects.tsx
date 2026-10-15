@@ -1,22 +1,33 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { sideLabels, statusOf, type CombatSettings, type Encounter, type Side } from '../rules/combat'
+import { useCampaignCharacters } from '../lib/campaignCharacters'
+import { rollDice } from '../rules/dice'
+import { sideLabels, statusOf, type CombatSettings, type Combatant, type Encounter, type Side } from '../rules/combat'
 import {
   activeGroupEffects,
+  affectedIDs,
   applyGroupEffect,
   conditionSuggestions,
   effectRounds,
   removeGroupEffect,
   roundsText,
+  saveCategoryKeys,
+  saveNote,
+  saveSucceeds,
+  sheetSaveTarget,
   targetsFor,
   type DurationUnit,
+  type SaveMode,
+  type TargetSave,
   type TargetShortcut,
 } from '../rules/groupEffects'
+import { saveLevel, savesFor, warriorSaveRows } from '../rules/surprise'
+import { useTable } from './CombatExtras'
 import { PaperModal } from './DetailBits'
 
 // CT7 do Combat Tracker (docs/controle-de-combate.md): a mesma condição em
-// vários combatentes de uma vez, e tirar de todos de uma vez. A regra está em
-// src/rules/groupEffects.ts.
+// vários combatentes de uma vez, e tirar de todos de uma vez. CT8: salvamento
+// por alvo antes de aplicar. A regra está em src/rules/groupEffects.ts.
 
 const newID = () => crypto.randomUUID().toUpperCase()
 const sides: Side[] = ['party', 'enemies', 'others']
@@ -25,12 +36,35 @@ const units: { key: DurationUnit; label: string }[] = [
   { key: 'turns', label: 'turns (×10 rounds)' },
   { key: 'none', label: 'no limit' },
 ]
+const d20 = { count: 1, sides: 20, modifier: 0 }
+const intOrNull = (text: string) => (/^[+-]?\d+$/.test(text.trim()) ? Number(text.trim().replace('+', '')) : null)
 
-export function EffectWindow({ encounter, settings, onChange, onClose }: { encounter: Encounter; settings: CombatSettings; onChange: (next: Encounter) => void; onClose: () => void }) {
+export function EffectWindow({
+  encounter,
+  settings,
+  onChange,
+  onClose,
+}: {
+  encounter: Encounter
+  settings: CombatSettings
+  /** `notes`: linhas a mais no log (o resultado dos salvamentos). */
+  onChange: (next: Encounter, notes?: string[]) => void
+  onClose: () => void
+}) {
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [unit, setUnit] = useState<DurationUnit>('rounds')
   const [chosen, setChosen] = useState<string[]>([])
+  // CT8: salvamento por alvo.
+  const [saving, setSaving] = useState(false)
+  const [category, setCategory] = useState(4)
+  const [modText, setModText] = useState('0')
+  const [mode, setMode] = useState<SaveMode>('negates')
+  const [typed, setTyped] = useState<Record<string, { target?: string; roll?: string }>>({})
+  const table46 = useTable('dmg-46')
+  const warriorRows = useMemo(() => warriorSaveRows(table46?.rows ?? []), [table46])
+  const { characters } = useCampaignCharacters(saving ? encounter.campaignID : null)
+
   const suggestions = conditionSuggestions(encounter)
   const active = activeGroupEffects(encounter.combatants)
   const rounds = effectRounds(/^\d+$/.test(amount.trim()) ? Number(amount.trim()) : null, unit)
@@ -38,6 +72,42 @@ export function EffectWindow({ encounter, settings, onChange, onClose }: { encou
   const pick = (shortcut: TargetShortcut) => setChosen(targetsFor(encounter.combatants, shortcut, settings.deathAt))
   const toggle = (id: string) => setChosen(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id])
   const presentSides = sides.filter((s) => encounter.combatants.some((c) => c.side === s))
+  const targets = encounter.combatants.filter((c) => chosen.includes(c.id))
+  const modifier = intOrNull(modText) ?? 0
+
+  // O valor de salvamento: a ficha (PC do App), a Tabela 46 pelos DV (monstros e NPCs), ou o que o DM digitou.
+  const defaultTarget = (c: Combatant): number | null => {
+    if (c.characterID) {
+      const sheet = characters?.find((x) => x.id.toLowerCase() === c.characterID!.toLowerCase())?.data
+      if (sheet) return sheetSaveTarget(sheet.saves, category)
+    }
+    if (c.kind === 'pc') return null
+    const level = saveLevel(c)
+    return level === null ? null : (savesFor(level, warriorRows)?.[category] ?? null)
+  }
+  const saves: (TargetSave & { name: string; kind: Combatant['kind'] })[] = targets.map((c) => {
+    const t = typed[c.id] ?? {}
+    return { id: c.id, name: c.name, kind: c.kind, target: t.target !== undefined ? intOrNull(t.target) : defaultTarget(c), roll: t.roll !== undefined ? intOrNull(t.roll) : null }
+  })
+  const setTypedField = (id: string, field: 'target' | 'roll', value: string) => setTyped((now) => ({ ...now, [id]: { ...now[id], [field]: value } }))
+  const rollTheRest = () =>
+    setTyped((now) => {
+      const next = { ...now }
+      for (const s of saves) if (s.kind !== 'pc' && s.roll === null) next[s.id] = { ...next[s.id], roll: String(rollDice(d20).total) }
+      return next
+    })
+  const savesReady = saves.every((s) => saveSucceeds(s, modifier) !== null)
+  const affected = saving ? affectedIDs(saves, modifier, mode) : chosen
+  // Em "half", o efeito é opcional: sem nome, só o log de quem salvou.
+  const nameNeeded = !(saving && mode === 'half')
+  const canApply = chosen.length > 0 && (!saving || savesReady) && (name.trim() !== '' ? !needsAmount : !nameNeeded)
+
+  const apply = () => {
+    const notes = saving ? [saveNote(name, category, modifier, saves)] : []
+    const combatants = name.trim() !== '' && affected.length > 0 ? applyGroupEffect(encounter.combatants, affected, name, rounds, newID(), newID) : encounter.combatants
+    onChange({ ...encounter, combatants }, notes)
+    onClose()
+  }
 
   return createPortal(
     <PaperModal title="Effect on several" subtitle="The same condition, with the same duration, on everyone you mark" onClose={onClose}>
@@ -88,18 +158,95 @@ export function EffectWindow({ encounter, settings, onChange, onClose }: { encou
           </li>
         ))}
       </ul>
+
+      <section className="effect-save">
+        <label className="surprise-immune">
+          <input type="checkbox" checked={saving} onChange={(event) => setSaving(event.target.checked)} /> Saving throw for each target
+        </label>
+        {saving && (
+          <>
+            <div className="chip-row surprise-mods">
+              {saveCategoryKeys.map((cat, i) => (
+                <button key={cat.id} className={category === i ? 'chip chip-on' : 'chip'} onClick={() => setCategory(i)}>
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            <div className="surprise-head start-result">
+              <label>
+                <span className="paper-label">Modifier</span>{' '}
+                <input className="ink-input ink-number" inputMode="numeric" aria-label="Save modifier for everyone" value={modText} onChange={(event) => setModText(event.target.value)} />
+              </label>
+              <span className="chip-row">
+                <button className={mode === 'negates' ? 'chip chip-on' : 'chip'} onClick={() => setMode('negates')} title="Who saves does not get the effect">
+                  save negates
+                </button>
+                <button className={mode === 'half' ? 'chip chip-on' : 'chip'} onClick={() => setMode('half')} title="Who saves only goes to the log (half damage: apply it by hand)">
+                  save for half
+                </button>
+              </span>
+              <button className="chip" disabled={!saves.some((s) => s.kind !== 'pc' && s.roll === null)} onClick={rollTheRest}>
+                Roll the rest
+              </button>
+            </div>
+            {saves.length === 0 ? (
+              <p className="paper-soft">Mark the targets above.</p>
+            ) : (
+              <table className="effect-save-table">
+                <thead>
+                  <tr>
+                    <th>Target</th>
+                    <th title="Number to roll on the d20: from the sheet, or Table 46 by Hit Dice">Save</th>
+                    <th>d20</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {saves.map((s) => {
+                    const ok = saveSucceeds(s, modifier)
+                    return (
+                      <tr key={s.id}>
+                        <td>
+                          {s.name}
+                          {s.kind === 'pc' && <span className="paper-soft"> · player rolls</span>}
+                        </td>
+                        <td>
+                          <input
+                            className="ink-input ink-number"
+                            inputMode="numeric"
+                            aria-label={`${s.name}: save target`}
+                            placeholder="—"
+                            value={typed[s.id]?.target ?? (s.target === null ? '' : String(s.target))}
+                            onChange={(event) => setTypedField(s.id, 'target', event.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="ink-input ink-number"
+                            inputMode="numeric"
+                            aria-label={`${s.name}: d20`}
+                            placeholder="d20"
+                            value={typed[s.id]?.roll ?? ''}
+                            onChange={(event) => setTypedField(s.id, 'roll', event.target.value)}
+                          />
+                        </td>
+                        <td className={ok === null ? 'paper-soft' : ok ? 'save-pass' : 'save-fail'}>{ok === null ? '' : ok ? 'saved' : 'failed'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+      </section>
+
       <div className="chip-row initiative-actions">
-        <button
-          className="chip chip-on"
-          disabled={name.trim() === '' || chosen.length === 0 || needsAmount}
-          onClick={() => {
-            onChange({ ...encounter, combatants: applyGroupEffect(encounter.combatants, chosen, name, rounds, newID(), newID) })
-            onClose()
-          }}
-        >
-          Apply to {chosen.length}
+        <button className="chip chip-on" disabled={!canApply} onClick={apply}>
+          {saving ? (name.trim() ? `Apply to ${affected.length} (${mode === 'negates' ? 'who failed' : 'all'})` : 'Log the saves') : `Apply to ${chosen.length}`}
         </button>
         {needsAmount && name.trim() !== '' && <span className="paper-soft">How many {unit}?</span>}
+        {saving && !savesReady && chosen.length > 0 && <span className="paper-soft">Every target needs a save number and a d20.</span>}
       </div>
 
       {active.length > 0 && (

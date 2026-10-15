@@ -55,3 +55,24 @@ test('aplicar, contar as rodadas juntas, tirar de todos; o log numa linha', () =
   // Nome vazio não aplica nada.
   assert.equal(G.applyGroupEffect(before.combatants, party, '  ', 2, 'G2', id), before.combatants)
 })
+
+test('CT8: salvamento por alvo — valor da ficha, quem recebe e a nota do log', () => {
+  const sheet = { paralyzationPoisonDeath: 10, rodStaffWand: 14, petrificationPolymorph: 13, breathWeapon: 16, spell: 15, modifiers: { sp: 2 } }
+  assert.equal(G.sheetSaveTarget(sheet, 4), 13) // 15 − 2, como na ficha
+  assert.equal(G.sheetSaveTarget(sheet, 0), 10)
+  assert.equal(G.sheetSaveTarget(null, 0), null)
+
+  const saves = [
+    { id: 'a', name: 'Orc 1', target: 16, roll: 6 },
+    { id: 'b', name: 'Orc 2', target: 16, roll: 15 },
+    { id: 'c', name: 'Orc 3', target: 16, roll: null },
+  ]
+  assert.equal(G.saveSucceeds(saves[1], 0), false)
+  assert.equal(G.saveSucceeds(saves[1], 1), true)
+  assert.equal(G.saveSucceeds(saves[2], 0), null)
+  const done = saves.slice(0, 2)
+  assert.deepEqual(G.affectedIDs(done, 1, 'negates'), ['a'])
+  assert.deepEqual(G.affectedIDs(done, 1, 'half'), ['a', 'b'])
+  assert.equal(G.saveNote('Hold Person', 4, 1, done), 'Save vs spell (+1) for Hold Person: saved Orc 2 (15); failed Orc 1 (6)')
+  assert.equal(G.saveNote('', 3, -2, done), 'Save vs breath weapon (−2): failed Orc 1 (6), Orc 2 (15)')
+})
