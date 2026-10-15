@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { ActiveCampaignSync } from './lib/activeCampaign'
 import { CampaignDetail } from './pages/CampaignDetail'
+import { LiveCombat } from './pages/LiveCombat'
 import { Campaigns } from './pages/Campaigns'
 import { Characters } from './pages/Characters'
 import { CharacterSheet } from './pages/CharacterSheet'
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/import" element={<ImportBackup />} />
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/campaigns/:id" element={<CampaignDetail />} />
+          <Route path="/campaigns/:id/combat" element={<LiveCombat />} />
           <Route path="*" element={<ComingSoon title="Not found" note="This page does not exist." />} />
         </Routes>
       </HashRouter>

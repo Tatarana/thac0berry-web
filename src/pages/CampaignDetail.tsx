@@ -15,6 +15,7 @@ import { CampaignParty } from '../components/CampaignParty'
 import { CampaignPlayers } from '../components/CampaignPlayers'
 import { fetchMembers } from '../lib/campaignMembers'
 import { useCampaignPulse } from '../lib/campaignPulse'
+import { useLiveEncounters } from '../lib/encounterView'
 import { useMode } from '../lib/mode'
 import type { SaveState } from '../lib/useCharacterDoc'
 
@@ -234,6 +235,8 @@ export function CampaignDetail() {
 
   // Fase 2a: quem entrou por convite é jogador e só lê a campanha (editar é do mestre).
   const isGM = !!campaign && campaign.owner_id === userID
+  // Combat Tracker ao vivo (L3): o encontro que o mestre mostra aos jogadores.
+  const { views: liveCombat } = useLiveEncounters(campaign ? campaign.id : null)
 
   const toggleSetting = (setting: string) => {
     if (!campaign) return
@@ -279,6 +282,19 @@ export function CampaignDetail() {
           )}
           {!isGM && (
             <p className="soft">You play in this campaign; only its DM can change it.</p>
+          )}
+          {liveCombat && liveCombat.length > 0 && (
+            <section className="ember-card live-card">
+              <h2 className="card-title">Combat · live</h2>
+              <p className="soft">
+                {liveCombat
+                  .map((v) => `${v.data?.name || 'Encounter'}${v.data?.round > 0 ? ` — round ${v.data.round}` : ' — before the fight'}`)
+                  .join(' · ')}
+              </p>
+              <Link className="btn" to={`/campaigns/${campaign.id}/combat`}>
+                {isGM ? 'See what the players see' : 'Follow the combat'}
+              </Link>
+            </section>
           )}
           <section className="ember-card">
             <input

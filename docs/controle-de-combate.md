@@ -51,7 +51,7 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT9 | XP do encontro nas fichas (com o +10% do atributo principal), no fim ou depois | feita (web v0.85.0) |
 | L1 | Ao vivo: `encounter_view` no backend (vista filtrada; membros leem, só o mestre publica) | feita (backend `20261014210000`) |
 | L2 | Ao vivo: o mestre publica ("Show to players", "hide" por combatente) | feita (web v0.86.0) |
-| L3 | Ao vivo: a tela dos jogadores (cartão na campanha, só leitura) | a fazer |
+| L3 | Ao vivo: a tela dos jogadores (cartão na campanha, só leitura) | feita (web v0.87.0) |
 
 ## Backlog
 
@@ -459,3 +459,23 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     ligar publicou só o grupo; o orc entrou como "unhurt" sem PV; "hide" o
     tirou da vista; desligar e apagar o encontro tiraram a linha; a campanha
     ativa voltou ao One-shot; testes: 228 (4 novos).
+- 2026-10-14, L3 feita (web v0.87.0); com ela o Combat Tracker ao vivo fica
+  completo (só ver; interagir está no backlog):
+  - `useLiveEncounters` em `src/lib/encounterView.ts`: as vistas da campanha,
+    relidas a cada aviso do Realtime; o DELETE (o mestre tirou a vista) não
+    passa pelo filtro de coluna, então há uma assinatura sem filtro só para
+    ele (o aviso traz só o id; a página relê). `subscribeRows` aceita filtro
+    vazio;
+  - na página da campanha, o cartão **Combat · live** (encontro e rodada)
+    enquanto houver vista; "Follow the combat" (jogador) ou "See what the
+    players see" (mestre, que também é membro);
+  - tela `/campaigns/:id/combat` (`src/pages/LiveCombat.tsx`): rodada, quem
+    age e a ordem, surpresa, distância e os lados: PV do grupo, inimigos em
+    palavras, condições com as rodadas; vista de formato mais novo pede para
+    recarregar;
+  - conferido no navegador (campanha "Teste W3.1b B", Kelmonito tirado do
+    encontro antes, duas abas): o cartão apareceu, a tela mostrou o grupo com
+    PV e o orc "Unhurt"; 50 de dano no tracker → "Orc Dead" na outra aba sem
+    recarregar; "Show to players" desligado → a outra aba mostrou "No combat
+    is being shown right now"; encontro apagado, nenhuma vista sobrando,
+    campanha ativa de volta ao One-shot.
