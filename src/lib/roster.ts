@@ -167,6 +167,12 @@ async function editCharacter(characterID: string, mutate: (c: ServerCharacter) =
   if (saved.error) throw new Error(saved.error.message)
 }
 
+/** XP do encontro (CT9): soma ao "Total XPs" da ficha (o mestre da campanha também pode, pela Fase 2b). */
+export const addExperience = (characterID: string, amount: number) =>
+  editCharacter(characterID, (c) => {
+    c.experience = (c.experience ?? 0) + amount
+  })
+
 /** markDead do iPad: morto na data, com uma nota opcional. */
 export const markDead = (characterID: string, diedOn: string, note: string) =>
   editCharacter(characterID, (c) => {

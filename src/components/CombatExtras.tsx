@@ -226,7 +226,18 @@ export function SaveWindow({ combatant: c, onChange, onLog, onClose }: { combata
 // --- XP no fim -----------------------------------------------------------------------------
 
 /** Resumo do fim: inimigos vencidos e quem divide o XP (DMG cap. 8); confirmar encerra. */
-export function EndEncounterWindow({ encounter, settings, onEnd, onClose }: { encounter: Encounter; settings: CombatSettings; onEnd: (award: XpAward) => void; onClose: () => void }) {
+export function EndEncounterWindow({
+  encounter,
+  settings,
+  onEnd,
+  onClose,
+}: {
+  encounter: Encounter
+  settings: CombatSettings
+  /** `toSheets`: encerrar e abrir "Add XP to the sheets" (CT9). */
+  onEnd: (award: XpAward, toSheets: boolean) => void
+  onClose: () => void
+}) {
   const foesAll = encounter.combatants.filter((c) => c.side !== 'party')
   const party = encounter.combatants.filter((c) => c.side === 'party')
   const [foes, setFoes] = useState(() => new Set(defeatedFoes(encounter, settings.deathAt).map((c) => c.id)))
@@ -291,7 +302,13 @@ export function EndEncounterWindow({ encounter, settings, onEnd, onClose }: { en
           {copied ? 'Copied' : 'Copy summary'}
         </button>
       </div>
-      <button className="add-go" onClick={() => onEnd(award)}>
+      {/* CT9: com alguém do App entre os que dividem, dá para lançar nas fichas logo em seguida. */}
+      {award.each > 0 && party.some((c) => members.has(c.id) && c.characterID) && (
+        <button className="add-go" onClick={() => onEnd(award, true)}>
+          End and add XP to the sheets…
+        </button>
+      )}
+      <button className={award.each > 0 && party.some((c) => members.has(c.id) && c.characterID) ? 'chip end-plain' : 'add-go'} onClick={() => onEnd(award, false)}>
         End encounter
       </button>
     </PaperModal>,

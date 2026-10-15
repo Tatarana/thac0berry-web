@@ -48,11 +48,11 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | CT6 | Distância (Tabela 58) e reação (Tabela 59, com o Carisma de quem fala) antes da rodada 1 | feita (web v0.82.0) |
 | CT7 | Efeitos em vários combatentes de uma vez ("+ Effect": rodadas ou turnos, alvos por lado, tirar de todos) | feita (web v0.83.0) |
 | CT8 | Salvamento por alvo no "+ Effect" (ficha, Tabela 46 ou digitado; "negates" ou "half") | feita (web v0.84.0) |
+| CT9 | XP do encontro nas fichas (com o +10% do atributo principal), no fim ou depois | feita (web v0.85.0) |
 
 ## Backlog
 
 - Combat Tracker ao vivo (os jogadores veem o encontro).
-- Lançar o XP do fim do encontro nas fichas do App.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
 ## Log
@@ -404,3 +404,26 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     log ganhou a linha do salvamento e a do efeito; encontro de teste apagado.
     O valor lido da ficha está nos testes (o One-shot não tem personagens do
     App); testes: 222 (1 novo).
+- 2026-10-14, CT9 feita (web v0.85.0; decisões do usuário: o +10% do
+  atributo principal entra automático, editável; lançar também a partir do
+  encontro encerrado):
+  - `src/rules/xpToSheets.ts` (com testes): `primeBonus` (16+ em todos os
+    atributos principais da classe, pela lista do relatório de sessão; em
+    multiclasse não entra automático, a regra é por classe), `xpLines` (a
+    parte de cada membro do prêmio; sem ficha no App = dar à mão) e o registro
+    `xpApplied` no encontro (campo opcional novo), contra lançar duas vezes;
+  - `addExperience` em `src/lib/roster.ts`: lê a ficha com a versão e grava
+    o "Total XPs" somado (contrato de sempre; o mestre pode pela Fase 2b);
+  - janela **Add XP to the sheets** (`src/components/CombatXp.tsx`): uma
+    linha por personagem do App (parte, bônus, valor editável, caixa para
+    tirar), os sem App listados para dar à mão; lançado, mostra o que foi e
+    quando. No fim do encontro, "End and add XP to the sheets…" (só quando
+    alguém do App divide o XP) abre a janela e, ao fechar, segue para DM
+    Tools; no encontro encerrado, o botão "Add XP to the sheets" / "XP added
+    to the sheets". O log ganha "XP to the sheets: …";
+  - conferido no navegador (campanha "Teste W3.1b B"; o Kelmonito, real, foi
+    tirado do encontro antes): orc de 15 XP para 4 PCs de teste, 3 cada; a
+    linha do Teste MC mostrou "multiclass: no automatic bonus"; lançado só no
+    Teste W3.1b: a ficha foi de 0 para 3 XP, o encontro mostrou "XP added to
+    the sheets" com o registro; a ficha voltou a 0 à mão, o encontro de teste
+    foi apagado e a campanha ativa voltou ao One-shot; testes: 224 (2 novos).
