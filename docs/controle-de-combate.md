@@ -54,11 +54,10 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | L3 | Ao vivo: a tela dos jogadores (cartão na campanha, só leitura) | feita (web v0.87.0) |
 | I1 | Interativo: backend `combat_message` (mensagens com aceite nos dois sentidos) | feita (backend `20261015120000` e `20261015150000`) |
 | I2 | Interativo: o mestre manda dano/cura; o jogador aceita (Settings) ou responde na ficha | feita (web v0.88.0) |
-| I3 | Interativo: o jogador manda iniciativa e d20 de salvamento; o mestre aceita | a fazer |
+| I3 | Interativo: o jogador manda iniciativa e d20 de salvamento; o mestre aceita | feita (web v0.89.0) |
 
 ## Backlog
 
-- I3: o jogador manda a própria iniciativa e o d20 de um salvamento pedido pelo mestre; o mestre aceita para o número entrar no Combat Tracker.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
 ## Log
@@ -515,3 +514,29 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     pendente, Accept levou ao PV 2; "Accept automatically" — dano de 3 entrou
     sozinho (PV 3), com o destaque na ficha. Encontro de teste apagado, PV e
     preferência devolvidos, campanha ativa de volta ao One-shot; testes: 230 (2 novos).
+- 2026-10-15, I3 feita (web v0.89.0; completa o Combat Tracker interativo):
+  - `src/rules/playerView.ts`: `PlayerCombatant.characterID` e `.request`
+    (`{kind:'initiative', key}` ou `{kind:'save', category}`), calculado na
+    hora a partir do estado do encontro — sem pedido guardado à parte para a
+    iniciativa (vem de `missingRolls`, como a janela do mestre já usa); o
+    salvamento vem de `Encounter.saveRequest` (campo novo, posto e tirado pela
+    janela "+ Effect" conforme o mestre marca "Saving throw for each target" e
+    os alvos, com limpeza ao fechar sem aplicar);
+  - `src/lib/combatMessages.ts`: `sendToDm`, `usePendingToDm` (o mestre, por
+    encontro), `usePendingFromMe` (o jogador, por personagem — mostra "sent,
+    waiting for the DM"), `useMyCharacterIDs` (donos e acessos temporários da
+    campanha, para saber por quem o jogador pode falar);
+  - no mestre: a janela de iniciativa mostra as rolagens dos jogadores com
+    Accept/Decline (Accept preenche a entrada certa — o lado ou o combatente);
+    a tabela de salvamento do "+ Effect" mostra o d20 de cada PC com "use" (
+    preenche o campo, não aplica sozinho) ou "decline";
+  - no jogador: a tela ao vivo ganha "The DM is waiting for you" com um campo,
+    Roll e Send por pedido; os personagens sem ficha no App nunca aparecem
+    pedidos, porque o envio depende de falar pelo personagem;
+  - conferido no navegador (campanha "Teste W3.1b B", duas abas, Kelmonito
+    fora do encontro): por lado, os 4 PCs pediram iniciativa; mandei 8 pelo
+    Teste W3.1b, "sent (8)" na tela do jogador, Accept no mestre preencheu o
+    INIT dos 4; salvamento contra magia pedido ao grupo, mandei 15, "use" no
+    mestre preencheu o d20; fechar o "+ Effect" sem aplicar tirou o pedido dos
+    jogadores na hora. Encontro de teste apagado, nenhuma vista nem mensagem
+    pendente sobrando, campanha ativa de volta ao One-shot; testes: 232 (3 novos).

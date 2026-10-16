@@ -80,6 +80,8 @@ export interface Encounter {
   xpAward?: XpAward | null
   /** "Show to players" (Combat Tracker ao vivo): a vista filtrada vai para os membros da campanha. */
   sharedWithPlayers?: boolean
+  /** Salvamento pedido aos jogadores (CT interativo, I3; posto pela janela "+ Effect"). */
+  saveRequest?: { category: number; targetIDs: string[] } | null
   /** XP lançado nas fichas (CT9); ausente/null = ainda não lançado. */
   xpApplied?: import('./xpToSheets.ts').XpApplied | null
   /** Log do combate (CT5b, src/rules/combatLog.ts); ausente em encontros antigos. */
