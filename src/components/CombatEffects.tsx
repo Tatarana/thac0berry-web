@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useCampaignCharacters } from '../lib/campaignCharacters'
+import { resolveMessage, usePendingToDm } from '../lib/combatMessages'
 import { rollDice } from '../rules/dice'
 import { sideLabels, statusOf, type CombatSettings, type Combatant, type Encounter, type Side } from '../rules/combat'
 import {
@@ -64,6 +65,11 @@ export function EffectWindow({
   const table46 = useTable('dmg-46')
   const warriorRows = useMemo(() => warriorSaveRows(table46?.rows ?? []), [table46])
   const { characters } = useCampaignCharacters(saving ? encounter.campaignID : null)
+  // Interativo (I3): pede o salvamento aos PCs do App marcados, e recebe o d20 deles.
+  const proposals = usePendingToDm(encounter.id).filter((m) => m.kind === 'save')
+  const encounterRef = useRef(encounter)
+  encounterRef.current = encounter
+  const ownsRequest = useRef(false)
 
   const suggestions = conditionSuggestions(encounter)
   const active = activeGroupEffects(encounter.combatants)
@@ -74,6 +80,29 @@ export function EffectWindow({
   const presentSides = sides.filter((s) => encounter.combatants.some((c) => c.side === s))
   const targets = encounter.combatants.filter((c) => chosen.includes(c.id))
   const modifier = intOrNull(modText) ?? 0
+
+  // Interativo (I3): quem pedimos o salvamento muda com a seleção; limpa ao sair.
+  const pcTargetIDs = saving ? targets.filter((c) => c.kind === 'pc' && c.characterID).map((c) => c.id) : []
+  useEffect(() => {
+    const current = encounter.saveRequest
+    const already = current && current.category === category && current.targetIDs.length === pcTargetIDs.length && current.targetIDs.every((id) => pcTargetIDs.includes(id))
+    if (already) return
+    if (pcTargetIDs.length > 0) {
+      ownsRequest.current = true
+      onChange({ ...encounter, saveRequest: { category, targetIDs: pcTargetIDs } })
+    } else if (ownsRequest.current) {
+      ownsRequest.current = false
+      onChange({ ...encounter, saveRequest: null })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saving, category, pcTargetIDs.join(',')])
+  useEffect(
+    () => () => {
+      if (ownsRequest.current) onChange({ ...encounterRef.current, saveRequest: null })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
 
   // O valor de salvamento: a ficha (PC do App), a Tabela 46 pelos DV (monstros e NPCs), ou o que o DM digitou.
   const defaultTarget = (c: Combatant): number | null => {
@@ -105,12 +134,20 @@ export function EffectWindow({
   const apply = () => {
     const notes = saving ? [saveNote(name, category, modifier, saves)] : []
     const combatants = name.trim() !== '' && affected.length > 0 ? applyGroupEffect(encounter.combatants, affected, name, rounds, newID(), newID) : encounter.combatants
-    onChange({ ...encounter, combatants }, notes)
+    ownsRequest.current = false
+    onChange({ ...encounter, combatants, saveRequest: null }, notes)
+    onClose()
+  }
+  const close = () => {
+    if (ownsRequest.current) {
+      ownsRequest.current = false
+      onChange({ ...encounter, saveRequest: null })
+    }
     onClose()
   }
 
   return createPortal(
-    <PaperModal title="Effect on several" subtitle="The same condition, with the same duration, on everyone you mark" onClose={onClose}>
+    <PaperModal title="Effect on several" subtitle="The same condition, with the same duration, on everyone you mark" onClose={close}>
       <div className="surprise-head">
         <label>
           <span className="paper-label">Effect</span>{' '}
@@ -204,6 +241,8 @@ export function EffectWindow({
                 <tbody>
                   {saves.map((s) => {
                     const ok = saveSucceeds(s, modifier)
+                    const characterID = targets.find((t) => t.id === s.id)?.characterID
+                    const proposal = characterID ? proposals.find((m) => m.character_id.toLowerCase() === characterID.toLowerCase()) : undefined
                     return (
                       <tr key={s.id}>
                         <td>
@@ -229,6 +268,23 @@ export function EffectWindow({
                             value={typed[s.id]?.roll ?? ''}
                             onChange={(event) => setTypedField(s.id, 'roll', event.target.value)}
                           />
+                          {proposal && (
+                            <span className="proposal-inline">
+                              from player: <strong>{(proposal.payload as unknown as { roll: number }).roll}</strong>{' '}
+                              <button
+                                className="paper-link"
+                                onClick={() => {
+                                  setTypedField(s.id, 'roll', String((proposal.payload as unknown as { roll: number }).roll))
+                                  void resolveMessage(proposal.id, true)
+                                }}
+                              >
+                                use
+                              </button>{' '}
+                              <button className="paper-link" onClick={() => void resolveMessage(proposal.id, false)}>
+                                decline
+                              </button>
+                            </span>
+                          )}
                         </td>
                         <td className={ok === null ? 'paper-soft' : ok ? 'save-pass' : 'save-fail'}>{ok === null ? '' : ok ? 'saved' : 'failed'}</td>
                       </tr>

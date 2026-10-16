@@ -116,7 +116,7 @@ function Tracker() {
     }
   }, [userID, campaignID, campaign])
   // Combat Tracker ao vivo: a vista dos jogadores dos encontros compartilhados.
-  const { error: viewError } = usePlayerViewPublisher(store.encounters, campaignID, store.settings.deathAt, userID)
+  const { error: viewError } = usePlayerViewPublisher(store.encounters, campaignID, store.settings.deathAt, store.settings.initiative, userID)
   // Interativo (I2): o dano e a cura nos PCs do App vão aos jogadores.
   const { error: sendError } = useHpChangeSender(store.encounters, campaignID, userID)
   const tables = useMemo(

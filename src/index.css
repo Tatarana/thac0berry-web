@@ -4759,6 +4759,22 @@ button.slot-dot:hover {
   font-weight: 700;
 }
 
+/* Combat Tracker interativo (I3): o que os jogadores mandaram. */
+.proposals-list {
+  margin-top: 6px;
+}
+
+.proposal-row {
+  padding: 4px 0;
+  color: var(--red-ink);
+}
+
+.proposal-inline {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--red-ink);
+}
+
 /* Combat Tracker ao vivo. */
 .live-card .btn {
   align-self: flex-start;

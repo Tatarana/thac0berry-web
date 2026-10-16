@@ -45,7 +45,7 @@ test('estado em palavras: unhurt, wounded (até a metade), badly wounded, down, 
 })
 
 test('a vista: PV só do grupo, inimigos em palavras, escondidos fora, ordem e quem age', () => {
-  const v = playerView(encounter(), -10)
+  const v = playerView(encounter(), -10, 'side')
   assert.deepEqual(
     v.combatants.map((c) => [c.name, c.wounds, c.hp ?? null, c.acting]),
     [
@@ -63,7 +63,7 @@ test('a vista: PV só do grupo, inimigos em palavras, escondidos fora, ordem e q
 })
 
 test('nenhum segredo passa: notas, CA, THAC0, moral, XP, reação, log e os escondidos', () => {
-  const json = JSON.stringify(playerView(encounter(), -10))
+  const json = JSON.stringify(playerView(encounter(), -10, 'side'))
   for (const secret of ['SECRET', 'Lurker', 'M2', 'Steady', '"ac"', 'thac0', '"xp"', 'notes', 'morale', 'reaction', 'Indifferent', '"log"', 'player note']) {
     assert.ok(!json.includes(secret), `vazou: ${secret}`)
   }
@@ -76,4 +76,45 @@ test('compartilhar só encontro de campanha, ligado e não encerrado', () => {
   assert.equal(isShared({ campaignID: null, sharedWithPlayers: true, endedAt: null }), false)
   assert.equal(isShared({ campaignID: 'C', sharedWithPlayers: false }), false)
   assert.equal(isShared({ campaignID: 'C', sharedWithPlayers: true, endedAt: '2026-10-14' }), false)
+})
+
+test('I3: pedido de iniciativa — por lado, a todo o grupo (com ficha); individual, só quem falta', () => {
+  const rufus = { ...blankCombatant('pc', 'party', 'Rufus'), id: 'P1', characterID: 'CHAR-A', hp: 7, hpMax: 10 }
+  const ana = { ...blankCombatant('pc', 'party', 'Ana'), id: 'P2', hp: 5, hpMax: 5 } // sem App: não pede
+  const orc = blankCombatant('monster', 'enemies', 'Orc')
+  const base = (over: Partial<Encounter>): Encounter => ({
+    id: 'E', name: 'X', campaignID: 'C', createdAt: '', updatedAt: '', round: 0, combatants: [rufus, ana, orc], sharedWithPlayers: true, ...over,
+  })
+
+  // Por lado: ninguém rolou ainda → os PCs do App ficam com o pedido "party".
+  const bySide = playerView(base({}), -10, 'side')
+  assert.deepEqual(
+    bySide.combatants.filter((c) => c.request).map((c) => [c.name, c.request]),
+    [['Rufus', { kind: 'initiative', key: 'party' }]],
+  )
+
+  // Já rolado: some o pedido.
+  const rolled = playerView(base({ initiative: { method: 'side', entries: { party: { roll: 7, mods: [], extra: 0 } }, step: null } }), -10, 'side')
+  assert.equal(rolled.combatants.find((c) => c.name === 'Rufus')?.request, undefined)
+
+  // Individual: só quem falta rolar, pela própria chave (o id do combatente).
+  const individual = playerView(base({ initiative: { method: 'individual', entries: { P1: { roll: 6, mods: [], extra: 0 } }, step: null } }), -10, 'individual')
+  assert.deepEqual(
+    individual.combatants.filter((c) => c.request).map((c) => c.name),
+    [],
+  )
+})
+
+test('I3: pedido de salvamento — só quem o mestre marcou em Encounter.saveRequest', () => {
+  const rufus = { ...blankCombatant('pc', 'party', 'Rufus'), id: 'P1', characterID: 'CHAR-A' }
+  const ana = { ...blankCombatant('pc', 'party', 'Ana'), id: 'P2', characterID: 'CHAR-B' }
+  const e: Encounter = {
+    id: 'E', name: 'X', campaignID: 'C', createdAt: '', updatedAt: '', round: 1, combatants: [rufus, ana], sharedWithPlayers: true,
+    // A rodada já rolou (sem pedido de iniciativa pendente): só o salvamento aparece.
+    initiative: { method: 'side', entries: { party: { roll: 7, mods: [], extra: 0 } }, step: 0, order: [{ score: 7, keys: ['party'], combatantIDs: ['P1', 'P2'] }] },
+    saveRequest: { category: 4, targetIDs: ['P1'] },
+  }
+  const v = playerView(e, -10, 'side')
+  assert.deepEqual(v.combatants.find((c) => c.name === 'Rufus')?.request, { kind: 'save', category: 4 })
+  assert.equal(v.combatants.find((c) => c.name === 'Ana')?.request, undefined)
 })

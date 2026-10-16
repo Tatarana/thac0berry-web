@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Encounter } from '../rules/combat'
+import type { Encounter, InitiativeMethod } from '../rules/combat'
 import { isShared, playerView, type PlayerView } from '../rules/playerView'
 import { subscribeRows, uuidFilter } from './realtime'
 import { supabase } from './supabase'
@@ -12,7 +12,7 @@ import { supabase } from './supabase'
 
 const key = (id: string) => id.toLowerCase()
 
-export function usePlayerViewPublisher(encounters: Encounter[], campaignID: string | null, deathAt: number, userID: string | null) {
+export function usePlayerViewPublisher(encounters: Encounter[], campaignID: string | null, deathAt: number, defaultMethod: InitiativeMethod, userID: string | null) {
   // O que está publicado agora (id → JSON), lido da conta ao abrir.
   const published = useRef<Map<string, string> | null>(null)
   const [loaded, setLoaded] = useState<string | null>(null)
@@ -48,7 +48,7 @@ export function usePlayerViewPublisher(encounters: Encounter[], campaignID: stri
     const timer = setTimeout(() => {
       const now = published.current
       if (!now) return
-      const wanted = new Map(encounters.filter((e) => e.campaignID === campaignID && isShared(e)).map((e) => [key(e.id), JSON.stringify(playerView(e, deathAt))]))
+      const wanted = new Map(encounters.filter((e) => e.campaignID === campaignID && isShared(e)).map((e) => [key(e.id), JSON.stringify(playerView(e, deathAt, defaultMethod))]))
       const jobs: Promise<void>[] = []
       for (const [id, json] of wanted) {
         if (now.get(id) === json) continue
@@ -78,7 +78,7 @@ export function usePlayerViewPublisher(encounters: Encounter[], campaignID: stri
       })
     }, 1000)
     return () => clearTimeout(timer)
-  }, [encounters, campaignID, deathAt, userID, loaded, retry])
+  }, [encounters, campaignID, deathAt, defaultMethod, userID, loaded, retry])
 
   return { error }
 }

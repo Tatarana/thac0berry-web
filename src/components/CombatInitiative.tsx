@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
+import { resolveMessage, usePendingToDm } from '../lib/combatMessages'
 import { rollDice } from '../rules/dice'
 import {
   emptyEntry,
@@ -180,6 +181,13 @@ export function InitiativeWindow({
 
   const setRound = (next: InitiativeRound) => onChange({ ...encounter, initiative: next })
   const setEntry = (key: string, entry: InitiativeEntry) => setRound({ ...round, entries: { ...round.entries, [key]: entry } })
+  // Interativo (I3): o que os jogadores mandaram, para aceitar e preencher.
+  const proposals = usePendingToDm(encounter.id).filter((m) => m.kind === 'initiative')
+  const acceptProposal = (m: (typeof proposals)[number]) => {
+    const p = m.payload as unknown as { key: string; round: number; roll: number }
+    setEntry(p.key, { ...(round.entries[p.key] ?? emptyEntry()), roll: p.roll })
+    void resolveMessage(m.id, true)
+  }
   const rollFoes = () => {
     const entries = { ...round.entries }
     for (const key of toRoll) entries[key] = { ...(entries[key] ?? emptyEntry()), roll: rollDice(d10).total }
@@ -223,6 +231,25 @@ export function InitiativeWindow({
             />
           ))}
         </ul>
+        {proposals.length > 0 && (
+          <ul className="initiative-entries proposals-list">
+            {proposals.map((m) => {
+              const p = m.payload as unknown as { key: string; round: number; roll: number }
+              return (
+                <li key={m.id} className="proposal-row">
+                  From {labelOf(p.key)}: <strong>{p.roll}</strong>
+                  {p.round !== encounter.round && <span className="paper-soft"> (from round {p.round}, may be stale)</span>}{' '}
+                  <button className="chip chip-on" onClick={() => acceptProposal(m)}>
+                    Accept
+                  </button>{' '}
+                  <button className="chip" onClick={() => void resolveMessage(m.id, false)}>
+                    Decline
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
         <div className="chip-row initiative-actions">
           <button className="chip" disabled={toRoll.length === 0} onClick={rollFoes}>
             {started ? 'Re-roll the foes' : `Roll ${toRoll.length === 0 || toRoll.length === foes.length ? 'the rest' : `the ${toRoll.length} missing`}`}
