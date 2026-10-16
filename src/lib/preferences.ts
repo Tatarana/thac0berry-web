@@ -14,6 +14,8 @@ export interface Preferences {
   dm_active_one_shot: boolean
   /** Configurações do Combat Tracker (null = as padrão). */
   combat_settings: Partial<CombatSettings> | null
+  /** Combat Tracker interativo (I2): aceitar sozinho o que o mestre manda ao personagem (dano, cura). */
+  accept_dm_changes: boolean
 }
 
 export async function loadPreferences(userID: string): Promise<Partial<Preferences>> {

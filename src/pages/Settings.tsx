@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { useAuth } from '../auth/context'
 import { PageHeader } from '../components/PageHeader'
 import { paperStyles, type PaperStyle } from '../lib/notebook'
+import { preferencesChanged } from '../lib/combatMessages'
 import { loadPreferences, savePreferences } from '../lib/preferences'
 
 /**
@@ -15,6 +16,7 @@ function PreferencesCard({ userID }: { userID: string }) {
   const [paper, setPaper] = useState<PaperStyle>('plain')
   const [name, setName] = useState('')
   const [savedName, setSavedName] = useState('')
+  const [acceptDm, setAcceptDm] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
 
   useEffect(() => {
@@ -25,6 +27,7 @@ function PreferencesCard({ userID }: { userID: string }) {
         setPaper(prefs.default_notebook_paper_style ?? 'plain')
         setName(prefs.default_player_name ?? '')
         setSavedName(prefs.default_player_name ?? '')
+        setAcceptDm(!!prefs.accept_dm_changes)
         setLoaded(true)
       })
       .catch((reason: unknown) => setStatus(`Could not load: ${String(reason)}`))
@@ -41,6 +44,11 @@ function PreferencesCard({ userID }: { userID: string }) {
     } catch (reason) {
       setStatus(`Could not save: ${reason instanceof Error ? reason.message : String(reason)}`)
     }
+  }
+
+  function chooseAcceptDm(on: boolean) {
+    setAcceptDm(on)
+    void save({ accept_dm_changes: on }, on ? 'Changes from the DM will go into your sheets by themselves.' : 'You will accept or decline each change from the DM.').then(preferencesChanged)
   }
 
   function choosePaper(style: PaperStyle) {
@@ -84,6 +92,18 @@ function PreferencesCard({ userID }: { userID: string }) {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="settings-field">
+            <span className="soft">Changes from the DM — damage and healing the DM applies to your character in a combat shown to the players</span>
+            <div className="btn-row">
+              <button className={acceptDm ? 'btn btn-on' : 'btn'} aria-pressed={acceptDm} onClick={() => chooseAcceptDm(true)}>
+                Accept automatically
+              </button>
+              <button className={!acceptDm ? 'btn btn-on' : 'btn'} aria-pressed={!acceptDm} onClick={() => chooseAcceptDm(false)}>
+                Ask me each time
+              </button>
+            </div>
+            <span className="soft">{acceptDm ? 'They go into your sheet and are highlighted there.' : 'Your sheet shows each one with Accept and Decline.'}</span>
           </div>
         </>
       )}

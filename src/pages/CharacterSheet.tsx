@@ -17,6 +17,7 @@ import { ModeSwitch } from '../components/ModeChooser'
 import { RegenerationFloat } from '../components/RegenerationFloat'
 import { PsionicsPanel } from '../components/PsionicsPanel'
 import { SessionReport } from '../components/SessionReport'
+import { DmChangesNote } from '../components/DmChangesNote'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
@@ -328,6 +329,8 @@ export function CharacterSheet() {
             />
           )}
         </div>
+        {/* Combat Tracker interativo (I2): o que o mestre mandou a este personagem. */}
+        {id && <DmChangesNote characterID={id} userID={userID} />}
         {/* Fase 3, R1: a ficha recebeu, ao vivo, uma gravação de outro lugar. */}
         {(remoteChange || spellSheets.remoteChange) && !(conflict || spellSheets.conflict) && (
           <div className="remote-note" role="status">

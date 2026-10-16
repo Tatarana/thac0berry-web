@@ -5412,6 +5412,30 @@ button.slot-dot:hover {
   color: var(--ink);
 }
 
+/* Combat Tracker interativo: mudanças do mestre na ficha. */
+.dm-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dm-change {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.dm-change-pending {
+  border: 1.5px solid var(--red-ink);
+  background: rgb(160 40 30 / 0.08);
+}
+
+.dm-change-done {
+  border: 1.5px solid var(--brass);
+  background: rgb(201 162 39 / 0.18);
+}
+
 /* Tabelas do mestre (GT5). */
 .dm-tables {
   margin: 10px 0 14px;

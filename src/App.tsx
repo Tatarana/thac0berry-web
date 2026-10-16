@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { ActiveCampaignSync } from './lib/activeCampaign'
+import { DmChangesInbox } from './lib/combatMessages'
 import { CampaignDetail } from './pages/CampaignDetail'
 import { LiveCombat } from './pages/LiveCombat'
 import { Campaigns } from './pages/Campaigns'
@@ -33,6 +34,7 @@ export default function App() {
     <AuthProvider>
       {/* Campanha ativa do modo DM na conta (com login). */}
       <ActiveCampaignSync />
+      <DmChangesInbox />
       <HashRouter>
         <Routes>
           <Route path="/" element={<Home />} />
