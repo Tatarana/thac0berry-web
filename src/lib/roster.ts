@@ -156,7 +156,7 @@ export async function deleteCampaign(campaignID: string) {
 // --- Ações no personagem (menu de contexto do elenco no iPad) ------------------
 
 /** Lê a ficha com a versão, aplica a mudança e grava (UPDATE com o `version` conhecido). */
-async function editCharacter(characterID: string, mutate: (c: ServerCharacter) => void) {
+export async function editCharacter(characterID: string, mutate: (c: ServerCharacter) => void) {
   const { data: row, error } = await supabase.from('character').select('data, version').eq('id', characterID).single()
   if (error) throw new Error(error.message)
   const { data, version } = row as { data: ServerCharacter; version: number }

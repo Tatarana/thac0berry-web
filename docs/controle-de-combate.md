@@ -52,10 +52,13 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
 | L1 | Ao vivo: `encounter_view` no backend (vista filtrada; membros leem, só o mestre publica) | feita (backend `20261014210000`) |
 | L2 | Ao vivo: o mestre publica ("Show to players", "hide" por combatente) | feita (web v0.86.0) |
 | L3 | Ao vivo: a tela dos jogadores (cartão na campanha, só leitura) | feita (web v0.87.0) |
+| I1 | Interativo: backend `combat_message` (mensagens com aceite nos dois sentidos) | feita (backend `20261015120000` e `20261015150000`) |
+| I2 | Interativo: o mestre manda dano/cura; o jogador aceita (Settings) ou responde na ficha | feita (web v0.88.0) |
+| I3 | Interativo: o jogador manda iniciativa e d20 de salvamento; o mestre aceita | a fazer |
 
 ## Backlog
 
-- Ao vivo, depois da L3: os jogadores interagirem (digitar a própria iniciativa, o d20 do salvamento).
+- I3: o jogador manda a própria iniciativa e o d20 de um salvamento pedido pelo mestre; o mestre aceita para o número entrar no Combat Tracker.
 - Fase 2 do backend: o DM lê as fichas dos jogadores da campanha.
 
 ## Log
@@ -479,3 +482,36 @@ personagens dos jogadores aparecem na mesma lista **sem mudar a web**.
     recarregar; "Show to players" desligado → a outra aba mostrou "No combat
     is being shown right now"; encontro apagado, nenhuma vista sobrando,
     campanha ativa de volta ao One-shot.
+- 2026-10-15, Combat Tracker interativo aprovado (decisões do usuário: nos
+  dois sentidos, quem recebe aceita antes de valer; o jogador escolhe nas
+  Settings se aceita sozinho o que o mestre manda). Entregas I1 (backend), I2
+  (mestre manda, jogador aceita) e I3 (jogador manda, mestre aceita).
+- 2026-10-15, I1 feita (backend `20261015120000_combate_interativo_i1_mensagens.sql`,
+  16 verificações pgTAP; `20261015150000_aceitar_mudancas_do_mestre.sql`, +1):
+  `combat_message` (campanha, encontro, personagem, `direction` to_dm/to_player,
+  `kind` + `payload` genéricos, `status` pending/accepted/declined/withdrawn); só
+  se escreve pelas funções `send_to_dm` (quem fala pelo personagem — dono ou
+  acesso temporário —, só com o encontro mostrado aos jogadores), `send_to_player`
+  (o mestre do encontro), `resolve_combat_message` (quem recebe) e
+  `withdraw_combat_message` (quem mandou, enquanto pendente); até 20 pendentes por
+  personagem; no Realtime. `user_preferences.accept_dm_changes` (padrão falso).
+- 2026-10-15, I2 feita (web v0.88.0; só os PV, dano e cura):
+  - `src/rules/dmChanges.ts` (com testes): `applyHpDelta` (a cura não passa do
+    máximo), `hpChangesToSend` (os PCs do App nos encontros compartilhados cujo
+    PV mudou desde o último envio; a primeira leitura só entra na base, sem
+    mandar);
+  - `src/lib/combatMessages.ts`: `useHpChangeSender` no Combat Tracker (manda
+    2 s depois da última edição; falha volta à base, para tentar de no), `sendToPlayer`,
+    `resolveMessage`, `acceptDmChange` (grava a ficha e marca a mensagem),
+    `fetchDmChanges` (pendentes e aceitas nas últimas 12h), `DmChangesInbox`
+    (montado no App: com a preferência ligada, aceita sozinho as pendentes dos
+    personagens da conta, inclusive as que chegaram com o app fechado);
+  - Settings: "Changes from the DM" — Accept automatically / Ask me each time;
+  - na ficha, `src/components/DmChangesNote.tsx`: pendente em vermelho com
+    Accept/Decline (só quem fala pelo personagem responde); aceita (sozinha ou
+    não) em dourado até o jogador dar OK (guardado no aparelho);
+  - conferido no navegador (campanha "Teste W3.1b B", Kelmonito tirado do
+    encontro antes), as duas preferências: "Ask me each time" — dano de 4 virou
+    pendente, Accept levou ao PV 2; "Accept automatically" — dano de 3 entrou
+    sozinho (PV 3), com o destaque na ficha. Encontro de teste apagado, PV e
+    preferência devolvidos, campanha ativa de volta ao One-shot; testes: 230 (2 novos).

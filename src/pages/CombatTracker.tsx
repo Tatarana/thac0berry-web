@@ -19,6 +19,7 @@ import { useActiveCampaign } from '../lib/activeCampaign'
 import { fetchDmTables, type DmTableRow } from '../lib/dmTables'
 import { useCombatStore } from '../lib/combatStore'
 import { usePlayerViewPublisher } from '../lib/encounterView'
+import { useHpChangeSender } from '../lib/combatMessages'
 import { useConfirm } from '../lib/useConfirm'
 import { useInitiativeModifiers } from '../lib/initiativeTables'
 import {
@@ -116,6 +117,8 @@ function Tracker() {
   }, [userID, campaignID, campaign])
   // Combat Tracker ao vivo: a vista dos jogadores dos encontros compartilhados.
   const { error: viewError } = usePlayerViewPublisher(store.encounters, campaignID, store.settings.deathAt, userID)
+  // Interativo (I2): o dano e a cura nos PCs do App vão aos jogadores.
+  const { error: sendError } = useHpChangeSender(store.encounters, campaignID, userID)
   const tables = useMemo(
     () => (bookTables.length > 0 ? [...bookTables, ...dmRows.map((row) => asGrimoireTable(row.id, row.data, campaignName))] : bookTables),
     [bookTables, dmRows, campaignName],
@@ -217,6 +220,7 @@ function Tracker() {
         {saveError && <p className="paper-soft save-error">Could not save on this device: {saveError}</p>}
         {syncError && <p className="paper-soft save-error">Could not sync with your account (kept on this device; it will try again): {syncError}</p>}
         {viewError && <p className="paper-soft save-error">Could not update what the players see (it will try again): {viewError}</p>}
+        {sendError && <p className="paper-soft save-error">Could not send a hit point change to a player: {sendError}</p>}
         {conflict && (
           <div className="conflict-note" role="status">
             This encounter was also changed on another device. Your version was saved; the other one is kept in the history.{' '}
