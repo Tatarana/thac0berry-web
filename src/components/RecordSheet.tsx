@@ -32,8 +32,9 @@ import type { Proficiency } from '../data/proficiencies'
 import { abilityEffect, temporaryHitPoints } from '../rules/effects'
 import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
 import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
+import { matchVistaniTribe } from '../rules/vistani'
 import { CompendiumPicker } from './CompendiumPicker'
-import { KitPicker, RacePicker } from './RaceKitPickers'
+import { KitPicker, RacePicker, VistaniTribePicker } from './RaceKitPickers'
 import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
 
@@ -141,6 +142,7 @@ function RecordHeader({
   onApplied?: (keys: string[]) => void
 }) {
   const [pickingRace, setPickingRace] = useState(false)
+  const [pickingTribe, setPickingTribe] = useState(false)
   const [pickingKit, setPickingKit] = useState(false)
   const [kitSpellsOpen, setKitSpellsOpen] = useState(false)
   // true = a aba padrão; 'dual' = abre direto na classe dupla.
@@ -288,14 +290,29 @@ function RecordHeader({
         <div className="rec-header-row">
           {edit ? (
             <div className="rec-header-line">
-              <button className="ink-picker-button" aria-label="Race" onClick={() => setPickingRace(true)}>
-                <span className="rec-value">{c.race || '—'}</span>
-                <span className="ink-picker-caret" aria-hidden="true">▾</span>
-              </button>
+              <span className="rec-header-inline">
+                <button className="ink-picker-button" aria-label="Race" onClick={() => setPickingRace(true)}>
+                  <span className="rec-value">{c.race || '—'}</span>
+                  <span className="ink-picker-caret" aria-hidden="true">▾</span>
+                </button>
+                {/* Tribo de Vistani (Domains of Dread, Tabela 68): só faz sentido com Half-Vistani. */}
+                {c.race === 'Half-Vistani' && (
+                  <>
+                    <span className="rec-soft"> / </span>
+                    <button className="ink-picker-button" aria-label="Vistani tribe" onClick={() => setPickingTribe(true)}>
+                      <span className="rec-value">{matchVistaniTribe(c.vistaniTribe)?.name ?? 'Tribe'}</span>
+                      <span className="ink-picker-caret" aria-hidden="true">▾</span>
+                    </button>
+                  </>
+                )}
+              </span>
               <span className="rec-cell-label">Race</span>
             </div>
           ) : (
-            <HeaderLine label="Race">{dash(c.race)}</HeaderLine>
+            <HeaderLine label="Race">
+              {dash(c.race)}
+              {c.race === 'Half-Vistani' && matchVistaniTribe(c.vistaniTribe) && ` · ${matchVistaniTribe(c.vistaniTribe)!.name}`}
+            </HeaderLine>
           )}
           {pickingRace && edit && (
             <RacePicker
@@ -306,6 +323,23 @@ function RecordHeader({
                 setPickingRace(false)
               }}
               onClose={() => setPickingRace(false)}
+            />
+          )}
+          {pickingTribe && edit && (
+            <VistaniTribePicker
+              character={c}
+              onChoose={(tribe) => {
+                setPickingTribe(false)
+                void loadData<Proficiency[]>('proficiencies.json').then((compendium) =>
+                  edit((x) => {
+                    x.vistaniTribe = tribe.id
+                    addKitBonusProficiencies(x, tribe.freeProficiencies, compendium)
+                    // Como ao trocar de raça (raceKit.ts): não desfaz o texto da tribo anterior, só acrescenta.
+                    if (!x.racialAbilities?.includes(tribe.text)) x.racialAbilities = `${x.racialAbilities ? `${x.racialAbilities} ` : ''}${tribe.text}`
+                  }),
+                )
+              }}
+              onClose={() => setPickingTribe(false)}
             />
           )}
           {kitSpellsOpen && edit && (
