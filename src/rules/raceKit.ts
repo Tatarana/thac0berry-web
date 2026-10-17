@@ -29,7 +29,13 @@ export type PlanarRace =
   | 'Githzerai'
   | 'Modron'
   | 'Tiefling'
-export type RaceName = PhbRace | PlanarRace
+/**
+ * Raças de Ravenloft (Domains of Dread; backlog, 2026-10-17): só o
+ * Half-Vistani (glomorgo) — a raça pura vistani é proibida a jogadores, como
+ * o livro diz.
+ */
+export type RavenloftRace = 'Half-Vistani'
+export type RaceName = PhbRace | PlanarRace | RavenloftRace
 export const races: PhbRace[] = ['Human', 'Dwarf', 'Elf', 'Gnome', 'Half-Elf', 'Halfling']
 export const planarRaces: PlanarRace[] = [
   'Aasimar',
@@ -43,17 +49,33 @@ export const planarRaces: PlanarRace[] = [
   'Modron',
   'Tiefling',
 ]
-const allRaces: RaceName[] = [...races, ...planarRaces]
+export const ravenloftRaces: RavenloftRace[] = ['Half-Vistani']
+/** Todas as raças do seletor (decisão do usuário, 2026-10-17): sempre as mesmas, o cenário só avisa (não esconde) — ver `raceCampaignSetting`. */
+export const allRaces: RaceName[] = [...races, ...planarRaces, ...ravenloftRaces]
 
 export const isPlanarRace = (race: RaceName): race is PlanarRace => (planarRaces as RaceName[]).includes(race)
-
-/** As raças do seletor: as do PHB e, em campanha com o cenário Planescape, as planares. */
-export function racesForCampaign(campaignSettings: string[] | null | undefined): RaceName[] {
-  return campaignSettings?.includes('Planescape') ? allRaces : races
-}
+export const isRavenloftRace = (race: RaceName): race is RavenloftRace => (ravenloftRaces as RaceName[]).includes(race)
 
 /** De onde vêm os números da raça (texto dos avisos). */
-const raceSource = (race: RaceName) => (isPlanarRace(race) ? "The Planewalker's Handbook" : 'PHB Table 7')
+const raceSource = (race: RaceName) => (isPlanarRace(race) ? "The Planewalker's Handbook" : isRavenloftRace(race) ? 'Domains of Dread' : 'PHB Table 7')
+
+/**
+ * O cenário da campanha que esta raça pede (null = PHB, qualquer campanha).
+ * Decisão do usuário (2026-10-17): nunca bloqueia a escolha — o mestre pode
+ * misturar mundos —, só gera o aviso de `raceSettingWarning`.
+ */
+export function raceCampaignSetting(race: RaceName): string | null {
+  if (isPlanarRace(race)) return 'Planescape'
+  if (isRavenloftRace(race)) return 'Ravenloft'
+  return null
+}
+
+/** "Half-Vistani is a Ravenloft race (Domains of Dread), and this campaign does not have the Ravenloft setting on."; null se bate ou a raça não pede cenário. */
+export function raceSettingWarning(race: RaceName, campaignSettings: string[] | null | undefined): string | null {
+  const setting = raceCampaignSetting(race)
+  if (!setting || campaignSettings?.includes(setting)) return null
+  return `${race} is a ${setting} race (${raceSource(race)}), and this campaign does not have the ${setting} setting on.`
+}
 
 type AbilityName = 'Strength' | 'Dexterity' | 'Constitution' | 'Intelligence' | 'Wisdom' | 'Charisma'
 const abilityKey: Record<AbilityName, keyof AbilityScores> = {
@@ -104,6 +126,8 @@ const adjustments: Record<RaceName, [AbilityName, number][]> = {
   Githzerai: [['Strength', -1], ['Dexterity', 1], ['Intelligence', 1], ['Wisdom', -1]],
   Modron: [['Dexterity', -1], ['Constitution', 1], ['Intelligence', 1], ['Charisma', -1]],
   Tiefling: [['Strength', -1], ['Intelligence', 1], ['Wisdom', -1], ['Charisma', 1]],
+  // Domains of Dread, "Half-Vistani: Ability Scores": ajuste fixo, sem faixa mínima/máxima.
+  'Half-Vistani': [['Intelligence', 1], ['Wisdom', 1], ['Charisma', -2]],
 }
 
 export function hasAbilityRequirements(race: RaceName) {
@@ -136,9 +160,11 @@ export function levelLimit(race: RaceName, characterClass: CharacterClass | stri
     Dwarf: { Cleric: 10, Fighter: 15, Thief: 12, Ninja: 'unlimited', Psionicist: 8 },
     Elf: { Cleric: 12, Fighter: 12, Mage: 15, Ranger: 15, Thief: 12, Psionicist: 7 },
     Gnome: { Cleric: 9, Fighter: 11, Thief: 13, Psionicist: 9 },
-    // Gypsy (Domains of Dread): humano, meio-elfo e Half-Vistani; o livro não dá limite de nível.
+    // Gypsy (Domains of Dread): humano, meio-elfo e Half-Vistani (que tem a linha especial abaixo); o livro não dá limite de nível.
     'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12, Psionicist: 7, Gypsy: 'unlimited' },
     Halfling: { Cleric: 8, Fighter: 9, Thief: 15, Ninja: 'unlimited', Psionicist: 10 },
+    // Domains of Dread: "quase humano" (sem tabela de limite); vale a linha especial abaixo.
+    'Half-Vistani': {},
     // PWH, "Planar Races: Level Limits" (Wizard = Mage); classe fora da tabela = N/A.
     Aasimar: { Fighter: 14, Ranger: 14, Paladin: 14, Mage: 14, Cleric: 12, Druid: 15, Thief: 15, Bard: 9 },
     // Só o macho pode ser ranger ou paladino; só a fêmea, mago (PWH, nota **).
@@ -153,7 +179,8 @@ export function levelLimit(race: RaceName, characterClass: CharacterClass | stri
     Modron: { Fighter: 15, Mage: 12 },
     Tiefling: { Fighter: 12, Mage: 14, Cleric: 10, Thief: 15 },
   }
-  if (race === 'Human') return 'unlimited'
+  // Half-Vistani: "Although human in body…" — sem tabela de limite, tratado como humano.
+  if (race === 'Human' || race === 'Half-Vistani') return 'unlimited'
   return table[race][cls] ?? 'forbidden'
 }
 
@@ -192,14 +219,20 @@ export function demiBardWarning(race: RaceName, kit: string | null | undefined, 
 }
 
 /**
- * As duas juntas, como o RacePickerSheet mostra antes de confirmar. Bardo
+ * As três juntas, como o RacePickerSheet mostra antes de confirmar. Bardo
  * semi-humano: o aviso do CBH (demi-bardo, com o kit) no lugar do "cannot
- * normally be a Bard" do PHB.
+ * normally be a Bard" do PHB. `campaignSettings` opcional: some o aviso de
+ * cenário quando não vem (ex.: os testes antigos sem campanha em mente).
  */
-export function raceWarnings(race: RaceName, c: Pick<PlayerCharacter, 'abilities' | 'characterClass' | 'level'> & { kit?: string | null }): string[] {
+export function raceWarnings(
+  race: RaceName,
+  c: Pick<PlayerCharacter, 'abilities' | 'characterClass' | 'level'> & { kit?: string | null },
+  campaignSettings?: string[] | null,
+): string[] {
   const demiBard = canonicalClass(c.characterClass) === 'Bard' && demiBardKits[race] !== undefined
   const warning = demiBard ? demiBardWarning(race, c.kit, c.level) : levelLimitWarning(race, c.characterClass, c.level)
-  return [...abilityWarnings(race, c.abilities), ...(warning ? [warning] : [])]
+  const settingWarning = campaignSettings !== undefined ? raceSettingWarning(race, campaignSettings) : null
+  return [...abilityWarnings(race, c.abilities), ...(warning ? [warning] : []), ...(settingWarning ? [settingWarning] : [])]
 }
 
 const spellResistance: Partial<Record<RaceName, string>> = {
@@ -227,6 +260,7 @@ const baseMovement: Record<RaceName, string> = {
   Githzerai: '12"',
   Modron: '15"',
   Tiefling: '12"',
+  'Half-Vistani': '12"',
 }
 
 const specialAbilities: Partial<Record<RaceName, string>> = {
@@ -258,6 +292,9 @@ const specialAbilities: Partial<Record<RaceName, string>> = {
     "Natural AC 8, movement 15. 30% resistance to illusions, energy drain, charm, sleep, fear, domination and similar mind-affecting spells. +1 to saving throws vs. fire, cold and acid. When surprised, stays surprised twice as long. Can't be multiclassed.",
   Tiefling:
     'Infravision 60 ft. Darkness 15-ft. radius once per day. Half damage from cold; +2 to saving throws vs. fire, electricity and poison (or roll five times on the Tiefling Abilities table instead). Any alignment except lawful good.',
+  // Domains of Dread, "Half-Vistani"; tribal abilities (Kamii, Equaar, etc., Table 68) ficam fora: backlog.
+  'Half-Vistani':
+    'Can identify plants, animals and safe water, as a druid does. Can start a fire in 1d4 rounds given fuel. Can read tralaks (Vistani glyphs) with an Intelligence check. On the 3 nights of the full moon (lunatio): cannot heal or memorize spells, −2 to all saving throws, and a madness check each night.',
 }
 
 /** RaceOption.match: o campo Race (texto livre) que bate exatamente com uma raça. */

@@ -16,34 +16,21 @@ export const ravenloftClasses: CanonicalClass[] = ['Anchorite', 'Gypsy']
 export const isRavenloftClass = (cls: CharacterClass | string) => ravenloftClasses.includes(canonicalClass(cls))
 
 /**
- * Decisão do usuário (2026-10-10): a classe só aparece no seletor quando a
- * campanha do personagem tem Ravenloft ligado. Sem campanha, ou campanha sem
- * cenário ligado, não aparece (diferente do filtro "nenhum ligado = tudo").
+ * Campanha tem o cenário ligado. Decisão do usuário (2026-10-17): não esconde
+ * mais a classe do seletor (o mestre pode misturar mundos) — só alimenta
+ * `ravenloftWarnings`, que avisa sem bloquear.
  */
 export const campaignAllowsRavenloft = (settings: string[] | null | undefined) => !!settings?.includes(RAVENLOFT)
-
-/** As classes do seletor: as de sempre, mais as de Ravenloft quando a campanha permite. */
-export function classOptionsFor(base: CharacterClass[], settings: string[] | null | undefined): CharacterClass[] {
-  return campaignAllowsRavenloft(settings) ? [...base, ...(ravenloftClasses as CharacterClass[])] : base
-}
-
-/**
- * Kits de Ravenloft (Denizens of Dread, `setting: "Ravenloft"` no kits.json):
- * mesma regra das classes, só com o cenário ligado na campanha.
- */
-export const kitAllowedInCampaign = (kit: { setting?: string | null }, settings: string[] | null | undefined) =>
-  kit.setting !== RAVENLOFT || campaignAllowsRavenloft(settings)
 
 /** Requisitos de cada classe (Domains of Dread): atributos mínimos e raças. */
 const requirements: Partial<
   Record<CanonicalClass, { plural: string; abilities: Partial<Record<keyof PlayerCharacter['abilities'], number>>; races: string[]; racesText: string }>
 > = {
   Anchorite: { plural: 'Anchorites', abilities: { wisdom: 12, charisma: 15 }, races: ['Human'], racesText: 'human' },
-  // Half-Vistani é raça do Domains of Dread que o app ainda não tem: fica fora do aviso.
   Gypsy: {
     plural: 'Gypsies',
     abilities: { constitution: 13, intelligence: 13, wisdom: 13, charisma: 15 },
-    races: ['Human', 'Half-Elf'],
+    races: ['Human', 'Half-Elf', 'Half-Vistani'],
     racesText: 'human, half-elf or Half-Vistani',
   },
 }

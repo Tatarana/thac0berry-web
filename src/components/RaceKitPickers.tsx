@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { loadKits, type Kit } from '../data/kits'
+import { loadAllKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
 import { allClasses, kitWarnings } from '../rules/multiclass'
-import { hasAbilityRequirements, isPlanarRace, kitsAllowedFor, matchRace, raceAdjustmentsText, racesForCampaign, raceWarnings, type RaceName } from '../rules/raceKit'
-import { kitAllowedInCampaign } from '../rules/ravenloft'
+import { allRaces, hasAbilityRequirements, isPlanarRace, isRavenloftRace, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, type RaceName } from '../rules/raceKit'
 import type { PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import { KitDetail } from './KitDetail'
@@ -20,14 +19,14 @@ export function RacePicker({
   onClose,
 }: {
   character: Pick<PlayerCharacter, 'race' | 'abilities' | 'characterClass' | 'level' | 'kit'>
-  /** Cenários da campanha da ficha: com Planescape, aparecem as raças planares (PWH). */
+  /** Cenários da campanha da ficha: raça de outro cenário (Planescape, Ravenloft) continua na lista, só ganha aviso. */
   campaignSettings?: string[] | null
   onChoose: (race: RaceName) => void
   onClose: () => void
 }) {
   const [pending, setPending] = useState<RaceName | null>(null)
   const current = matchRace(character.race)
-  const warnings = pending ? raceWarnings(pending, character) : []
+  const warnings = pending ? raceWarnings(pending, character, campaignSettings) : []
   return createPortal(
     <PaperModal title={pending ? `${pending}?` : 'Choose Race'} onClose={onClose}>
       {pending ? (
@@ -45,12 +44,13 @@ export function RacePicker({
         </div>
       ) : (
         <ul className="slot-choices">
-          {racesForCampaign(campaignSettings).map((race, i, list) => (
+          {allRaces.map((race, i, list) => (
             <li key={race}>
               {isPlanarRace(race) && !isPlanarRace(list[i - 1]) && <p className="paper-label">Planescape · The Planewalker's Handbook</p>}
+              {isRavenloftRace(race) && !isRavenloftRace(list[i - 1]) && <p className="paper-label">Ravenloft · Domains of Dread</p>}
               <button
                 className="slot-choice"
-                onClick={() => (raceWarnings(race, character).length > 0 ? setPending(race) : onChoose(race))}
+                onClick={() => (raceWarnings(race, character, campaignSettings).length > 0 ? setPending(race) : onChoose(race))}
               >
                 <span className="slot-choice-fav">{current === race ? '★' : ''}</span>
                 <span className="rec-value">{race}</span>
@@ -68,12 +68,6 @@ export function RacePicker({
     </PaperModal>,
     document.body,
   )
-}
-
-let allKits: Promise<Kit[]> | null = null
-const loadAllKits = () => {
-  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
-  return allKits
 }
 
 export function KitPicker({
@@ -101,7 +95,6 @@ export function KitPicker({
       const seen = new Set<string>()
       const list = classes
         .flatMap((cls) => kitsAllowedFor(all, cls))
-        .filter((k) => kitAllowedInCampaign(k, campaignSettings))
         .filter((k) => (seen.has(k.id) ? false : (seen.add(k.id), true)))
       setKits(list.sort((a, b) => a.name.localeCompare(b.name)))
     })
@@ -133,7 +126,7 @@ export function KitPicker({
               <span className="slot-choice-fav">{character.kit === kit.name ? '★' : ''}</span>
               <span className="rec-value">{kit.name}</span>
               <span className="rec-soft">{[kit.classEligibility.subclass, kit.deity].filter(Boolean).join(' · ')}</span>
-              {kitWarnings(kit, character).map((w) => (
+              {kitWarnings(kit, character, campaignSettings).map((w) => (
                 <span key={w} className="kit-warning">
                   ⚠ {w}
                 </span>
