@@ -4,7 +4,8 @@ import { loadAllKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
 import { allClasses, kitWarnings } from '../rules/multiclass'
 import { allRaces, hasAbilityRequirements, isPlanarRace, isRavenloftRace, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, type RaceName } from '../rules/raceKit'
-import type { PlayerCharacter } from '../types/library'
+import { vistaniTribeForRoll, vistaniTribes, vistaniTribeWarnings, type VistaniTribe } from '../rules/vistani'
+import type { CharacterClass, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import { KitDetail } from './KitDetail'
 
@@ -65,6 +66,54 @@ export function RacePicker({
           <li className="paper-soft">Choosing a race applies its ability adjustments to the scores on the sheet.</li>
         </ul>
       )}
+    </PaperModal>,
+    document.body,
+  )
+}
+
+/**
+ * Tribo de Vistani (Domains of Dread, Tabela 68; só faz sentido com a raça
+ * Half-Vistani): sorteio em 1d100 ou escolha livre. Restrição de classe por
+ * tribo é só aviso (como o resto do app, não bloqueia).
+ */
+export function VistaniTribePicker({
+  character,
+  onChoose,
+  onClose,
+}: {
+  character: Pick<PlayerCharacter, 'characterClass'>
+  onChoose: (tribe: VistaniTribe) => void
+  onClose: () => void
+}) {
+  return createPortal(
+    <PaperModal title="Choose a Tribe" subtitle="Table 68: Vistani Ancestry — roll 1d100, or pick one" onClose={onClose}>
+      <div className="chip-row">
+        <button
+          className="chip chip-on"
+          onClick={() => {
+            const tribe = vistaniTribeForRoll(1 + Math.floor(Math.random() * 100))
+            if (tribe) onChoose(tribe)
+          }}
+        >
+          Roll 1d100
+        </button>
+      </div>
+      <ul className="slot-choices">
+        {vistaniTribes.map((tribe) => (
+          <li key={tribe.id}>
+            <button className="slot-choice" onClick={() => onChoose(tribe)}>
+              <span className="slot-choice-fav" />
+              <span className="rec-value">{tribe.name}</span>
+              <span className="rec-soft">{tribe.summary}</span>
+              {vistaniTribeWarnings(tribe, character.characterClass as CharacterClass).map((w) => (
+                <span key={w} className="kit-warning">
+                  ⚠ {w}
+                </span>
+              ))}
+            </button>
+          </li>
+        ))}
+      </ul>
     </PaperModal>,
     document.body,
   )

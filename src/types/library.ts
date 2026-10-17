@@ -276,6 +276,8 @@ export interface PlayerCharacter {
   birthRank?: string | null
   nationality?: string | null
   racialAbilities?: string | null
+  /** Tribo de Vistani (Domains of Dread, Table 68; só faz sentido com a raça "Half-Vistani") — feito primeiro na web. */
+  vistaniTribe?: string | null
   skin?: string | null
   vision?: string | null
   handedness?: string | null
