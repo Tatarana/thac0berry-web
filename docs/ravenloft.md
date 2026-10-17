@@ -25,6 +25,10 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 6. A classe só aparece no seletor quando a campanha do personagem tem
    Ravenloft ligado (sem campanha ou sem cenário ligado: não aparece); se a
    campanha desligar Ravenloft depois, a classe fica, com aviso na ficha.
+   **Revisto em 2026-10-17** (pedido do usuário, junto com a raça
+   Half-Vistani): a classe passou a aparecer **sempre** no seletor — o mestre
+   pode misturar mundos —, e fora de campanha com Ravenloft vira só aviso.
+   Ver `docs/raca-e-kit-por-cenario.md`.
 7. iPad: como o Psionicist, a classe é só da web por enquanto. O iPad lê
    classe desconhecida como Fighter (`CharacterClass.init(from:)`): o
    personagem abre lá como Fighter, e salvar no iPad gravaria Fighter.
@@ -132,3 +136,6 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
   grupos Warrior e Priest; kits só no seletor com Ravenloft na campanha
   (`kitAllowedInCampaign`). Gypsy: Danseur, Investigator, Psychologue,
   Stalker; Anchorite: Investigator, Psychologue, Stalker, Warder.
+- 2026-10-17, Half-Vistani como raça do app, e os seletores de raça/classe/kit
+  passaram a mostrar tudo sempre (o cenário só avisa). Detalhe em
+  `docs/raca-e-kit-por-cenario.md`.

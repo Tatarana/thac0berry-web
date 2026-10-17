@@ -5,24 +5,25 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
+import * as M from '../src/rules/multiclass.ts'
 import * as R from '../src/rules/rules.ts'
 import * as V from '../src/rules/ravenloft.ts'
 import * as S from '../src/rules/sessionReport.ts'
 import { levelLimitWarning } from '../src/rules/raceKit.ts'
 import type { CharacterClass, PlayerCharacter } from '../src/types/library.ts'
 
-const base: CharacterClass[] = ['Fighter', 'Cleric']
 const abilities = { strength: 12, dexterity: 10, constitution: 12, intelligence: 10, wisdom: 16, charisma: 15 }
 
 function anchorite(over: Partial<PlayerCharacter> = {}): PlayerCharacter {
   return { characterClass: 'Anchorite', level: 5, race: 'Human', abilities: { ...abilities }, ...over } as unknown as PlayerCharacter
 }
 
-test('o Anchorite só aparece no seletor com Ravenloft ligado na campanha', () => {
-  assert.deepEqual(V.classOptionsFor(base, null), base)
-  assert.deepEqual(V.classOptionsFor(base, []), base)
-  assert.deepEqual(V.classOptionsFor(base, ['Dark Sun']), base)
-  assert.deepEqual(V.classOptionsFor(base, ['Ravenloft', 'Dark Sun']), [...base, 'Anchorite', 'Gypsy'])
+test('Anchorite e Gypsy sempre no seletor (2026-10-17: o cenário só avisa, não esconde)', () => {
+  assert.deepEqual(V.ravenloftClasses, ['Anchorite', 'Gypsy'])
+  assert.equal(V.isRavenloftClass('Gypsy'), true)
+  assert.equal(V.isRavenloftClass('Fighter'), false)
+  assert.equal(V.campaignAllowsRavenloft(null), false)
+  assert.equal(V.campaignAllowsRavenloft(['Ravenloft', 'Dark Sun']), true)
 })
 
 test('avisos do Anchorite: campanha sem Ravenloft, WIS/CHA abaixo do mínimo, raça', () => {
@@ -100,16 +101,17 @@ function gypsy(over: Partial<PlayerCharacter> = {}): PlayerCharacter {
   } as unknown as PlayerCharacter
 }
 
-test('Gypsy: no seletor só com Ravenloft; avisos de atributos e raça', () => {
-  assert.deepEqual(V.classOptionsFor(base, ['Ravenloft']), [...base, 'Anchorite', 'Gypsy'])
+test('Gypsy: avisos de atributos e raça (agora Half-Vistani também é aceita)', () => {
   assert.deepEqual(V.ravenloftWarnings(gypsy(), ['Ravenloft']), [])
   assert.deepEqual(V.ravenloftWarnings(gypsy({ race: 'Half-Elf' }), ['Ravenloft']), [])
+  assert.deepEqual(V.ravenloftWarnings(gypsy({ race: 'Half-Vistani' }), ['Ravenloft']), [])
   const all = V.ravenloftWarnings(gypsy({ race: 'Dwarf', abilities: { strength: 10, dexterity: 16, constitution: 12, intelligence: 13, wisdom: 13, charisma: 14 } }), ['Ravenloft'])
   assert.deepEqual(all.length, 3)
   assert.match(all[0], /Gypsies need Constitution 13/)
   assert.match(all[1], /Gypsies need Charisma 15/)
   assert.match(all[2], /human, half-elf or Half-Vistani/)
   assert.equal(levelLimitWarning('Half-Elf', 'Gypsy', 15), null)
+  assert.equal(levelLimitWarning('Half-Vistani', 'Gypsy', 20), null)
   assert.match(levelLimitWarning('Halfling', 'Gypsy', 1)!, /Domains of Dread/)
 })
 
@@ -181,11 +183,15 @@ test('dados reais: o Gypsy do código bate com o Domains of Dread no rules.json'
 
 // --- Kits de Ravenloft (Denizens of Dread) -------------------------------------------------
 
-test('kits de Ravenloft: só com o cenário na campanha; as classes certas', async () => {
-  assert.equal(V.kitAllowedInCampaign({ setting: 'Ravenloft' }, null), false)
-  assert.equal(V.kitAllowedInCampaign({ setting: 'Ravenloft' }, ['Dark Sun']), false)
-  assert.equal(V.kitAllowedInCampaign({ setting: 'Ravenloft' }, ['Ravenloft']), true)
-  assert.equal(V.kitAllowedInCampaign({ setting: null }, null), true)
+test('kits de Ravenloft: sempre na lista; aviso (não bloqueio) sem o cenário na campanha; as classes certas', async () => {
+  const c = { characterClass: 'Gypsy' as const, level: 3, wizardSchool: null, race: 'Human' }
+  const kit = { name: 'Danseur', classEligibility: { classGroup: 'Rogue' }, setting: 'Ravenloft' }
+  assert.deepEqual(M.kitWarnings(kit, c, null), ['This kit is from the Ravenloft setting, and this campaign does not have it on.'])
+  assert.deepEqual(M.kitWarnings(kit, c, ['Dark Sun']), ['This kit is from the Ravenloft setting, and this campaign does not have it on.'])
+  assert.deepEqual(M.kitWarnings(kit, c, ['Ravenloft']), [])
+  // Sem campanha em mente (campaignSettings ausente): sem esse aviso.
+  assert.deepEqual(M.kitWarnings(kit, c), [])
+  assert.deepEqual(M.kitWarnings({ ...kit, setting: null }, c, null), [])
   const { kitsAllowedFor } = await import('../src/rules/raceKit.ts')
   const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
   const kits = JSON.parse(readFileSync(join(source, 'kits.json'), 'utf8')) as {

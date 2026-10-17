@@ -80,10 +80,12 @@ test('seletor de raça: bardo semi-humano recebe o aviso do CBH, não o "cannot 
   assert.deepEqual(K.raceWarnings('Half-Elf', bard), [])
 })
 
-test('raças planares (PWH): só em campanha Planescape; ajustes, limites, multiclasse e ladrão', () => {
-  assert.equal(K.racesForCampaign(null).length, 6)
-  assert.equal(K.racesForCampaign(['Ravenloft']).length, 6)
-  assert.equal(K.racesForCampaign(['Planescape']).length, 16)
+test('raças planares (PWH): sempre na lista (2026-10-17: o cenário só avisa, não esconde); ajustes, limites, multiclasse e ladrão', () => {
+  // 6 do PHB + 10 planares (Planescape) + 1 (Half-Vistani, Ravenloft).
+  assert.equal(K.allRaces.length, 17)
+  assert.match(K.raceSettingWarning('Tiefling', null) ?? '', /Planescape race .*The Planewalker's Handbook.*does not have the Planescape setting on/)
+  assert.equal(K.raceSettingWarning('Tiefling', ['Planescape']), null)
+  assert.equal(K.raceSettingWarning('Human', null), null)
   assert.equal(K.matchRace('genasi (water)'), 'Genasi (water)')
 
   const c = base()
@@ -118,4 +120,28 @@ test('raças planares (PWH): só em campanha Planescape; ajustes, limites, multi
   assert.equal(R.racialAdjustment('Hide in Shadows', 'Tiefling'), 10)
   assert.equal(R.racialAdjustment('Hide in Shadows', 'Genasi (water)'), 10)
   assert.equal(R.racialAdjustment('Hide in Shadows', 'Genasi (fire)'), 0)
+})
+
+test('Half-Vistani (Domains of Dread): ajuste fixo, sem limite de nível, aviso de cenário', () => {
+  assert.equal(K.raceAdjustmentsText('Half-Vistani'), '+1 Int, +1 Wis, -2 Cha')
+  assert.equal(K.hasAbilityRequirements('Half-Vistani'), false)
+  assert.equal(K.levelLimit('Half-Vistani', 'Gypsy'), 'unlimited')
+  assert.equal(K.levelLimit('Half-Vistani', 'Mage'), 'unlimited')
+  assert.equal(K.levelLimitWarning('Half-Vistani', 'Fighter', 20), null)
+
+  const c = base()
+  K.applyRace(c, 'Half-Vistani')
+  assert.deepEqual([c.abilities.intelligence, c.abilities.wisdom, c.abilities.charisma], [11, 11, 8])
+  assert.match(c.racialAbilities ?? '', /tralaks/)
+  assert.equal(c.page2Movement?.base, '12"')
+  assert.equal(c.saves.spellResistance, null)
+
+  // O cenário só avisa (não bloqueia): sem Ravenloft na campanha, "choose anyway" continua valendo.
+  assert.deepEqual(K.raceWarnings('Half-Vistani', { ...base(), characterClass: 'Gypsy', level: 1 }, ['Ravenloft']), [])
+  assert.match(
+    K.raceWarnings('Half-Vistani', { ...base(), characterClass: 'Gypsy', level: 1 }, null)[0],
+    /Half-Vistani is a Ravenloft race \(Domains of Dread\), and this campaign does not have the Ravenloft setting on\./,
+  )
+  // Sem campanha em mente (3º argumento ausente, como o resto da ficha chama): sem esse aviso.
+  assert.deepEqual(K.raceWarnings('Half-Vistani', { ...base(), characterClass: 'Gypsy', level: 1 }), [])
 })

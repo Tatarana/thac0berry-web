@@ -58,6 +58,14 @@ export function loadKits(group: ClassGroup): Promise<Kit[]> {
   return promise
 }
 
+let allKits: Promise<Kit[]> | null = null
+
+/** Todos os kits, de todo grupo (RaceKitPickers e o aviso de cenário ao mudar de campanha). */
+export function loadAllKits(): Promise<Kit[]> {
+  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
+  return allKits
+}
+
 export interface TextSection {
   title: string
   body: string

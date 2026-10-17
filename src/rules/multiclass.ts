@@ -406,6 +406,8 @@ export function kitAllowsRace(racesText: string | null | undefined, race: string
     Githzerai: ['githzerai'],
     Modron: ['modron', 'modrons'],
     Tiefling: ['tiefling', 'tieflings'],
+    // "Half-Vistani" vira as palavras "half" e "vistani" (o hífen separa); "vistani" já identifica.
+    'Half-Vistani': ['vistani'],
   }
   // Palavras do texto; "half-elf(ves)" vira uma palavra só, para "elf" não casar dentro dela.
   const words = (part: string) => part.replace(/half[\s-]?el(f|ves)/g, 'halfelf').split(/[^a-z]+/)
@@ -418,6 +420,8 @@ interface KitInfo {
   name: string
   classEligibility: { classGroup: string; subclass?: string | null }
   mechanics?: { requirements?: { races?: string | null } | null } | null
+  /** Cenário do livro de origem (ex. "Ravenloft" nos kits de Denizens of Dread); null = nenhum. */
+  setting?: string | null
 }
 
 /**
@@ -425,8 +429,10 @@ interface KitInfo {
  * ladrão (CTH cap. 3) só para classe única; kit que não aceita a raça (CPrH:
  * a ordem sacerdotal tem restrições raciais). Kits de sacerdote, de mago (o CWH
  * não restringe) e de bardo (CBH) valem num multiclasse; um kit no total.
+ * `campaignSettings`: decisão do usuário (2026-10-17) — kit de outro cenário
+ * (ex. Ravenloft) nunca é escondido, só avisado; opcional, como `raceWarnings`.
  */
-export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>): string[] {
+export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>, campaignSettings?: string[] | null): string[] {
   const warnings: string[] = []
   if (isMultiClass(c)) {
     if (kit.classEligibility.classGroup === 'Warrior') warnings.push('Only single-class warriors can take a warrior kit (CFH, Chapter 2).')
@@ -436,6 +442,9 @@ export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter,
   }
   const races = kit.mechanics?.requirements?.races
   if (c.race && !kitAllowsRace(races, c.race)) warnings.push(`This kit is limited to: ${races}.`)
+  if (kit.setting && campaignSettings !== undefined && !campaignSettings?.includes(kit.setting)) {
+    warnings.push(`This kit is from the ${kit.setting} setting, and this campaign does not have it on.`)
+  }
   return warnings
 }
 

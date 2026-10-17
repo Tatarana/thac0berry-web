@@ -25,7 +25,7 @@ import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
-import { classOptionsFor, gypsyCanSpecialize, gypsyLore, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
+import { gypsyCanSpecialize, gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -70,7 +70,10 @@ const alignmentOptions: [string, string][] = [
   ['CE', 'Chaotic Evil'],
 ]
 
-const classOptions: CharacterClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist']
+// Decisão do usuário (2026-10-17): as classes de outro livro (Ninja, Psionicist) e as de
+// cenário (Anchorite, Gypsy — Domains of Dread) sempre aparecem; não bater com a campanha
+// só vira aviso (ravenloftWarnings), nunca some da lista.
+const classOptions: CharacterClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist', ...ravenloftClasses]
 
 /** "Read Magic" do compêndio (1º círculo arcano), para o grimório do mago novo. */
 async function findReadMagic(): Promise<{ id: string; name: string } | null> {
@@ -81,17 +84,13 @@ async function findReadMagic(): Promise<{ id: string; name: string } | null> {
 
 function ClassSelect({
   value,
-  campaignSettings,
   onChange,
 }: {
   value: CharacterClass
-  /** Cenários da campanha: Ravenloft libera as classes do Domains of Dread. */
-  campaignSettings: string[] | null
   onChange: (cls: CharacterClass, readMagic: { id: string; name: string } | null) => void
 }) {
-  const allowed = classOptionsFor(classOptions, campaignSettings)
-  const options = allowed.map((cls) => ({ value: cls, label: cls }))
-  if (!allowed.includes(value)) options.unshift({ value, label: value })
+  const options = classOptions.map((cls) => ({ value: cls, label: cls }))
+  if (!classOptions.includes(value)) options.unshift({ value, label: value })
   return (
     <InkPicker
       value={value}
@@ -169,7 +168,6 @@ function RecordHeader({
               <span className="rec-header-inline">
                 <ClassSelect
                   value={c.characterClass}
-                  campaignSettings={campaignSettings}
                   onChange={(cls, readMagic) => {
                     edit((x) => changeClass(x, cls, readMagic))
                     onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses })

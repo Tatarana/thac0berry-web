@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../auth/context'
 import { createPortal } from 'react-dom'
 import { campaignTitle, dateFromInput, dateInputValue } from '../lib/campaigns'
+import { loadAllKits } from '../data/kits'
 import { assignToCampaign, bringBack, cloneCharacter, deleteCharacter, markDead, toggleArchived } from '../lib/roster'
+import { kitSettingsFrom, settingFitNotes, type KitSettings } from '../rules/settingFit'
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
 import { PaperModal } from './DetailBits'
@@ -55,8 +57,10 @@ function MarkDeadWindow({ name, onConfirm, onClose }: { name: string; onConfirm:
  * Fase 2b, também as campanhas em que a conta joga (o mestre dela passa a
  * ver e poder editar a ficha).
  */
-function MoveWindow({ current, onChoose, onClose }: { current: string | null; onChoose: (campaignID: string | null) => void; onClose: () => void }) {
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string; is_archived: boolean }[] | null>(null)
+function MoveWindow({ characterID, current, onChoose, onClose }: { characterID: string; current: string | null; onChoose: (campaignID: string | null) => void; onClose: () => void }) {
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; is_archived: boolean; enabled_settings: string[] | null }[] | null>(null)
+  const [mine, setMine] = useState<{ race: string | null; character_class: string | null; kit: string | null } | null>(null)
+  const [kitSettings, setKitSettings] = useState<KitSettings | null>(null)
   const { session } = useAuth()
   const userID = session?.user.id ?? null
   useEffect(() => {
@@ -64,17 +68,28 @@ function MoveWindow({ current, onChoose, onClose }: { current: string | null; on
     let cancelled = false
     void supabase
       .from('campaign')
-      .select('id, name, is_archived')
+      .select('id, name, is_archived, enabled_settings')
       .is('deleted_at', null)
       .order('name')
       .then(({ data }) => {
-        if (!cancelled) setCampaigns((data ?? []) as { id: string; name: string; is_archived: boolean }[])
+        if (!cancelled) setCampaigns((data ?? []) as { id: string; name: string; is_archived: boolean; enabled_settings: string[] | null }[])
       })
+    void supabase
+      .from('character')
+      .select('race:data->>race, character_class, kit:data->>kit')
+      .eq('id', characterID)
+      .single()
+      .then(({ data }) => {
+        if (!cancelled) setMine((data ?? null) as typeof mine)
+      })
+    void loadAllKits().then((kits) => !cancelled && setKitSettings(kitSettingsFrom(kits)))
     return () => {
       cancelled = true
     }
-  }, [userID])
+  }, [userID, characterID])
   const same = (id: string) => current?.toUpperCase() === id.toUpperCase()
+  const noteFor = (settings: string[] | null) =>
+    mine && kitSettings ? settingFitNotes({ race: mine.race ?? '', characterClass: mine.character_class ?? '', kit: mine.kit }, settings, kitSettings).join(' ') : ''
   return createPortal(
     <PaperModal title="Move to…" onClose={onClose}>
       {campaigns === null && <p className="paper-soft">Loading campaigns…</p>}
@@ -90,15 +105,19 @@ function MoveWindow({ current, onChoose, onClose }: { current: string | null; on
         )}
         {(campaigns ?? [])
           .filter((c) => !same(c.id))
-          .map((c) => (
-            <li key={c.id}>
-              <button className="slot-choice" onClick={() => onChoose(c.id)}>
-                <span className="slot-choice-fav" />
-                <span className="rec-value">{campaignTitle(c)}</span>
-                <span className="rec-soft">{c.is_archived ? 'archived' : ''}</span>
-              </button>
-            </li>
-          ))}
+          .map((c) => {
+            const note = noteFor(c.enabled_settings)
+            return (
+              <li key={c.id}>
+                <button className="slot-choice" onClick={() => onChoose(c.id)}>
+                  <span className="slot-choice-fav" />
+                  <span className="rec-value">{campaignTitle(c)}</span>
+                  <span className="rec-soft">{c.is_archived ? 'archived' : ''}</span>
+                  {note && <span className="kit-warning">⚠ {note}</span>}
+                </button>
+              </li>
+            )
+          })}
       </ul>
     </PaperModal>,
     document.body,
@@ -198,7 +217,7 @@ export function CharacterActions({ character, onChanged }: { character: ActionTa
         <MarkDeadWindow name={name} onClose={() => setWindowKind(null)} onConfirm={(diedOn, note) => void run(() => markDead(character.id, diedOn, note))} />
       )}
       {windowKind === 'move' && (
-        <MoveWindow current={character.campaign_id} onClose={() => setWindowKind(null)} onChoose={(campaignID) => void run(() => assignToCampaign(character.id, campaignID))} />
+        <MoveWindow characterID={character.id} current={character.campaign_id} onClose={() => setWindowKind(null)} onChoose={(campaignID) => void run(() => assignToCampaign(character.id, campaignID))} />
       )}
       {dialog}
     </div>

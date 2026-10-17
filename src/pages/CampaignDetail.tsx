@@ -8,7 +8,9 @@ import { PaperModal } from '../components/DetailBits'
 import { PageHeader } from '../components/PageHeader'
 import { setActiveCampaign, useActiveCampaign } from '../lib/activeCampaign'
 import { campaignSettings, campaignTitle, dateFromInput, dateInputValue, settingLogo, useCampaignDoc } from '../lib/campaigns'
+import { loadAllKits } from '../data/kits'
 import { assignToCampaign, createCharacter, deleteCampaign } from '../lib/roster'
+import { kitSettingsFrom, settingFitNotes, type KitSettings } from '../rules/settingFit'
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
 import { CampaignParty } from '../components/CampaignParty'
@@ -92,19 +94,32 @@ function CastList({
 }
 
 /** "Add from Sandbox": personagens sem campanha; escolher um traz para esta. */
-function SandboxPicker({ onChoose, onClose }: { onChoose: (id: string) => void; onClose: () => void }) {
-  const [sandbox, setSandbox] = useState<CastMember[] | null>(null)
+interface SandboxCandidate extends CastMember {
+  race: string | null
+  kit: string | null
+}
+
+/** Nota curta de descompasso de cenário (raça/classe/kit), ou '' se bate tudo ou ainda não tem os kits carregados. */
+function fitNote(c: Pick<SandboxCandidate, 'race' | 'character_class' | 'kit'>, campaignSettings: string[] | null | undefined, kitSettings: KitSettings | null): string {
+  if (!kitSettings) return ''
+  return settingFitNotes({ race: c.race ?? '', characterClass: c.character_class ?? '', kit: c.kit }, campaignSettings, kitSettings).join(' ')
+}
+
+function SandboxPicker({ campaignSettings, onChoose, onClose }: { campaignSettings: string[] | null; onChoose: (id: string) => void; onClose: () => void }) {
+  const [sandbox, setSandbox] = useState<SandboxCandidate[] | null>(null)
+  const [kitSettings, setKitSettings] = useState<KitSettings | null>(null)
   useEffect(() => {
     let cancelled = false
     void supabase
       .from('character')
-      .select('id, name, character_class, level, status')
+      .select('id, name, character_class, level, status, race:data->>race, kit:data->>kit')
       .is('campaign_id', null)
       .is('deleted_at', null)
       .order('name')
       .then(({ data }) => {
-        if (!cancelled) setSandbox((data ?? []) as CastMember[])
+        if (!cancelled) setSandbox((data ?? []) as SandboxCandidate[])
       })
+    void loadAllKits().then((kits) => !cancelled && setKitSettings(kitSettingsFrom(kits)))
     return () => {
       cancelled = true
     }
@@ -114,17 +129,21 @@ function SandboxPicker({ onChoose, onClose }: { onChoose: (id: string) => void; 
       {sandbox === null && <p className="paper-soft">Loading…</p>}
       {sandbox !== null && sandbox.length === 0 && <p className="paper-soft">The Sandbox is empty.</p>}
       <ul className="slot-choices">
-        {(sandbox ?? []).map((c) => (
-          <li key={c.id}>
-            <button className="slot-choice" onClick={() => onChoose(c.id)}>
-              <span className="slot-choice-fav" />
-              <span className="rec-value">{c.name || 'Unnamed character'}</span>
-              <span className="rec-soft">
-                {c.character_class ?? '—'} {c.level ?? ''}
-              </span>
-            </button>
-          </li>
-        ))}
+        {(sandbox ?? []).map((c) => {
+          const note = fitNote(c, campaignSettings, kitSettings)
+          return (
+            <li key={c.id}>
+              <button className="slot-choice" onClick={() => onChoose(c.id)}>
+                <span className="slot-choice-fav" />
+                <span className="rec-value">{c.name || 'Unnamed character'}</span>
+                <span className="rec-soft">
+                  {c.character_class ?? '—'} {c.level ?? ''}
+                </span>
+                {note && <span className="kit-warning">⚠ {note}</span>}
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </PaperModal>,
     document.body,
@@ -436,7 +455,7 @@ export function CampaignDetail() {
               </button>
             </div>
           )}
-          {picking && <SandboxPicker onChoose={addFromSandbox} onClose={() => setPicking(false)} />}
+          {picking && <SandboxPicker campaignSettings={campaign.enabled_settings} onChoose={addFromSandbox} onClose={() => setPicking(false)} />}
           {dialog}
         </>
       )}
