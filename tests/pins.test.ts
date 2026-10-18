@@ -2,7 +2,7 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { isPinned, moveToPage, reorderWithin, togglePin, widgetPages, type PinnedItem } from '../src/rules/pins.ts'
+import { isPinned, moveToPage, reorderWithin, resizeWidget, togglePin, widgetPages, widgetSizeOf, type PinnedItem } from '../src/rules/pins.ts'
 
 test('togglePin fixa e desafixa pelo par (kind, refID), sem repetir', () => {
   const a: PinnedItem = { kind: 'table', refID: 'dmg-35', label: 'Combat Modifiers' }
@@ -50,4 +50,18 @@ test('moveToPage muda a página só do item certo, mantendo o lugar dele na list
   const b: PinnedItem = { kind: 'monster', refID: 'b', label: 'B', page: 0 }
   const next = moveToPage([a, b], a, 3)
   assert.deepEqual(next, [{ ...a, page: 3 }, b])
+})
+
+test('widgetSizeOf: 1×1 por padrão (ficha antiga sem size)', () => {
+  const a: PinnedItem = { kind: 'table', refID: 'a', label: 'A' }
+  const b: PinnedItem = { kind: 'table', refID: 'b', label: 'B', size: { w: 2, h: 3 } }
+  assert.deepEqual(widgetSizeOf(a), { w: 1, h: 1 })
+  assert.deepEqual(widgetSizeOf(b), { w: 2, h: 3 })
+})
+
+test('resizeWidget muda o tamanho só do item certo', () => {
+  const a: PinnedItem = { kind: 'table', refID: 'a', label: 'A' }
+  const b: PinnedItem = { kind: 'monster', refID: 'b', label: 'B' }
+  const next = resizeWidget([a, b], a, { w: 2, h: 2 })
+  assert.deepEqual(next, [{ ...a, size: { w: 2, h: 2 } }, b])
 })

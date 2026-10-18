@@ -653,10 +653,12 @@ a.shield-combatant-row:hover {
   gap: 14px;
 }
 
+/* Grade de 3 colunas (PS6): o mestre escolhe 1×1 a 3×3 pra cada widget, em
+   vez do tamanho vir do conteúdo. */
 .shield-widget-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  align-items: start;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 180px;
   gap: 10px;
   margin-top: 10px;
 }
@@ -666,11 +668,11 @@ a.shield-combatant-row:hover {
   border: 1px solid rgb(201 162 39 / 0.2);
   border-radius: 8px;
   padding: 10px 12px;
-  /* Encolhe pro conteúdo (uma tabela de 2 colunas não vira um card gigante);
-     uma tabela larga, ou um resumo de monstro longo, ocupa a coluna inteira. */
-  width: fit-content;
-  max-width: 100%;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .shield-pin-card-top {
@@ -678,6 +680,7 @@ a.shield-combatant-row:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .shield-pin-card-title {
@@ -701,10 +704,23 @@ a.shield-combatant-row:hover {
   background: rgb(255 255 255 / 0.12);
 }
 
-.shield-pin-card .rule-table-scroll {
-  max-height: 260px;
+/* O conteúdo que varia de tamanho (tabela, resumo) rola dentro do espaço que
+   o tamanho escolhido reserva; cabeçalho e rodapé do card ficam fixos. */
+.shield-pin-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   margin-top: 8px;
+}
+
+.shield-widget-size {
+  font: inherit;
+  font-size: 0.7rem;
+  background: var(--obsidian-highlight);
+  color: var(--on-obsidian);
+  border: 1px solid rgb(201 162 39 / 0.3);
+  border-radius: 6px;
+  padding: 2px 4px;
 }
 
 .shield-pin-meta {

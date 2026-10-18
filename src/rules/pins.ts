@@ -4,13 +4,23 @@
 
 export type PinKind = 'table' | 'monster' | 'character' | 'session'
 
+export interface WidgetSize {
+  w: number
+  h: number
+}
+
 export interface PinnedItem {
   kind: PinKind
   refID: string
   label: string
   /** Página da tela Pinned (PS5): ausente/`undefined` = página 0 (fichas antigas). */
   page?: number
+  /** Tamanho do widget na grade da tela Pinned (PS6), de 1×1 a 3×3; ausente = 1×1. */
+  size?: WidgetSize
 }
+
+export const defaultWidgetSize: WidgetSize = { w: 1, h: 1 }
+export const widgetSizeOf = (item: PinnedItem): WidgetSize => item.size ?? defaultWidgetSize
 
 export const isPinned = (items: PinnedItem[], kind: PinKind, refID: string): boolean => items.some((i) => i.kind === kind && i.refID === refID)
 
@@ -38,4 +48,9 @@ export function reorderWithin(all: PinnedItem[], orderedSubset: PinnedItem[]): P
 /** Move um item fixado pra outra página (mantém o lugar dele na lista). */
 export function moveToPage(items: PinnedItem[], target: PinnedItem, page: number): PinnedItem[] {
   return items.map((item) => (item.kind === target.kind && item.refID === target.refID ? { ...item, page } : item))
+}
+
+/** Muda o tamanho (1×1 a 3×3) de um widget fixado. */
+export function resizeWidget(items: PinnedItem[], target: PinnedItem, size: WidgetSize): PinnedItem[] {
+  return items.map((item) => (item.kind === target.kind && item.refID === target.refID ? { ...item, size } : item))
 }
