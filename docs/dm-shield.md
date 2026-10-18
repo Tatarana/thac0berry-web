@@ -65,6 +65,7 @@ ajustes; C em aberto.
 | PS2 | Tela "Shield" (opção B): carrossel de 4 telas | feita (web v0.93.0) |
 | PS3 | Voltar pro Shield, personagens clicáveis, fixar sem sair, notas por sessão, cards de resumo | feita (web v0.94.0) |
 | PS4 | Tabela completa (componentizada), widgets reordenáveis e paginação dentro de Pinned | feita (web v0.95.0) |
+| PS5 | Pinned vira grade de widgets, tabela estreita não ocupa a tela inteira, páginas de verdade (criar/remover), novo pin cai na página aberta | feita (web v0.96.0) |
 
 ## Log
 
@@ -173,3 +174,29 @@ ajustes; C em aberto.
     cara do Table Grimoire; mover "Beholder" pra cima, recarregar a página e
     ver a ordem gravada; paginação ("Page 2/3") mostrando as próximas
     tabelas/monstros fixados; testes: 238 (sem novos — só UI).
+- 2026-10-18, PS5 feita (web v0.96.0; ajustes do usuário depois de usar a PS4):
+  - **`PinnedItem.page?: number`** (`src/rules/pins.ts`; ausente = página 0,
+    fichas antigas continuam funcionando) substitui a paginação por contagem
+    da PS4 — a página passa a ser um dado do item, não uma conta de 3 em 3;
+    funções puras novas `widgetPages` (as páginas que já têm algo, em ordem),
+    `reorderWithin` (troca só um subconjunto, sem mexer no resto) e
+    `moveToPage`, com testes;
+  - **grade de widgets, não lista**: `.shield-widget-grid` (CSS Grid,
+    `repeat(auto-fill, minmax(220px, 1fr))`) e `.shield-pin-card` com
+    `width: fit-content` — uma tabela de 2 colunas ("0-Level Hit Points by
+    Title") fica do tamanho dela e divide a linha com outro widget, em vez de
+    ocupar a tela inteira; uma tabela larga (`overflow-x` já existente) ou um
+    resumo comprido de monstro continuam ocupando a coluna inteira sozinhos;
+  - **páginas de verdade**: "+ Page" cria uma página vazia (local até alguém
+    fixar algo nela — some sozinha se a aba fechar sem uso, para não gravar
+    página vazia à toa); "− Page" apaga a página atual, movendo o que tiver
+    nela para a vizinha; as setas ↑/↓ de cada widget cruzam pra página
+    anterior/seguinte quando já estão na ponta da página atual (em vez de só
+    ficarem desabilitadas), então dá pra organizar sem abrir o picker de novo;
+  - **novo pin cai na página aberta**: `TablePinPicker`/`MonsterPinPicker`
+    ganham `targetPage`, passado pela tela Pinned com a página que está sendo
+    vista — fixar não manda mais o item pra última página;
+  - conferido no navegador: grade com tabelas largas e estreitas lado a lado
+    (ex. "Table 10" e "Table 5" dividindo a linha); criar uma página, fixar
+    um monstro nela com o picker (caiu nela, não na 1ª), mover pra página
+    anterior com ↑, remover a página vazia; testes: 241 (3 novos).
