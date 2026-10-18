@@ -32,6 +32,7 @@ export function TableDetail({
   onOpen,
   onClose,
   pin,
+  shieldPin,
   onEdit,
   onCopy,
 }: {
@@ -46,6 +47,8 @@ export function TableDetail({
   onClose: () => void
   /** Fixar a tabela na faixa do Combat Tracker (CT4). */
   pin?: { pinned: boolean; onToggle: () => void }
+  /** Fixar no Shield da campanha ativa, em DM Tools (opção A do DM Shield). */
+  shieldPin?: { pinned: boolean; onToggle: () => void }
   /** Tabela do mestre (GT5): abre o editor. */
   onEdit?: () => void
   /** GT5b: de uma tabela de livro, "Copy to my tables"; de uma do mestre, "Copy to another campaign…". */
@@ -153,6 +156,15 @@ export function TableDetail({
         {pin && (
           <button className={pin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'} onClick={pin.onToggle} title={pin.pinned ? 'Remove from the Combat Tracker tables' : 'Show this table in the Combat Tracker'}>
             {pin.pinned ? '★ In the Combat Tracker' : '☆ Combat Tracker'}
+          </button>
+        )}
+        {shieldPin && (
+          <button
+            className={shieldPin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'}
+            onClick={shieldPin.onToggle}
+            title={shieldPin.pinned ? 'Remove from the Pinned list in DM Tools' : 'Show this table in the Pinned list in DM Tools'}
+          >
+            {shieldPin.pinned ? '★ Pinned to Shield' : '☆ Pin to Shield'}
           </button>
         )}
 

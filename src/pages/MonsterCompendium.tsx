@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { CampaignSwitch } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { MonsterDetail } from '../components/MonsterDetail'
 import { loadMonsterIndex, type MonsterIndexEntry } from '../data/monsters'
 import { filterMonsters, frequencyBuckets, monsterCollections, xpLabel, type FrequencyBucket, type MonsterSort } from '../rules/monsters'
-import { useActiveCampaignSettings } from '../lib/activeCampaign'
+import { useActiveCampaign, useActiveCampaignSettings } from '../lib/activeCampaign'
 import { campaignFilterLabel, campaignMonsterCollections } from '../rules/campaignFilter'
+import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
+import { isPinned, type PinnedItem } from '../rules/pins'
 
 // Linhas antes do "Show all" (2.386 monstros travam o celular de uma vez); a
 // busca e os filtros valem para todos.
@@ -51,6 +53,45 @@ function MonsterList() {
       .then(setMonsters)
       .catch((reason: unknown) => setError(String(reason)))
   }, [])
+
+  // Vindo de um pin do Shield ("/dm/monsters?open=<id>"): abre a ficha direto.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const id = searchParams.get('open')
+    if (!id || !monsters) return
+    const found = monsters.find((m) => m.id === id)
+    if (found) {
+      setSelected(found)
+      setSearchParams((params) => {
+        params.delete('open')
+        return params
+      })
+    }
+  }, [searchParams, monsters, setSearchParams])
+
+  // Fixar no Shield (opção A do DM Shield): `campaign.pinned_items`, só com campanha de verdade.
+  const active = useActiveCampaign()
+  const activeID = active?.id ?? null
+  const [shieldPins, setShieldPins] = useState<PinnedItem[] | null>(null)
+  useEffect(() => {
+    if (!activeID) {
+      setShieldPins(null)
+      return
+    }
+    let cancelled = false
+    void fetchCampaignPins(activeID).then((items) => {
+      if (!cancelled) setShieldPins(items)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [activeID])
+
+  async function toggleShieldPin(entry: MonsterIndexEntry) {
+    if (!activeID) return
+    const next = await toggleCampaignPin(activeID, { kind: 'monster', refID: entry.id, label: entry.name })
+    setShieldPins(next)
+  }
 
   const filtered = useMemo(
     () => filterMonsters(monsters ?? [], { query, collection: byCampaign ? null : collection, frequency, sort }).filter((m) => !byCampaign || campaignSet.has(m.collection)),
@@ -145,7 +186,13 @@ function MonsterList() {
           )}
         </ul>
       </div>
-      {selected && <MonsterDetail entry={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <MonsterDetail
+          entry={selected}
+          onClose={() => setSelected(null)}
+          shieldPin={activeID ? { pinned: isPinned(shieldPins ?? [], 'monster', selected.id), onToggle: () => void toggleShieldPin(selected) } : undefined}
+        />
+      )}
     </div>
   )
 }

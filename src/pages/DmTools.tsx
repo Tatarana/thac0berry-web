@@ -1,8 +1,11 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { ActiveCampaignCard } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { PageHeader } from '../components/PageHeader'
+import { useActiveCampaign } from '../lib/activeCampaign'
+import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
+import { togglePin, type PinnedItem, type PinKind } from '../rules/pins'
 
 interface ToolEntry {
   title: string
@@ -23,12 +26,63 @@ const tools: ToolEntry[] = [
   { title: 'Combat Tracker', subtitle: 'Party and foes, hit points, conditions · on your account when signed in', to: '/dm/combat', image: 'icon_combat_tracker', accent: 'var(--crimson)' },
 ]
 
+const pinIcon: Record<PinKind, string> = { table: '▦', monster: '🐉', character: '●' }
+const pinTo = (item: PinnedItem) =>
+  item.kind === 'table' ? `/dm/tables?open=${encodeURIComponent(item.refID)}` : item.kind === 'monster' ? `/dm/monsters?open=${encodeURIComponent(item.refID)}` : `/characters/${item.refID}`
+
+/**
+ * "Pinned" (opção A do DM Shield, 2026-10-17): tabelas, monstros e fichas que
+ * o mestre fixou na campanha ativa (`campaign.pinned_items`), para achar
+ * rápido. Não existe no One-shot (sem linha de campanha).
+ */
+function PinnedSection({ campaignID }: { campaignID: string }) {
+  const [items, setItems] = useState<PinnedItem[] | null>(null)
+  const [reload, setReload] = useState(0)
+  useEffect(() => {
+    let cancelled = false
+    void fetchCampaignPins(campaignID).then((loaded) => {
+      if (!cancelled) setItems(loaded ?? [])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [campaignID, reload])
+
+  if (items === null || items.length === 0) return null
+
+  async function unpin(item: PinnedItem) {
+    setItems((current) => (current ? togglePin(current, item) : current))
+    await toggleCampaignPin(campaignID, item)
+    setReload((v) => v + 1)
+  }
+
+  return (
+    <div className="ember-card pinned-card">
+      <p className="card-title">Pinned</p>
+      <div className="chip-row chip-row-scroll">
+        {items.map((item) => (
+          <span key={`${item.kind}-${item.refID}`} className="chip pinned-chip">
+            <Link to={pinTo(item)} title={item.label}>
+              {pinIcon[item.kind]} {item.label}
+            </Link>
+            <button aria-label={`Unpin ${item.label}`} title="Unpin" onClick={() => void unpin(item)}>
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function DmTools() {
+  const active = useActiveCampaign()
   return (
     <DmOnly>
       <div className="page">
         <PageHeader title="DM Tools" />
         <ActiveCampaignCard />
+        {active?.id && <PinnedSection campaignID={active.id} />}
         <div className="hub-grid">
           {tools.map((tool) => (
             <Link key={tool.title} to={tool.to} className="ember-card hub-row" style={{ '--accent': tool.accent } as CSSProperties}>

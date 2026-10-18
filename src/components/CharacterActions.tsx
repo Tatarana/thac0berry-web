@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../auth/context'
 import { createPortal } from 'react-dom'
 import { campaignTitle, dateFromInput, dateInputValue } from '../lib/campaigns'
+import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
 import { loadAllKits } from '../data/kits'
 import { assignToCampaign, bringBack, cloneCharacter, deleteCharacter, markDead, toggleArchived } from '../lib/roster'
+import { isPinned } from '../rules/pins'
 import { kitSettingsFrom, settingFitNotes, type KitSettings } from '../rules/settingFit'
 import { supabase } from '../lib/supabase'
 import { useConfirm } from '../lib/useConfirm'
@@ -129,6 +131,7 @@ export function CharacterActions({ character, onChanged }: { character: ActionTa
   const [windowKind, setWindowKind] = useState<'dead' | 'move' | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pinned, setPinned] = useState<boolean | null>(null)
   const { confirm, dialog } = useConfirm()
   const box = useRef<HTMLDivElement>(null)
   const name = character.name || 'Unnamed character'
@@ -143,6 +146,18 @@ export function CharacterActions({ character, onChanged }: { character: ActionTa
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [open])
+
+  // Fixar no Shield (opção A): só faz sentido com campanha (o One-shot não tem linha de campanha).
+  useEffect(() => {
+    if (!open || !character.campaign_id) return
+    let cancelled = false
+    void fetchCampaignPins(character.campaign_id).then((items) => {
+      if (!cancelled) setPinned(items !== null && isPinned(items, 'character', character.id))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, character.campaign_id, character.id])
 
   async function run(action: () => Promise<unknown>) {
     setOpen(false)
@@ -209,6 +224,10 @@ export function CharacterActions({ character, onChanged }: { character: ActionTa
             setOpen(false)
             setWindowKind('move')
           })}
+          {character.campaign_id &&
+            item(pinned ? 'Unpin from Shield' : 'Pin to Shield', () =>
+              void run(() => toggleCampaignPin(character.campaign_id!, { kind: 'character', refID: character.id, label: name })),
+            )}
           {item('Delete character', () => void remove(), true)}
         </div>
       )}

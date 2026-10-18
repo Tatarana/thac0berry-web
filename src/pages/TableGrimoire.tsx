@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { CampaignSwitch } from '../components/CampaignChooser'
 import { DmOnly } from '../components/DmOnly'
 import { TableDetail, type RollRecord } from '../components/TableDetail'
@@ -19,6 +19,8 @@ import { CopyTableWindow } from '../components/CopyTableWindow'
 import { DmTableEditor } from '../components/DmTableEditor'
 import { createDmTable, deleteDmTable, fetchDmTables, updateDmTable, type DmTableRow } from '../lib/dmTables'
 import { asGrimoireTable, emptyDmTable, fromBookTable, type DmTableData } from '../rules/dmTables'
+import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
+import { isPinned, type PinnedItem } from '../rules/pins'
 import { normalize } from '../lib/search'
 
 /** Valor do filtro de cenário "da campanha ativa" (CA3). */
@@ -129,6 +131,28 @@ function TableList() {
   // Fixar tabelas na faixa do Combat Tracker (CT4): a lista fica nas configurações dele.
   const { store: combat, update: updateCombat } = useCombatStore()
 
+  // Fixar no Shield (opção A do DM Shield): `campaign.pinned_items`, só com campanha de verdade.
+  const [shieldPins, setShieldPins] = useState<PinnedItem[] | null>(null)
+  useEffect(() => {
+    if (!activeID) {
+      setShieldPins(null)
+      return
+    }
+    let cancelled = false
+    void fetchCampaignPins(activeID).then((items) => {
+      if (!cancelled) setShieldPins(items)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [activeID])
+
+  async function toggleShieldPin(table: GrimoireTable) {
+    if (!activeID) return
+    const next = await toggleCampaignPin(activeID, { kind: 'table', refID: table.id, label: tableLabel(table) })
+    setShieldPins(next)
+  }
+
   useEffect(() => {
     loadTables()
       .then(setTables)
@@ -139,6 +163,22 @@ function TableList() {
   }, [])
 
   const all = useMemo(() => tables ?? [], [tables])
+
+  // Vindo de um pin do Shield ("/dm/tables?open=<id>"): abre a tabela direto.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const id = searchParams.get('open')
+    if (!id) return
+    const found = all.find((t) => t.id === id) ?? dmTables.find((d) => d.table.id === id)?.table
+    if (found) {
+      open(found, false)
+      setSearchParams((params) => {
+        params.delete('open')
+        return params
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, all, dmTables])
   // Cenários e livros (data/books.json) que têm tabelas; a ordem é a dos livros.
   const settings = useMemo(() => settingsOf(bookList).filter((name) => all.some((t) => t.setting === name)), [bookList, all])
   const books = useMemo(
@@ -325,6 +365,14 @@ function TableList() {
             pinned: quickTableIDs(combat.settings.quickTables).includes(selected.table.id),
             onToggle: () => updateCombat((d) => void (d.settings.quickTables = toggleQuickTable(d.settings.quickTables, selected.table.id))),
           }}
+          shieldPin={
+            activeID
+              ? {
+                  pinned: isPinned(shieldPins ?? [], 'table', selected.table.id),
+                  onToggle: () => void toggleShieldPin(selected.table),
+                }
+              : undefined
+          }
           onEdit={(() => {
             const found = dmTables.find((d) => d.table.id === selected.table.id)
             return found ? () => setEditing({ row: found.row, data: found.row.data }) : undefined
