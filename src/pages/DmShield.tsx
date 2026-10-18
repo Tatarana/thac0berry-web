@@ -16,7 +16,7 @@ import { formatDice, rollDice } from '../rules/dice'
 import { encounterInProgress, type Encounter } from '../rules/combat'
 import type { MonsterIndexEntry } from '../data/monsters'
 import { xpLabel } from '../rules/monsters'
-import { togglePin, type PinnedItem } from '../rules/pins'
+import { moveToPage, reorderWithin, togglePin, widgetPages, type PinnedItem } from '../rules/pins'
 import { findRow, rollPlan } from '../rules/tableRoll'
 import { tableLabel, type GrimoireTable } from '../rules/tableIndex'
 
@@ -219,19 +219,13 @@ function PinnedFallbackCard({ item, backParam, onUnpin, onMoveUp, onMoveDown }: 
   )
 }
 
-/** Quantos widgets por página (a tela não vira uma rolagem sem fim). */
-const WIDGETS_PER_PAGE = 3
-
-/** Recoloca os widgets (tabela/monstro) na ordem nova, mantendo outros tipos fixados (sessão) nos mesmos lugares. */
-function applyWidgetOrder(all: PinnedItem[], orderedWidgets: PinnedItem[]): PinnedItem[] {
-  const queue = [...orderedWidgets]
-  return all.map((item) => (item.kind === 'table' || item.kind === 'monster' ? (queue.shift() ?? item) : item))
-}
-
 function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaignID: string; userID: string | null; campaignName: string; backParam: string }) {
   const [items, setItems] = useState<PinnedItem[] | null>(null)
   const [picker, setPicker] = useState<'table' | 'monster' | null>(null)
-  const [page, setPage] = useState(0)
+  // Páginas vazias que o mestre acabou de criar (ainda sem nada fixado nelas,
+  // então `widgetPages` não as vê) — somem se a aba fechar sem usá-las.
+  const [localPages, setLocalPages] = useState<number[]>([])
+  const [pageIndex, setPageIndex] = useState(0)
   const tables = useShieldTables(campaignID, userID, campaignName)
   const monsterIndex = useShieldMonsterIndex()
 
@@ -250,22 +244,49 @@ function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaign
     await toggleCampaignPin(campaignID, item)
   }
 
-  async function move(globalIndex: number, delta: number, widgetItems: PinnedItem[]) {
-    const target = globalIndex + delta
-    if (target < 0 || target >= widgetItems.length) return
-    const reordered = [...widgetItems]
-    const [moved] = reordered.splice(globalIndex, 1)
-    reordered.splice(target, 0, moved)
-    const next = applyWidgetOrder(items ?? [], reordered)
+  async function write(next: PinnedItem[]) {
     setItems(next)
     await reorderCampaignPins(campaignID, next)
   }
 
-  const widgetItems = (items ?? []).filter((i) => i.kind === 'table' || i.kind === 'monster')
-  const pageCount = Math.max(1, Math.ceil(widgetItems.length / WIDGETS_PER_PAGE))
-  const currentPage = Math.min(page, pageCount - 1)
-  const pageStart = currentPage * WIDGETS_PER_PAGE
-  const pageItems = widgetItems.slice(pageStart, pageStart + WIDGETS_PER_PAGE)
+  const pageList = useMemo(() => {
+    const merged = new Set([...widgetPages(items ?? []), ...localPages])
+    return [...merged].sort((a, b) => a - b)
+  }, [items, localPages])
+  const currentIndex = Math.min(pageIndex, pageList.length - 1)
+  const rawPage = pageList[currentIndex] ?? 0
+  const pageItems = (items ?? []).filter((i) => (i.kind === 'table' || i.kind === 'monster') && (i.page ?? 0) === rawPage)
+
+  /** Reordena dentro da página; na ponta, passa pra página vizinha (se houver). */
+  async function reorder(item: PinnedItem, delta: number) {
+    const idx = pageItems.findIndex((i) => i.kind === item.kind && i.refID === item.refID)
+    const target = idx + delta
+    if (target >= 0 && target < pageItems.length) {
+      const reordered = [...pageItems]
+      const [moved] = reordered.splice(idx, 1)
+      reordered.splice(target, 0, moved)
+      await write(reorderWithin(items ?? [], reordered))
+      return
+    }
+    const neighbor = pageList[currentIndex + delta]
+    if (neighbor !== undefined) await write(moveToPage(items ?? [], item, neighbor))
+  }
+
+  function addPage() {
+    const next = (pageList[pageList.length - 1] ?? -1) + 1
+    setLocalPages((p) => [...p, next])
+    setPageIndex(pageList.length)
+  }
+
+  async function removePage() {
+    if (pageList.length <= 1) return
+    const dest = pageList[currentIndex - 1] ?? pageList[currentIndex + 1]
+    if (dest !== undefined && pageItems.length > 0) {
+      await write((items ?? []).map((i) => ((i.kind === 'table' || i.kind === 'monster') && (i.page ?? 0) === rawPage ? { ...i, page: dest } : i)))
+    }
+    setLocalPages((p) => p.filter((x) => x !== rawPage))
+    setPageIndex((i) => Math.max(0, i - 1))
+  }
 
   return (
     <div className="shield-pinned-screen">
@@ -281,29 +302,32 @@ function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaign
             </button>
           </span>
         </p>
+        <div className="shield-session-nav">
+          <button aria-label="Previous page" disabled={pageList.length <= 1} onClick={() => setPageIndex((i) => (i - 1 + pageList.length) % pageList.length)}>
+            ‹
+          </button>
+          <span>
+            Page {currentIndex + 1}/{pageList.length}
+          </span>
+          <button aria-label="Next page" disabled={pageList.length <= 1} onClick={() => setPageIndex((i) => (i + 1) % pageList.length)}>
+            ›
+          </button>
+          <button className="btn shield-page-add" aria-label="Add page" title="Add a page" onClick={addPage}>
+            + Page
+          </button>
+          <button className="btn shield-page-add" aria-label="Remove this page" title="Remove this page" disabled={pageList.length <= 1} onClick={() => void removePage()}>
+            − Page
+          </button>
+        </div>
         {items === null ? (
           <p className="soft">Loading…</p>
-        ) : widgetItems.length === 0 ? (
-          <p className="soft">Nothing pinned yet — pin a table or monster above.</p>
+        ) : pageItems.length === 0 ? (
+          <p className="soft">Nothing on this page yet — pin a table or monster above, or move one here with ↑/↓.</p>
         ) : (
-          <>
-            {pageCount > 1 && (
-              <div className="shield-session-nav">
-                <button aria-label="Previous page" onClick={() => setPage((p) => (p - 1 + pageCount) % pageCount)}>
-                  ‹
-                </button>
-                <span>
-                  Page {currentPage + 1}/{pageCount}
-                </span>
-                <button aria-label="Next page" onClick={() => setPage((p) => (p + 1) % pageCount)}>
-                  ›
-                </button>
-              </div>
-            )}
+          <div className="shield-widget-grid">
             {pageItems.map((item, i) => {
-              const globalIndex = pageStart + i
-              const onMoveUp = globalIndex > 0 ? () => void move(globalIndex, -1, widgetItems) : undefined
-              const onMoveDown = globalIndex < widgetItems.length - 1 ? () => void move(globalIndex, 1, widgetItems) : undefined
+              const onMoveUp = i > 0 || currentIndex > 0 ? () => void reorder(item, -1) : undefined
+              const onMoveDown = i < pageItems.length - 1 || currentIndex < pageList.length - 1 ? () => void reorder(item, 1) : undefined
               if (item.kind === 'table') {
                 const table = (tables ?? []).find((t) => t.id === item.refID)
                 return table ? (
@@ -319,14 +343,14 @@ function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaign
                 <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
               )
             })}
-          </>
+          </div>
         )}
       </div>
       {picker === 'table' && (
-        <TablePinPicker campaignID={campaignID} tables={tables} pinned={items ?? []} onToggled={setItems} onClose={() => setPicker(null)} />
+        <TablePinPicker campaignID={campaignID} tables={tables} pinned={items ?? []} targetPage={rawPage} onToggled={setItems} onClose={() => setPicker(null)} />
       )}
       {picker === 'monster' && (
-        <MonsterPinPicker campaignID={campaignID} index={monsterIndex} pinned={items ?? []} onToggled={setItems} onClose={() => setPicker(null)} />
+        <MonsterPinPicker campaignID={campaignID} index={monsterIndex} pinned={items ?? []} targetPage={rawPage} onToggled={setItems} onClose={() => setPicker(null)} />
       )}
     </div>
   )

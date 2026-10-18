@@ -653,12 +653,24 @@ a.shield-combatant-row:hover {
   gap: 14px;
 }
 
+.shield-widget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  align-items: start;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .shield-pin-card {
   background: rgb(255 255 255 / 0.04);
   border: 1px solid rgb(201 162 39 / 0.2);
   border-radius: 8px;
   padding: 10px 12px;
-  margin-top: 10px;
+  /* Encolhe pro conteúdo (uma tabela de 2 colunas não vira um card gigante);
+     uma tabela larga, ou um resumo de monstro longo, ocupa a coluna inteira. */
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .shield-pin-card-top {
@@ -729,7 +741,13 @@ a.shield-combatant-row:hover {
   margin-bottom: 8px;
 }
 
-.shield-session-nav button {
+.shield-page-add {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  margin-left: 6px;
+}
+
+.shield-session-nav button:not(.shield-page-add) {
   background: transparent;
   border: 1px solid rgb(201 162 39 / 0.3);
   border-radius: 50%;

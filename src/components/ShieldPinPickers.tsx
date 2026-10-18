@@ -47,12 +47,15 @@ export function TablePinPicker({
   campaignID,
   tables,
   pinned,
+  targetPage,
   onToggled,
   onClose,
 }: {
   campaignID: string
   tables: GrimoireTable[] | null
   pinned: PinnedItem[]
+  /** A página do Shield que está aberta: novo pin cai nela, não na última. */
+  targetPage: number
   onToggled: (next: PinnedItem[]) => void
   onClose: () => void
 }) {
@@ -61,7 +64,7 @@ export function TablePinPicker({
   const matches = (tables ?? []).filter((t) => q === '' || normalize(tableLabel(t)).includes(q) || normalize(t.title).includes(q)).slice(0, 40)
 
   async function toggle(table: GrimoireTable) {
-    const item: PinnedItem = { kind: 'table', refID: table.id, label: tableLabel(table) }
+    const item: PinnedItem = { kind: 'table', refID: table.id, label: tableLabel(table), page: targetPage }
     onToggled(togglePin(pinned, item))
     await toggleCampaignPin(campaignID, item)
   }
@@ -96,12 +99,15 @@ export function MonsterPinPicker({
   campaignID,
   index,
   pinned,
+  targetPage,
   onToggled,
   onClose,
 }: {
   campaignID: string
   index: MonsterIndexEntry[] | null
   pinned: PinnedItem[]
+  /** A página do Shield que está aberta: novo pin cai nela, não na última. */
+  targetPage: number
   onToggled: (next: PinnedItem[]) => void
   onClose: () => void
 }) {
@@ -110,7 +116,7 @@ export function MonsterPinPicker({
   const matches = q === '' ? [] : (index ?? []).filter((m) => normalize(m.name).includes(q) || m.aliases.some((a) => normalize(a).includes(q))).slice(0, 40)
 
   async function toggle(entry: MonsterIndexEntry) {
-    const item: PinnedItem = { kind: 'monster', refID: entry.id, label: entry.name }
+    const item: PinnedItem = { kind: 'monster', refID: entry.id, label: entry.name, page: targetPage }
     onToggled(togglePin(pinned, item))
     await toggleCampaignPin(campaignID, item)
   }
