@@ -338,6 +338,46 @@ button {
   transform: none;
 }
 
+/* ---- Pinned (opção A do DM Shield): fixados em DM Tools ---- */
+
+.pinned-card {
+  gap: 8px;
+}
+
+.pinned-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.08);
+  font-size: 0.78rem;
+}
+
+.pinned-chip a {
+  color: var(--on-obsidian);
+  text-decoration: none;
+}
+
+.pinned-chip a:hover {
+  text-decoration: underline;
+}
+
+.pinned-chip button {
+  background: transparent;
+  border: 0;
+  color: var(--on-obsidian-soft);
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 2px 6px;
+  border-radius: 50%;
+}
+
+.pinned-chip button:hover {
+  color: var(--on-obsidian);
+  background: rgb(255 255 255 / 0.12);
+}
+
 /* ---- Papel (PaperBackground do iPad) ---- */
 
 .paper-page {

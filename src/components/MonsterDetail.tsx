@@ -95,7 +95,16 @@ function Body({ monster }: { monster: Monster }) {
   )
 }
 
-export function MonsterDetail({ entry, onClose }: { entry: MonsterIndexEntry; onClose: () => void }) {
+export function MonsterDetail({
+  entry,
+  onClose,
+  shieldPin,
+}: {
+  entry: MonsterIndexEntry
+  onClose: () => void
+  /** Fixar no Shield da campanha ativa, em DM Tools (opção A do DM Shield). */
+  shieldPin?: { pinned: boolean; onToggle: () => void }
+}) {
   const [monster, setMonster] = useState<Monster | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
@@ -106,6 +115,15 @@ export function MonsterDetail({ entry, onClose }: { entry: MonsterIndexEntry; on
 
   return createPortal(
     <PaperModal title={entry.name} subtitle={entry.collection} onClose={onClose} wide>
+      {shieldPin && (
+        <button
+          className={shieldPin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'}
+          onClick={shieldPin.onToggle}
+          title={shieldPin.pinned ? 'Remove from the Pinned list in DM Tools' : 'Show this monster in the Pinned list in DM Tools'}
+        >
+          {shieldPin.pinned ? '★ Pinned to Shield' : '☆ Pin to Shield'}
+        </button>
+      )}
       {monster ? <Body monster={monster} /> : <p className="paper-soft">{error ? `Could not load: ${error}` : 'Loading…'}</p>}
     </PaperModal>,
     document.body,
