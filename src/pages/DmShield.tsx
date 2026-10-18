@@ -16,7 +16,7 @@ import { formatDice, rollDice } from '../rules/dice'
 import { encounterInProgress, type Encounter } from '../rules/combat'
 import type { MonsterIndexEntry } from '../data/monsters'
 import { xpLabel } from '../rules/monsters'
-import { moveToPage, reorderWithin, togglePin, widgetPages, type PinnedItem } from '../rules/pins'
+import { moveToPage, reorderWithin, resizeWidget, togglePin, widgetPages, widgetSizeOf, type PinnedItem, type WidgetSize } from '../rules/pins'
 import { findRow, rollPlan } from '../rules/tableRoll'
 import { tableLabel, type GrimoireTable } from '../rules/tableIndex'
 
@@ -121,10 +121,52 @@ function EncounterPanel({ encounter, backParam }: { encounter: Encounter | null;
 const describeRow = (table: GrimoireTable, index: number | null) =>
   index === null ? 'no row' : table.rows[index].slice(1).filter((c) => c.trim() !== '').join(' · ') || table.rows[index][0]
 
-/** Mover (reordenar) e desafixar um widget fixado; os botões de mover somem na ponta da lista. */
-function WidgetControls({ label, onUnpin, onMoveUp, onMoveDown }: { label: string; onUnpin: () => void; onMoveUp?: () => void; onMoveDown?: () => void }) {
+const SIZE_OPTIONS: WidgetSize[] = [
+  { w: 1, h: 1 },
+  { w: 1, h: 2 },
+  { w: 1, h: 3 },
+  { w: 2, h: 1 },
+  { w: 2, h: 2 },
+  { w: 2, h: 3 },
+  { w: 3, h: 1 },
+  { w: 3, h: 2 },
+  { w: 3, h: 3 },
+]
+const sizeKey = (s: WidgetSize) => `${s.w}x${s.h}`
+
+/** Tamanho (1×1 a 3×3), mover (reordenar) e desafixar um widget; os botões de mover somem na ponta da lista. */
+function WidgetControls({
+  label,
+  size,
+  onResize,
+  onUnpin,
+  onMoveUp,
+  onMoveDown,
+}: {
+  label: string
+  size: WidgetSize
+  onResize: (size: WidgetSize) => void
+  onUnpin: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+}) {
   return (
     <span className="shield-widget-controls">
+      <select
+        className="shield-widget-size"
+        aria-label={`${label} size`}
+        value={sizeKey(size)}
+        onChange={(e) => {
+          const found = SIZE_OPTIONS.find((s) => sizeKey(s) === e.target.value)
+          if (found) onResize(found)
+        }}
+      >
+        {SIZE_OPTIONS.map((s) => (
+          <option key={sizeKey(s)} value={sizeKey(s)}>
+            {s.w}×{s.h}
+          </option>
+        ))}
+      </select>
       <button className="shield-widget-move" aria-label={`Move ${label} up`} disabled={!onMoveUp} onClick={onMoveUp}>
         ↑
       </button>
@@ -139,11 +181,16 @@ function WidgetControls({ label, onUnpin, onMoveUp, onMoveDown }: { label: strin
 }
 
 interface WidgetMoveProps {
+  size: WidgetSize
+  onResize: (size: WidgetSize) => void
   onMoveUp?: () => void
   onMoveDown?: () => void
 }
 
-function PinnedTableCard({ table, backParam, onUnpin, onMoveUp, onMoveDown }: { table: GrimoireTable; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
+/** `grid-column`/`grid-row` do widget, do tamanho escolhido. */
+const widgetGridStyle = (size: WidgetSize) => ({ gridColumn: `span ${size.w}`, gridRow: `span ${size.h}` })
+
+function PinnedTableCard({ table, backParam, onUnpin, size, onResize, onMoveUp, onMoveDown }: { table: GrimoireTable; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
   const [roll, setRoll] = useState<{ value: number; index: number | null } | null>(null)
   const plan = useMemo(() => rollPlan(table), [table])
 
@@ -155,12 +202,14 @@ function PinnedTableCard({ table, backParam, onUnpin, onMoveUp, onMoveDown }: { 
   }
 
   return (
-    <div className="shield-pin-card">
+    <div className="shield-pin-card" style={widgetGridStyle(size)}>
       <div className="shield-pin-card-top">
         <span className="shield-pin-card-title">▦ {tableLabel(table)}</span>
-        <WidgetControls label={table.title} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+        <WidgetControls label={table.title} size={size} onResize={onResize} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
       </div>
-      <GrimoireTableBody table={table} plan={plan} highlightIndex={roll?.index ?? undefined} />
+      <div className="shield-pin-card-body">
+        <GrimoireTableBody table={table} plan={plan} highlightIndex={roll?.index ?? undefined} />
+      </div>
       <div className="shield-pin-actions">
         {plan?.dice && (
           <button className="btn" onClick={doRoll}>
@@ -180,19 +229,21 @@ function PinnedTableCard({ table, backParam, onUnpin, onMoveUp, onMoveDown }: { 
   )
 }
 
-function PinnedMonsterCard({ entry, backParam, onUnpin, onMoveUp, onMoveDown }: { entry: MonsterIndexEntry; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
+function PinnedMonsterCard({ entry, backParam, onUnpin, size, onResize, onMoveUp, onMoveDown }: { entry: MonsterIndexEntry; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
   const meta = [entry.hitDice ? `HD ${entry.hitDice.split('\n')[0]}` : null, xpLabel(entry) ? `${xpLabel(entry)} XP` : null, entry.frequency].filter(Boolean).join(' · ')
   return (
-    <div className="shield-pin-card">
+    <div className="shield-pin-card" style={widgetGridStyle(size)}>
       <div className="shield-pin-card-top">
         <span className="shield-pin-card-title">🐉 {entry.name}</span>
-        <WidgetControls label={entry.name} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+        <WidgetControls label={entry.name} size={size} onResize={onResize} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
       </div>
-      <p className="shield-pin-meta">
-        {entry.collection}
-        {meta ? ` · ${meta}` : ''}
-      </p>
-      {entry.summary && <p className="shield-pin-summary">{entry.summary}</p>}
+      <div className="shield-pin-card-body">
+        <p className="shield-pin-meta">
+          {entry.collection}
+          {meta ? ` · ${meta}` : ''}
+        </p>
+        {entry.summary && <p className="shield-pin-summary">{entry.summary}</p>}
+      </div>
       <div className="shield-pin-actions">
         <Link className="btn" to={`/dm/monsters?open=${encodeURIComponent(entry.id)}&${backParam}`}>
           Open full stat block
@@ -202,13 +253,13 @@ function PinnedMonsterCard({ entry, backParam, onUnpin, onMoveUp, onMoveDown }: 
   )
 }
 
-function PinnedFallbackCard({ item, backParam, onUnpin, onMoveUp, onMoveDown }: { item: PinnedItem; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
+function PinnedFallbackCard({ item, backParam, onUnpin, size, onResize, onMoveUp, onMoveDown }: { item: PinnedItem; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
   const to = item.kind === 'table' ? `/dm/tables?open=${encodeURIComponent(item.refID)}&${backParam}` : `/dm/monsters?open=${encodeURIComponent(item.refID)}&${backParam}`
   return (
-    <div className="shield-pin-card">
+    <div className="shield-pin-card" style={widgetGridStyle(size)}>
       <div className="shield-pin-card-top">
         <span className="shield-pin-card-title">{item.label}</span>
-        <WidgetControls label={item.label} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+        <WidgetControls label={item.label} size={size} onResize={onResize} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
       </div>
       <div className="shield-pin-actions">
         <Link className="btn" to={to}>
@@ -272,6 +323,10 @@ function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaign
     if (neighbor !== undefined) await write(moveToPage(items ?? [], item, neighbor))
   }
 
+  async function resize(item: PinnedItem, size: WidgetSize) {
+    await write(resizeWidget(items ?? [], item, size))
+  }
+
   function addPage() {
     const next = (pageList[pageList.length - 1] ?? -1) + 1
     setLocalPages((p) => [...p, next])
@@ -328,19 +383,21 @@ function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaign
             {pageItems.map((item, i) => {
               const onMoveUp = i > 0 || currentIndex > 0 ? () => void reorder(item, -1) : undefined
               const onMoveDown = i < pageItems.length - 1 || currentIndex < pageList.length - 1 ? () => void reorder(item, 1) : undefined
+              const size = widgetSizeOf(item)
+              const onResize = (next: WidgetSize) => void resize(item, next)
               if (item.kind === 'table') {
                 const table = (tables ?? []).find((t) => t.id === item.refID)
                 return table ? (
-                  <PinnedTableCard key={item.refID} table={table} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+                  <PinnedTableCard key={item.refID} table={table} backParam={backParam} onUnpin={() => void unpin(item)} size={size} onResize={onResize} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
                 ) : (
-                  <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+                  <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} size={size} onResize={onResize} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
                 )
               }
               const entry = (monsterIndex ?? []).find((m) => m.id === item.refID)
               return entry ? (
-                <PinnedMonsterCard key={item.refID} entry={entry} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+                <PinnedMonsterCard key={item.refID} entry={entry} backParam={backParam} onUnpin={() => void unpin(item)} size={size} onResize={onResize} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
               ) : (
-                <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+                <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} size={size} onResize={onResize} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
               )
             })}
           </div>

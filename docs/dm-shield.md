@@ -66,6 +66,7 @@ ajustes; C em aberto.
 | PS3 | Voltar pro Shield, personagens clicáveis, fixar sem sair, notas por sessão, cards de resumo | feita (web v0.94.0) |
 | PS4 | Tabela completa (componentizada), widgets reordenáveis e paginação dentro de Pinned | feita (web v0.95.0) |
 | PS5 | Pinned vira grade de widgets, tabela estreita não ocupa a tela inteira, páginas de verdade (criar/remover), novo pin cai na página aberta | feita (web v0.96.0) |
+| PS6 | Tamanho do widget (1×1 a 3×3) escolhido pelo mestre | feita (web v0.97.0) |
 
 ## Log
 
@@ -200,3 +201,19 @@ ajustes; C em aberto.
     (ex. "Table 10" e "Table 5" dividindo a linha); criar uma página, fixar
     um monstro nela com o picker (caiu nela, não na 1ª), mover pra página
     anterior com ↑, remover a página vazia; testes: 241 (3 novos).
+- 2026-10-18, PS6 feita (web v0.97.0; pedido do usuário depois de usar a PS5):
+  - **`PinnedItem.size?: { w, h }`** (`src/rules/pins.ts`; ausente = 1×1),
+    `resizeWidget` (muda o tamanho só de um item), com teste;
+  - a grade passa a ser de **3 colunas fixas** (`grid-template-columns:
+    repeat(3, 1fr)`, `grid-auto-rows: 180px`), não mais `auto-fill` por
+    conteúdo — cada widget escolhe `grid-column`/`grid-row` (1 a 3) num
+    seletor "W×H" junto dos botões ↑/↓/✕; o tamanho é do mestre, não mais
+    deduzido do conteúdo da tabela;
+  - **card com corpo rolável**: cabeçalho e ações ficam fixos, o conteúdo que
+    varia (tabela, resumo) rola dentro de `.shield-pin-card-body`
+    (`flex: 1; overflow-y: auto`) — um 1×1 mostra só o início, um 3×3 cabe
+    quase tudo sem rolar; isso troca o `width: fit-content`/`max-height` fixo
+    da PS5, que não fazia mais sentido com tamanho escolhido à mão;
+  - conferido no navegador: Aboleth de 1×1 pra 2×2 (dobra de largura e altura,
+    os vizinhos reorganizam ao redor), recarregar a página e ver o tamanho
+    gravado, voltar pra 1×1; testes: 243 (2 novos).
