@@ -22,6 +22,7 @@ import { asGrimoireTable, emptyDmTable, fromBookTable, type DmTableData } from '
 import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
 import { isPinned, type PinnedItem } from '../rules/pins'
 import { normalize } from '../lib/search'
+import { useBackTo } from '../lib/shieldBack'
 
 /** Valor do filtro de cenário "da campanha ativa" (CA3). */
 const CAMPAIGN = 'campaign'
@@ -42,6 +43,7 @@ export function TableGrimoire() {
 }
 
 function TableList() {
+  const back = useBackTo('/dm', 'DM Tools')
   const [tables, setTables] = useState<GrimoireTable[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -219,7 +221,7 @@ function TableList() {
     <div className="paper-page">
       <div className="paper-sheet">
         <div className="paper-top">
-          <Link to="/dm" className="paper-link">‹ DM Tools</Link>
+          <Link to={back.to} className="paper-link">‹ {back.label}</Link>
           <CampaignSwitch />
         </div>
         <h1 className="paper-title">Table Grimoire</h1>

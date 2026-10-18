@@ -22,6 +22,7 @@ import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachment
 import { useConfirm } from '../lib/useConfirm'
 import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
+import { useBackTo } from '../lib/shieldBack'
 import { spellSheetBasis } from '../lib/roster'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
 import { allClasses, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny, isDualClass, isMultiClass, recordSheetPages } from '../rules/multiclass'
@@ -137,6 +138,7 @@ function SpellbookIcon() {
 
 export function CharacterSheet() {
   const { id } = useParams()
+  const back = useBackTo('/characters', 'Characters')
   const [params, setParams] = useSearchParams()
   const view = (['spells', 'spellbook', 'notebook', 'psionics'] as const).find((v) => v === params.get('view')) ?? 'record'
   // Efeitos ativos: janela por cima da ficha, não uma aba (pedido do usuário).
@@ -317,7 +319,7 @@ export function CharacterSheet() {
       {dialog}
       <div className="paper-sheet">
         <div className="paper-top">
-          <Link to="/characters" className="paper-link">‹ Characters</Link>
+          <Link to={back.to} className="paper-link">‹ {back.label}</Link>
           <ModeSwitch />
           {loaded && (
             <SaveStatus

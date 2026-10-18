@@ -17,6 +17,7 @@ import { loadTables } from '../data/tables'
 import { useAuth } from '../auth/context'
 import { useActiveCampaign } from '../lib/activeCampaign'
 import { fetchDmTables, type DmTableRow } from '../lib/dmTables'
+import { useBackTo } from '../lib/shieldBack'
 import { useCombatStore } from '../lib/combatStore'
 import { usePlayerViewPublisher } from '../lib/encounterView'
 import { useHpChangeSender } from '../lib/combatMessages'
@@ -58,6 +59,7 @@ export function CombatTracker() {
 }
 
 function Tracker() {
+  const back = useBackTo('/dm', 'DM Tools')
   const { store, update, saveError, syncError, conflict, dismissConflict, signedIn } = useCombatStore()
   // Confirmação na página (o window.confirm não aparece em navegadores embutidos).
   const { confirm, dialog } = useConfirm()
@@ -207,7 +209,7 @@ function Tracker() {
     <div className="paper-page">
       <div className="paper-sheet combat-sheet">
         <div className="paper-top">
-          <Link to="/dm" className="paper-link">‹ DM Tools</Link>
+          <Link to={back.to} className="paper-link">‹ {back.label}</Link>
           <span className="paper-top-right">
             <CampaignSwitch />
             <button className="paper-link" onClick={() => setSettingsOpen(true)}>

@@ -35,9 +35,13 @@ function toolsFor(hasCampaign: boolean): ToolEntry[] {
   ]
 }
 
-const pinIcon: Record<PinKind, string> = { table: '▦', monster: '🐉', character: '●' }
-const pinTo = (item: PinnedItem) =>
-  item.kind === 'table' ? `/dm/tables?open=${encodeURIComponent(item.refID)}` : item.kind === 'monster' ? `/dm/monsters?open=${encodeURIComponent(item.refID)}` : `/characters/${item.refID}`
+const pinIcon: Record<PinKind, string> = { table: '▦', monster: '🐉', character: '●', session: '📅' }
+const pinTo = (item: PinnedItem, campaignID: string) => {
+  if (item.kind === 'table') return `/dm/tables?open=${encodeURIComponent(item.refID)}`
+  if (item.kind === 'monster') return `/dm/monsters?open=${encodeURIComponent(item.refID)}`
+  if (item.kind === 'session') return `/campaigns/${campaignID}`
+  return `/characters/${item.refID}`
+}
 
 /**
  * "Pinned" (opção A do DM Shield, 2026-10-17): tabelas, monstros e fichas que
@@ -71,7 +75,7 @@ function PinnedSection({ campaignID }: { campaignID: string }) {
       <div className="chip-row chip-row-scroll">
         {items.map((item) => (
           <span key={`${item.kind}-${item.refID}`} className="chip pinned-chip">
-            <Link to={pinTo(item)} title={item.label}>
+            <Link to={pinTo(item, campaignID)} title={item.label}>
               {pinIcon[item.kind]} {item.label}
             </Link>
             <button aria-label={`Unpin ${item.label}`} title="Unpin" onClick={() => void unpin(item)}>
