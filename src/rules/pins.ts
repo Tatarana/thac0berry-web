@@ -2,7 +2,7 @@
 // monstros ou fichas na campanha ativa (coluna `campaign.pinned_items`), para
 // acesso rápido em DM Tools. Só funções puras.
 
-export type PinKind = 'table' | 'monster' | 'character'
+export type PinKind = 'table' | 'monster' | 'character' | 'session'
 
 export interface PinnedItem {
   kind: PinKind

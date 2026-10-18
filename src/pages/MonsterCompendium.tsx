@@ -9,6 +9,7 @@ import { useActiveCampaign, useActiveCampaignSettings } from '../lib/activeCampa
 import { campaignFilterLabel, campaignMonsterCollections } from '../rules/campaignFilter'
 import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
 import { isPinned, type PinnedItem } from '../rules/pins'
+import { useBackTo } from '../lib/shieldBack'
 
 // Linhas antes do "Show all" (2.386 monstros travam o celular de uma vez); a
 // busca e os filtros valem para todos.
@@ -34,6 +35,7 @@ export function MonsterCompendium() {
 const CAMPAIGN = 'campaign'
 
 function MonsterList() {
+  const back = useBackTo('/dm', 'DM Tools')
   const [monsters, setMonsters] = useState<MonsterIndexEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -103,7 +105,7 @@ function MonsterList() {
     <div className="paper-page">
       <div className="paper-sheet">
         <div className="paper-top">
-          <Link to="/dm" className="paper-link">‹ DM Tools</Link>
+          <Link to={back.to} className="paper-link">‹ {back.label}</Link>
           <CampaignSwitch />
         </div>
         <h1 className="paper-title">Monsters</h1>
