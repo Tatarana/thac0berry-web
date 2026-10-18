@@ -9,6 +9,7 @@ import { Characters } from './pages/Characters'
 import { CharacterSheet } from './pages/CharacterSheet'
 import { CompendiumHub } from './pages/CompendiumHub'
 import { DeityCompendium } from './pages/DeityCompendium'
+import { DmShield } from './pages/DmShield'
 import { DmTools } from './pages/DmTools'
 import { ComingSoon } from './pages/ComingSoon'
 import { Diagnostics } from './pages/Diagnostics'
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
           <Route path="/dm" element={<DmTools />} />
+          <Route path="/dm/shield" element={<DmShield />} />
           <Route path="/dm/monsters" element={<MonsterCompendium />} />
           <Route path="/dm/tables" element={<TableGrimoire />} />
           <Route path="/dm/combat" element={<CombatTracker />} />
