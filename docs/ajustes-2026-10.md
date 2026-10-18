@@ -133,3 +133,11 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   `Text(String)` (asteriscos crus; backlog do `TODO.md` do iPad). Depois,
   no mesmo dia, 7 resumos que eram as linhas de uma tabela markdown (CFH,
   CBH, WATW) ganharam uma frase no `thac0berry-data`; a web não muda.
+- 2026-10-18, colunas do cabeçalho da ficha (web v0.98.0, pedido do usuário):
+  as duas colunas de `.rec-header-row` (Class/Kit·Level, Race·Alignment,
+  Patron Deity·Place of Origin na página 1) eram 50/50. Agora a esquerda
+  (Class/Kit, Race, Patron Deity) fica em 62,5% e a direita (Level,
+  Alignment, Place of Origin) em 37,5% — a direita 25% mais estreita que
+  antes, a esquerda com a diferença. `calc((100% - 16px) * …)` descontando o
+  `gap` da linha, senão as duas colunas juntas passavam de 100% e quebravam
+  pra duas linhas. Conferido no navegador (Nic Gay) e no celular (375 px).

@@ -1472,8 +1472,15 @@ a.shield-combatant-row:hover {
   gap: 16px;
 }
 
-.rec-header-row > * {
-  flex: 1 1 160px;
+/* Coluna da esquerda (Class/Kit, Race, Patron Deity) 62.5%, direita (Level,
+   Alignment, Place of Origin) 37.5% — a direita 25% mais estreita que os 50%
+   de antes, a esquerda ganha a diferença; pedido do usuário, 2026-10-18. */
+.rec-header-row > *:first-child {
+  flex: 1 1 calc((100% - 16px) * 0.625);
+}
+
+.rec-header-row > *:last-child {
+  flex: 1 1 calc((100% - 16px) * 0.375);
 }
 
 .rec-header-line {
