@@ -5,6 +5,7 @@ import { formatDice, rollDice } from '../rules/dice'
 import { tableLabel, type GrimoireTable } from '../rules/tableIndex'
 import { findRow, rollPlan, rowRefs, tableRefs, typedResult, type TableRef } from '../rules/tableRoll'
 import { PaperModal } from './DetailBits'
+import { GrimoireTableBody } from './GrimoireTableBody'
 import { RuleDetail } from './RuleDetail'
 import { BookCode } from './BookCode'
 
@@ -222,29 +223,7 @@ export function TableDetail({
           </form>
         )}
 
-        <div className="rule-table">
-          <div className="rule-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  {table.headers.map((header, index) => (
-                    <th key={index}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {table.rows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className={rowIndex === hit ? 'table-hit' : undefined}>
-                    {row.map((cell, cellIndex) => (
-                      // "0" que o motor leu como 00 (zero perdido na extração) aparece como 00.
-                      <td key={cellIndex}>{cellIndex === 0 && cell.trim() === '0' && plan?.ranges[rowIndex]?.low === 100 ? '00' : cellText(cell)}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <GrimoireTableBody table={table} plan={plan} highlightIndex={hit >= 0 ? hit : undefined} cellText={cellText} />
 
         {sources.length > 0 && (
           <p className="paper-soft">

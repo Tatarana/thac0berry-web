@@ -22,3 +22,12 @@ export async function toggleCampaignPin(campaignID: string, item: PinnedItem): P
   if (writeError) throw new Error(writeError.message)
   return next
 }
+
+/** Grava a lista inteira, já na ordem nova (PS4: reordenar os widgets fixados). */
+export async function reorderCampaignPins(campaignID: string, items: PinnedItem[]): Promise<void> {
+  const { data: row, error: readError } = await supabase.from('campaign').select('version').eq('id', campaignID).single()
+  if (readError) throw new Error(readError.message)
+  const version = (row as { version: number }).version
+  const { error: writeError } = await supabase.from('campaign').update({ pinned_items: items, version }).eq('id', campaignID)
+  if (writeError) throw new Error(writeError.message)
+}

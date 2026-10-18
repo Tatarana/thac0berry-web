@@ -64,6 +64,7 @@ ajustes; C em aberto.
 | PS1 | Fixar tabelas, monstros e fichas na campanha ativa; seção "Pinned" em DM Tools | feita (web v0.92.0; backend `20261017120000_fixar_no_shield.sql`) |
 | PS2 | Tela "Shield" (opção B): carrossel de 4 telas | feita (web v0.93.0) |
 | PS3 | Voltar pro Shield, personagens clicáveis, fixar sem sair, notas por sessão, cards de resumo | feita (web v0.94.0) |
+| PS4 | Tabela completa (componentizada), widgets reordenáveis e paginação dentro de Pinned | feita (web v0.95.0) |
 
 ## Log
 
@@ -145,3 +146,30 @@ ajustes; C em aberto.
     "Table 54: 2-20 Encounter Table" inline (9 → 9 · Common**), fixar duas
     sessões e paginar entre elas, voltar ao estado sem nada fixado; testes:
     238 (sem novos — só UI).
+- 2026-10-18, PS4 feita (web v0.95.0; ajustes do usuário depois de usar a PS3):
+  - **tabela completa, componentizada** (pedido explícito: não duplicar a
+    visualização): `src/components/GrimoireTableBody.tsx` extrai o
+    `<table>` que `TableDetail` já desenhava (cabeçalho, zebra, "0"→"00",
+    linha em destaque) — `TableDetail` passou a usar o componente, e
+    `PinnedTableCard` também, mostrando a tabela inteira (antes, 3 linhas);
+    `.rule-table-scroll` ganha `max-height` só dentro do card do Shield, pra
+    uma tabela de 79 linhas não estourar a tela;
+  - **mais "telas" dentro de Pinned**: decisão do usuário (perguntado:
+    várias telas no carrossel vs. paginação dentro de Pinned) foi paginação
+    dentro da tela, como já existia em Session Notes — `Pinned` virou uma
+    lista só de "widgets" (tabela + monstro juntos, não mais duas seções
+    separadas), paginada de `WIDGETS_PER_PAGE` (3) em 3, com a mesma barra
+    "‹ Page N/total ›";
+  - **widgets reordenáveis**: pedido era "arrastável", mas o Shield também
+    roda no Safari do iPad, onde o drag-and-drop nativo HTML5 não funciona em
+    touch — optei por setas ↑/↓ em cada widget (confiável em qualquer
+    aparelho) em vez de um drag que quebraria no uso real; `WidgetControls`
+    (componente só, reaproveitado nos 3 tipos de card) com ↑/↓/✕;
+    `reorderCampaignPins` (`src/lib/campaignPins.ts`) grava a lista inteira
+    na ordem nova; `applyWidgetOrder` recoloca só os widgets (tabela/monstro)
+    na ordem pedida, mantendo outros tipos fixados (sessão) nos mesmos
+    lugares;
+  - conferido no navegador: tabela fixada mostrando todas as linhas com a
+    cara do Table Grimoire; mover "Beholder" pra cima, recarregar a página e
+    ver a ordem gravada; paginação ("Page 2/3") mostrando as próximas
+    tabelas/monstros fixados; testes: 238 (sem novos — só UI).

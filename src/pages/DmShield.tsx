@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/context'
 import { DmOnly } from '../components/DmOnly'
+import { GrimoireTableBody } from '../components/GrimoireTableBody'
 import { PageHeader } from '../components/PageHeader'
 import { MonsterPinPicker, SessionPinPicker, TablePinPicker, useShieldMonsterIndex, useShieldTables } from '../components/ShieldPinPickers'
 import { useActiveCampaign } from '../lib/activeCampaign'
 import type { CampaignCharacter } from '../lib/campaignCharacters'
 import { useCampaignCharacters } from '../lib/campaignCharacters'
 import { useCampaignSessions, type SessionRow } from '../lib/campaignSessions'
-import { fetchCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
+import { fetchCampaignPins, reorderCampaignPins, toggleCampaignPin } from '../lib/campaignPins'
 import { useCombatStore } from '../lib/combatStore'
 import { shieldBackLink } from '../lib/shieldBack'
 import { formatDice, rollDice } from '../rules/dice'
@@ -116,40 +117,50 @@ function EncounterPanel({ encounter, backParam }: { encounter: Encounter | null;
   )
 }
 
-function PinnedTableCard({ table, backParam, onUnpin }: { table: GrimoireTable; backParam: string; onUnpin: () => void }) {
-  const [roll, setRoll] = useState<{ value: number; row: string[] } | null>(null)
+/** Mesma função de TableDetail: a linha sem a faixa, ou a primeira célula se o resto estiver vazio. */
+const describeRow = (table: GrimoireTable, index: number | null) =>
+  index === null ? 'no row' : table.rows[index].slice(1).filter((c) => c.trim() !== '').join(' · ') || table.rows[index][0]
+
+/** Mover (reordenar) e desafixar um widget fixado; os botões de mover somem na ponta da lista. */
+function WidgetControls({ label, onUnpin, onMoveUp, onMoveDown }: { label: string; onUnpin: () => void; onMoveUp?: () => void; onMoveDown?: () => void }) {
+  return (
+    <span className="shield-widget-controls">
+      <button className="shield-widget-move" aria-label={`Move ${label} up`} disabled={!onMoveUp} onClick={onMoveUp}>
+        ↑
+      </button>
+      <button className="shield-widget-move" aria-label={`Move ${label} down`} disabled={!onMoveDown} onClick={onMoveDown}>
+        ↓
+      </button>
+      <button className="shield-unpin" aria-label={`Unpin ${label}`} title="Unpin" onClick={onUnpin}>
+        ✕
+      </button>
+    </span>
+  )
+}
+
+interface WidgetMoveProps {
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+}
+
+function PinnedTableCard({ table, backParam, onUnpin, onMoveUp, onMoveDown }: { table: GrimoireTable; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
+  const [roll, setRoll] = useState<{ value: number; index: number | null } | null>(null)
   const plan = useMemo(() => rollPlan(table), [table])
-  const previewRows = table.rows.slice(0, 3)
 
   function doRoll() {
     if (!plan?.dice) return
     const result = rollDice(plan.dice)
     const index = findRow(plan, result.total)
-    setRoll({ value: result.total, row: index >= 0 ? table.rows[index] : [] })
+    setRoll({ value: result.total, index: index >= 0 ? index : null })
   }
 
   return (
     <div className="shield-pin-card">
       <div className="shield-pin-card-top">
         <span className="shield-pin-card-title">▦ {tableLabel(table)}</span>
-        <button className="shield-unpin" aria-label={`Unpin ${table.title}`} title="Unpin" onClick={onUnpin}>
-          ✕
-        </button>
+        <WidgetControls label={table.title} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
       </div>
-      {previewRows.length > 0 && (
-        <table className="shield-pin-preview">
-          <tbody>
-            {previewRows.map((row, i) => (
-              <tr key={i}>
-                {row.map((cell, j) => (
-                  <td key={j}>{cell}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {table.rows.length > previewRows.length && <p className="shield-pin-more">+{table.rows.length - previewRows.length} more rows</p>}
+      <GrimoireTableBody table={table} plan={plan} highlightIndex={roll?.index ?? undefined} />
       <div className="shield-pin-actions">
         {plan?.dice && (
           <button className="btn" onClick={doRoll}>
@@ -162,22 +173,20 @@ function PinnedTableCard({ table, backParam, onUnpin }: { table: GrimoireTable; 
       </div>
       {roll && (
         <p className="shield-pin-result">
-          {roll.value} → {roll.row.filter(Boolean).join(' · ') || 'no row'}
+          {roll.value} → {describeRow(table, roll.index)}
         </p>
       )}
     </div>
   )
 }
 
-function PinnedMonsterCard({ entry, backParam, onUnpin }: { entry: MonsterIndexEntry; backParam: string; onUnpin: () => void }) {
+function PinnedMonsterCard({ entry, backParam, onUnpin, onMoveUp, onMoveDown }: { entry: MonsterIndexEntry; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
   const meta = [entry.hitDice ? `HD ${entry.hitDice.split('\n')[0]}` : null, xpLabel(entry) ? `${xpLabel(entry)} XP` : null, entry.frequency].filter(Boolean).join(' · ')
   return (
     <div className="shield-pin-card">
       <div className="shield-pin-card-top">
         <span className="shield-pin-card-title">🐉 {entry.name}</span>
-        <button className="shield-unpin" aria-label={`Unpin ${entry.name}`} title="Unpin" onClick={onUnpin}>
-          ✕
-        </button>
+        <WidgetControls label={entry.name} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
       </div>
       <p className="shield-pin-meta">
         {entry.collection}
@@ -193,15 +202,13 @@ function PinnedMonsterCard({ entry, backParam, onUnpin }: { entry: MonsterIndexE
   )
 }
 
-function PinnedFallbackCard({ item, backParam, onUnpin }: { item: PinnedItem; backParam: string; onUnpin: () => void }) {
+function PinnedFallbackCard({ item, backParam, onUnpin, onMoveUp, onMoveDown }: { item: PinnedItem; backParam: string; onUnpin: () => void } & WidgetMoveProps) {
   const to = item.kind === 'table' ? `/dm/tables?open=${encodeURIComponent(item.refID)}&${backParam}` : `/dm/monsters?open=${encodeURIComponent(item.refID)}&${backParam}`
   return (
     <div className="shield-pin-card">
       <div className="shield-pin-card-top">
         <span className="shield-pin-card-title">{item.label}</span>
-        <button className="shield-unpin" aria-label={`Unpin ${item.label}`} title="Unpin" onClick={onUnpin}>
-          ✕
-        </button>
+        <WidgetControls label={item.label} onUnpin={onUnpin} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
       </div>
       <div className="shield-pin-actions">
         <Link className="btn" to={to}>
@@ -212,16 +219,26 @@ function PinnedFallbackCard({ item, backParam, onUnpin }: { item: PinnedItem; ba
   )
 }
 
+/** Quantos widgets por página (a tela não vira uma rolagem sem fim). */
+const WIDGETS_PER_PAGE = 3
+
+/** Recoloca os widgets (tabela/monstro) na ordem nova, mantendo outros tipos fixados (sessão) nos mesmos lugares. */
+function applyWidgetOrder(all: PinnedItem[], orderedWidgets: PinnedItem[]): PinnedItem[] {
+  const queue = [...orderedWidgets]
+  return all.map((item) => (item.kind === 'table' || item.kind === 'monster' ? (queue.shift() ?? item) : item))
+}
+
 function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaignID: string; userID: string | null; campaignName: string; backParam: string }) {
   const [items, setItems] = useState<PinnedItem[] | null>(null)
   const [picker, setPicker] = useState<'table' | 'monster' | null>(null)
+  const [page, setPage] = useState(0)
   const tables = useShieldTables(campaignID, userID, campaignName)
   const monsterIndex = useShieldMonsterIndex()
 
   useEffect(() => {
     let cancelled = false
     void fetchCampaignPins(campaignID).then((loaded) => {
-      if (!cancelled) setItems((loaded ?? []).filter((i) => i.kind === 'table' || i.kind === 'monster'))
+      if (!cancelled) setItems(loaded ?? [])
     })
     return () => {
       cancelled = true
@@ -233,53 +250,76 @@ function PinnedPanel({ campaignID, userID, campaignName, backParam }: { campaign
     await toggleCampaignPin(campaignID, item)
   }
 
-  const tableItems = (items ?? []).filter((i) => i.kind === 'table')
-  const monsterItems = (items ?? []).filter((i) => i.kind === 'monster')
+  async function move(globalIndex: number, delta: number, widgetItems: PinnedItem[]) {
+    const target = globalIndex + delta
+    if (target < 0 || target >= widgetItems.length) return
+    const reordered = [...widgetItems]
+    const [moved] = reordered.splice(globalIndex, 1)
+    reordered.splice(target, 0, moved)
+    const next = applyWidgetOrder(items ?? [], reordered)
+    setItems(next)
+    await reorderCampaignPins(campaignID, next)
+  }
+
+  const widgetItems = (items ?? []).filter((i) => i.kind === 'table' || i.kind === 'monster')
+  const pageCount = Math.max(1, Math.ceil(widgetItems.length / WIDGETS_PER_PAGE))
+  const currentPage = Math.min(page, pageCount - 1)
+  const pageStart = currentPage * WIDGETS_PER_PAGE
+  const pageItems = widgetItems.slice(pageStart, pageStart + WIDGETS_PER_PAGE)
 
   return (
     <div className="shield-pinned-screen">
       <div className="ember-card">
         <p className="card-title shield-card-title-row">
-          Pinned Tables
-          <button className="btn" onClick={() => setPicker('table')}>
-            + Pin a table
-          </button>
+          Pinned
+          <span className="shield-pin-add">
+            <button className="btn" onClick={() => setPicker('table')}>
+              + Table
+            </button>
+            <button className="btn" onClick={() => setPicker('monster')}>
+              + Monster
+            </button>
+          </span>
         </p>
         {items === null ? (
           <p className="soft">Loading…</p>
-        ) : tableItems.length === 0 ? (
-          <p className="soft">Nothing pinned yet.</p>
+        ) : widgetItems.length === 0 ? (
+          <p className="soft">Nothing pinned yet — pin a table or monster above.</p>
         ) : (
-          tableItems.map((item) => {
-            const table = (tables ?? []).find((t) => t.id === item.refID)
-            return table ? (
-              <PinnedTableCard key={item.refID} table={table} backParam={backParam} onUnpin={() => void unpin(item)} />
-            ) : (
-              <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} />
-            )
-          })
-        )}
-      </div>
-      <div className="ember-card">
-        <p className="card-title shield-card-title-row">
-          Pinned Monsters
-          <button className="btn" onClick={() => setPicker('monster')}>
-            + Pin a monster
-          </button>
-        </p>
-        {items === null ? (
-          <p className="soft">Loading…</p>
-        ) : monsterItems.length === 0 ? (
-          <p className="soft">Nothing pinned yet.</p>
-        ) : (
-          monsterItems.map((item) => {
-            const entry = (monsterIndex ?? []).find((m) => m.id === item.refID)
-            return entry ? (
-              <PinnedMonsterCard key={item.refID} entry={entry} backParam={backParam} onUnpin={() => void unpin(item)} />
-            ) : (
-              <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} />
-            )
-          })
+          <>
+            {pageCount > 1 && (
+              <div className="shield-session-nav">
+                <button aria-label="Previous page" onClick={() => setPage((p) => (p - 1 + pageCount) % pageCount)}>
+                  ‹
+                </button>
+                <span>
+                  Page {currentPage + 1}/{pageCount}
+                </span>
+                <button aria-label="Next page" onClick={() => setPage((p) => (p + 1) % pageCount)}>
+                  ›
+                </button>
+              </div>
+            )}
+            {pageItems.map((item, i) => {
+              const globalIndex = pageStart + i
+              const onMoveUp = globalIndex > 0 ? () => void move(globalIndex, -1, widgetItems) : undefined
+              const onMoveDown = globalIndex < widgetItems.length - 1 ? () => void move(globalIndex, 1, widgetItems) : undefined
+              if (item.kind === 'table') {
+                const table = (tables ?? []).find((t) => t.id === item.refID)
+                return table ? (
+                  <PinnedTableCard key={item.refID} table={table} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+                ) : (
+                  <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+                )
+              }
+              const entry = (monsterIndex ?? []).find((m) => m.id === item.refID)
+              return entry ? (
+                <PinnedMonsterCard key={item.refID} entry={entry} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+              ) : (
+                <PinnedFallbackCard key={item.refID} item={item} backParam={backParam} onUnpin={() => void unpin(item)} onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
+              )
+            })}
+          </>
         )}
       </div>
       {picker === 'table' && (
