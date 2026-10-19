@@ -3,6 +3,7 @@ import { findDeityByName, loadDeities, type Deity } from '../data/deities'
 import { displaySections, type Kit } from '../data/kits'
 import { DeityDetail } from './DeityDetail'
 import { Field, PaperModal, TextBlock } from './DetailBits'
+import { RuleTableView } from './RuleDetail'
 
 // Ficha do kit (KitDetailSheet do iPad), com o atalho para a divindade do
 // sacerdote especialista quando ela existe no compêndio.
@@ -61,7 +62,15 @@ export function KitDetail({ kit, onClose }: { kit: Kit; onClose: () => void }) {
         {displaySections(kit.description.fullText).map((section, index) => (
           <div key={index} className="detail-section">
             {section.title && <span className="section-title">{section.title}</span>}
-            <p className="detail-description">{section.body}</p>
+            {section.parts.map((part, partIndex) =>
+              part.kind === 'table' ? (
+                <RuleTableView key={partIndex} table={part.table} />
+              ) : (
+                <p key={partIndex} className="detail-description">
+                  {part.text}
+                </p>
+              ),
+            )}
           </div>
         ))}
       </div>

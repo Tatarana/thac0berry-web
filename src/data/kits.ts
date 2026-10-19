@@ -2,7 +2,10 @@
 // Models/Kit.swift no app iPad). Um arquivo por grupo de classe, gerado por
 // scripts/build-data.mjs sem o texto bruto de wiki.
 
-export type ClassGroup = 'Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist'
+import { markdownTables } from '../rules/tableIndex'
+import type { RuleTable } from './rules'
+
+export type ClassGroup ='Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist'
 
 export interface Kit {
   id: string
@@ -69,6 +72,44 @@ export function loadAllKits(): Promise<Kit[]> {
 export interface TextSection {
   title: string
   body: string
+  /** O corpo em texto e tabelas em markdown ("| … |" + linha "---"). */
+  parts: DescriptionPart[]
+}
+
+export type DescriptionPart = { kind: 'text'; text: string } | { kind: 'table'; table: RuleTable }
+
+/** Texto e tabelas em markdown do corpo; a linha só em negrito logo acima da tabela vira o título dela. */
+export function descriptionParts(body: string): DescriptionPart[] {
+  const parts: DescriptionPart[] = []
+  let text: string[] = []
+  const flush = () => {
+    const joined = text.join('\n').trim()
+    if (joined !== '') parts.push({ kind: 'text', text: joined.replaceAll('**', '') })
+    text = []
+  }
+  const lines = body.split('\n')
+  for (let i = 0; i < lines.length; ) {
+    if (!lines[i].trim().startsWith('|')) {
+      text.push(lines[i++])
+      continue
+    }
+    const run: string[] = []
+    while (i < lines.length && lines[i].trim().startsWith('|')) run.push(lines[i++])
+    const tables = markdownTables(run.join('\n'))
+    if (tables.length === 0) {
+      text.push(...run)
+      continue
+    }
+    while (text.length > 0 && text[text.length - 1].trim() === '') text.pop()
+    const bold = text.length > 0 ? /^\*\*(.+?)\*\*:?$/.exec(text[text.length - 1].trim()) : null
+    if (bold) text.pop()
+    flush()
+    tables.forEach((table, index) =>
+      parts.push({ kind: 'table', table: { tableNumber: '', title: index === 0 && bold ? bold[1] : '', headers: table.headers, rows: table.rows } }),
+    )
+  }
+  flush()
+  return parts
 }
 
 /**
@@ -88,7 +129,7 @@ export function displaySections(fullText: string): TextSection[] {
   let body: string[] = []
   const flush = () => {
     const joined = body.join('\n').trim()
-    if (title !== '' || joined !== '') sections.push({ title, body: joined.replaceAll('**', '') })
+    if (title !== '' || joined !== '') sections.push({ title, body: joined.replaceAll('**', ''), parts: descriptionParts(joined) })
     body = []
   }
   for (const line of text.split('\n')) {
@@ -100,5 +141,5 @@ export function displaySections(fullText: string): TextSection[] {
     }
   }
   flush()
-  return sections.length > 0 ? sections : [{ title: '', body: text.replaceAll('**', '') }]
+  return sections.length > 0 ? sections : [{ title: '', body: text.replaceAll('**', ''), parts: descriptionParts(text) }]
 }

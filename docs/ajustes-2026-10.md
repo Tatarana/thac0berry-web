@@ -141,3 +141,13 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   antes, a esquerda com a diferença. `calc((100% - 16px) * …)` descontando o
   `gap` da linha, senão as duas colunas juntas passavam de 100% e quebravam
   pra duas linhas. Conferido no navegador (Nic Gay) e no celular (375 px).
+- 2026-10-19, tabela de verdade na descrição do kit (web v0.99.0, pedido do
+  usuário para o kit Mind Monk): a ficha do kit (`KitDetail`) mostrava o
+  `fullText` só como texto. Agora `descriptionParts` (`src/data/kits.ts`)
+  separa as tabelas em markdown ("| … |" + linha "---", lidas pelo mesmo
+  `markdownTables` do Table Grimoire) e elas saem no `RuleTableView` das
+  regras, com a linha em negrito logo acima como título. Só o Mind Monk tem
+  a tabela nesse formato no `thac0berry-data` (o resto dos kits continua em
+  "- Coluna: valor", inalterado). Pendente: o iPad mostra o `fullText` como
+  texto, então lá a tabela apareceria com as barras (o `Resources/` do iPad
+  ainda não foi sincronizado).
