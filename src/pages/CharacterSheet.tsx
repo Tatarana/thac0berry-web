@@ -16,6 +16,7 @@ import { Notebook } from '../components/Notebook'
 import { ModeSwitch } from '../components/ModeChooser'
 import { RegenerationFloat } from '../components/RegenerationFloat'
 import { PsionicsPanel } from '../components/PsionicsPanel'
+import { PrintSheet } from '../components/PrintSheet'
 import { SessionReport } from '../components/SessionReport'
 import { DmChangesNote } from '../components/DmChangesNote'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
@@ -132,6 +133,17 @@ function SpellbookIcon() {
       <path d="M6 3.5h11.5v17H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       <path d="M4.5 18.5A1.5 1.5 0 0 1 6 17h11.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
       <path d="m11 7 1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+// Imprimir / PDF: impressora.
+function PrintIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path d="M7 8V3.5h10V8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <rect x="3.5" y="8" width="17" height="8.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M7 13.5h10v7H7Z" fill="var(--sheet, #e9dcbe)" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -300,10 +312,13 @@ export function CharacterSheet() {
   const pages = allPages.slice(0, character ? recordSheetPages(character) : 3)
   const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
 
-  // O retrato só é buscado quando a página 3 abre.
+  // Imprimir / PDF: a ficha inteira em A4 (PrintSheet), depois do retrato carregado.
+  const [printRequested, setPrintRequested] = useState(false)
+  // O retrato só é buscado quando a página 3 abre (ou para imprimir).
   const attachment = doc?.portraitAttachment ?? null
+  const printing = printRequested && (!attachment || !!portrait)
   useEffect(() => {
-    if (page !== '3' || !attachment || portrait) return
+    if ((page !== '3' && !printRequested) || !attachment || portrait) return
     let cancelled = false
     void attachmentURL(attachment).then((url) => {
       if (!cancelled) setPortrait(url)
@@ -311,7 +326,7 @@ export function CharacterSheet() {
     return () => {
       cancelled = true
     }
-  }, [page, attachment, portrait])
+  }, [page, attachment, portrait, printRequested])
 
 
   return (
@@ -437,7 +452,20 @@ export function CharacterSheet() {
                   <SpellbookIcon />
                 </button>
               )}
+              <button className="paper-tab" title="Print / PDF" aria-label="Print / PDF" disabled={printRequested} onClick={() => setPrintRequested(true)}>
+                <PrintIcon />
+              </button>
             </nav>
+            {printing && (
+              <PrintSheet
+                character={character}
+                campaignName={campaignName}
+                campaignSettings={campaignSettings}
+                portraitURL={portrait}
+                pageCount={pages.length}
+                onDone={() => setPrintRequested(false)}
+              />
+            )}
             {view === 'spellbook' && isArcaneCasterAny(character) && <WizardSpellbook c={character} edit={edit} />}
             {view === 'notebook' && id && <Notebook characterID={id} userID={userID} />}
             {view === 'psionics' && hasClass(character, 'Psionicist') && <PsionicsPanel c={character} edit={edit} campaignID={campaignID} />}

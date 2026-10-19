@@ -5949,3 +5949,72 @@ button.slot-dot:hover {
   padding-left: 1.2rem;
   color: var(--red-ink);
 }
+
+/* Imprimir / PDF da ficha (PrintSheet): A4 retrato, uma página da ficha por
+   folha (a que não cabe encolhe, fitPages), fundo branco. Só vale com
+   body.printing; um Ctrl+P em outra tela imprime como antes. Na tela, a
+   ficha fica fora da vista, na largura útil da folha (190 mm), para medir. */
+.print-root {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 190mm;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+  background: #fff;
+  box-shadow: none;
+}
+
+.print-root .rec-sheet {
+  background: none;
+}
+
+/* Orientação de tela não vai para o papel: botões ("?" das regras) e o
+   "No portrait" do quadro vazio (fica o quadro para desenhar). */
+.print-root button,
+.print-root .rec-sketch-frame > .rec-soft {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  :root {
+    color-scheme: light;
+    background: #fff;
+  }
+
+  body.printing::before,
+  body.printing > :not(.print-root) {
+    display: none !important;
+  }
+
+  body.printing {
+    background: #fff;
+  }
+
+  /* As faixas de título são escuras com letra clara: sem "exact", o Chrome
+     tira o fundo (opção "gráficos de fundo" desligada) e o título some. */
+  body.printing .print-root {
+    position: static;
+    width: auto;
+    visibility: visible;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .print-page {
+    break-after: page;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
+  }
+}

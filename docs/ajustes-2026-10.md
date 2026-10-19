@@ -151,3 +151,19 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   "- Coluna: valor", inalterado). Pendente: o iPad mostra o `fullText` como
   texto, então lá a tabela apareceria com as barras (o `Resources/` do iPad
   ainda não foi sincronizado).
+- 2026-10-19, imprimir / PDF da ficha (web v0.100.0, pedido do usuário):
+  botão de impressora nas abas da ficha. `PrintSheet` monta as páginas 1–3
+  (e a 4, Reference Tables, quando o personagem tem) sem `edit` — sem
+  botões, seletores, destaques de pendência —, uma por folha A4 retrato
+  (`@page`, margem 10 mm), fundo branco, e chama a impressão do navegador
+  ("Salvar como PDF" dá o PDF). A página que não cabe na folha encolhe
+  (`fitPages`: busca binária do maior `zoom` que cabe, medindo fora da tela
+  na largura útil de 190 mm); a página 1 de um ladrão nível 5 fica em ~0,74,
+  e uma ficha com 60 itens de equipamento coube na página 2 em ~0,59. Some
+  também o que é orientação de tela: "?" das regras, "No portrait",
+  "Saving…", avisos, janelas flutuantes. As notas da página 4 (regra de
+  jogo) ficam. `print-color-adjust: exact` para as faixas de título escuras
+  não sumirem. Conferido com um harness local (sem login) emulando a mídia
+  de impressão em 718 px; o diálogo de impressão em si não dá para abrir no
+  navegador embutido. Pendente (entrega separada): Spell Sheets, Psionics e
+  Spellbook na impressão.
