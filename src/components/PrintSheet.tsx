@@ -10,7 +10,7 @@ import type { PlayerCharacter } from '../types/library'
 // por folha, sem `edit` (sem botões, seletores e destaques de pendência). Fica
 // fora da tela; o CSS de impressão (`body.printing`) esconde o resto do app.
 // Altura útil da folha A4 (297 mm menos as margens de 10 mm do @page), com folga.
-const pageHeightMM = 297 - 2 * 10 - 4
+const pageHeightMM = 297 - 2 * 10 - 6
 const px = (mm: number) => (mm * 96) / 25.4
 
 /**
