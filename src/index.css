@@ -5971,6 +5971,30 @@ button.slot-dot:hover {
 
 .print-root .rec-sheet {
   background: none;
+  padding: 16px;
+}
+
+/* A medição (fitPages) é feita na tela, mas os @media de largura seguem a
+   janela, não a folha: aqui fica fixo o layout da folha (190 mm ≈ 718 px:
+   o de "width < 760px" vale, os de "< 560px" não), em qualquer tela. */
+.print-root .rec-combat {
+  grid-template-columns: auto 1fr;
+}
+
+.print-root .rec-lines-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.print-root .rec-lines-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.print-root .rec-desc-split {
+  grid-template-columns: 2.8fr 2fr;
+}
+
+.print-root .rec-sketch {
+  flex: 0 0 220px;
 }
 
 /* Orientação de tela não vai para o papel: botões ("?" das regras) e o

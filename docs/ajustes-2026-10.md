@@ -167,3 +167,12 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   de impressão em 718 px; o diálogo de impressão em si não dá para abrir no
   navegador embutido. Pendente (entrega separada): Spell Sheets, Psionics e
   Spellbook na impressão.
+- 2026-10-19, correção da impressão (web v0.100.1, achado no uso): a
+  página 1 passava da folha. O `fitPages` mede na tela, mas os `@media` de
+  largura seguem a janela: no monitor o bloco Combat tinha 5 colunas e na
+  folha (~718 px, vale o "width < 760px") 2, mais alto. Agora o
+  `.print-root` fixa o layout da folha (Combat em 2 colunas, `.rec-sheet`,
+  `.rec-lines-4/5`, `.rec-desc-split`, `.rec-sketch` como em 718 px), e a
+  medição dá o mesmo zoom em 375 px e em 1280 px (conferido: medido em 1280
+  e desenhado em 718, todas as páginas ≤ 271 mm de 277). Folga da altura
+  útil de 4 para 6 mm.
