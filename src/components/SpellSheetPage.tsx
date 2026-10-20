@@ -379,7 +379,7 @@ export function SpellSheetPage({
       {circles.length === 0 && <p className="rec-soft">No spell slots on this sheet.</p>}
 
       <SheetBlock title="Magic Item Spells" trailing="rings, wands, staves, armor">
-        {sheet.magicItems.length === 0 && <p className="rec-soft">No magic items logged for today yet.</p>}
+        {sheet.magicItems.length === 0 && <p className="rec-soft">{edit ? 'No magic items logged for today yet.' : '—'}</p>}
         {sheet.magicItems.map((item) => (
           <div key={item.id} className="item-card">
             <div className="item-card-head">
@@ -511,7 +511,7 @@ export function SpellSheetPage({
         )}
       </SheetBlock>
 
-      <SheetBlock title="Additional Spells" trailing="write the spell with the pencil">
+      <SheetBlock title="Additional Spells" trailing={edit ? 'write the spell with the pencil' : undefined}>
         {sheet.entries.length === 0 && !edit ? (
           <p className="rec-soft">—</p>
         ) : (

@@ -200,7 +200,8 @@ export function WizardSpellbook({ c, edit }: { c: PlayerCharacter; edit?: Edit }
       ))}
       {c.wizardSpellbook.length === 0 && (
         <p className="rec-soft">
-          {gypsyOnly ? 'No known spells yet' : 'Your spellbook is empty'} — search above to add spells from the Grimoire.
+          {gypsyOnly ? 'No known spells yet' : 'Your spellbook is empty'}
+          {edit && ' — search above to add spells from the Grimoire.'}
         </p>
       )}
       <p className="rec-soft">

@@ -16,7 +16,8 @@ import { Notebook } from '../components/Notebook'
 import { ModeSwitch } from '../components/ModeChooser'
 import { RegenerationFloat } from '../components/RegenerationFloat'
 import { PsionicsPanel } from '../components/PsionicsPanel'
-import { PrintSheet } from '../components/PrintSheet'
+import { PrintDialog } from '../components/PrintDialog'
+import { PrintSheet, type PrintChoice } from '../components/PrintSheet'
 import { SessionReport } from '../components/SessionReport'
 import { DmChangesNote } from '../components/DmChangesNote'
 import { attachmentURL, portraitJPEG, uploadAttachment } from '../lib/attachments'
@@ -312,13 +313,16 @@ export function CharacterSheet() {
   const pages = allPages.slice(0, character ? recordSheetPages(character) : 3)
   const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
 
-  // Imprimir / PDF: a ficha inteira em A4 (PrintSheet), depois do retrato carregado.
-  const [printRequested, setPrintRequested] = useState(false)
-  // O retrato só é buscado quando a página 3 abre (ou para imprimir).
+  // Imprimir / PDF: a janela escolhe as partes; o PrintSheet monta em A4
+  // (com a ficha, depois do retrato carregado).
+  const [printDialogOpen, setPrintDialogOpen] = useState(false)
+  const [printChoice, setPrintChoice] = useState<PrintChoice | null>(null)
+  const printRecord = printChoice?.record ?? false
+  // O retrato só é buscado quando a página 3 abre (ou para imprimir a ficha).
   const attachment = doc?.portraitAttachment ?? null
-  const printing = printRequested && (!attachment || !!portrait)
+  const printing = printChoice !== null && (!printRecord || !attachment || !!portrait)
   useEffect(() => {
-    if ((page !== '3' && !printRequested) || !attachment || portrait) return
+    if ((page !== '3' && !printRecord) || !attachment || portrait) return
     let cancelled = false
     void attachmentURL(attachment).then((url) => {
       if (!cancelled) setPortrait(url)
@@ -326,7 +330,14 @@ export function CharacterSheet() {
     return () => {
       cancelled = true
     }
-  }, [page, attachment, portrait, printRequested])
+  }, [page, attachment, portrait, printRecord])
+
+  // Dia aberto nas Spell Sheets (o mesmo cálculo das bolinhas lá embaixo).
+  const openSheetDay = (list: NonNullable<typeof sheets>) => {
+    const bySheet = list.findIndex((s) => s.id.toUpperCase() === params.get('sheet')?.toUpperCase()) + 1
+    const asked = bySheet || Number(params.get('day'))
+    return asked >= 1 && asked <= list.length ? asked : list.length
+  }
 
 
   return (
@@ -452,18 +463,40 @@ export function CharacterSheet() {
                   <SpellbookIcon />
                 </button>
               )}
-              <button className="paper-tab" title="Print / PDF" aria-label="Print / PDF" disabled={printRequested} onClick={() => setPrintRequested(true)}>
+              <button
+                className="paper-tab"
+                title="Print / PDF"
+                aria-label="Print / PDF"
+                aria-haspopup="dialog"
+                disabled={printChoice !== null}
+                onClick={() => setPrintDialogOpen(true)}
+              >
                 <PrintIcon />
               </button>
             </nav>
-            {printing && (
+            {printDialogOpen && (
+              <PrintDialog
+                sheets={sheets ?? []}
+                openSheetID={view === 'spells' && sheets && sheets.length > 0 ? sheets[openSheetDay(sheets) - 1].id : null}
+                hasPsionics={hasClass(character, 'Psionicist')}
+                hasSpellbook={isArcaneCasterAny(character)}
+                spellbookLabel={gypsyKnownSpellsOnly(character) ? 'Known Spells' : 'My Spellbook'}
+                onPrint={(choice) => {
+                  setPrintDialogOpen(false)
+                  setPrintChoice(choice)
+                }}
+                onClose={() => setPrintDialogOpen(false)}
+              />
+            )}
+            {printing && printChoice && (
               <PrintSheet
                 character={character}
                 campaignName={campaignName}
                 campaignSettings={campaignSettings}
                 portraitURL={portrait}
                 pageCount={pages.length}
-                onDone={() => setPrintRequested(false)}
+                choice={printChoice}
+                onDone={() => setPrintChoice(null)}
               />
             )}
             {view === 'spellbook' && isArcaneCasterAny(character) && <WizardSpellbook c={character} edit={edit} />}
@@ -492,9 +525,7 @@ export function CharacterSheet() {
               // sem escolha na URL, abre o dia mais recente. `sheet` (vindo das
               // sessões da campanha) escolhe a folha pelo id (o banco devolve o uuid em
               // minúsculas; a folha guarda em maiúsculas, como o iPad).
-              const bySheet = sheets.findIndex((s) => s.id.toUpperCase() === params.get('sheet')?.toUpperCase()) + 1
-              const asked = bySheet || Number(params.get('day'))
-              const day = asked >= 1 && asked <= sheets.length ? asked : sheets.length
+              const day = openSheetDay(sheets)
               const sheet = sheets[day - 1]
               return (
                 <>

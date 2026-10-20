@@ -176,3 +176,19 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   medição dá o mesmo zoom em 375 px e em 1280 px (conferido: medido em 1280
   e desenhado em 718, todas as páginas ≤ 271 mm de 277). Folga da altura
   útil de 4 para 6 mm.
+- 2026-10-19, impressão de magias, psiônicos e grimório (web v0.101.0,
+  pedido do usuário): o botão de impressora abre uma janela de escolha
+  (`PrintDialog`): a ficha (marcada), os dias das Spell Sheets (marcado o
+  dia aberto, ou o mais recente), Psionics (Psionicist) e My Spellbook /
+  Known Spells (mago, bardo, gypsy). Cada parte começa numa folha. As novas
+  partes são `.print-flow`: encolhem até 65% e, se ainda não couberem,
+  continuam na folha seguinte sem cortar linha (`break-inside: avoid`); a
+  ficha continua em uma folha por página. `PsionicsPanel` ganhou modo só
+  leitura (`edit` opcional: valores no lugar dos campos, só as disciplinas e
+  modos escolhidos, sem "Use a Power", sem botões). O `PrintSheet` espera o
+  conteúdo assentar (magias e poderes chegam depois; `MutationObserver`,
+  400 ms quieto, até 6 s) antes de medir. Sem `edit`, somem as orientações
+  "write the spell with the pencil", "search above to add spells…", "No
+  magic items logged…"/"No powers yet." (viram "—"). No papel os botões
+  somem, menos o nome da magia memorizada (botão com cara de texto).
+  Conferido com harness local: grimório de 70 magias em 65%, 2 folhas.
