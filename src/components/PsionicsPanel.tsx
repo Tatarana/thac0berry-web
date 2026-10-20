@@ -178,7 +178,8 @@ function PsionicReport({ c, sessionID, onClose }: { c: PlayerCharacter; sessionI
   )
 }
 
-export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edit: Edit; campaignID: string | null }) {
+// Sem `edit` (impressão): só leitura — valores, as disciplinas e modos escolhidos, sem botões.
+export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edit?: Edit; campaignID: string | null }) {
   const [powers, setPowers] = useState<PowerData[] | null>(null)
   const [picking, setPicking] = useState(false)
   const [reportSession, setReportSession] = useState<string | null | undefined>(undefined)
@@ -204,7 +205,7 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
 
   /** Muda o bloco psiônico (criando-o se ainda não existe). */
   const change = (mutate: (x: Psionics) => void) =>
-    edit((x) => {
+    edit?.((x) => {
       const next = { ...emptyPsionics(), ...(x.psionics ?? {}) }
       mutate(next)
       x.psionics = next
@@ -276,13 +277,17 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         <div className="psi-psp">
           <label className="psi-field">
             <span className="rec-cell-label">Maximum</span>
-            <InkNumber
-              value={max ?? 0}
-              min={0}
-              max={999}
-              label="Maximum PSPs"
-              onChange={(v) => change((x) => void (x.pspMaxOverride = v === calculated ? null : v))}
-            />
+            {edit ? (
+              <InkNumber
+                value={max ?? 0}
+                min={0}
+                max={999}
+                label="Maximum PSPs"
+                onChange={(v) => change((x) => void (x.pspMaxOverride = v === calculated ? null : v))}
+              />
+            ) : (
+              <span className="rec-value">{max ?? 0}</span>
+            )}
             <span className="rec-soft">
               {calculated === null
                 ? 'Table 5 covers ability scores 15–18 only: write the maximum by hand.'
@@ -293,18 +298,24 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
           </label>
           <div className="psi-field">
             <span className="rec-cell-label">Current</span>
-            <span className="counter">
-              <button className="counter-btn" aria-label="One PSP less" disabled={current <= 0} onClick={() => change((x) => void (x.pspCurrent = Math.max(0, current - 1)))}>
-                −
-              </button>
-              <InkNumber value={current} min={0} max={999} label="Current PSPs" onChange={(v) => change((x) => void (x.pspCurrent = v))} />
-              <button className="counter-btn" aria-label="One PSP more" onClick={() => change((x) => void (x.pspCurrent = current + 1))}>
-                +
-              </button>
-            </span>
-            <button className="paper-link" onClick={() => change((x) => void (x.pspCurrent = null))}>
-              rest to full
-            </button>
+            {edit ? (
+              <>
+                <span className="counter">
+                  <button className="counter-btn" aria-label="One PSP less" disabled={current <= 0} onClick={() => change((x) => void (x.pspCurrent = Math.max(0, current - 1)))}>
+                    −
+                  </button>
+                  <InkNumber value={current} min={0} max={999} label="Current PSPs" onChange={(v) => change((x) => void (x.pspCurrent = v))} />
+                  <button className="counter-btn" aria-label="One PSP more" onClick={() => change((x) => void (x.pspCurrent = current + 1))}>
+                    +
+                  </button>
+                </span>
+                <button className="paper-link" onClick={() => change((x) => void (x.pspCurrent = null))}>
+                  rest to full
+                </button>
+              </>
+            ) : (
+              <span className="rec-value">{current}</span>
+            )}
           </div>
         </div>
         <p className="rec-soft psi-note">
@@ -312,52 +323,61 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         </p>
       </SheetBlock>
 
-      <SheetBlock title="Use a Power" trailing="records the PSPs spent">
-        <div className="psi-use">
-          <InkPicker
-            value={usePower}
-            label="Power used"
-            options={[{ value: '', label: 'choose a power…' }, ...known.map((k) => ({ value: k.name, label: k.name, hint: k.tier ?? undefined }))]}
-            onChange={(v) => {
-              setUsePower(v)
-              setUsePSP(costOf(v))
-            }}
-          />
-          <label className="psi-field">
-            <span className="rec-cell-label">PSP</span>
-            <InkNumber value={usePSP} min={0} max={999} label="PSPs spent" onChange={setUsePSP} />
-          </label>
-          <button className="consequence-apply" disabled={busy || usePSP <= 0} onClick={() => void registerUse()}>
-            Use
-          </button>
-          <button className="paper-link" onClick={() => setReportSession(lastSession)}>
-            session report
-          </button>
-        </div>
-        {recent.length > 0 && (
-          <ul className="psi-uses">
-            {recent.map((u) => (
-              <li key={u.id}>
-                <span>{new Date(u.date).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                <span>{u.power || 'unnamed power'}</span>
-                <span className="report-charge-count">{u.psp} PSP</span>
-                <button className="paper-link" aria-label="Remove this use" onClick={() => change((x) => void (x.uses = (x.uses ?? []).filter((y) => y.id !== u.id)))}>
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SheetBlock>
+      {edit && (
+        <SheetBlock title="Use a Power" trailing="records the PSPs spent">
+          <div className="psi-use">
+            <InkPicker
+              value={usePower}
+              label="Power used"
+              options={[{ value: '', label: 'choose a power…' }, ...known.map((k) => ({ value: k.name, label: k.name, hint: k.tier ?? undefined }))]}
+              onChange={(v) => {
+                setUsePower(v)
+                setUsePSP(costOf(v))
+              }}
+            />
+            <label className="psi-field">
+              <span className="rec-cell-label">PSP</span>
+              <InkNumber value={usePSP} min={0} max={999} label="PSPs spent" onChange={setUsePSP} />
+            </label>
+            <button className="consequence-apply" disabled={busy || usePSP <= 0} onClick={() => void registerUse()}>
+              Use
+            </button>
+            <button className="paper-link" onClick={() => setReportSession(lastSession)}>
+              session report
+            </button>
+          </div>
+          {recent.length > 0 && (
+            <ul className="psi-uses">
+              {recent.map((u) => (
+                <li key={u.id}>
+                  <span>{new Date(u.date).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  <span>{u.power || 'unnamed power'}</span>
+                  <span className="report-charge-count">{u.psp} PSP</span>
+                  <button className="paper-link" aria-label="Remove this use" onClick={() => change((x) => void (x.uses = (x.uses ?? []).filter((y) => y.id !== u.id)))}>
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SheetBlock>
+      )}
 
       <SheetBlock title="Disciplines" trailing={`${owned.length} of ${limits.disciplines} at level ${level} (Table 4)`}>
         <div className="chip-row">
-          {disciplines.map((d) => (
+          {(edit ? disciplines : owned).map((d) => (
             <span key={d} className="psi-discipline">
-              <button className={owned.includes(d) ? 'chip chip-on' : 'chip'} aria-pressed={owned.includes(d)} onClick={() => toggleDiscipline(d)}>
-                {d}
-              </button>
-              {owned.includes(d) && (
+              {edit ? (
+                <button className={owned.includes(d) ? 'chip chip-on' : 'chip'} aria-pressed={owned.includes(d)} onClick={() => toggleDiscipline(d)}>
+                  {d}
+                </button>
+              ) : (
+                <span className="chip chip-on">
+                  {d}
+                  {p.primaryDiscipline === d && ' ★'}
+                </span>
+              )}
+              {edit && owned.includes(d) && (
                 <button
                   className={p.primaryDiscipline === d ? 'psi-primary psi-primary-on' : 'psi-primary'}
                   title="Primary discipline"
@@ -377,7 +397,7 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         title="Powers"
         trailing={`sciences ${counts.sciences}/${limits.sciences} · devotions ${counts.devotions}/${limits.devotions}`}
       >
-        {known.length === 0 && <p className="rec-soft">No powers yet.</p>}
+        {known.length === 0 && <p className="rec-soft">{edit ? 'No powers yet.' : '—'}</p>}
         {owned.map((d) => {
           const list = known.filter((k) => k.discipline === d)
           if (list.length === 0) return null
@@ -389,9 +409,11 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
                   <li key={k.id}>
                     <span className="rec-value">{k.name}</span>
                     <span className="rec-soft">{k.tier}</span>
-                    <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
-                      ✕
-                    </button>
+                    {edit && (
+                      <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
+                        ✕
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -401,18 +423,27 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         <p className={`rec-soft${over(counts.sciences, limits.sciences)}${over(counts.devotions, limits.devotions)}`}>
           {counts.sciences > limits.sciences || counts.devotions > limits.devotions ? 'More powers than Table 4 allows at this level. ' : ''}
         </p>
-        <button className="paper-link" disabled={!powers} onClick={() => setPicking(true)}>
-          + add power
-        </button>
+        {edit && (
+          <button className="paper-link" disabled={!powers} onClick={() => setPicking(true)}>
+            + add power
+          </button>
+        )}
       </SheetBlock>
 
       <SheetBlock title="Defense Modes" trailing={`${(p.defenseModes ?? []).length} of ${limits.defenseModes} (do not count as powers)`}>
         <div className="chip-row">
-          {defenseModes.map((m) => (
-            <button key={m} className={(p.defenseModes ?? []).includes(m) ? 'chip chip-on' : 'chip'} aria-pressed={(p.defenseModes ?? []).includes(m)} onClick={() => toggleMode(m)}>
-              {m}
-            </button>
-          ))}
+          {edit
+            ? defenseModes.map((m) => (
+                <button key={m} className={(p.defenseModes ?? []).includes(m) ? 'chip chip-on' : 'chip'} aria-pressed={(p.defenseModes ?? []).includes(m)} onClick={() => toggleMode(m)}>
+                  {m}
+                </button>
+              ))
+            : (p.defenseModes ?? []).map((m) => (
+                <span key={m} className="chip chip-on">
+                  {m}
+                </span>
+              ))}
+          {!edit && (p.defenseModes ?? []).length === 0 && <span className="rec-soft">—</span>}
         </div>
         {(p.defenseModes ?? []).length > limits.defenseModes && <p className="paper-soft psi-over">More defense modes than Table 4 allows at this level.</p>}
       </SheetBlock>

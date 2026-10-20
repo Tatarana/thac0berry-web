@@ -5950,6 +5950,28 @@ button.slot-dot:hover {
   color: var(--red-ink);
 }
 
+/* Janela de impressão (PrintDialog) */
+.print-options {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.print-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.print-days {
+  margin: 4px 0 0 4px;
+  gap: 4px;
+}
+
 /* Imprimir / PDF da ficha (PrintSheet): A4 retrato, uma página da ficha por
    folha (a que não cabe encolhe, fitPages), fundo branco. Só vale com
    body.printing; um Ctrl+P em outra tela imprime como antes. Na tela, a
@@ -5997,9 +6019,10 @@ button.slot-dot:hover {
   flex: 0 0 220px;
 }
 
-/* Orientação de tela não vai para o papel: botões ("?" das regras) e o
-   "No portrait" do quadro vazio (fica o quadro para desenhar). */
-.print-root button,
+/* Orientação de tela não vai para o papel: botões ("?" das regras, remover,
+   adicionar) e o "No portrait" do quadro vazio (fica o quadro para desenhar).
+   O nome da magia memorizada é um botão com cara de texto: fica. */
+.print-root button:not(.memorized-link),
 .print-root .rec-sketch-frame > .rec-soft {
   display: none;
 }
@@ -6040,5 +6063,12 @@ button.slot-dot:hover {
 
   .print-page:last-child {
     break-after: auto;
+  }
+
+  /* Magias, psiônicos e grimório podem seguir na folha seguinte: sem cortar
+     uma linha ao meio. */
+  .print-flow tr,
+  .print-flow li {
+    break-inside: avoid;
   }
 }
