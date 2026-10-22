@@ -7,7 +7,7 @@ import { modeLabels, setMode, useMode, type AppMode } from '../lib/mode'
 
 const art: Record<AppMode, { image: string; position: string }> = {
   player: { image: 'mode_player.jpg', position: '50% 40%' },
-  dm: { image: 'mode_dm.jpg', position: '50% 18%' },
+  dm: { image: 'mode_dm.jpg', position: '50% 30%' },
 }
 
 /** A tela das duas imagens. `onChosen` roda depois de gravar a escolha. */

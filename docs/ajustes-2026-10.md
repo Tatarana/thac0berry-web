@@ -192,3 +192,9 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   magic items logged…"/"No powers yet." (viram "—"). No papel os botões
   somem, menos o nome da magia memorizada (botão com cara de texto).
   Conferido com harness local: grimório de 70 magias em 65%, 2 folhas.
+- 2026-10-22, nova arte do modo Mestre (web v0.101.1, arte do usuário): o
+  dragão de óculos escuros e distintivo substitui `public/images/mode_dm.jpg`
+  no cartão "Dungeon Master" da tela de escolha de modo. A arte nova é
+  horizontal (1200×800, como a do Player); enquadramento `50% 30%`.
+  Conferido no navegador e no celular. O ícone do botão do topo
+  (`mode_icon_dm.png`) não mudou.
