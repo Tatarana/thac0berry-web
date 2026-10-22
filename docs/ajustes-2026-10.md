@@ -197,4 +197,5 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   no cartão "Dungeon Master" da tela de escolha de modo. A arte nova é
   horizontal (1200×800, como a do Player); enquadramento `50% 30%`.
   Conferido no navegador e no celular. O ícone do botão do topo
-  (`mode_icon_dm.png`) não mudou.
+  (`mode_icon_dm.png`, 128×128 com fundo transparente) passou a ser a
+  cabeça do dragão recortada da mesma arte, em círculo.
