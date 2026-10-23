@@ -17,12 +17,15 @@ export type SurpriseSideKey = (typeof surpriseSides)[number]
 
 export const emptySurpriseSide = (): SurpriseSide => ({ roll: null, mods: [], immune: false })
 
+/** Condição e modificador de cada linha (a Tabela 57 corrigida tem a situação na 1ª coluna, 2026-10-23). */
+const conditionRows = (rows: string[][]) => rows.map((r) => r.slice(-2))
+
 /** Linhas numéricas da Tabela 57 ("Camouflaged −1 to −3" fica de fora: o DM decide). "Every 10 members" é calculado. */
-export const surpriseModifiers = (rows: string[][]) => initiativeModifiers(rows).filter((m) => !/every 10 members/i.test(m.label))
+export const surpriseModifiers = (rows: string[][]) => initiativeModifiers(conditionRows(rows)).filter((m) => !/every 10 members/i.test(m.label))
 
 /** "+1 a cada 10 membros" do outro lado (Tabela 57): grupo grande é fácil de notar. */
 export function crowdModifier(rows: string[][], others: number): InitiativeModifier | null {
-  const row = initiativeModifiers(rows).find((m) => /every 10 members/i.test(m.label))
+  const row = initiativeModifiers(conditionRows(rows)).find((m) => /every 10 members/i.test(m.label))
   const tens = Math.floor(others / 10)
   return row && tens > 0 ? { label: `${row.label} (${others})`, value: row.value * tens } : null
 }
@@ -60,13 +63,18 @@ function levelRange(text: string): { low: number; high: number } | null {
   return { low: Number(m[1]), high: m[2] ? Number(m[2]) : m[3] ? Infinity : Number(m[1]) }
 }
 
+const warriorGroup = (cell: string | undefined) => /^warriors?$/i.test((cell ?? '').trim())
+
 /**
- * As linhas de guerreiro da Tabela 46. A tabela vem sem o nome dos grupos
- * (sacerdote, ladino, guerreiro, mago, nessa ordem); o bloco do guerreiro é o
- * único que começa no nível 0, e vai até a faixa voltar a começar baixo.
+ * As linhas de guerreiro da Tabela 46. Com a coluna "Group" (dados corrigidos
+ * em 2026-10-23), as linhas "Warriors"; sem ela (dados antigos, grupos sem
+ * nome: sacerdote, ladino, guerreiro, mago), o bloco do guerreiro é o único
+ * que começa no nível 0, e vai até a faixa voltar a começar baixo.
  */
 export function warriorSaveRows(rows: string[][]): SaveRow[] {
-  const parsed = rows.map((r) => ({ range: levelRange(r[0] ?? ''), saves: r.slice(1, 6).map(Number) }))
+  const grouped = rows.some((r) => warriorGroup(r[0]))
+  const source = grouped ? rows.filter((r) => warriorGroup(r[0])).map((r) => r.slice(1)) : rows
+  const parsed = source.map((r) => ({ range: levelRange(r[0] ?? ''), saves: r.slice(1, 6).map(Number) }))
   const start = parsed.findIndex((r) => r.range?.low === 0)
   if (start < 0) return []
   const out: SaveRow[] = []
@@ -91,8 +99,8 @@ export function savesFor(level: number, rows: SaveRow[]): number[] | null {
   return rows.find((r) => level >= r.low && level <= r.high)?.saves ?? null
 }
 
-/** Nomes das 5 categorias, do cabeçalho da Tabela 46 (sem os asteriscos das notas). */
-export const saveCategories = (headers: string[]) => headers.slice(1, 6).map((h) => h.replace(/\*+$/, '').trim())
+/** Nomes das 5 categorias, do cabeçalho da Tabela 46 (sem os asteriscos das notas): as 5 últimas colunas. */
+export const saveCategories = (headers: string[]) => headers.slice(-5).map((h) => h.replace(/\*+$/, '').trim())
 
 /** d20 + modificador igual ou acima do valor: salvou. */
 export const savePasses = (roll: number, modifier: number, target: number) => roll + modifier >= target
