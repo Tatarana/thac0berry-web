@@ -226,3 +226,12 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   classe; Anchorite e Druid não expulsam). `hasReferencePage` diverge do iPad
   de propósito: `tests/rules.test.ts` tem `webAhead` com o Druid. A nota dos
   ajustes de atributo só aparece quando a raça tem ajuste.
+- 2026-10-23, tabelas da DMG estragadas na extração (web v0.102.2, achado no
+  uso: "Racial Level Restrictions" quebrada): corrigidas no `thac0berry-data`
+  (`scripts/fix_dmg_table_columns.py`): Tabelas 1–7 tinham perdido a última
+  coluna (canto do cabeçalho vazio) e 34, 46 e 57 os subtítulos do meio, que
+  viraram a 1ª coluna ("Group"/"Situation"). O Combat Tracker lê a 46
+  (salvamento de monstro) e a 57 (surpresa): `warriorSaveRows` passa a usar
+  as linhas "Warriors" quando há a coluna de grupo, `saveCategories` pega as
+  5 últimas colunas e a surpresa lê as 2 últimas (condição e modificador).
+  Funciona com os dados antigos e os novos (testes rodados com os dois).
