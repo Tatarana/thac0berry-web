@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { Field, PaperModal, TextBlock } from '../components/DetailBits'
 import { GroupSection } from '../components/GroupSection'
+import { PowerDetail, type PsionicPower } from '../components/PowerDetail'
 import { loadData } from '../data/load'
 import { normalize } from '../lib/search'
 import { useGroupToggle } from '../lib/useGroupToggle'
@@ -9,53 +9,11 @@ import { useGroupToggle } from '../lib/useGroupToggle'
 // Poderes psiônicos (schemas/psionic-power.schema.json; PsionicPowerCompendiumView
 // do iPad): filtro por categoria, busca por nome ou disciplina, grupos por
 // disciplina (dentro deles: Devotion, Science, Enhancement, e nome).
-interface PsionicPower {
-  id: string
-  title: string
-  discipline: string
-  powerTier: string
-  powerScore: { raw: string; baseAbility: string; modifier: number }
-  pspCost: { initial: string; maintenance?: string | null; summary: string }
-  tacticalCombat?: { mac: string } | null
-  parameters: { range: string; preparationTime: string; areaOfEffect: string; prerequisites: string[] }
-  description: {
-    briefSummary: string
-    fullText: string
-    sections: { effect: string; powerScoreRollResults?: { powerScoreSuccess: string; criticalFailure20: string } | null }
-  }
-  sources: { book: string; page?: number | null }[]
-}
-
 const tierOrder = ['Devotion', 'Science', 'Psionic Enhancement']
 const disciplineOrder = ['Clairsentience', 'Psychokinesis', 'Psychometabolism', 'Psychoportation', 'Telepathy', 'Metapsionics']
 const tierRank = (tier: string) => {
   const index = tierOrder.indexOf(tier)
   return index === -1 ? tierOrder.length : index
-}
-
-function PowerDetail({ power, onClose }: { power: PsionicPower; onClose: () => void }) {
-  const rolls = power.description.sections.powerScoreRollResults
-  return (
-    <PaperModal title={power.title} subtitle={`${power.discipline} · ${power.powerTier}`} onClose={onClose}>
-      <div className="detail-grid">
-        <Field label="Power Score" value={power.powerScore.raw} />
-        <Field label="PSP Cost (initial/maint.)" value={power.pspCost.summary} />
-        <Field label="MAC" value={power.tacticalCombat?.mac} />
-        <Field label="Range" value={power.parameters.range} />
-        <Field label="Preparation Time" value={power.parameters.preparationTime} />
-        <Field label="Area of Effect" value={power.parameters.areaOfEffect} />
-        <Field label="Prerequisites" value={power.parameters.prerequisites.join(', ')} />
-        <Field label="Source" value={power.sources.map((source) => source.book).join(', ')} />
-      </div>
-      <TextBlock label="Effect" text={power.description.sections.effect} />
-      {rolls && (
-        <>
-          <TextBlock label="Power Score (exceptional success)" text={rolls.powerScoreSuccess} />
-          <TextBlock label="Roll of 20 (critical failure)" text={rolls.criticalFailure20} />
-        </>
-      )}
-    </PaperModal>
-  )
 }
 
 export function PsionicCompendium() {

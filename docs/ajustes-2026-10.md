@@ -253,3 +253,11 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   duas, em Devotions —, a linha "X of Y left at this level (Table 4)" e a
   lista agrupada por disciplina (ícone + nome, título fixo ao rolar). A busca
   vale dentro da aba.
+- 2026-10-23, descrição dos poderes ao escolher (web v0.103.3, apontado pelo
+  usuário: o "Add a power" fugia do padrão dos outros seletores). O
+  `PowerDetail` saiu do compêndio para `src/components/PowerDetail.tsx`
+  (compartilhado; o compêndio não mudou). No "Add a power", cada linha tem o
+  ⓘ do seletor de kits: abre a descrição por cima da lista, com "Add <poder>"
+  embaixo; fechar (ou Esc) volta à mesma aba e busca. Na ficha, o nome de um
+  poder da lista de Powers é link para a descrição (como a magia memorizada
+  na Spell Sheet; poder digitado sem `powerID` fica só texto).
