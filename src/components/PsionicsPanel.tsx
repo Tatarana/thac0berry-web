@@ -14,6 +14,7 @@ import type { PlayerCharacter, Psionics, PsionicPowerEntry, PsionicUse } from '.
 import { PaperModal } from './DetailBits'
 import type { Edit } from './RecordSheet'
 import { DisciplineIcon } from './DisciplineIcon'
+import { PowerDetail, type PsionicPower } from './PowerDetail'
 import { InkNumber, InkPicker, SheetBlock } from './SheetBits'
 
 // Aba Psionics do Psionicist (Complete Psionics Handbook, cap. 1), feita
@@ -22,13 +23,7 @@ import { InkNumber, InkPicker, SheetBlock } from './SheetBits'
 // devoções do compêndio com os limites da Tabela 4, modos de defesa, e o
 // relatório da sessão com o XP sugerido (10 XP por PSP, Tabela 3).
 
-interface PowerData {
-  id: string
-  title: string
-  discipline: string
-  powerTier: string
-  pspCost: { initial: string; summary: string }
-}
+type PowerData = PsionicPower
 
 const newID = () => crypto.randomUUID().toUpperCase()
 const emptyPsionics = (): Psionics => ({ pspMaxOverride: null, pspCurrent: null, primaryDiscipline: null, disciplines: [], powers: [], defenseModes: [], uses: [] })
@@ -73,8 +68,11 @@ function PowerPicker({
     }))
     .filter((g) => g.list.length > 0)
   const room = left[tier]
+  // Descrição do poder por cima da lista (como o seletor de kits); fechar volta à mesma aba e busca.
+  const [detail, setDetail] = useState<PowerData | null>(null)
   return createPortal(
-    <PaperModal title="Add a power" subtitle={`From your disciplines: ${owned.join(', ') || 'none yet'}`} onClose={onClose}>
+    // Esc fecha só a descrição quando ela está aberta (as duas janelas ouvem a tecla).
+    <PaperModal title="Add a power" subtitle={`From your disciplines: ${owned.join(', ') || 'none yet'}`} onClose={() => !detail && onClose()}>
       <div className="chip-row psi-tier-tabs" role="tablist">
         {(['Science', 'Devotion'] as const).map((t) => (
           <button key={t} role="tab" aria-selected={tier === t} className={tier === t ? 'chip chip-on' : 'chip'} onClick={() => setTier(t)}>
@@ -98,11 +96,14 @@ function PowerPicker({
             </div>
             <ul className="psi-choice-list">
               {g.list.map((p) => (
-                <li key={p.id}>
+                <li key={p.id} className="kit-choice">
                   <button className="slot-choice" onClick={() => onChoose(p)}>
                     <span className="slot-choice-fav" />
                     <span className="rec-value">{p.title}</span>
                     <span className="rec-soft">{p.pspCost.summary}</span>
+                  </button>
+                  <button className="info-btn" aria-label={`About ${p.title}`} title="Read the power description" onClick={() => setDetail(p)}>
+                    ⓘ
                   </button>
                 </li>
               ))}
@@ -113,6 +114,23 @@ function PowerPicker({
           <p className="paper-soft">{owned.length === 0 ? 'Choose a discipline first.' : `No ${tierLabels[tier].toLowerCase()} match.`}</p>
         )}
       </div>
+      {detail && (
+        <>
+          <PowerDetail power={detail} onClose={() => setDetail(null)} />
+          <div className="kit-detail-choose">
+            <button
+              className="consequence-apply"
+              onClick={() => {
+                const chosen = detail
+                setDetail(null)
+                onChoose(chosen)
+              }}
+            >
+              Add {detail.title}
+            </button>
+          </div>
+        </>
+      )}
     </PaperModal>,
     document.body,
   )
@@ -221,6 +239,8 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
   const [powers, setPowers] = useState<PowerData[] | null>(null)
   const [picking, setPicking] = useState(false)
   const [reportSession, setReportSession] = useState<string | null | undefined>(undefined)
+  // Descrição de um poder da lista (o nome é link, como a magia memorizada na Spell Sheet).
+  const [openPower, setOpenPower] = useState<PowerData | null>(null)
   const [usePower, setUsePower] = useState('')
   const [usePSP, setUsePSP] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -448,20 +468,29 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
                 {d}
               </div>
               <ul className="psi-powers">
-                {list.map((k) => (
-                  <li key={k.id}>
-                    <span className="rec-value psi-power-name">
-                      <DisciplineIcon discipline={d} size={14} />
-                      {k.name}
-                    </span>
-                    <span className="rec-soft">{k.tier}</span>
-                    {edit && (
-                      <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
-                        ✕
-                      </button>
-                    )}
-                  </li>
-                ))}
+                {list.map((k) => {
+                  const data = powers?.find((x) => x.id === k.powerID)
+                  return (
+                    <li key={k.id}>
+                      <span className="rec-value psi-power-name">
+                        <DisciplineIcon discipline={d} size={14} />
+                        {data ? (
+                          <button className="memorized-link" title="Read the power description" onClick={() => setOpenPower(data)}>
+                            {k.name}
+                          </button>
+                        ) : (
+                          k.name
+                        )}
+                      </span>
+                      <span className="rec-soft">{k.tier}</span>
+                      {edit && (
+                        <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
+                          ✕
+                        </button>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           )
@@ -508,6 +537,7 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         />
       )}
       {reportSession !== undefined && <PsionicReport c={c} sessionID={reportSession} onClose={() => setReportSession(undefined)} />}
+      {openPower && createPortal(<PowerDetail power={openPower} onClose={() => setOpenPower(null)} />, document.body)}
     </div>
   )
 }
