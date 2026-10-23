@@ -235,3 +235,11 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   as linhas "Warriors" quando há a coluna de grupo, `saveCategories` pega as
   5 últimas colunas e a surpresa lê as 2 últimas (condição e modificador).
   Funciona com os dados antigos e os novos (testes rodados com os dois).
+- 2026-10-23, ícones das disciplinas psiônicas (web v0.103.0, pedido do
+  usuário): `DisciplineIcon` (SVG em traço, na cor do texto) — olho com
+  raios (Clairsentience), objeto em movimento (Psychokinesis), coração com
+  pulso (Psychometabolism), portal com seta (Psychoportation), duas cabeças
+  ligadas por ondas (Telepathy), espiral (Metapsionics). Na aba Psionics:
+  nos chips de Disciplines, no título de cada grupo de Powers e ao lado de
+  cada poder, sempre com o nome escrito (legenda). Vale também no modo só
+  leitura e na impressão. Fora: o compêndio de poderes e a página 4.

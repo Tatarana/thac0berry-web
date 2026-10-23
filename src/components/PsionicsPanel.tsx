@@ -13,6 +13,7 @@ import { isoNow } from '../rules/spellSheets'
 import type { PlayerCharacter, Psionics, PsionicPowerEntry, PsionicUse } from '../types/library'
 import { PaperModal } from './DetailBits'
 import type { Edit } from './RecordSheet'
+import { DisciplineIcon } from './DisciplineIcon'
 import { InkNumber, InkPicker, SheetBlock } from './SheetBits'
 
 // Aba Psionics do Psionicist (Complete Psionics Handbook, cap. 1), feita
@@ -369,10 +370,12 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
             <span key={d} className="psi-discipline">
               {edit ? (
                 <button className={owned.includes(d) ? 'chip chip-on' : 'chip'} aria-pressed={owned.includes(d)} onClick={() => toggleDiscipline(d)}>
+                  <DisciplineIcon discipline={d} />
                   {d}
                 </button>
               ) : (
                 <span className="chip chip-on">
+                  <DisciplineIcon discipline={d} />
                   {d}
                   {p.primaryDiscipline === d && ' ★'}
                 </span>
@@ -403,11 +406,17 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
           if (list.length === 0) return null
           return (
             <div key={d} className="psi-power-group">
-              <div className="rec-cell-label">{d}</div>
+              <div className="rec-cell-label psi-group-label">
+                <DisciplineIcon discipline={d} size={18} />
+                {d}
+              </div>
               <ul className="psi-powers">
                 {list.map((k) => (
                   <li key={k.id}>
-                    <span className="rec-value">{k.name}</span>
+                    <span className="rec-value psi-power-name">
+                      <DisciplineIcon discipline={d} size={14} />
+                      {k.name}
+                    </span>
                     <span className="rec-soft">{k.tier}</span>
                     {edit && (
                       <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
