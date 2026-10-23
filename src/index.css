@@ -3901,10 +3901,6 @@ button.slot-dot:hover {
   flex: 1;
 }
 
-.psi-power-group {
-  margin-bottom: 8px;
-}
-
 /* Powers: Sciences e Devotions em seções separadas. */
 .psi-tier-section + .psi-tier-section {
   margin-top: 10px;
