@@ -146,8 +146,9 @@ export function PrintSheet({
           <section className="print-page">
             <RecordPageThree character={character} portraitURL={portraitURL} />
           </section>
+          {/* Página 4 (tabelas da classe e da raça): longa demais para uma folha legível, segue na próxima. */}
           {pageCount >= 4 && (
-            <section className="print-page">
+            <section className="print-page print-flow">
               <RecordPageFour character={character} />
             </section>
           )}

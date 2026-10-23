@@ -145,3 +145,33 @@ test('Half-Vistani (Domains of Dread): ajuste fixo, sem limite de nível, aviso 
   // Sem campanha em mente (3º argumento ausente, como o resto da ficha chama): sem esse aviso.
   assert.deepEqual(K.raceWarnings('Half-Vistani', { ...base(), characterClass: 'Gypsy', level: 1 }), [])
 })
+
+test('tabelas da raça na página 4: atributos, limites de nível e bônus de Constituição', () => {
+  const dwarf = K.raceAbilityRows('Dwarf')
+  assert.deepEqual(dwarf.find((r) => r.ability === 'Constitution'), { ability: 'Constitution', range: '11–18', adjustment: 1 })
+  assert.deepEqual(dwarf.find((r) => r.ability === 'Charisma'), { ability: 'Charisma', range: '3–17', adjustment: -1 })
+  // Humano: sem faixa e sem ajuste; Half-Vistani: só os ajustes (DoD não dá faixa).
+  assert.ok(K.raceAbilityRows('Human').every((r) => r.range === null && r.adjustment === 0))
+  assert.deepEqual(K.raceAbilityRows('Half-Vistani').filter((r) => r.adjustment !== 0).map((r) => [r.ability, r.adjustment]), [
+    ['Intelligence', 1],
+    ['Wisdom', 1],
+    ['Charisma', -2],
+  ])
+
+  assert.deepEqual(K.raceLevelLimits('Human'), [])
+  assert.deepEqual(K.raceLevelLimits('Dwarf'), [
+    { characterClass: 'Cleric', limit: 10 },
+    { characterClass: 'Fighter', limit: 15 },
+    { characterClass: 'Thief', limit: 12 },
+    { characterClass: 'Ninja', limit: 'unlimited' },
+    { characterClass: 'Psionicist', limit: 8 },
+  ])
+  // A tabela bate com o levelLimit dos avisos da ficha.
+  for (const { characterClass, limit } of K.raceLevelLimits('Tiefling')) assert.equal(K.levelLimit('Tiefling', characterClass), limit)
+
+  assert.equal(K.constitutionSaveBonusApplies('Elf'), null)
+  assert.match(K.constitutionSaveBonusApplies('Dwarf') ?? '', /poison/)
+  assert.doesNotMatch(K.constitutionSaveBonusApplies('Gnome') ?? '', /poison/)
+  assert.deepEqual(K.constitutionSaveBonusRows.map((r) => r.bonus), [1, 2, 3, 4, 5])
+  assert.equal(K.raceRuleID('Tiefling'), 'pwh_ch00_racial_tables')
+})

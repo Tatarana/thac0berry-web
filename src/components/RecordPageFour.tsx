@@ -1,6 +1,17 @@
 import type { ReactNode } from 'react'
-import { isDualClass, isMultiClass, multiClassThiefArmorRule, referenceSections, type ReferenceSection } from '../rules/multiclass'
-import { proficiencyTableGroup, rulesData, thievingBaseScore, thievingSkillsFor, type CanonicalClass } from '../rules/rules'
+import { allClasses, isDualClass, isMultiClass, multiClassThiefArmorRule, referenceSections, type ReferenceSection } from '../rules/multiclass'
+import { armorPenaltyRows, attackVsDefenseRows, baseByWisdom, classAwardRows, defenseModeColumns, progressionRows, recoveryRows } from '../rules/psionics'
+import {
+  constitutionSaveBonusApplies,
+  constitutionSaveBonusRows,
+  isPlanarRace,
+  matchRace,
+  raceAbilityRows,
+  raceLevelLimits,
+  raceRuleID,
+  singleClassBonus,
+} from '../rules/raceKit'
+import { canonicalClass, proficiencyTableGroup, rulesData, thievingBaseScore, thievingSkillsFor, type CanonicalClass } from '../rules/rules'
 import { RuleLink } from './RuleLink'
 import type { PlayerCharacter } from '../types/library'
 
@@ -381,6 +392,228 @@ function RogueTablesPage({ cls, level, multiClass }: { cls: CanonicalClass; leve
   )
 }
 
+// --- Psionicist (Complete Psionics Handbook, caps. 1 e 2) ------------------------------
+
+const signed = (n: number) => (n > 0 ? `+${n}` : String(n))
+
+function PsionicistTables({ c, level }: { c: PlayerCharacter; level: number }) {
+  const row = Math.max(1, Math.min(level, 20))
+  const wisdom = c.abilities.wisdom
+  const known = new Set(c.psionics?.defenseModes ?? [])
+  return (
+    <>
+      <RefTable title="Table 4: Psionic Power Progression" ruleID="cpsih_ch01_advancement" footnotes={level > 20 ? ['Above 20th level, the 20th-level line applies.'] : undefined}>
+        <thead>
+          <tr>
+            <th>Lvl</th>
+            <th>Disciplines</th>
+            <th>Sciences</th>
+            <th>Devotions</th>
+            <th>Defense Modes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {progressionRows.map((values, offset) => (
+            <tr key={offset}>
+              <td className={hl(offset + 1 === row)}>{offset + 1}</td>
+              {values.map((v, i) => (
+                <td key={i} className={hl(offset + 1 === row)}>
+                  {v}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </RefTable>
+      <RefTable
+        title="Table 5: Inherent Potential"
+        ruleID="cpsih_ch01_psionic_strength_points"
+        footnotes={['1st level: the base score for Wisdom, plus the modifiers for Intelligence and Constitution.', 'Each new level: 10 + the Wisdom modifier.']}
+      >
+        <thead>
+          <tr>
+            <th>Ability Score</th>
+            <th>Base Score</th>
+            <th>Ability Modifier</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(baseByWisdom).map(([score, base], i) => (
+            <tr key={score}>
+              <td className={hl(Number(score) === wisdom)}>{score}</td>
+              <td className={hl(Number(score) === wisdom)}>{base}</td>
+              <td className={hl(Number(score) === wisdom)}>{i === 0 ? '0' : signed(i)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </RefTable>
+      <RefTable
+        title="Table 6: Psionic Strength Recovery"
+        ruleID="cpsih_ch01_psionic_strength_points"
+        footnotes={[
+          '* "Hard exertion" includes fighting, running, digging, walking while encumbered, climbing, exploring a dungeon, swimming, and any other activity the DM wants to include.',
+          "** Use of the psionicist's Rejuvenation proficiency.",
+        ]}
+      >
+        <thead>
+          <tr>
+            <th className="ref-left">Physical Activity</th>
+            <th>PSPs Recovered</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recoveryRows.map(([activity, rate]) => (
+            <tr key={activity}>
+              <td className="ref-left">{activity}</td>
+              <td>{rate}</td>
+            </tr>
+          ))}
+        </tbody>
+      </RefTable>
+      <RefTable title="Table 14: Attack vs. Defense Modes" ruleID="cpsih_ch02_telepathic_combat" footnotes={["Modifier to the attacker's power score. Your defense modes are highlighted."]}>
+        <thead>
+          <tr>
+            <th className="ref-left">Attack</th>
+            {defenseModeColumns.map((mode) => (
+              <th key={mode} className={hl(known.has(mode))}>
+                {mode}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {attackVsDefenseRows.map(([attack, values]) => (
+            <tr key={attack}>
+              <td className="ref-left">{attack}</td>
+              {values.map((v, i) => (
+                <td key={i} className={hl(known.has(defenseModeColumns[i]))}>
+                  {signed(v)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </RefTable>
+      <RefTable title="Table 9: Psionicist Armor Penalties" ruleID="cpsih_ch01_restrictions">
+        <thead>
+          <tr>
+            <th className="ref-left">Armor</th>
+            <th>Power Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {armorPenaltyRows.map(([armor, penalty]) => (
+            <tr key={armor}>
+              <td className="ref-left">{armor}</td>
+              <td>{penalty === 0 ? '0' : signed(penalty)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </RefTable>
+      <RefTable title="Table 3: Individual Class Awards" ruleID="cpsih_ch01_advancement">
+        <tbody>
+          {classAwardRows.map(([award, xp]) => (
+            <tr key={award}>
+              <td className="ref-left">{award}</td>
+              <td>{xp}</td>
+            </tr>
+          ))}
+        </tbody>
+      </RefTable>
+    </>
+  )
+}
+
+// --- Raça (PHB cap. 2, DMG Tabela 7, PWH, DoD; CPsiH Tabela 1) -------------------------
+
+/** Tabelas da raça escolhida, em toda ficha com página 4. Raça fora da lista (texto livre): sem seção. */
+function RaceTables({ c }: { c: PlayerCharacter }) {
+  const race = matchRace(c.race)
+  if (!race) return null
+  const abilities = raceAbilityRows(race)
+  const limits = raceLevelLimits(race)
+  const hasAbilityRules = abilities.some((a) => a.range !== null || a.adjustment !== 0)
+  const mine = new Set<string>(allClasses(c).map((k) => canonicalClass(k.characterClass)))
+  const extra = singleClassBonus[race]
+  const conApplies = constitutionSaveBonusApplies(race)
+  const con = c.abilities.constitution
+  return (
+    <div className="ref-section ref-race">
+      <h2 className="rec-title ref-section-title">Race — {race}</h2>
+      {hasAbilityRules ? (
+        <RefTable title="Ability Requirements and Adjustments" ruleID={raceRuleID(race)} footnotes={['The adjustments were added to the scores on the Sheet page when the race was chosen.']}>
+          <thead>
+            <tr>
+              <th className="ref-left">Ability</th>
+              <th>Min–Max</th>
+              <th>Adjustment</th>
+            </tr>
+          </thead>
+          <tbody>
+            {abilities.map((a) => (
+              <tr key={a.ability}>
+                <td className="ref-left">{a.ability}</td>
+                <td>{a.range ?? '—'}</td>
+                <td className={hl(a.adjustment !== 0)}>{a.adjustment === 0 ? '—' : signed(a.adjustment)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </RefTable>
+      ) : (
+        <p className="rec-soft">No ability requirements or adjustments for this race.</p>
+      )}
+      {limits.length > 0 ? (
+        <RefTable
+          title="Class Level Limits"
+          ruleID={isPlanarRace(race) ? 'pwh_ch00_racial_tables' : 'dmg_ch02_racial_level_restrictions'}
+          footnotes={[
+            'Classes not listed are not open to this race.',
+            ...(limits.some((l) => l.characterClass === 'Psionicist') ? ['Psionicist: CPsiH Table 1.'] : []),
+            ...(extra ? [`A single-classed ${race} may rise ${extra} levels above the limit.`] : []),
+          ]}
+        >
+          <thead>
+            <tr>
+              <th className="ref-left">Class</th>
+              <th>Max Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            {limits.map((l) => (
+              <tr key={l.characterClass}>
+                <td className={hl(mine.has(l.characterClass), true)}>{l.characterClass}</td>
+                <td className={hl(mine.has(l.characterClass))}>{l.limit === 'unlimited' ? 'Unlimited' : l.limit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </RefTable>
+      ) : (
+        <p className="rec-soft">No class level limits for this race.</p>
+      )}
+      {conApplies && (
+        <RefTable title="PHB Table 9: Constitution Saving Throw Bonuses" ruleID="phb_ch02_character_race_tables" footnotes={[conApplies]}>
+          <thead>
+            <tr>
+              <th>Constitution</th>
+              <th>Bonus</th>
+            </tr>
+          </thead>
+          <tbody>
+            {constitutionSaveBonusRows.map(({ range: [low, high], bonus }) => (
+              <tr key={low}>
+                <td className={hl(con >= low && con <= high)}>
+                  {low}–{high}
+                </td>
+                <td className={hl(con >= low && con <= high)}>+{bonus}</td>
+              </tr>
+            ))}
+          </tbody>
+        </RefTable>
+      )}
+    </div>
+  )
+}
+
 function Section({ c, section, multiClass }: { c: PlayerCharacter; section: ReferenceSection; multiClass: boolean }) {
   return (
     <>
@@ -388,6 +621,7 @@ function Section({ c, section, multiClass }: { c: PlayerCharacter; section: Refe
       {section.kind === 'Warrior' && <WarriorTablesPage cls={section.characterClass} multiClass={multiClass} />}
       {section.kind === 'Rogue' && <RogueTablesPage cls={section.characterClass} level={section.level} multiClass={multiClass} />}
       {section.kind === 'Cleric' && <ClericTables c={c} level={section.level} anchorite={section.characterClass === 'Anchorite'} />}
+      {section.kind === 'Psionicist' && <PsionicistTables c={c} level={section.level} />}
     </>
   )
 }
@@ -408,6 +642,7 @@ export function RecordPageFour({ character: c }: { character: PlayerCharacter })
         {/* O Anchorite usa as tabelas do Clérigo, mas o título fala da classe dele. */}
         <h2 className="rec-title">{section.characterClass === 'Anchorite' ? 'Anchorite' : section.kind} Reference Tables</h2>
         <Section c={c} section={section} multiClass={multi} />
+        <RaceTables c={c} />
       </div>
     )
   }
@@ -422,6 +657,7 @@ export function RecordPageFour({ character: c }: { character: PlayerCharacter })
           <Section c={c} section={section} multiClass={multi} />
         </div>
       ))}
+      <RaceTables c={c} />
     </div>
   )
 }
