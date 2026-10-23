@@ -68,8 +68,12 @@ function PowerPicker({
             <button className="slot-choice" onClick={() => onChoose(p)}>
               <span className="slot-choice-fav" />
               <span className="rec-value">{p.title}</span>
-              <span className="rec-soft">
-                {p.discipline} · {p.powerTier} · {p.pspCost.summary}
+              <span className="rec-soft psi-choice-meta">
+                {/* A disciplina pelo ícone (o nome no tooltip e para leitor de tela). */}
+                <span role="img" aria-label={p.discipline} title={p.discipline}>
+                  <DisciplineIcon discipline={p.discipline} size={15} />
+                </span>
+                {p.powerTier} · {p.pspCost.summary}
               </span>
             </button>
           </li>
