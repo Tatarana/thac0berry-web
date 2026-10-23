@@ -96,12 +96,15 @@ function turningColumnMatches(column: string, level: number): boolean {
   return Number.isFinite(a) && Number.isFinite(b) && level >= a && level <= b
 }
 
-function ClericTables({ c, level, anchorite = false }: { c: PlayerCharacter; level: number; anchorite?: boolean }) {
+function ClericTables({ c, level, characterClass }: { c: PlayerCharacter; level: number; characterClass: CanonicalClass }) {
   const levels = T['PriestTables.turningUndeadLevels']
+  const anchorite = characterClass === 'Anchorite'
+  // Druid (2026-10-23): a mesma progressão de magias do sacerdote (PHB Tabela 24), sem Turn Undead.
+  const turns = characterClass !== 'Anchorite' && characterClass !== 'Druid'
   return (
     <>
       <Progression
-        title={anchorite ? 'Anchorite Spell Progression' : 'Priest Spell Progression'}
+        title={anchorite ? 'Anchorite Spell Progression' : characterClass === 'Druid' ? 'Priest Spell Progression (Druid)' : 'Priest Spell Progression'}
         ruleID={anchorite ? 'dod_ch00_anchorite' : 'phb_ch03_priest_tables'}
         rows={T['PriestTables.spellProgressionRows']}
         circles={7}
@@ -109,8 +112,8 @@ function ClericTables({ c, level, anchorite = false }: { c: PlayerCharacter; lev
         headers={['1', '2', '3', '4', '5', '6*', '7**']}
         footnotes={['* Usable only by priests with 17 or greater Wisdom.', '** Usable only by priests with 18 or greater Wisdom.']}
       />
-      {/* O Anchorite (Domains of Dread) não expulsa mortos-vivos: o livro não dá o poder. */}
-      {!anchorite && (
+      {/* O Anchorite (Domains of Dread) e o Druid não expulsam mortos-vivos. */}
+      {turns && (
         <RefTable title="Turning Undead" footnotes={T['PriestTables.turningUndeadFootnotes']}>
           <thead>
             <tr>
@@ -541,7 +544,11 @@ function RaceTables({ c }: { c: PlayerCharacter }) {
     <div className="ref-section ref-race">
       <h2 className="rec-title ref-section-title">Race — {race}</h2>
       {hasAbilityRules ? (
-        <RefTable title="Ability Requirements and Adjustments" ruleID={raceRuleID(race)} footnotes={['The adjustments were added to the scores on the Sheet page when the race was chosen.']}>
+        <RefTable
+          title="Ability Requirements and Adjustments"
+          ruleID={raceRuleID(race)}
+          footnotes={abilities.some((a) => a.adjustment !== 0) ? ['The adjustments were added to the scores on the Sheet page when the race was chosen.'] : undefined}
+        >
           <thead>
             <tr>
               <th className="ref-left">Ability</th>
@@ -620,7 +627,7 @@ function Section({ c, section, multiClass }: { c: PlayerCharacter; section: Refe
       {section.kind === 'Wizard' && <WizardTablesPage c={c} level={section.level} />}
       {section.kind === 'Warrior' && <WarriorTablesPage cls={section.characterClass} multiClass={multiClass} />}
       {section.kind === 'Rogue' && <RogueTablesPage cls={section.characterClass} level={section.level} multiClass={multiClass} />}
-      {section.kind === 'Cleric' && <ClericTables c={c} level={section.level} anchorite={section.characterClass === 'Anchorite'} />}
+      {section.kind === 'Cleric' && <ClericTables c={c} level={section.level} characterClass={section.characterClass} />}
       {section.kind === 'Psionicist' && <PsionicistTables c={c} level={section.level} />}
     </>
   )
@@ -639,8 +646,8 @@ export function RecordPageFour({ character: c }: { character: PlayerCharacter })
     if (!section) return null
     return (
       <div className="rec-sheet">
-        {/* O Anchorite usa as tabelas do Clérigo, mas o título fala da classe dele. */}
-        <h2 className="rec-title">{section.characterClass === 'Anchorite' ? 'Anchorite' : section.kind} Reference Tables</h2>
+        {/* Anchorite e Druid usam as tabelas do Clérigo, mas o título fala da classe deles. */}
+        <h2 className="rec-title">{section.characterClass === 'Anchorite' || section.characterClass === 'Druid' ? section.characterClass : section.kind} Reference Tables</h2>
         <Section c={c} section={section} multiClass={multi} />
         <RaceTables c={c} />
       </div>

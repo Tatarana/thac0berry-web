@@ -98,10 +98,16 @@ test('por classe e nível: THAC0, saves, slots, XP, backstab, slots de arma', ()
   }())
 })
 
+/** Divergências de propósito com o iPad (a web foi primeiro; pendência no TODO.md de lá). */
+const webAhead: Record<string, { hasReferencePage?: boolean; recordSheetPageCount?: number }> = {
+  // Página 4 do Druid (2026-10-23): progressão de magias de sacerdote e a seção da raça.
+  Druid: { hasReferencePage: true, recordSheetPageCount: 4 },
+}
+
 test('propriedades de cada classe e Level Changes', () => {
   compare('classes', function* () {
     for (const cls of classes) {
-      const e = fixtures.classes[cls]
+      const e = { ...fixtures.classes[cls], ...webAhead[cls] }
       yield [`${cls} proficiencyGroup`, R.classGroup(cls), e.proficiencyGroup]
       yield [`${cls} hitDieType`, R.hitDieType(cls), e.hitDieType]
       yield [`${cls} hasSpellSheet`, R.hasSpellSheet(cls), e.hasSpellSheet]
