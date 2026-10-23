@@ -243,3 +243,6 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   nos chips de Disciplines, no título de cada grupo de Powers e ao lado de
   cada poder, sempre com o nome escrito (legenda). Vale também no modo só
   leitura e na impressão. Fora: o compêndio de poderes e a página 4.
+- 2026-10-23, ícone no "Add a power" (web v0.103.1, pedido do usuário): na
+  lista do seletor de poderes, o nome da disciplina virou o ícone (o nome
+  fica no tooltip e no `aria-label`, para leitor de tela).
