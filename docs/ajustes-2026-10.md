@@ -246,3 +246,10 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
 - 2026-10-23, ícone no "Add a power" (web v0.103.1, pedido do usuário): na
   lista do seletor de poderes, o nome da disciplina virou o ícone (o nome
   fica no tooltip e no `aria-label`, para leitor de tela).
+- 2026-10-23, Add a power em abas (web v0.103.2, achado no uso: "não
+  encontrei como incluir devoções"): a lista única (132 itens, ciências antes
+  das devoções em cada disciplina) escondia as devoções. Agora há as abas
+  "Sciences (n)" e "Devotions (n)" — abre na que ainda tem vaga; com vaga nas
+  duas, em Devotions —, a linha "X of Y left at this level (Table 4)" e a
+  lista agrupada por disciplina (ícone + nome, título fixo ao rolar). A busca
+  vale dentro da aba.
