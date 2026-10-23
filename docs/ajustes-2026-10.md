@@ -267,3 +267,7 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   tipo deixou de aparecer em cada linha (a seção já diz); só um tipo que não
   é ciência nem devoção (ex.: Psionic Enhancement, contado como devoção)
   continua escrito.
+- 2026-10-23, Powers sem subgrupos (web v0.103.5, pedido do usuário): dentro
+  de Sciences e Devotions, a lista é uma só (na ordem das disciplinas do
+  personagem); a disciplina fica só no ícone ao lado do poder (nome no
+  tooltip e no `aria-label`).
