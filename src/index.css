@@ -3905,6 +3905,24 @@ button.slot-dot:hover {
   margin-bottom: 8px;
 }
 
+/* Ícone da disciplina (DisciplineIcon): sempre ao lado do nome. */
+.discipline-icon {
+  flex: none;
+  vertical-align: -3px;
+  margin-right: 5px;
+}
+
+.psi-group-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.psi-power-name .discipline-icon {
+  vertical-align: -2px;
+  opacity: 0.75;
+}
+
 .psi-discipline {
   display: inline-flex;
   align-items: center;
