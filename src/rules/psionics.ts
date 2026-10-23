@@ -81,6 +81,32 @@ export function initialCost(text: string | null | undefined): number | null {
   return match ? Number(match[0]) : null
 }
 
+/** O power score de um poder no compêndio ("Int -3", atributo e modificador). */
+export interface PowerScoreSource {
+  raw: string
+  baseAbility: string
+  modifier: number
+}
+
+/**
+ * Power score do personagem: o atributo base mais o modificador do poder (o
+ * número a tirar ou menos no d20). O modificador vem do texto ("Wis -3",
+ * "Cha –2") quando ele tem um, porque o campo numérico dos dados pode estar
+ * errado; senão, do campo. null se o atributo não for um dos seis.
+ */
+export function powerScoreFor(score: PowerScoreSource, abilities: Record<string, number>): { value: number; label: string } | null {
+  const key = score.baseAbility.trim().toLowerCase()
+  const base = abilities[key]
+  if (typeof base !== 'number') return null
+  const fromText = /([+\-–−])\s*(\d+)/.exec(score.raw)
+  const modifier = fromText ? (fromText[1] === '+' ? 1 : -1) * Number(fromText[2]) : score.modifier
+  const short = score.baseAbility.slice(0, 3)
+  return { value: base + modifier, label: modifier === 0 ? short : `${short} ${modifier > 0 ? '+' : '−'}${Math.abs(modifier)}` }
+}
+
+/** Alcance curto para a lista ("special (50 yards - Revised)" → "special"); o completo fica no tooltip. */
+export const shortRange = (range: string) => range.replace(/\s*\(.*\)\s*$/, '').trim() || range
+
 /** XP sugerido dos usos de uma sessão: 10 XP por PSP (Tabela 3, "superar"). */
 export function psionicXP(uses: Pick<PsionicUse, 'psp'>[]): { psp: number; xp: number } {
   const psp = uses.reduce((sum, u) => sum + Math.max(0, u.psp), 0)
