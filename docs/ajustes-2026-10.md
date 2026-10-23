@@ -219,3 +219,10 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   ~620 mm; numa folha ficaria em ~44%): encolhe até 65% e segue na folha
   seguinte, sem cortar uma tabela. iPad: pendência registrada no `TODO.md`
   de lá (2026-10-23).
+- 2026-10-23, página 4 do Druid (web v0.102.1, pedido do usuário): era a
+  única classe sem página 4 (como no iPad). Agora tem a progressão de magias
+  de sacerdote (PHB Tabela 24, "Priest Spell Progression (Druid)"), a tabela
+  de Sabedoria e a seção da raça, sem Turn Undead (`ClericTables` recebe a
+  classe; Anchorite e Druid não expulsam). `hasReferencePage` diverge do iPad
+  de propósito: `tests/rules.test.ts` tem `webAhead` com o Druid. A nota dos
+  ajustes de atributo só aparece quando a raça tem ajuste.

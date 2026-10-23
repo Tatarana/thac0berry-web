@@ -137,8 +137,15 @@ export function hasThievingSkills(value: CharacterClass | string): boolean {
   return classGroup(value) === 'Rogue'
 }
 
+/** Web: Psionicist e Druid também têm página 4 (2026-10-23; o iPad ainda não, ver o TODO.md de lá). */
 export function hasReferencePage(value: CharacterClass | string): boolean {
-  return hasSpellSheet(value) || classGroup(value) === 'Warrior' || classGroup(value) === 'Rogue' || classGroup(value) === 'Psionicist'
+  return (
+    hasSpellSheet(value) ||
+    canonicalClass(value) === 'Druid' ||
+    classGroup(value) === 'Warrior' ||
+    classGroup(value) === 'Rogue' ||
+    classGroup(value) === 'Psionicist'
+  )
 }
 
 export type ReferenceKind = 'Wizard' | 'Warrior' | 'Rogue' | 'Cleric' | 'Psionicist'

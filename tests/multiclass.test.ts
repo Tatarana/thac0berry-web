@@ -156,6 +156,8 @@ test('página 4: classe única igual a antes; multiclasse com uma seção por cl
   const pt = { characterClass: 'Psionicist' as const, level: 3, multiClasses: [{ characterClass: 'Thief' as const, level: 4 }] }
   assert.equal(M.recordSheetPages(pt), 4)
   assert.deepEqual(M.referenceSections(pt).map((s) => [s.kind, s.level]), [['Psionicist', 3], ['Rogue', 4]])
+  // Druid (2026-10-23): as tabelas do sacerdote (sem Turn Undead, na página).
+  assert.deepEqual(M.referenceSections({ characterClass: 'Druid', level: 5 }), [{ kind: 'Cleric', characterClass: 'Druid', level: 5 }])
 })
 
 test('ladrão: a classe ladina e o nível dela, mesmo sem ser a principal', () => {
