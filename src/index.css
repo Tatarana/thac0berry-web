@@ -2322,7 +2322,8 @@ a.shield-combatant-row:hover {
 }
 
 /* Multiclasse: uma seção de tabelas por classe, separadas por um traço. */
-.ref-section + .ref-section {
+.ref-section + .ref-section,
+.ref-race {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1.3px solid var(--ink);
@@ -6065,10 +6066,11 @@ button.slot-dot:hover {
     break-after: auto;
   }
 
-  /* Magias, psiônicos e grimório podem seguir na folha seguinte: sem cortar
-     uma linha ao meio. */
+  /* Página 4, magias, psiônicos e grimório podem seguir na folha seguinte:
+     sem cortar uma linha ao meio, nem uma tabela de referência. */
   .print-flow tr,
-  .print-flow li {
+  .print-flow li,
+  .print-flow .ref-block {
     break-inside: avoid;
   }
 }

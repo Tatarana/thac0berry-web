@@ -138,15 +138,16 @@ export function hasThievingSkills(value: CharacterClass | string): boolean {
 }
 
 export function hasReferencePage(value: CharacterClass | string): boolean {
-  return hasSpellSheet(value) || classGroup(value) === 'Warrior' || classGroup(value) === 'Rogue'
+  return hasSpellSheet(value) || classGroup(value) === 'Warrior' || classGroup(value) === 'Rogue' || classGroup(value) === 'Psionicist'
 }
 
-export type ReferenceKind = 'Wizard' | 'Warrior' | 'Rogue' | 'Cleric'
+export type ReferenceKind = 'Wizard' | 'Warrior' | 'Rogue' | 'Cleric' | 'Psionicist'
 
 /** Qual página de referência a classe usa (como o iPad: Mago, Guerreiro, Ladino; Clérigo); null = sem página 4. */
 export function referenceKind(value: CharacterClass | string): ReferenceKind | null {
   if (!hasReferencePage(value)) return null
   const group = classGroup(value)
+  if (group === 'Psionicist') return 'Psionicist'
   return canonicalClass(value) === 'Mage' ? 'Wizard' : group === 'Warrior' ? 'Warrior' : group === 'Rogue' ? 'Rogue' : 'Cleric'
 }
 

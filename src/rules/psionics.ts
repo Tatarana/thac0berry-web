@@ -20,7 +20,7 @@ export const disciplines = ['Clairsentience', 'Psychokinesis', 'Psychometabolism
 export const defenseModes = ['Mind Blank', 'Thought Shield', 'Mental Barrier', 'Tower of Iron Will', 'Intellect Fortress'] as const
 
 /** Tabela 4, linhas 1 a 20: [disciplinas, ciências, devoções, modos de defesa]. */
-const progressionRows: [number, number, number, number][] = [
+export const progressionRows: [number, number, number, number][] = [
   [1, 1, 3, 1], [2, 1, 5, 1], [2, 2, 7, 2], [2, 2, 9, 2], [2, 3, 10, 3],
   [3, 3, 11, 3], [3, 4, 12, 4], [3, 4, 13, 4], [3, 5, 14, 5], [4, 5, 15, 5],
   [4, 6, 16, 5], [4, 6, 17, 5], [4, 7, 18, 5], [5, 7, 19, 5], [5, 8, 20, 5],
@@ -41,7 +41,7 @@ export function progression(level: number): Progression {
 }
 
 /** Tabela 5: base pela Sabedoria (15 a 18). */
-const baseByWisdom: Record<number, number> = { 15: 20, 16: 22, 17: 24, 18: 26 }
+export const baseByWisdom: Record<number, number> = { 15: 20, 16: 22, 17: 24, 18: 26 }
 
 /** Tabela 5: modificador (15 a 18); abaixo de 15 não há modificador. */
 function abilityModifier(score: number): number | null {
@@ -86,3 +86,43 @@ export function psionicXP(uses: Pick<PsionicUse, 'psp'>[]): { psp: number; xp: n
   const psp = uses.reduce((sum, u) => sum + Math.max(0, u.psp), 0)
   return { psp, xp: psp * 10 }
 }
+
+// --- Tabelas de referência (página 4 da ficha), conferidas com o CPsiH no rules.json ---
+
+/** Tabela 3: prêmios de XP individuais. */
+export const classAwardRows: [string, string][] = [
+  ['Psionic power used to overcome foe or problem', '10 XP/PSP'],
+  ['Psionic power used to avoid combat', '15 XP/PSP'],
+  ['Defeat psionic opponent', '100 XP/level or hit dice'],
+  ['Create psionic item', '500 XP x level'],
+]
+
+/** Tabela 6: PSPs recuperados por atividade física. */
+export const recoveryRows: [string, string][] = [
+  ['Hard exertion*', 'none'],
+  ['Walking, riding', '3/hour (1 every 2 turns)'],
+  ['Sitting, resting, reading', '6/hour (1/turn)'],
+  ['Rejuvenating**, sleeping', '12/hour (2/turn)'],
+]
+
+/** Tabela 9: redução do power score por armadura. */
+export const armorPenaltyRows: [string, number][] = [
+  ['Padded, leather, studded leather, hide', 0],
+  ['Brigandine, ring, scale, splint mail', -1],
+  ['Chain, banded mail', -2],
+  ['Plate mail', -3],
+  ['Field plate', -5],
+  ['Full plate', -7],
+]
+
+/** Tabela 14: colunas (modos de defesa, na ordem do livro). */
+export const defenseModeColumns = ['Mind Blank', 'Thought Shield', 'Mental Barrier', 'Intellect Fortress', 'Tower of Iron Will'] as const
+
+/** Tabela 14: modificador do power score do atacante, ataque × defesa. */
+export const attackVsDefenseRows: [string, number[]][] = [
+  ['Mind Thrust', [5, -2, -4, -4, -5]],
+  ['Ego Whip', [5, 0, -3, -4, -3]],
+  ['Id Insinuation', [-3, 2, 4, -1, -3]],
+  ['Psychic Crush', [1, -3, -1, -3, -4]],
+  ['Psionic Blast', [2, 3, 0, -1, -2]],
+]

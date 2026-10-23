@@ -151,41 +151,94 @@ export function abilityWarnings(race: RaceName, abilities: AbilityScores): strin
 
 type LevelLimit = 'unlimited' | 'forbidden' | number
 
-/** RaceOption.levelLimit: Tabela 7, nível máximo da raça em cada classe. */
+/** Nível máximo da raça em cada classe (DMG Tabela 7; ausente = a raça não pode). */
+const levelLimitTable: Record<RaceName, Partial<Record<string, LevelLimit>>> = {
+  Human: {},
+  // Psionicist: CPsiH Tabela 1 (Psionicist Racial Level Limits).
+  Dwarf: { Cleric: 10, Fighter: 15, Thief: 12, Ninja: 'unlimited', Psionicist: 8 },
+  Elf: { Cleric: 12, Fighter: 12, Mage: 15, Ranger: 15, Thief: 12, Psionicist: 7 },
+  Gnome: { Cleric: 9, Fighter: 11, Thief: 13, Psionicist: 9 },
+  // Gypsy (Domains of Dread): humano, meio-elfo e Half-Vistani (que tem a linha especial abaixo); o livro não dá limite de nível.
+  'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12, Psionicist: 7, Gypsy: 'unlimited' },
+  Halfling: { Cleric: 8, Fighter: 9, Thief: 15, Ninja: 'unlimited', Psionicist: 10 },
+  // Domains of Dread: "quase humano" (sem tabela de limite); vale a linha especial abaixo.
+  'Half-Vistani': {},
+  // PWH, "Planar Races: Level Limits" (Wizard = Mage); classe fora da tabela = N/A.
+  Aasimar: { Fighter: 14, Ranger: 14, Paladin: 14, Mage: 14, Cleric: 12, Druid: 15, Thief: 15, Bard: 9 },
+  // Só o macho pode ser ranger ou paladino; só a fêmea, mago (PWH, nota **).
+  'Bariaur (male)': { Fighter: 13, Ranger: 13, Paladin: 13, Cleric: 13, Druid: 13 },
+  'Bariaur (female)': { Fighter: 13, Mage: 13, Cleric: 13, Druid: 13 },
+  'Genasi (air)': { Fighter: 10, Mage: 15, Cleric: 15 },
+  // Paladino: só stone champions (PWH, nota ***).
+  'Genasi (earth)': { Fighter: 15, Paladin: 15, Mage: 15, Cleric: 13 },
+  'Genasi (fire)': { Fighter: 14, Mage: 16 },
+  'Genasi (water)': { Fighter: 12, Mage: 15, Cleric: 14, Thief: 15, Bard: 12 },
+  Githzerai: { Fighter: 9, Mage: 12, Thief: 15 },
+  Modron: { Fighter: 15, Mage: 12 },
+  Tiefling: { Fighter: 12, Mage: 14, Cleric: 10, Thief: 15 },
+}
+
+/** RaceOption.levelLimit: nível máximo da raça na classe. */
 export function levelLimit(race: RaceName, characterClass: CharacterClass | string): LevelLimit {
   const cls = canonicalClass(characterClass)
-  const table: Record<RaceName, Partial<Record<string, LevelLimit>>> = {
-    Human: {},
-    // Psionicist: CPsiH Tabela 1 (Psionicist Racial Level Limits).
-    Dwarf: { Cleric: 10, Fighter: 15, Thief: 12, Ninja: 'unlimited', Psionicist: 8 },
-    Elf: { Cleric: 12, Fighter: 12, Mage: 15, Ranger: 15, Thief: 12, Psionicist: 7 },
-    Gnome: { Cleric: 9, Fighter: 11, Thief: 13, Psionicist: 9 },
-    // Gypsy (Domains of Dread): humano, meio-elfo e Half-Vistani (que tem a linha especial abaixo); o livro não dá limite de nível.
-    'Half-Elf': { Bard: 'unlimited', Cleric: 14, Druid: 9, Fighter: 14, Mage: 12, Ranger: 16, Thief: 12, Psionicist: 7, Gypsy: 'unlimited' },
-    Halfling: { Cleric: 8, Fighter: 9, Thief: 15, Ninja: 'unlimited', Psionicist: 10 },
-    // Domains of Dread: "quase humano" (sem tabela de limite); vale a linha especial abaixo.
-    'Half-Vistani': {},
-    // PWH, "Planar Races: Level Limits" (Wizard = Mage); classe fora da tabela = N/A.
-    Aasimar: { Fighter: 14, Ranger: 14, Paladin: 14, Mage: 14, Cleric: 12, Druid: 15, Thief: 15, Bard: 9 },
-    // Só o macho pode ser ranger ou paladino; só a fêmea, mago (PWH, nota **).
-    'Bariaur (male)': { Fighter: 13, Ranger: 13, Paladin: 13, Cleric: 13, Druid: 13 },
-    'Bariaur (female)': { Fighter: 13, Mage: 13, Cleric: 13, Druid: 13 },
-    'Genasi (air)': { Fighter: 10, Mage: 15, Cleric: 15 },
-    // Paladino: só stone champions (PWH, nota ***).
-    'Genasi (earth)': { Fighter: 15, Paladin: 15, Mage: 15, Cleric: 13 },
-    'Genasi (fire)': { Fighter: 14, Mage: 16 },
-    'Genasi (water)': { Fighter: 12, Mage: 15, Cleric: 14, Thief: 15, Bard: 12 },
-    Githzerai: { Fighter: 9, Mage: 12, Thief: 15 },
-    Modron: { Fighter: 15, Mage: 12 },
-    Tiefling: { Fighter: 12, Mage: 14, Cleric: 10, Thief: 15 },
-  }
   // Half-Vistani: "Although human in body…" — sem tabela de limite, tratado como humano.
   if (race === 'Human' || race === 'Half-Vistani') return 'unlimited'
-  return table[race][cls] ?? 'forbidden'
+  return levelLimitTable[race][cls] ?? 'forbidden'
+}
+
+// --- Tabelas da raça (página 4 da ficha) ---------------------------------------------
+
+/** Regra do compêndio com as tabelas da raça (o "?" das tabelas). */
+export function raceRuleID(race: RaceName): string {
+  if (isPlanarRace(race)) return 'pwh_ch00_racial_tables'
+  if (isRavenloftRace(race)) return 'dod_ch00_half_vistani'
+  return 'phb_ch02_character_race_tables'
+}
+
+export interface RaceAbilityRow {
+  ability: AbilityName
+  /** "8–18"; null quando a raça não tem faixa (humano, Half-Vistani). */
+  range: string | null
+  /** Ajuste da raça (0 = nenhum). */
+  adjustment: number
+}
+
+/** Tabelas 7 e 8 do PHB (ou as da PWH/DoD), só a linha da raça: faixa e ajuste de cada atributo. */
+export function raceAbilityRows(race: RaceName): RaceAbilityRow[] {
+  const req = requirements[race]
+  return (Object.keys(abilityKey) as AbilityName[]).map((ability) => ({
+    ability,
+    range: req ? `${req[ability].min}–${req[ability].max}` : null,
+    adjustment: adjustments[race].find(([name]) => name === ability)?.[1] ?? 0,
+  }))
+}
+
+/** Limites de nível da raça, classe a classe (as que ela pode ter); vazio = sem limite (humano, Half-Vistani). */
+export function raceLevelLimits(race: RaceName): { characterClass: string; limit: number | 'unlimited' }[] {
+  if (race === 'Human' || race === 'Half-Vistani') return []
+  return Object.entries(levelLimitTable[race]).flatMap(([characterClass, limit]) =>
+    limit === undefined || limit === 'forbidden' ? [] : [{ characterClass, limit }],
+  )
+}
+
+/** PHB Tabela 9: bônus de resistência pela Constituição (anão, gnomo, halfling). */
+export const constitutionSaveBonusRows: { range: [number, number]; bonus: number }[] = [
+  { range: [4, 6], bonus: 1 },
+  { range: [7, 10], bonus: 2 },
+  { range: [11, 13], bonus: 3 },
+  { range: [14, 17], bonus: 4 },
+  { range: [18, 19], bonus: 5 },
+]
+
+/** Contra o que vale o bônus da Tabela 9 (anão e halfling também contra veneno); null = a raça não tem. */
+export function constitutionSaveBonusApplies(race: RaceName): string | null {
+  if (race === 'Dwarf' || race === 'Halfling') return 'Saving throws vs. rods, staves, wands and spells, and vs. poison.'
+  if (race === 'Gnome') return 'Saving throws vs. rods, staves, wands and spells.'
+  return null
 }
 
 /** PWH, nota * da tabela de limites: aasimar e tiefling de uma classe só sobem dois níveis além. */
-const singleClassBonus: Partial<Record<RaceName, number>> = { Aasimar: 2, Tiefling: 2 }
+export const singleClassBonus: Partial<Record<RaceName, number>> = { Aasimar: 2, Tiefling: 2 }
 
 /** RaceOption.levelLimitWarning. */
 export function levelLimitWarning(race: RaceName, characterClass: CharacterClass | string, level: number): string | null {

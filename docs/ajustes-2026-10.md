@@ -199,3 +199,23 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   Conferido no navegador e no celular. O ícone do botão do topo
   (`mode_icon_dm.png`, 128×128 com fundo transparente) passou a ser a
   cabeça do dragão recortada da mesma arte, em círculo.
+- 2026-10-23, página 4 do Psionicist e seção da raça (web v0.102.0, pedido
+  do usuário): o Psionicist passa a ter página 4 (`ReferenceKind`
+  'Psionicist'), com as CPsiH Tabelas 4 (progressão, linha do nível), 5
+  (potencial inerente, linha da Sabedoria), 6 (recuperação de PSPs), 14
+  (ataque × defesa, colunas dos modos de defesa que o personagem conhece), 9
+  (armadura) e 3 (prêmios de XP), nessa ordem, cada uma com o "?" da regra.
+  Toda ficha com página 4 ganhou a seção "Race — X" no fim: faixa e ajuste
+  de cada atributo (PHB 7 e 8, PWH, DoD), limites de nível da raça por
+  classe (DMG 7, PWH, CPsiH 1; as classes do personagem em destaque) e, para
+  anão, gnomo e halfling, a PHB Tabela 9 (bônus de resistência pela CON, a
+  linha da CON em destaque). Escolha do usuário: só essas três (sem altura,
+  peso e idade). Regras em `src/rules/raceKit.ts` (`raceAbilityRows`,
+  `raceLevelLimits`, `constitutionSaveBonusRows`; a tabela de limites saiu
+  de dentro de `levelLimit` para ser lida pelos dois) e
+  `src/rules/psionics.ts`. Raça em texto livre que não bate com a lista: sem
+  seção. O Druid continua sem página 4 (como no iPad), então sem a seção.
+  Impressão: a página 4 virou `.print-flow` (a do Psionicist com a raça tem
+  ~620 mm; numa folha ficaria em ~44%): encolhe até 65% e segue na folha
+  seguinte, sem cortar uma tabela. iPad: pendência registrada no `TODO.md`
+  de lá (2026-10-23).
