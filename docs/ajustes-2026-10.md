@@ -261,3 +261,9 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   embaixo; fechar (ou Esc) volta à mesma aba e busca. Na ficha, o nome de um
   poder da lista de Powers é link para a descrição (como a magia memorizada
   na Spell Sheet; poder digitado sem `powerID` fica só texto).
+- 2026-10-23, Powers em seções (web v0.103.4, pedido do usuário): na ficha,
+  "Sciences" e "Devotions" viraram seções separadas, cada uma com "N of M"
+  da Tabela 4 (vermelho se passou) e os poderes agrupados por disciplina. O
+  tipo deixou de aparecer em cada linha (a seção já diz); só um tipo que não
+  é ciência nem devoção (ex.: Psionic Enhancement, contado como devoção)
+  continua escrito.

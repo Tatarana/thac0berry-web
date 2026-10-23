@@ -457,42 +457,62 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         title="Powers"
         trailing={`sciences ${counts.sciences}/${limits.sciences} · devotions ${counts.devotions}/${limits.devotions}`}
       >
-        {known.length === 0 && <p className="rec-soft">{edit ? 'No powers yet.' : '—'}</p>}
-        {owned.map((d) => {
-          const list = known.filter((k) => k.discipline === d)
-          if (list.length === 0) return null
+        {/* Ciências e devoções em seções separadas (a Tabela 4 conta cada uma), cada uma por disciplina. */}
+        {(
+          [
+            { label: 'Sciences', isTier: (t: string | null | undefined) => t === 'Science', count: counts.sciences, limit: limits.sciences },
+            { label: 'Devotions', isTier: (t: string | null | undefined) => t !== 'Science', count: counts.devotions, limit: limits.devotions },
+          ] as const
+        ).map((section) => {
+          const inSection = known.filter((k) => section.isTier(k.tier))
           return (
-            <div key={d} className="psi-power-group">
-              <div className="rec-cell-label psi-group-label">
-                <DisciplineIcon discipline={d} size={18} />
-                {d}
-              </div>
-              <ul className="psi-powers">
-                {list.map((k) => {
-                  const data = powers?.find((x) => x.id === k.powerID)
-                  return (
-                    <li key={k.id}>
-                      <span className="rec-value psi-power-name">
-                        <DisciplineIcon discipline={d} size={14} />
-                        {data ? (
-                          <button className="memorized-link" title="Read the power description" onClick={() => setOpenPower(data)}>
-                            {k.name}
-                          </button>
-                        ) : (
-                          k.name
-                        )}
-                      </span>
-                      <span className="rec-soft">{k.tier}</span>
-                      {edit && (
-                        <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
-                          ✕
-                        </button>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
+            <section key={section.label} className="psi-tier-section">
+              <h4 className={section.count > section.limit ? 'psi-tier-title psi-over' : 'psi-tier-title'}>
+                {section.label}
+                <span className="psi-tier-count">
+                  {section.count} of {section.limit}
+                </span>
+              </h4>
+              {inSection.length === 0 && <p className="rec-soft">{edit ? `No ${section.label.toLowerCase()} yet.` : '—'}</p>}
+              {owned.map((d) => {
+                const list = inSection.filter((k) => k.discipline === d)
+                if (list.length === 0) return null
+                return (
+                  <div key={d} className="psi-power-group">
+                    <div className="rec-cell-label psi-group-label">
+                      <DisciplineIcon discipline={d} size={18} />
+                      {d}
+                    </div>
+                    <ul className="psi-powers">
+                      {list.map((k) => {
+                        const data = powers?.find((x) => x.id === k.powerID)
+                        return (
+                          <li key={k.id}>
+                            <span className="rec-value psi-power-name">
+                              <DisciplineIcon discipline={d} size={14} />
+                              {data ? (
+                                <button className="memorized-link" title="Read the power description" onClick={() => setOpenPower(data)}>
+                                  {k.name}
+                                </button>
+                              ) : (
+                                k.name
+                              )}
+                            </span>
+                            {/* A seção já diz o tipo; só o que não é ciência nem devoção (ex.: Psionic Enhancement) aparece. */}
+                            {k.tier && k.tier !== 'Science' && k.tier !== 'Devotion' && <span className="rec-soft">{k.tier}</span>}
+                            {edit && (
+                              <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
+                                ✕
+                              </button>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )
+              })}
+            </section>
           )
         })}
         <p className={`rec-soft${over(counts.sciences, limits.sciences)}${over(counts.devotions, limits.devotions)}`}>

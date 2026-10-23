@@ -3905,6 +3905,31 @@ button.slot-dot:hover {
   margin-bottom: 8px;
 }
 
+/* Powers: Sciences e Devotions em seções separadas. */
+.psi-tier-section + .psi-tier-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(47 39 28 / 0.35);
+}
+
+.psi-tier-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.psi-tier-count {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+
 /* Ícone da disciplina (DisciplineIcon): sempre ao lado do nome. */
 .discipline-icon {
   flex: none;
