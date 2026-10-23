@@ -1,4 +1,5 @@
 import { Field, PaperModal, TextBlock } from './DetailBits'
+import { ContentBlocks } from './RuleDetail'
 
 // Um poder psiônico (schemas/psionic-power.schema.json; data/psionic-powers.json)
 // e a ficha dele, usada no compêndio, no "Add a power" e na lista de poderes da ficha.
@@ -34,7 +35,13 @@ export function PowerDetail({ power, onClose }: { power: PsionicPower; onClose: 
         <Field label="Prerequisites" value={power.parameters.prerequisites.join(', ')} />
         <Field label="Source" value={power.sources.map((source) => source.book).join(', ')} />
       </div>
-      <TextBlock label="Effect" text={power.description.sections.effect} />
+      {/* O efeito traz títulos por livro e tabelas em markdown: mesmo leitor das regras. */}
+      {power.description.sections.effect && (
+        <div className="detail-field">
+          <span className="paper-label">Effect</span>
+          <ContentBlocks content={power.description.sections.effect} />
+        </div>
+      )}
       {rolls && (
         <>
           <TextBlock label="Power Score (exceptional success)" text={rolls.powerScoreSuccess} />
