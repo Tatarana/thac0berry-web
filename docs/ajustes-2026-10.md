@@ -271,3 +271,11 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   de Sciences e Devotions, a lista é uma só (na ordem das disciplinas do
   personagem); a disciplina fica só no ícone ao lado do poder (nome no
   tooltip e no `aria-label`).
+- 2026-10-23, tabelas na descrição dos poderes (web v0.103.6, achado no uso:
+  "Animate Object" com duas tabelas quebradas): os dados estão certos
+  (tabelas em markdown); a ficha do poder mostrava o efeito como texto puro.
+  O corpo das regras virou `ContentBlocks` (em `RuleDetail.tsx`) e o
+  `PowerDetail` usa ele no efeito: títulos por livro, listas, tabelas com e
+  sem cabeçalho. Nos 257 poderes: 52 tabelas desenhadas (37 poderes com
+  tabela em markdown e 4 sem a linha de cabeçalho), nenhum "|" sobrando no
+  texto. Vale no compêndio, no "Add a power" e na ficha.

@@ -38,7 +38,15 @@ export function RuleTableView({ table }: { table: RuleTable }) {
 }
 
 function RuleBody({ rule }: { rule: RuleEntry }) {
-  const blocks = parseRuleContent(rule.content, rule.tables)
+  return <ContentBlocks content={rule.content} tables={rule.tables} />
+}
+
+/**
+ * Texto em blocos (títulos "## ", listas, tabelas em markdown com ou sem
+ * cabeçalho, negrito/itálico): o corpo das regras e o efeito dos poderes.
+ */
+export function ContentBlocks({ content, tables = [] }: { content: string; tables?: RuleTable[] }) {
+  const blocks = parseRuleContent(content, tables)
   return (
     <div className="rule-body">
       {blocks.map((block, index) => {
