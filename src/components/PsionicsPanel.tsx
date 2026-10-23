@@ -34,52 +34,85 @@ const newID = () => crypto.randomUUID().toUpperCase()
 const emptyPsionics = (): Psionics => ({ pspMaxOverride: null, pspCurrent: null, primaryDiscipline: null, disciplines: [], powers: [], defenseModes: [], uses: [] })
 const abilityShort: Record<string, string> = { constitution: 'CON', wisdom: 'WIS' }
 
-/** Escolher poderes do compêndio, só das disciplinas que o personagem tem. */
+type Tier = 'Science' | 'Devotion'
+const tierLabels: Record<Tier, string> = { Science: 'Sciences', Devotion: 'Devotions' }
+
+/**
+ * Escolher poderes do compêndio, só das disciplinas que o personagem tem.
+ * Ciências e devoções em abas (a Tabela 4 conta as duas em separado), cada
+ * uma agrupada por disciplina.
+ */
 function PowerPicker({
   powers,
   owned,
   known,
+  left,
   onChoose,
   onClose,
 }: {
   powers: PowerData[]
   owned: string[]
   known: Set<string>
+  /** Vagas que faltam pela Tabela 4 (negativo = passou do limite). */
+  left: Record<Tier, { left: number; limit: number }>
   onChoose: (power: PowerData) => void
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
-  const list = useMemo(() => {
+  // Abre na aba que ainda tem vaga; com vaga nas duas (ou em nenhuma), nas devoções, que são a maioria.
+  const [tier, setTier] = useState<Tier>(left.Science.left > 0 && left.Devotion.left <= 0 ? 'Science' : 'Devotion')
+  const available = useMemo(() => {
     const target = normalize(query)
-    return powers
-      .filter((p) => owned.includes(p.discipline) && (p.powerTier === 'Science' || p.powerTier === 'Devotion') && !known.has(p.id))
-      .filter((p) => target === '' || normalize(p.title).includes(target))
-      .sort((a, b) => a.discipline.localeCompare(b.discipline) || b.powerTier.localeCompare(a.powerTier) || a.title.localeCompare(b.title))
+    return powers.filter((p) => owned.includes(p.discipline) && !known.has(p.id) && (target === '' || normalize(p.title).includes(target)))
   }, [powers, owned, known, query])
+  const count = (t: Tier) => available.filter((p) => p.powerTier === t).length
+  const groups = owned
+    .map((d) => ({
+      discipline: d,
+      list: available.filter((p) => p.discipline === d && p.powerTier === tier).sort((a, b) => a.title.localeCompare(b.title)),
+    }))
+    .filter((g) => g.list.length > 0)
+  const room = left[tier]
   return createPortal(
     <PaperModal title="Add a power" subtitle={`From your disciplines: ${owned.join(', ') || 'none yet'}`} onClose={onClose}>
+      <div className="chip-row psi-tier-tabs" role="tablist">
+        {(['Science', 'Devotion'] as const).map((t) => (
+          <button key={t} role="tab" aria-selected={tier === t} className={tier === t ? 'chip chip-on' : 'chip'} onClick={() => setTier(t)}>
+            {tierLabels[t]} ({count(t)})
+          </button>
+        ))}
+      </div>
+      <p className={room.left < 0 ? 'rec-soft psi-over' : 'rec-soft'}>
+        {tierLabels[tier]}: {Math.max(0, room.left)} of {room.limit} left at this level (Table 4)
+      </p>
       <label className="slot-write">
         <span className="rec-cell-label rec-left-label">Search</span>
         <input className="ink-input" value={query} placeholder="power name" autoFocus onChange={(e) => setQuery(e.target.value)} />
       </label>
-      <ul className="slot-choices">
-        {list.map((p) => (
-          <li key={p.id}>
-            <button className="slot-choice" onClick={() => onChoose(p)}>
-              <span className="slot-choice-fav" />
-              <span className="rec-value">{p.title}</span>
-              <span className="rec-soft psi-choice-meta">
-                {/* A disciplina pelo ícone (o nome no tooltip e para leitor de tela). */}
-                <span role="img" aria-label={p.discipline} title={p.discipline}>
-                  <DisciplineIcon discipline={p.discipline} size={15} />
-                </span>
-                {p.powerTier} · {p.pspCost.summary}
-              </span>
-            </button>
-          </li>
+      <div className="slot-choices">
+        {groups.map((g) => (
+          <section key={g.discipline} className="psi-choice-group">
+            <div className="rec-cell-label psi-group-label">
+              <DisciplineIcon discipline={g.discipline} size={18} />
+              {g.discipline}
+            </div>
+            <ul className="psi-choice-list">
+              {g.list.map((p) => (
+                <li key={p.id}>
+                  <button className="slot-choice" onClick={() => onChoose(p)}>
+                    <span className="slot-choice-fav" />
+                    <span className="rec-value">{p.title}</span>
+                    <span className="rec-soft">{p.pspCost.summary}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-        {list.length === 0 && <li className="paper-soft">{owned.length === 0 ? 'Choose a discipline first.' : 'No power matches.'}</li>}
-      </ul>
+        {groups.length === 0 && (
+          <p className="paper-soft">{owned.length === 0 ? 'Choose a discipline first.' : `No ${tierLabels[tier].toLowerCase()} match.`}</p>
+        )}
+      </div>
     </PaperModal>,
     document.body,
   )
@@ -461,7 +494,19 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
         {(p.defenseModes ?? []).length > limits.defenseModes && <p className="paper-soft psi-over">More defense modes than Table 4 allows at this level.</p>}
       </SheetBlock>
 
-      {picking && powers && <PowerPicker powers={powers} owned={owned} known={new Set(known.map((k) => k.powerID ?? ''))} onChoose={addPower} onClose={() => setPicking(false)} />}
+      {picking && powers && (
+        <PowerPicker
+          powers={powers}
+          owned={owned}
+          known={new Set(known.map((k) => k.powerID ?? ''))}
+          left={{
+            Science: { left: limits.sciences - counts.sciences, limit: limits.sciences },
+            Devotion: { left: limits.devotions - counts.devotions, limit: limits.devotions },
+          }}
+          onChoose={addPower}
+          onClose={() => setPicking(false)}
+        />
+      )}
       {reportSession !== undefined && <PsionicReport c={c} sessionID={reportSession} onClose={() => setReportSession(undefined)} />}
     </div>
   )

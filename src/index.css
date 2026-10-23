@@ -3923,6 +3923,28 @@ button.slot-dot:hover {
   opacity: 0.75;
 }
 
+/* Add a power: abas Sciences / Devotions e grupos por disciplina. */
+.psi-tier-tabs {
+  margin-bottom: 4px;
+}
+
+.psi-choice-group + .psi-choice-group {
+  margin-top: 10px;
+}
+
+.psi-choice-group .psi-group-label {
+  position: sticky;
+  top: 0;
+  padding: 4px 0;
+  background: var(--sheet);
+}
+
+.psi-choice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .psi-discipline {
   display: inline-flex;
   align-items: center;
