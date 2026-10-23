@@ -3926,6 +3926,77 @@ button.slot-dot:hover {
   color: var(--ink-soft);
 }
 
+/* Lista de poderes como a de magias memorizadas (.memorized): Score, PSP, Range. */
+.psi-power-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.psi-power-table th {
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.psi-power-table td {
+  padding: 3px 6px;
+  border-bottom: 1px dotted rgb(47 39 28 / 0.35);
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--pen-ink);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.psi-power-table .psi-col-name {
+  width: auto;
+  padding-left: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.psi-power-table td.psi-col-name {
+  font-size: 1.15rem;
+}
+
+.psi-power-table .psi-col-actions {
+  width: 52px;
+  padding-right: 0;
+  text-align: right;
+}
+
+/* Larguras fixas: as tabelas de Sciences e Devotions ficam alinhadas uma sob a outra. */
+.psi-power-table .psi-col-score {
+  width: 52px;
+}
+
+.psi-power-table .psi-col-psp {
+  width: 72px;
+}
+
+.psi-power-table .psi-col-range {
+  width: 96px;
+}
+
+.psi-power-table .psi-col-actions .paper-link + .paper-link {
+  margin-left: 8px;
+}
+
+@media (width < 560px) {
+  .psi-power-table .psi-col-range {
+    display: none;
+  }
+}
+
 /* Ícone da disciplina (DisciplineIcon): sempre ao lado do nome. */
 .discipline-icon {
   flex: none;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadData } from '../data/load'
 import { normalize } from '../lib/search'
@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
 import { classLevels, dualClassRestriction, isDualClass, isMultiClass, levelOf } from '../rules/multiclass'
 import { canonicalClass } from '../rules/rules'
-import { defenseModes, disciplines, initialCost, powerCounts, progression, psionicXP, pspMax, pspMaximum } from '../rules/psionics'
+import { defenseModes, disciplines, initialCost, powerCounts, powerScoreFor, progression, psionicXP, pspMax, pspMaximum, shortRange } from '../rules/psionics'
 import { primeRequisites } from '../rules/sessionReport'
 import { isoNow } from '../rules/spellSheets'
 import type { PlayerCharacter, Psionics, PsionicPowerEntry, PsionicUse } from '../types/library'
@@ -239,6 +239,8 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
   const [powers, setPowers] = useState<PowerData[] | null>(null)
   const [picking, setPicking] = useState(false)
   const [reportSession, setReportSession] = useState<string | null | undefined>(undefined)
+  // O ⚡ de um poder da lista preenche o "Use a Power" e rola até ele.
+  const useBlock = useRef<HTMLDivElement>(null)
   // Descrição de um poder da lista (o nome é link, como a magia memorizada na Spell Sheet).
   const [openPower, setOpenPower] = useState<PowerData | null>(null)
   const [usePower, setUsePower] = useState('')
@@ -383,7 +385,7 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
 
       {edit && (
         <SheetBlock title="Use a Power" trailing="records the PSPs spent">
-          <div className="psi-use">
+          <div className="psi-use" ref={useBlock}>
             <InkPicker
               value={usePower}
               label="Power used"
@@ -475,36 +477,72 @@ export function PsionicsPanel({ c, edit, campaignID }: { c: PlayerCharacter; edi
                 </span>
               </h4>
               {inSection.length === 0 && <p className="rec-soft">{edit ? `No ${section.label.toLowerCase()} yet.` : '—'}</p>}
+              {/* Como as magias memorizadas: o que se consulta na hora de usar (score já calculado, custo, alcance). */}
               {inSection.length > 0 && (
-                <ul className="psi-powers">
-                  {inSection.map((k) => {
-                    const data = powers?.find((x) => x.id === k.powerID)
-                    return (
-                      <li key={k.id}>
-                        <span className="rec-value psi-power-name">
-                          {/* A disciplina pelo ícone (o nome no tooltip e para leitor de tela). */}
-                          <span role="img" aria-label={k.discipline ?? ''} title={k.discipline ?? ''}>
-                            <DisciplineIcon discipline={k.discipline ?? ''} size={15} />
-                          </span>
-                          {data ? (
-                            <button className="memorized-link" title="Read the power description" onClick={() => setOpenPower(data)}>
-                              {k.name}
-                            </button>
-                          ) : (
-                            k.name
+                <table className="psi-power-table">
+                  <thead>
+                    <tr>
+                      <th className="psi-col-name">Power</th>
+                      <th className="psi-col-score" title="Power score: roll this or less on 1d20">Score</th>
+                      <th className="psi-col-psp" title="PSP cost: initial / maintenance">PSP</th>
+                      <th className="psi-col-range">Range</th>
+                      {edit && <th className="psi-col-actions" aria-label="Actions" />}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inSection.map((k) => {
+                      const data = powers?.find((x) => x.id === k.powerID)
+                      const score = data ? powerScoreFor(data.powerScore, c.abilities as unknown as Record<string, number>) : null
+                      return (
+                        <tr key={k.id}>
+                          <td className="psi-col-name">
+                            <span className="rec-value psi-power-name">
+                              {/* A disciplina pelo ícone (o nome no tooltip e para leitor de tela). */}
+                              <span role="img" aria-label={k.discipline ?? ''} title={k.discipline ?? ''}>
+                                <DisciplineIcon discipline={k.discipline ?? ''} size={15} />
+                              </span>
+                              {data ? (
+                                <button className="memorized-link" title="Read the power description" onClick={() => setOpenPower(data)}>
+                                  {k.name}
+                                </button>
+                              ) : (
+                                k.name
+                              )}
+                            </span>
+                            {/* A seção já diz o tipo; só o que não é ciência nem devoção (ex.: Psionic Enhancement) aparece. */}
+                            {k.tier && k.tier !== 'Science' && k.tier !== 'Devotion' && <span className="rec-soft"> {k.tier}</span>}
+                          </td>
+                          <td className="psi-col-score" title={score ? `${score.label} (${data?.powerScore.raw})` : undefined}>
+                            {score ? score.value : '—'}
+                          </td>
+                          <td className="psi-col-psp">{data?.pspCost.summary ?? '—'}</td>
+                          <td className="psi-col-range" title={data?.parameters.range}>
+                            {data ? shortRange(data.parameters.range) : '—'}
+                          </td>
+                          {edit && (
+                            <td className="psi-col-actions">
+                              <button
+                                className="paper-link"
+                                title="Use this power (fills in Use a Power)"
+                                aria-label={`Use ${k.name}`}
+                                onClick={() => {
+                                  setUsePower(k.name)
+                                  setUsePSP(costOf(k.name))
+                                  useBlock.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                }}
+                              >
+                                ⚡
+                              </button>
+                              <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
+                                ✕
+                              </button>
+                            </td>
                           )}
-                        </span>
-                        {/* A seção já diz o tipo; só o que não é ciência nem devoção (ex.: Psionic Enhancement) aparece. */}
-                        {k.tier && k.tier !== 'Science' && k.tier !== 'Devotion' && <span className="rec-soft">{k.tier}</span>}
-                        {edit && (
-                          <button className="paper-link" aria-label={`Remove ${k.name}`} onClick={() => change((x) => void (x.powers = (x.powers ?? []).filter((y) => y.id !== k.id)))}>
-                            ✕
-                          </button>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               )}
             </section>
           )

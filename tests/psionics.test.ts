@@ -24,6 +24,17 @@ test('Tabela 5 não cobre: fica para o jogador', () => {
   assert.equal(P.pspMax(null, 25), 25)
 })
 
+test('power score do personagem e alcance curto', () => {
+  const abilities = { strength: 10, dexterity: 14, constitution: 15, intelligence: 16, wisdom: 17, charisma: 12 }
+  assert.deepEqual(P.powerScoreFor({ raw: 'Int -3', baseAbility: 'Intelligence', modifier: -3 }, abilities), { value: 13, label: 'Int −3' })
+  assert.deepEqual(P.powerScoreFor({ raw: 'Wis', baseAbility: 'Wisdom', modifier: 0 }, abilities), { value: 17, label: 'Wis' })
+  // O texto vale quando o campo numérico dos dados está errado ("Cha –2" gravado com 0).
+  assert.deepEqual(P.powerScoreFor({ raw: 'Cha –2', baseAbility: 'Charisma', modifier: 0 }, abilities), { value: 10, label: 'Cha −2' })
+  assert.equal(P.powerScoreFor({ raw: '—', baseAbility: 'Special', modifier: 0 }, abilities), null)
+  assert.equal(P.shortRange('special (50 yards - Revised)'), 'special')
+  assert.equal(P.shortRange('50 yards'), '50 yards')
+})
+
 test('custos, contagem e XP', () => {
   assert.equal(P.initialCost('8+4/round'), 8)
   assert.equal(P.initialCost('contact'), null)

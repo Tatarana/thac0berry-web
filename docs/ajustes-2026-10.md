@@ -279,3 +279,13 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   sem cabeçalho. Nos 257 poderes: 52 tabelas desenhadas (37 poderes com
   tabela em markdown e 4 sem a linha de cabeçalho), nenhum "|" sobrando no
   texto. Vale no compêndio, no "Add a power" e na ficha.
+- 2026-10-23, Powers como tabela (web v0.104.0, pedido do usuário: a lista
+  só tinha o nome, como não é nas magias): Sciences e Devotions viraram
+  tabelas no estilo das magias memorizadas — Power (ícone + nome, que abre a
+  descrição), Score (o power score do personagem, `powerScoreFor` em
+  `src/rules/psionics.ts`: atributo + modificador; tooltip "Wis −3"), PSP
+  (inicial/manutenção) e Range (curto; o completo no tooltip; some abaixo de
+  560 px). Na edição, ⚡ preenche o "Use a Power" com o poder e o custo e
+  rola até ele, e ✕ remove. O modificador vem do texto do power score quando
+  ele tem um ("Cha –2" estava gravado como 0 nos dados). Colunas de largura
+  fixa, para as duas tabelas ficarem alinhadas. Poder digitado à mão: "—".
