@@ -9,6 +9,7 @@ import {
   type Caster,
   type SpellIndexEntry,
 } from '../data/spells'
+import { useFavoriteSpells } from '../lib/favoriteSpells'
 import { matchesName } from '../lib/search'
 import { useGroupToggle } from '../lib/useGroupToggle'
 
@@ -25,7 +26,8 @@ function toggle(set: Set<string>, value: string): Set<string> {
 }
 
 // Grimório no papel (SpellbookView do iPad): busca, filtro por esfera/escola,
-// filtro por cenário (as genéricas aparecem sempre), círculos recolhíveis.
+// filtro por cenário (as genéricas aparecem sempre), círculos recolhíveis e
+// estrela de favorita com o filtro "Favorites" (só com sessão).
 export function Grimoire({ caster }: { caster: Caster }) {
   const [all, setAll] = useState<SpellIndexEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +35,8 @@ export function Grimoire({ caster }: { caster: Caster }) {
   const [axisFilter, setAxisFilter] = useState<Set<string>>(new Set())
   const [settingFilter, setSettingFilter] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<SpellIndexEntry | null>(null)
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const favorites = useFavoriteSpells()
 
   useEffect(() => {
     loadSpellIndex()
@@ -55,11 +59,12 @@ export function Grimoire({ caster }: { caster: Caster }) {
 
   const filtered = useMemo(() => {
     return (all ?? []).filter((spell) => {
+      if (favoritesOnly && favorites.available && !favorites.has(spell.id)) return false
       if (axisFilter.size > 0 && !axisValues(caster, spell).some((value) => axisFilter.has(value))) return false
       if (settingFilter.size > 0 && !isGenericSetting(spell.setting) && !settingFilter.has(spell.setting ?? '')) return false
       return matchesName(spell.name, query)
     })
-  }, [all, caster, axisFilter, settingFilter, query])
+  }, [all, caster, axisFilter, settingFilter, query, favoritesOnly, favorites])
 
   const groups: LevelGroup[] = useMemo(() => {
     const byLevel = new Map<number, SpellIndexEntry[]>()
@@ -73,7 +78,7 @@ export function Grimoire({ caster }: { caster: Caster }) {
       .map((level) => ({ level, spells: (byLevel.get(level) ?? []).sort((a, b) => a.name.localeCompare(b.name)) }))
   }, [filtered])
 
-  const hasActiveFilter = query.trim() !== '' || axisFilter.size > 0 || settingFilter.size > 0
+  const hasActiveFilter = favoritesOnly || query.trim() !== '' || axisFilter.size > 0 || settingFilter.size > 0
   const groupToggle = useGroupToggle(hasActiveFilter)
   const isExpanded = (level: number) => groupToggle.isExpanded(String(level))
   const toggleLevel = (level: number) => groupToggle.toggle(String(level))
@@ -97,6 +102,18 @@ export function Grimoire({ caster }: { caster: Caster }) {
           onChange={(event) => setQuery(event.target.value)}
           aria-label="Search spells by name"
         />
+
+        {favorites.available && (
+          <div className="paper-filter">
+            <span className="paper-label">Favorites</span>
+            <div className="chip-row">
+              <button className={favoritesOnly ? 'chip chip-on' : 'chip'} onClick={() => setFavoritesOnly((on) => !on)} aria-pressed={favoritesOnly}>
+                ★ Favorites only
+              </button>
+            </div>
+            {favorites.error && <p className="paper-soft rec-red">Could not save favorites: {favorites.error}</p>}
+          </div>
+        )}
 
         <div className="paper-filter">
           <span className="paper-label">{axisTitle}</span>
@@ -155,7 +172,18 @@ export function Grimoire({ caster }: { caster: Caster }) {
             {isExpanded(group.level) && (
               <ul className="spell-list">
                 {group.spells.map((spell) => (
-                  <li key={spell.id}>
+                  <li key={spell.id} className={favorites.available ? 'spell-item' : undefined}>
+                    {favorites.available && (
+                      <button
+                        className={favorites.has(spell.id) ? 'fav-star fav-on' : 'fav-star'}
+                        onClick={() => favorites.toggle(spell.id)}
+                        aria-pressed={favorites.has(spell.id)}
+                        aria-label={`Favorite ${spell.name}`}
+                        title={favorites.has(spell.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        {favorites.has(spell.id) ? '★' : '☆'}
+                      </button>
+                    )}
                     <button className="spell-row" onClick={() => setSelected(spell)}>
                       <span className="spell-name">{spell.name}</span>
                       <span className="spell-meta">
@@ -171,7 +199,13 @@ export function Grimoire({ caster }: { caster: Caster }) {
         ))}
       </div>
 
-      {selected && <SpellDetail entry={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <SpellDetail
+          entry={selected}
+          onClose={() => setSelected(null)}
+          favorite={favorites.available ? { on: favorites.has(selected.id), toggle: () => favorites.toggle(selected.id) } : undefined}
+        />
+      )}
     </div>
   )
 }

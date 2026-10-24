@@ -965,6 +965,38 @@ a.shield-combatant-row:hover {
   text-align: right;
 }
 
+/* Estrela de favorita do grimório (lista e ficha da magia). */
+.spell-item {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.spell-item .spell-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.fav-star {
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+
+.fav-star.fav-on {
+  color: #b8860b;
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* ---- Ficha de detalhe (modal) ---- */
 
 .modal-backdrop {

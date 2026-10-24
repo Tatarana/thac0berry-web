@@ -14,7 +14,16 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 // Ficha da magia (SpellDetailSheet do iPad): campos do cabeçalho do livro,
 // esferas/escolas e a descrição completa. Carrega o arquivo do círculo só
 // quando a ficha abre.
-export function SpellDetail({ entry, onClose }: { entry: SpellIndexEntry; onClose: () => void }) {
+export function SpellDetail({
+  entry,
+  onClose,
+  favorite,
+}: {
+  entry: SpellIndexEntry
+  onClose: () => void
+  /** Estrela de favorita (grimório com sessão). */
+  favorite?: { on: boolean; toggle: () => void }
+}) {
   const [spell, setSpell] = useState<Spell | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,7 +55,19 @@ export function SpellDetail({ entry, onClose }: { entry: SpellIndexEntry; onClos
               Level {entry.level} {kind} spell · {entry.school}
             </p>
           </div>
-          <button className="paper-link" onClick={onClose}>close</button>
+          <div className="detail-actions">
+            {favorite && (
+              <button
+                className={favorite.on ? 'fav-star fav-on' : 'fav-star'}
+                onClick={favorite.toggle}
+                aria-pressed={favorite.on}
+                title={favorite.on ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                {favorite.on ? '★' : '☆'}
+              </button>
+            )}
+            <button className="paper-link" onClick={onClose}>close</button>
+          </div>
         </div>
         <hr className="paper-rule" />
 
