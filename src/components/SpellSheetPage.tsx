@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
+import type { FavoriteSpells } from '../lib/favoriteSpells'
 import type { ServerSheet } from '../lib/useSpellSheets'
 import { casterLevel, classLabel, formerLabel, levelLabel } from '../rules/multiclass'
 import { bonusSpellTotals, canonicalClass, hasSpellSheet, isArcaneCaster } from '../rules/rules'
@@ -283,7 +284,8 @@ export function SpellSheetPage({
   edit?: SheetEdit
   /** Esferas e grimório (para o seletor de magia). */
   character?: Pick<PlayerCharacter, 'sphereAccess' | 'wizardSpellbook' | 'formerClasses'>
-  favorites?: Set<string>
+  /** Favoritas da conta: estrela no seletor e na ficha da magia. */
+  favorites?: FavoriteSpells
   /** Quantas vezes cada magia foi memorizada, em todas as folhas. */
   usage?: Map<string, number>
 }) {
@@ -558,12 +560,18 @@ export function SpellSheetPage({
         {edit && <CastLogger casters={sheetCasters} onLog={(name, spell, rawText) => edit((s) => logCast(s, name, spell, rawText))} />}
       </SheetBlock>
 
-      {open && <SpellDetail entry={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <SpellDetail
+          entry={open}
+          onClose={() => setOpen(null)}
+          favorite={favorites?.available ? { on: favorites.has(open.id), toggle: () => favorites.toggle(open.id) } : undefined}
+        />
+      )}
       {edit && pickedSlot && character && (
         <SlotEditor
           slot={pickedSlot}
           character={character}
-          favorites={favorites ?? new Set()}
+          favorites={favorites}
           usage={usage ?? new Map()}
           onAssign={(choice) => {
             edit((s) => assignSlot(s, pickedSlot.id, choice))

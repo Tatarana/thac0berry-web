@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 export interface FavoriteSpells {
   /** false sem sessão: a estrela some. */
   available: boolean
+  ids: Set<string>
   has: (spellID: string) => boolean
   toggle: (spellID: string) => void
   /** Última falha ao gravar (a marcação volta ao que estava). */
@@ -64,5 +65,5 @@ export function useFavoriteSpells(): FavoriteSpells {
     [userID],
   )
 
-  return { available: userID !== null, has: (spellID) => ids.has(spellID), toggle, error }
+  return { available: userID !== null, ids, has: (spellID) => ids.has(spellID), toggle, error }
 }

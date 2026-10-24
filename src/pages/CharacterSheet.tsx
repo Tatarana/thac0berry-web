@@ -10,6 +10,7 @@ import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
 import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEffects'
+import { useFavoriteSpells } from '../lib/favoriteSpells'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
@@ -171,23 +172,9 @@ export function CharacterSheet() {
   const sheets = spellSheets.sheets
   const usage = useMemo(() => spellUsageCounts(sheets ?? []), [sheets])
 
-  // Favoritas da conta (user_preferences): sobem para o topo da lista do seletor de magia.
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
-  useEffect(() => {
-    if (!userID) return
-    let cancelled = false
-    void supabase
-      .from('user_preferences')
-      .select('favorite_spell_ids')
-      .eq('user_id', userID)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setFavorites(new Set((data as { favorite_spell_ids: string[] } | null)?.favorite_spell_ids ?? []))
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [userID])
+  // Favoritas da conta (user_preferences): sobem para o topo da lista do seletor
+  // de magia; a estrela do seletor e da ficha da magia marca e desmarca.
+  const favorites = useFavoriteSpells()
 
   useEffect(() => {
     if (!campaignID) return
