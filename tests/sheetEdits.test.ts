@@ -35,6 +35,16 @@ test('ferimento negativo cura; zero não conta', () => {
   assert.equal(c.combat!.wounds, '')
 })
 
+test('reset de PV: volta ao máximo, mais os PV temporários dos efeitos em curso; ferimentos ficam', () => {
+  const c = { hitPointsCurrent: 4, hitPointsMax: 22, combat: { wounds: '9\n9' }, activeEffects: [effect([{ kind: 'tempHP', tempHPRemaining: 3 }])] } as unknown as PlayerCharacter
+  E.resetHitPoints(c)
+  assert.equal(c.hitPointsCurrent, 25)
+  assert.equal(c.combat!.wounds, '9\n9')
+  const plain = { hitPointsCurrent: -2, hitPointsMax: 10, activeEffects: null } as unknown as PlayerCharacter
+  E.resetHitPoints(plain)
+  assert.equal(plain.hitPointsCurrent, 10)
+})
+
 test('especialização: corpo a corpo +1/+2, arco +2* só no acerto, sem sobrescrever o que já tem', () => {
   const sword = E.emptyWeapon('Long sword')
   E.toggleSpecialization(sword)

@@ -4,6 +4,7 @@
 // iPad: A7 ferimentos, especialização, colunas do equipamento, seletores).
 
 import type { AbilityScores, Page2EquipmentEntry, PlayerCharacter, ProficiencyEntry, WeaponEntry } from '../types/library.ts'
+import { temporaryHitPoints } from './effects.ts'
 
 const newID = () => crypto.randomUUID().toUpperCase()
 
@@ -45,6 +46,15 @@ export function recordWound(c: Pick<PlayerCharacter, 'hitPointsCurrent' | 'activ
   applyDamage(c, amount)
   const existing = c.combat?.wounds ?? ''
   c.combat = { ...(c.combat ?? {}), wounds: existing === '' ? `${amount}` : `${existing}\n${amount}` }
+}
+
+/**
+ * PV de volta ao máximo (botão da ficha, feito primeiro na web): o máximo mais
+ * os PV temporários que os efeitos em curso ainda têm (eles já contam nos PV
+ * atuais). A lista de ferimentos fica como está (tem a lixeira própria).
+ */
+export function resetHitPoints(c: Pick<PlayerCharacter, 'hitPointsCurrent' | 'hitPointsMax' | 'activeEffects'>) {
+  c.hitPointsCurrent = c.hitPointsMax + temporaryHitPoints(c)
 }
 
 /** WoundsBlock.clearAll: apaga a lista (os PV ficam como estão). */

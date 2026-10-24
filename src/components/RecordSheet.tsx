@@ -30,7 +30,7 @@ import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
 import { abilityEffect, temporaryHitPoints } from '../rules/effects'
-import { clearWounds, proficiencyFromCompendium, recordWound, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
+import { clearWounds, proficiencyFromCompendium, recordWound, resetHitPoints, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
 import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
 import { matchVistaniTribe } from '../rules/vistani'
 import { CompendiumPicker } from './CompendiumPicker'
@@ -820,6 +820,12 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                 />
                 <span className="rec-soft">/</span>
                 <InkNumber value={c.hitPointsMax} min={1} max={999} label="Maximum hit points" onChange={(v) => edit((x) => void (x.hitPointsMax = v))} />
+                {/* Discreto: só aparece com PV abaixo do máximo; sem confirmação (dá para desfazer digitando). */}
+                {c.hitPointsCurrent < c.hitPointsMax + temporaryHitPoints(c) && (
+                  <button className="hp-reset" title="Reset hit points to the maximum" aria-label="Reset hit points to the maximum" onClick={() => edit((x) => resetHitPoints(x))}>
+                    ↺
+                  </button>
+                )}
               </>
             ) : (
               <>
