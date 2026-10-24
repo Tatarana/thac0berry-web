@@ -114,6 +114,31 @@ export interface CombatDetails {
   wounds?: string | null
 }
 
+export interface CustomItemSnapshot {
+  /** Id em custom_magic_item. */
+  id: string
+  /** Versão do item quando a cópia foi feita. */
+  version: number
+  data: CustomMagicItemData
+}
+
+export interface CustomMagicItemData {
+  name: string
+  /** Categoria do compêndio (Weapon, Armor/Shield, Ring, Potion/Oil, Scroll/Book, Rod/Staff/Wand, Miscellaneous). */
+  category?: string
+  summary?: string
+  description?: string
+  xpValue?: number | null
+  goldValue?: number | null
+  charges?: number | null
+  attackBonus?: number | null
+  damageBonus?: number | null
+  acBonus?: number | null
+  saveBonus?: number | null
+  /** Id do item do livro de que foi copiado, se houver. */
+  basedOn?: string | null
+}
+
 export interface EffectComponent {
   id: string
   kind: EffectComponentKind
@@ -427,6 +452,8 @@ export interface QuantifiedItem {
   usedCount?: number | null
   /** Liga esta linha a um item de `MagicItemDatabase` (mesmo padrão de `Page2EquipmentEntry.matchedItemID`/`MundaneItemDatabase`) — só usado pela lista "Magic Items" (não por "Treasure / Other Possessions", que continua puramente texto livre). `nil` = linha digitada à mão pelo jogador (item caseiro/criado por ele) ou ficha salva antes desta versão existir; nesse caso cai pro fallback de nome exato, igual ao equipamento mundano. */
   matchedItemID?: string | null
+  /** Item mágico criado (mestre ou jogador): id e versão em custom_magic_item e a cópia dos dados; ausente/null = item do livro ou digitado. */
+  customItem?: CustomItemSnapshot | null
 }
 
 export interface SavingThrows {

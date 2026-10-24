@@ -2835,6 +2835,19 @@ button.slot-dot:hover {
   font-size: 0.8rem;
 }
 
+/* "+ add" e "+ new item" lado a lado (Magic Items). */
+.add-line-row {
+  display: flex;
+  gap: 14px;
+}
+
+/* Editor do item criado: os números em grade. */
+.custom-item-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
 .cast-logger {
   margin-top: 6px;
   border-bottom: 1px solid rgb(47 39 28 / 0.42);
