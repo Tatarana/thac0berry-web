@@ -335,3 +335,10 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   as classes); gasto = soma dos slots das linhas (`nonweaponSlotsUsed`; as
   bônus de kit/raça têm 0). O bônus de Inteligência continua só nos slots de
   arma, como já era (o PHB o põe em nonweapon; a decidir com o usuário).
+- 2026-10-24, descrição dos itens mágicos da ficha (web v0.106.2, pedido do
+  usuário): na página 2, em Magic Items, o item que existe no compêndio abre
+  a descrição (`MagicItemDetail`): ⓘ ao lado do campo na edição; o nome vira
+  link na leitura e na impressão. Casa pelo id gravado pelo seletor
+  (`matchedItemID`) ou, se foi digitado, pelo nome exato (sem diferença de
+  maiúsculas); item inventado fica só texto. O índice de itens só carrega
+  quando a lista tem itens.
