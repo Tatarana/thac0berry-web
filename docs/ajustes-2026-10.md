@@ -379,3 +379,9 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   em `src/lib/favoriteSpells.ts`, gravações em fila com a lista inteira; se
   falhar, volta e avisa). Sem sessão, a estrela não aparece. Sem migração (a
   coluna e a permissão do dono já existiam).
+- 2026-10-24, favoritar magias na folha de magia (web v0.110.0, pedido do
+  usuário: "o mais útil é na spell sheet"). Estrela ☆/★ em cada magia do
+  seletor do slot (`SlotEditor`) e na ficha da magia aberta pela folha. A
+  ordem da lista fica a de quando a janela abriu (a linha não pula ao marcar);
+  na próxima abertura, as favoritas sobem. A ficha usa o mesmo
+  `useFavoriteSpells` do grimório (antes só lia a lista).

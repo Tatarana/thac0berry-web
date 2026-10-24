@@ -2803,6 +2803,17 @@ button.slot-dot:hover {
   background: rgb(255 255 255 / 0.35);
 }
 
+.slot-choice-item {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.slot-choice-item .slot-choice {
+  flex: 1;
+  min-width: 0;
+}
+
 .slot-choice-fav {
   color: var(--brass-dim);
 }

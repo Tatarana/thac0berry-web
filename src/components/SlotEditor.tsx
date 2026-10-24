@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadSpellIndex, type SpellIndexEntry } from '../data/spells'
+import type { FavoriteSpells } from '../lib/favoriteSpells'
 import { normalize } from '../lib/search'
 import {
   sortSlotChoices,
@@ -16,7 +17,8 @@ import { PaperModal } from './DetailBits'
 
 // Trocar a magia memorizada num slot (SlotEditorSheet do iPad): escrever o
 // nome (com sugestões parecidas) ou escolher na lista do círculo, que vem
-// ordenada por favoritas, esferas e mais usadas. O mago só vê o próprio
+// ordenada por favoritas, esferas e mais usadas; a estrela marca e desmarca a
+// favorita (a ordem fica a de quando a janela abriu, para a linha não pular). O mago só vê o próprio
 // grimório; o sacerdote pode usar um nome livre ("use as-is").
 // Embaixo: limpar o slot e marcar/desmarcar como gasto.
 
@@ -35,7 +37,7 @@ export function SlotEditor({
 }: {
   slot: SpellSlot
   character: Pick<PlayerCharacter, 'sphereAccess' | 'wizardSpellbook'>
-  favorites: Set<string>
+  favorites?: FavoriteSpells
   usage: Map<string, number>
   onAssign: (choice: { id: string | null; name: string }) => void
   onClear: () => void
@@ -43,6 +45,7 @@ export function SlotEditor({
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
+  const [sortFavorites] = useState(() => new Set(favorites?.ids ?? []))
   const [entries, setEntries] = useState<SpellIndexEntry[] | null>(null)
   const arcane = slot.caster === 'arcane'
 
@@ -66,17 +69,27 @@ export function SlotEditor({
   )
   const freeNames = arcane ? wizardSpellbookFreeNames(character, slot.level) : []
   const candidates = spellMatches(query, choices)
-  const listed = sortSlotChoices(choices, character, favorites, usage)
+  const listed = sortSlotChoices(choices, character, sortFavorites, usage)
   const typed = query.trim()
   const freeMatch = arcane ? freeNames.find((e) => normalize(e.name) === normalize(typed)) : undefined
 
   const row = (choice: SpellChoice, hint?: string) => {
     const signal = sphereSignal(character, choice)
     return (
-      <li key={choice.id}>
+      <li key={choice.id} className={favorites?.available ? 'slot-choice-item' : undefined}>
+        {favorites?.available && (
+          <button
+            className={favorites.has(choice.id) ? 'fav-star fav-on' : 'fav-star'}
+            onClick={() => favorites.toggle(choice.id)}
+            aria-pressed={favorites.has(choice.id)}
+            aria-label={`Favorite ${choice.name}`}
+            title={favorites.has(choice.id) ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {favorites.has(choice.id) ? '★' : '☆'}
+          </button>
+        )}
         <button className="slot-choice" onClick={() => onAssign({ id: choice.id, name: choice.name })}>
           <span className="rec-value">{choice.name}</span>
-          {favorites.has(choice.id) && <span className="slot-choice-fav" aria-label="favorite">★</span>}
           {signal && <span className="slot-choice-signal">{sphereSignalLabel[signal]}</span>}
           {hint && <span className="rec-soft">{hint}</span>}
         </button>
