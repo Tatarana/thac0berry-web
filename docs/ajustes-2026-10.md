@@ -342,3 +342,21 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (`matchedItemID`) ou, se foi digitado, pelo nome exato (sem diferença de
   maiúsculas); item inventado fica só texto. O índice de itens só carrega
   quando a lista tem itens.
+- 2026-10-24, itens mágicos criados pelo mestre ou pelo jogador (web v0.107.0,
+  proposta aprovada: a) o mestre vê os privados dos jogadores da campanha;
+  b) o jogador pode compartilhar com a campanha; c) a edição atualiza as
+  fichas sozinha; d) entregas 1 e 2 juntas). Backend `custom_magic_item`
+  (`20261024120000_itens_magicos_customizados.sql`; **precisa do `npx supabase
+  db push`** no `thac0berry-backend`). Ficha: `QuantifiedItem.customItem`
+  (id, versão e cópia dos dados; schema no `thac0berry-data`). Web:
+  `src/lib/customItems.ts` (banco), `src/rules/customItems.ts` (item vazio,
+  cópia de um item do livro, cópia da linha, atualização das cópias),
+  `CustomItemEditor` e `CustomItemDetail`. Em Magic Items: o seletor mostra
+  primeiro os itens criados (da campanha da ficha que a pessoa vê, e os
+  pessoais), com a categoria "Homebrew · …"; "+ new item" abre o editor (pode
+  começar de um item do livro; "Share with the campaign" quando a ficha está
+  numa campanha; apagar mantém a cópia nas fichas); ⓘ/nome abre a descrição
+  com "Edit" para o dono; a linha tem a etiqueta "homebrew". Ao abrir a ficha
+  com permissão de editar, as cópias de versão mais velha se atualizam. "Dar
+  ao personagem": o mestre abre a ficha do jogador e adiciona pelo seletor.
+  iPad: pendência no `TODO.md` de lá (perde o campo ao salvar).
