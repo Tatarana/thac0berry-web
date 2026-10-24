@@ -276,8 +276,6 @@ export interface PlayerCharacter {
   birthRank?: string | null
   nationality?: string | null
   racialAbilities?: string | null
-  /** Tribo de Vistani (Domains of Dread, Table 68; só faz sentido com a raça "Half-Vistani") — feito primeiro na web. */
-  vistaniTribe?: string | null
   skin?: string | null
   vision?: string | null
   handedness?: string | null
@@ -367,6 +365,8 @@ export interface PlayerCharacter {
   kitSpellcasting?: KitSpellcasting | null
   /** Bloco psiônico do Psionicist (feito primeiro na web, 2026-10-06; o iPad ainda não tem). */
   psionics?: Psionics | null
+  /** Tribo de Vistani (Domains of Dread, Table 68; só faz sentido com a raça "Half-Vistani") — feito primeiro na web. */
+  vistaniTribe?: string | null
 }
 
 export interface ProficiencyEntry {
@@ -376,12 +376,13 @@ export interface ProficiencyEntry {
   checked?: boolean
   target?: string | null
   matchedProficiencyID?: string | null
-  /** Proficiência bônus: de onde veio (sai junto com o kit/raça/tribo; 0 slots). Ausente = comprada. Web primeiro (2026-10-24). */
+  /** Origem de uma proficiência bônus (kit, raça ou tribo); ausente/null = comprada pelo jogador. */
   grantedBy?: ProficiencyGrant | null
 }
 
 export interface ProficiencyGrant {
-  kind: 'kit' | 'race' | 'tribe'
+  kind: "kit" | "race" | "tribe"
+  /** Nome do kit, da raça ou da tribo que deu a proficiência. */
   name: string
 }
 
