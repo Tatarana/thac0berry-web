@@ -295,3 +295,14 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (`src/rules/sheetEdits.ts`) põe os PV atuais no máximo mais os PV
   temporários dos efeitos em curso (que já contam nos atuais); a lista de
   Wounds fica (tem a lixeira própria). iPad: não tem; feito primeiro na web.
+- 2026-10-24, modificadores da raça na ficha (web v0.105.0, pedido do
+  usuário): "To Hit Modifiers" e "AC Modifiers" ganham, no topo, linhas
+  automáticas da raça (PHB cap. 2, conferido no rules.json): anão +1 corpo a
+  corpo contra orcs, half-orcs, goblins e hobgoblins; gnomo +1 corpo a corpo
+  contra kobolds e goblins; elfo +1 com arcos (não bestas) e espadas curta e
+  longa; halfling +1 com armas de arremesso e funda. Em AC, a penalidade de
+  −4 de quem ataca anão (ogres, trolls, ogre magi, giants, titans) e gnomo
+  (os mesmos, mais gnolls e bugbears). `racialCombatModifiers`
+  (`src/rules/raceKit.ts`); não são gravadas (saem da raça e mudam com ela),
+  ficam em texto impresso mais claro com a marca "race", sem editar nem
+  remover. Raças planares e Half-Vistani: a conferir depois. iPad: não tem.

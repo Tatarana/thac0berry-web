@@ -1712,6 +1712,24 @@ a.shield-combatant-row:hover {
 }
 
 /* Modificadores */
+/* Linhas automáticas da raça nos modificadores: texto impresso (não à mão), mais claro, com a marca "race". */
+.rec-auto-mod td {
+  font-family: var(--font-printed);
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+
+.rec-auto-tag {
+  margin-left: 4px;
+  padding: 0 4px;
+  border: 1px solid rgb(107 92 70 / 0.45);
+  border-radius: 3px;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .rec-modifier-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

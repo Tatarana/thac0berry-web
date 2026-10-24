@@ -31,7 +31,7 @@ import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
 import { abilityEffect, temporaryHitPoints } from '../rules/effects'
 import { clearWounds, proficiencyFromCompendium, recordWound, resetHitPoints, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
-import { addKitBonusProficiencies, applyRace } from '../rules/raceKit'
+import { addKitBonusProficiencies, applyRace, matchRace, racialCombatModifiers, type RaceCombatModifier } from '../rules/raceKit'
 import { matchVistaniTribe } from '../rules/vistani'
 import { CompendiumPicker } from './CompendiumPicker'
 import { KitPicker, RacePicker, VistaniTribePicker } from './RaceKitPickers'
@@ -989,11 +989,14 @@ function ModifierList({
   items,
   field,
   edit,
+  auto = [],
 }: {
   title: string
   items: EquipmentItem[] | null | undefined
   field: ModifierKey
   edit?: Edit
+  /** Linhas automáticas (da raça): no topo, só leitura, não gravadas. */
+  auto?: RaceCombatModifier[]
 }) {
   // Editando, mostra todas as linhas (o iPad grava 3 vazias); só leitura, só as preenchidas.
   const filled = (items ?? []).filter((item) => edit || item.name.trim() !== '' || item.note.trim() !== '')
@@ -1009,7 +1012,16 @@ function ModifierList({
           </tr>
         </thead>
         <tbody>
-          {filled.length === 0 && (
+          {auto.map((m) => (
+            <tr key={m.label} className="rec-auto-mod" title="From the character's race (PHB, Chapter 2); updates when the race changes">
+              <td className="rec-left">
+                {m.label} <span className="rec-auto-tag">race</span>
+              </td>
+              <td>{m.value}</td>
+              {edit && <td />}
+            </tr>
+          ))}
+          {filled.length === 0 && auto.length === 0 && (
             <tr>
               <td className="rec-soft">—</td>
               <td />
@@ -1045,12 +1057,13 @@ function ModifierList({
 }
 
 function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const racial = racialCombatModifiers(matchRace(c.race))
   return (
     <section className="rec-section">
       <div className="rec-modifier-grid">
-        <ModifierList title="To Hit Modifiers" items={c.toHitModifiers} field="toHitModifiers" edit={edit} />
+        <ModifierList title="To Hit Modifiers" items={c.toHitModifiers} field="toHitModifiers" edit={edit} auto={racial.toHit} />
         <ModifierList title="Damage Modifiers" items={c.damageModifiers} field="damageModifiers" edit={edit} />
-        <ModifierList title="AC Modifiers" items={c.acModifiers} field="acModifiers" edit={edit} />
+        <ModifierList title="AC Modifiers" items={c.acModifiers} field="acModifiers" edit={edit} auto={racial.ac} />
       </div>
     </section>
   )
