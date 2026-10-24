@@ -5789,8 +5789,7 @@ button.slot-dot:hover {
 
 /* ↺ dos PV: discreto, em tinta clara; fica mais forte ao passar o mouse. */
 .hp-reset {
-  margin-left: 4px;
-  padding: 0 3px;
+  padding: 0 2px;
   border: 0;
   background: none;
   font-size: 0.9rem;

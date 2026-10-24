@@ -306,3 +306,7 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (`src/rules/raceKit.ts`); não são gravadas (saem da raça e mudam com ela),
   ficam em texto impresso mais claro com a marca "race", sem editar nem
   remover. Raças planares e Half-Vistani: a conferir depois. iPad: não tem.
+- 2026-10-24, ↺ dos PV no título (web v0.105.1, achado no uso: ao lado dos
+  números, o botão quebrava o layout do quadro de Hit Points): agora fica ao
+  lado do título "Hit Points" (junto do "?" da multiclasse). Conferido com
+  "17 / 122" no navegador e no celular (375 px): os números numa linha só.

@@ -806,6 +806,12 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                 <p>{hitPointsRule(classLevels(c))}</p>
               </RuleLink>
             )}
+            {/* Discreto, no título (ao lado dos números quebrava a linha): só com PV abaixo do máximo; sem confirmação. */}
+            {edit && c.hitPointsCurrent < c.hitPointsMax + temporaryHitPoints(c) && (
+              <button className="hp-reset" title="Reset hit points to the maximum" aria-label="Reset hit points to the maximum" onClick={() => edit((x) => resetHitPoints(x))}>
+                ↺
+              </button>
+            )}
           </span>
           <span className="rec-hp-numbers">
             {edit ? (
@@ -820,12 +826,6 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                 />
                 <span className="rec-soft">/</span>
                 <InkNumber value={c.hitPointsMax} min={1} max={999} label="Maximum hit points" onChange={(v) => edit((x) => void (x.hitPointsMax = v))} />
-                {/* Discreto: só aparece com PV abaixo do máximo; sem confirmação (dá para desfazer digitando). */}
-                {c.hitPointsCurrent < c.hitPointsMax + temporaryHitPoints(c) && (
-                  <button className="hp-reset" title="Reset hit points to the maximum" aria-label="Reset hit points to the maximum" onClick={() => edit((x) => resetHitPoints(x))}>
-                    ↺
-                  </button>
-                )}
               </>
             ) : (
               <>
