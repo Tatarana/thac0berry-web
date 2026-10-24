@@ -203,6 +203,38 @@ export interface RaceAbilityRow {
   adjustment: number
 }
 
+/** Uma linha automática dos modificadores de combate da ficha (não gravada: sai da raça). */
+export interface RaceCombatModifier {
+  label: string
+  value: string
+}
+
+/**
+ * Bônus de ataque e penalidade dos atacantes pela raça (PHB cap. 2, texto de
+ * cada raça). Só as raças do PHB por enquanto; as planares (PWH) e o
+ * Half-Vistani ficam para conferir depois.
+ */
+export function racialCombatModifiers(race: RaceName | null): { toHit: RaceCombatModifier[]; ac: RaceCombatModifier[] } {
+  switch (race) {
+    case 'Dwarf':
+      return {
+        toHit: [{ label: 'Melee vs. orcs, half-orcs, goblins, hobgoblins', value: '+1' }],
+        ac: [{ label: 'Ogres, trolls, ogre magi, giants, titans attacking you (their roll)', value: '−4' }],
+      }
+    case 'Gnome':
+      return {
+        toHit: [{ label: 'Melee vs. kobolds, goblins', value: '+1' }],
+        ac: [{ label: 'Gnolls, bugbears, ogres, trolls, ogre magi, giants, titans attacking you (their roll)', value: '−4' }],
+      }
+    case 'Elf':
+      return { toHit: [{ label: 'Bows (not crossbows), short and long swords', value: '+1' }], ac: [] }
+    case 'Halfling':
+      return { toHit: [{ label: 'Thrown weapons and slings', value: '+1' }], ac: [] }
+    default:
+      return { toHit: [], ac: [] }
+  }
+}
+
 /** Tabelas 7 e 8 do PHB (ou as da PWH/DoD), só a linha da raça: faixa e ajuste de cada atributo. */
 export function raceAbilityRows(race: RaceName): RaceAbilityRow[] {
   const req = requirements[race]

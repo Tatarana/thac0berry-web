@@ -175,3 +175,13 @@ test('tabelas da raça na página 4: atributos, limites de nível e bônus de Co
   assert.deepEqual(K.constitutionSaveBonusRows.map((r) => r.bonus), [1, 2, 3, 4, 5])
   assert.equal(K.raceRuleID('Tiefling'), 'pwh_ch00_racial_tables')
 })
+
+test('modificadores de combate da raça (PHB cap. 2): ataque e penalidade de quem ataca', () => {
+  assert.deepEqual(K.racialCombatModifiers('Dwarf').toHit, [{ label: 'Melee vs. orcs, half-orcs, goblins, hobgoblins', value: '+1' }])
+  assert.match(K.racialCombatModifiers('Dwarf').ac[0].label, /titans/)
+  assert.match(K.racialCombatModifiers('Gnome').ac[0].label, /^Gnolls, bugbears/)
+  assert.equal(K.racialCombatModifiers('Elf').ac.length, 0)
+  assert.equal(K.racialCombatModifiers('Halfling').toHit[0].value, '+1')
+  assert.deepEqual(K.racialCombatModifiers('Human'), { toHit: [], ac: [] })
+  assert.deepEqual(K.racialCombatModifiers(null), { toHit: [], ac: [] })
+})
