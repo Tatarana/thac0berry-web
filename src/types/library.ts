@@ -376,6 +376,13 @@ export interface ProficiencyEntry {
   checked?: boolean
   target?: string | null
   matchedProficiencyID?: string | null
+  /** Proficiência bônus: de onde veio (sai junto com o kit/raça/tribo; 0 slots). Ausente = comprada. Web primeiro (2026-10-24). */
+  grantedBy?: ProficiencyGrant | null
+}
+
+export interface ProficiencyGrant {
+  kind: 'kit' | 'race' | 'tribe'
+  name: string
 }
 
 export interface PsionicPowerEntry {

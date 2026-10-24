@@ -55,18 +55,51 @@ test('kits da classe (Cleric vê os de Specialty Priest)', () => {
   assert.deepEqual(K.kitsAllowedFor(kits, 'Fighter').map((k) => k.name), ['C'])
 })
 
-test('proficiências bônus do kit: casam com o compêndio, ocupam a linha vazia, não repetem', () => {
+test('proficiências bônus do kit: casam com o compêndio, ocupam a linha vazia, não repetem, 0 slots e a origem', () => {
   const c = base()
   const compendium = [{ id: 'etiquette', name: 'Etiquette' }, { id: 'heraldry', name: 'Heraldry' }]
-  K.addKitBonusProficiencies(c, ['etiquette', 'Heraldry', 'Underwater Basket Weaving'], compendium)
-  assert.deepEqual(c.proficiencies!.map((p) => [p.name, p.matchedProficiencyID ?? null]), [
-    ['Etiquette', 'etiquette'],
-    ['Heraldry', 'heraldry'],
-    ['Underwater Basket Weaving', null],
+  const cavalier = { kind: 'kit' as const, name: 'Cavalier' }
+  K.grantProficiencies(c, cavalier, ['etiquette', 'Heraldry', 'Underwater Basket Weaving'], compendium)
+  assert.deepEqual(c.proficiencies!.map((p) => [p.name, p.matchedProficiencyID ?? null, p.slots, p.grantedBy?.name]), [
+    ['Etiquette', 'etiquette', 0, 'Cavalier'],
+    ['Heraldry', 'heraldry', 0, 'Cavalier'],
+    ['Underwater Basket Weaving', null, 0, 'Cavalier'],
   ])
   assert.equal(c.proficiencies![0].id, 'a')
-  K.addKitBonusProficiencies(c, ['Etiquette'], compendium)
+  K.grantProficiencies(c, { kind: 'race', name: 'Human' }, ['Etiquette'], compendium)
   assert.equal(c.proficiencies!.length, 3)
+})
+
+test('proficiências bônus: comprada não duplica nem sai; usada é perguntada; mantida vira comprada', () => {
+  const compendium = [
+    { id: 'riding', name: 'Riding, Land-based', mechanics: { slotsRequired: 1 } },
+    { id: 'etiquette', name: 'Etiquette', mechanics: { slotsRequired: 1 } },
+    { id: 'endurance', name: 'Endurance', mechanics: { slotsRequired: 2 } },
+  ]
+  const kit = { kind: 'kit' as const, name: 'Cavalier' }
+  const c = { proficiencies: [{ id: 'B', name: 'Etiquette', slots: 1, checked: false, matchedProficiencyID: 'etiquette' }] } as unknown as PlayerCharacter
+  K.grantProficiencies(c, kit, ['Riding, Land-based', 'Etiquette'], compendium)
+  // Etiquette já era comprada: não entra outra linha, e a comprada continua sem marca.
+  assert.deepEqual(c.proficiencies!.map((p) => [p.name, p.grantedBy?.name ?? null]), [
+    ['Etiquette', null],
+    ['Riding, Land-based', 'Cavalier'],
+  ])
+  assert.deepEqual(K.usedGrantedProficiencies(c, kit), [])
+  const riding = c.proficiencies![1]
+  riding.target = 'warhorse'
+  assert.deepEqual(K.usedGrantedProficiencies(c, kit).map((p) => p.name), ['Riding, Land-based'])
+  // Mantida: perde a marca e passa a custar o do compêndio.
+  K.revokeProficiencies(c, kit, new Set([riding.id!]), compendium)
+  assert.deepEqual(c.proficiencies!.map((p) => [p.name, p.grantedBy ?? null, p.slots]), [
+    ['Etiquette', null, 1],
+    ['Riding, Land-based', null, 1],
+  ])
+  // Removida: sai; a comprada nunca sai.
+  K.grantProficiencies(c, { kind: 'race', name: 'Dwarf' }, K.raceBonusProficiencies('Dwarf'), compendium)
+  assert.equal(c.proficiencies!.find((p) => p.name === 'Endurance')?.slots, 0)
+  K.revokeProficiencies(c, { kind: 'race', name: 'Dwarf' }, new Set(), compendium)
+  assert.deepEqual(c.proficiencies!.map((p) => p.name), ['Etiquette', 'Riding, Land-based'])
+  assert.deepEqual(K.raceBonusProficiencies('Elf'), [])
 })
 
 test('seletor de raça: bardo semi-humano recebe o aviso do CBH, não o "cannot normally" do PHB', () => {

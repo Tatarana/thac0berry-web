@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { CharacterClass, EquipmentItem, PlayerCharacter, SavingThrows } from '../types/library'
+import type { CharacterClass, EquipmentItem, PlayerCharacter, ProficiencyGrant, SavingThrows } from '../types/library'
 import { loadSpellIndex } from '../data/spells'
 import { dash } from '../lib/format'
 import { normalize } from '../lib/search'
@@ -31,7 +31,17 @@ import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
 import { abilityEffect, temporaryHitPoints } from '../rules/effects'
 import { clearWounds, proficiencyFromCompendium, recordWound, resetHitPoints, toggleSpecialization, weaponFromCompendium, emptyWeapon } from '../rules/sheetEdits'
-import { addKitBonusProficiencies, applyRace, matchRace, racialCombatModifiers, type RaceCombatModifier } from '../rules/raceKit'
+import {
+  applyRace,
+  grantProficiencies,
+  matchRace,
+  raceBonusProficiencies,
+  racialCombatModifiers,
+  revokeProficiencies,
+  usedGrantedProficiencies,
+  type RaceCombatModifier,
+} from '../rules/raceKit'
+import { useConfirm } from '../lib/useConfirm'
 import { matchVistaniTribe } from '../rules/vistani'
 import { CompendiumPicker } from './CompendiumPicker'
 import { KitPicker, RacePicker, VistaniTribePicker } from './RaceKitPickers'
@@ -144,6 +154,34 @@ function RecordHeader({
   const [pickingRace, setPickingRace] = useState(false)
   const [pickingTribe, setPickingTribe] = useState(false)
   const [pickingKit, setPickingKit] = useState(false)
+  const { confirm, dialog } = useConfirm()
+
+  /**
+   * Proficiências bônus ao trocar kit, raça ou tribo: tira as da origem antiga
+   * (perguntando antes pelas já usadas: marcadas ou com notas) e põe as da
+   * nova, junto com a mudança, numa gravação só.
+   */
+  async function regrant(old: ProficiencyGrant | null, next: ProficiencyGrant | null, names: string[], change: (x: PlayerCharacter) => void) {
+    if (!edit) return
+    const compendium = await loadData<Proficiency[]>('proficiencies.json')
+    let keep = new Set<string>()
+    const used = old ? usedGrantedProficiencies(c, old) : []
+    if (old && used.length > 0) {
+      const many = used.length > 1
+      const remove = await confirm(
+        `${used.map((p) => p.name).join(', ')} came from the ${old.name} ${old.kind} and ${many ? 'are' : 'is'} already in use (Chk filled in). Remove ${many ? 'them' : 'it'}? If kept, ${many ? 'they become' : 'it becomes'} a regular proficiency that costs slots.`,
+        'Remove',
+        'Keep',
+      )
+      if (!remove) keep = new Set(used.flatMap((p) => (p.id ? [p.id] : [])))
+    }
+    edit((x) => {
+      if (old) revokeProficiencies(x, old, keep, compendium)
+      change(x)
+      if (next) grantProficiencies(x, next, names, compendium)
+    })
+  }
+  const kitGrant = (name: string | null | undefined): ProficiencyGrant | null => (name ? { kind: 'kit', name } : null)
   const [kitSpellsOpen, setKitSpellsOpen] = useState(false)
   // true = a aba padrão; 'dual' = abre direto na classe dupla.
   const [multiOpen, setMultiOpen] = useState<boolean | 'dual'>(false)
@@ -157,6 +195,7 @@ function RecordHeader({
     .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
   return (
     <header className="rec-header">
+      {dialog}
       <div className="rec-header-fields">
         <HeaderLine
           label="Character"
@@ -171,8 +210,10 @@ function RecordHeader({
                 <ClassSelect
                   value={c.characterClass}
                   onChange={(cls, readMagic) => {
-                    edit((x) => changeClass(x, cls, readMagic))
-                    onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses })
+                    // A troca de classe tira o kit (changeClass); as bônus dele saem junto.
+                    void regrant(kitGrant(c.kit), null, [], (x) => changeClass(x, cls, readMagic)).then(() =>
+                      onClassChanged?.({ characterClass: cls, level: c.level, multiClasses: c.multiClasses, formerClasses: c.formerClasses }),
+                    )
                   }}
                 />
                 {/* Classe dupla (MC4): as anteriores; o clique abre a janela na aba Dual-class. */}
@@ -319,8 +360,9 @@ function RecordHeader({
               character={c}
               campaignSettings={campaignSettings}
               onChoose={(race) => {
-                edit((x) => applyRace(x, race))
                 setPickingRace(false)
+                // Bônus da raça (ex.: Endurance do anão): saem as da raça anterior, entram as da nova.
+                void regrant(c.race ? { kind: 'race', name: c.race } : null, { kind: 'race', name: race }, raceBonusProficiencies(race), (x) => applyRace(x, race))
               }}
               onClose={() => setPickingRace(false)}
             />
@@ -330,14 +372,11 @@ function RecordHeader({
               character={c}
               onChoose={(tribe) => {
                 setPickingTribe(false)
-                void loadData<Proficiency[]>('proficiencies.json').then((compendium) =>
-                  edit((x) => {
-                    x.vistaniTribe = tribe.id
-                    addKitBonusProficiencies(x, tribe.freeProficiencies, compendium)
-                    // Como ao trocar de raça (raceKit.ts): não desfaz o texto da tribo anterior, só acrescenta.
-                    if (!x.racialAbilities?.includes(tribe.text)) x.racialAbilities = `${x.racialAbilities ? `${x.racialAbilities} ` : ''}${tribe.text}`
-                  }),
-                )
+                void regrant(c.vistaniTribe ? { kind: 'tribe', name: c.vistaniTribe } : null, { kind: 'tribe', name: tribe.id }, tribe.freeProficiencies, (x) => {
+                  x.vistaniTribe = tribe.id
+                  // Como ao trocar de raça (raceKit.ts): não desfaz o texto da tribo anterior, só acrescenta.
+                  if (!x.racialAbilities?.includes(tribe.text)) x.racialAbilities = `${x.racialAbilities ? `${x.racialAbilities} ` : ''}${tribe.text}`
+                })
               }}
               onClose={() => setPickingTribe(false)}
             />
@@ -358,17 +397,8 @@ function RecordHeader({
               campaignSettings={campaignSettings}
               onChoose={(kit) => {
                 setPickingKit(false)
-                if (!kit) {
-                  edit((x) => void (x.kit = null))
-                  return
-                }
-                // A1: as proficiências bônus do kit entram na ficha, casadas com o compêndio.
-                void loadData<Proficiency[]>('proficiencies.json').then((compendium) =>
-                  edit((x) => {
-                    x.kit = kit.name
-                    addKitBonusProficiencies(x, kit.mechanics.proficiencies?.bonus ?? [], compendium)
-                  }),
-                )
+                // A1: as bônus do kit anterior saem e as do novo entram (casadas com o compêndio, 0 slots).
+                void regrant(kitGrant(c.kit), kitGrant(kit?.name), kit?.mechanics.proficiencies?.bonus ?? [], (x) => void (x.kit = kit?.name ?? null))
               }}
               onClose={() => setPickingKit(false)}
             />
@@ -1267,7 +1297,15 @@ function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
               )}
               {items.map((p) => (
                 <tr key={p.id ?? p.index}>
-                  <td className="rec-value rec-left">{p.name}</td>
+                  <td className="rec-value rec-left">
+                    {p.name}
+                    {/* Proficiência bônus: de onde veio (sai junto com o kit/raça/tribo). */}
+                    {p.grantedBy && (
+                      <span className="rec-auto-tag" title={`Bonus proficiency from the ${p.grantedBy.name} ${p.grantedBy.kind} (no slots)`}>
+                        {p.grantedBy.kind}
+                      </span>
+                    )}
+                  </td>
                   <td className="rec-value">
                     {edit ? (
                       <InkNumber value={proficiencySlots(p.slots)} min={0} max={9} label={`${p.name} slots`} onChange={(v) => set(p.index, { slots: v })} />

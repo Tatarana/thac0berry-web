@@ -12,11 +12,12 @@ import { PaperModal } from '../components/DetailBits'
 //      … e renderizar {dialog} em algum lugar do componente.
 
 export function useConfirm() {
-  const [pending, setPending] = useState<{ message: ReactNode; action: string } | null>(null)
+  const [pending, setPending] = useState<{ message: ReactNode; action: string; cancel: string } | null>(null)
   const resolver = useRef<((ok: boolean) => void) | null>(null)
 
-  const confirm = useCallback((message: ReactNode, action = 'Confirm') => {
-    setPending({ message, action })
+  /** `cancel`: o rótulo do "não" (padrão "cancel"; ex.: "Keep" quando o não também é uma escolha). */
+  const confirm = useCallback((message: ReactNode, action = 'Confirm', cancel = 'cancel') => {
+    setPending({ message, action, cancel })
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve
     })
@@ -34,7 +35,7 @@ export function useConfirm() {
           <div className="confirm-body">{pending.message}</div>
           <div className="slot-actions">
             <button className="paper-link" onClick={() => finish(false)}>
-              cancel
+              {pending.cancel}
             </button>
             <button className="consequence-apply" autoFocus onClick={() => finish(true)}>
               {pending.action}
