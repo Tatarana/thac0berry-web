@@ -17,6 +17,7 @@ import { demiBardKits, demiBardWarning, isPlanarRace, levelLimitWarning, matchRa
 import {
   bestSaves,
   bestTHAC0,
+  bonusLanguages,
   canonicalClass,
   hasSpellSheet,
   hasThievingSkills,
@@ -614,12 +615,15 @@ export function dualProficiencySlots(c: WithClasses, kind: 'weapon' | 'nonweapon
 /**
  * Slots de proficiência nonweapon (Tabela 34): classe única, multiclasse
  * (maior inicial, ritmo mais rápido) ou classe dupla (cada classe soma os
- * dela). O bônus de Inteligência fica nos slots de arma, como a ficha já faz.
+ * dela), mais o bônus de Inteligência (Tabela 4, "# of Languages"): no PHB
+ * (cap. 5) ele soma slots nonweapon. Até a v0.107 ia para os slots de arma, como
+ * no iPad; o iPad ainda faz assim (pendência registrada no TODO.md).
  */
-export function nonweaponProficiencySlots(c: WithClasses): number {
-  if (isMultiClass(c)) return combinedProficiencySlots(classLevels(c), 'nonweapon')
-  if (isDualClass(c)) return dualProficiencySlots(c, 'nonweapon')
-  return combinedProficiencySlots([{ characterClass: c.characterClass, level: c.level }], 'nonweapon')
+export function nonweaponProficiencySlots(c: WithClasses & { abilities?: Pick<PlayerCharacter['abilities'], 'intelligence'> }): number {
+  const intBonus = c.abilities ? bonusLanguages(c.abilities.intelligence) : 0
+  if (isMultiClass(c)) return combinedProficiencySlots(classLevels(c), 'nonweapon') + intBonus
+  if (isDualClass(c)) return dualProficiencySlots(c, 'nonweapon') + intBonus
+  return combinedProficiencySlots([{ characterClass: c.characterClass, level: c.level }], 'nonweapon') + intBonus
 }
 
 /** ProficiencyEntry.init(from:) do iPad: `slots` antigo em texto vale pelos dígitos (sem dígito nenhum, 1). */

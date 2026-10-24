@@ -360,3 +360,13 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   com permissão de editar, as cópias de versão mais velha se atualizam. "Dar
   ao personagem": o mestre abre a ficha do jogador e adiciona pelo seletor.
   iPad: pendência no `TODO.md` de lá (perde o campo ao salvar).
+- 2026-10-24, bônus de Inteligência nos slots nonweapon (web v0.108.0, pedido
+  do usuário): a Tabela 4 ("# of Languages") passa a somar nos slots de
+  proficiência nonweapon, como diz o PHB (cap. 5), e sai dos slots de arma,
+  onde estava desde a cópia do iPad. `nonweaponProficiencySlots` recebe a
+  Inteligência; `totalWeaponSlots` continua aceitando o bônus para o teste de
+  paridade com o iPad, mas a ficha não passa mais. Divergência com o iPad
+  registrada no `TODO.md` de lá. No mesmo dia, no `thac0berry-data`: as
+  tabelas de progressão de Militant Psionicist, Feralan, Ghosthunter,
+  Justifier, Mountain Man, Seeker e Votary viraram tabelas markdown (como a
+  do Mind Monk) e a ficha do kit as desenha como tabela.

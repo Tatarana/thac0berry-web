@@ -20,7 +20,7 @@ import {
   undoDualClass,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, bonusLanguages, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
@@ -1102,17 +1102,17 @@ function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 // --- Armas -----------------------------------------------------------------
 
 // Cada arma listada já é uma proficiência; especializar custa mais (CFH cap. 4).
-// O total assume todo o bônus de Inteligência em armas, como no iPad.
+// O bônus de Inteligência vai para os slots nonweapon (PHB cap. 5), não para estes.
 function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
   const spent = c.weapons.reduce((sum, w) => sum + weaponSlotCost(w), 0)
-  // Multiclasse: maior número inicial e ritmo mais rápido (PHB cap. 3), mais o bônus de Inteligência.
+  // Multiclasse: maior número inicial e ritmo mais rápido (PHB cap. 3).
   // Classe dupla (MC4d, decisão 17): iniciais e slots por nível de cada classe (Tabela 34).
   const dual = isDualClass(c) && !isMultiClass(c)
   const total = isMultiClass(c)
-    ? combinedProficiencySlots(classLevels(c), 'weapon') + bonusLanguages(c.abilities.intelligence)
+    ? combinedProficiencySlots(classLevels(c), 'weapon')
     : dual
-      ? dualProficiencySlots(c, 'weapon') + bonusLanguages(c.abilities.intelligence)
-      : totalWeaponSlots(c.characterClass, c.level, c.abilities.intelligence)
+      ? dualProficiencySlots(c, 'weapon')
+      : totalWeaponSlots(c.characterClass, c.level)
   return (
     <>
       {/* Multiclasse (MC3c): restrições de armadura do mago e de armas do sacerdote. */}
