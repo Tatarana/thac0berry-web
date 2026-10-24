@@ -289,3 +289,9 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   rola até ele, e ✕ remove. O modificador vem do texto do power score quando
   ele tem um ("Cha –2" estava gravado como 0 nos dados). Colunas de largura
   fixa, para as duas tabelas ficarem alinhadas. Poder digitado à mão: "—".
+- 2026-10-24, reset dos PV (web v0.104.1, pedido do usuário): na ficha, ao
+  lado de "atual / máximo", um ↺ discreto (tinta clara) que só aparece com
+  PV abaixo do máximo; sem confirmação. `resetHitPoints`
+  (`src/rules/sheetEdits.ts`) põe os PV atuais no máximo mais os PV
+  temporários dos efeitos em curso (que já contam nos atuais); a lista de
+  Wounds fica (tem a lixeira própria). iPad: não tem; feito primeiro na web.

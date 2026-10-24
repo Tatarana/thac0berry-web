@@ -5769,6 +5769,23 @@ button.slot-dot:hover {
   white-space: nowrap;
 }
 
+/* ↺ dos PV: discreto, em tinta clara; fica mais forte ao passar o mouse. */
+.hp-reset {
+  margin-left: 4px;
+  padding: 0 3px;
+  border: 0;
+  background: none;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: rgb(107 92 70 / 0.55);
+  cursor: pointer;
+}
+
+.hp-reset:hover,
+.hp-reset:focus-visible {
+  color: var(--pen-ink);
+}
+
 /* Settings → Preferences (2026-10-10). */
 .settings-field {
   display: flex;
