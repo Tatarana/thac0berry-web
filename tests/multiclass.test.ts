@@ -63,6 +63,9 @@ test('slots nonweapon (Tabela 34): classe única, multiclasse e gasto (bônus co
   assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Fighter', level: 6 }), 3 + 2)
   assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Thief', level: 5 }), 3 + 1)
   assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Fighter', level: 6, multiClasses: [{ characterClass: 'Mage', level: 7 }] }), 4 + 2)
+  // Bônus de Inteligência (Tabela 4: Int 16 = 5 idiomas) soma aqui, não nos slots de arma.
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Fighter', level: 6, abilities: { intelligence: 16 } }), 3 + 2 + 5)
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Fighter', level: 6, multiClasses: [{ characterClass: 'Mage', level: 7 }], abilities: { intelligence: 9 } }), 4 + 2 + 2)
   const c = {
     proficiencies: [
       { name: 'Riding', slots: 1 },
