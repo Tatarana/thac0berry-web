@@ -2,9 +2,23 @@ import type { EncumbranceRow, LevelChangeRow, LevelChangesTable, MovementRates, 
 import { dash } from '../lib/format'
 import { defaultEncumbranceTable, levelChanges, xpNeededForNextLevel, xpNote } from '../rules/rules'
 import { classProgress, isMultiClass } from '../rules/multiclass'
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useAuth } from '../auth/context'
+import {
+  createCustomItem,
+  deleteCustomItem,
+  fetchCustomItems,
+  fetchCustomItemsByID,
+  updateCustomItem,
+  type CustomItemRow,
+  type CustomItemVisibility,
+} from '../lib/customItems'
 import { normalize } from '../lib/search'
+import { customSnapshot, emptyCustomItem, refreshCustomItems, sameID } from '../rules/customItems'
+import type { CustomMagicItemData } from '../types/library'
+import { CustomItemDetail } from './CustomItemDetail'
+import { CustomItemEditor } from './CustomItemEditor'
 import { MagicItemDetail } from './MagicItemDetail'
 import { loadData } from '../data/load'
 import type { MundaneItem } from '../data/gear'
@@ -354,7 +368,23 @@ type QuantityKey = 'page2MagicItems' | 'page2TreasureItems'
 
 // Tabela de verdade (uma linha por item), como o QuantityListBlock do iPad:
 // nome, marcas de uso e "usados de N".
-function QuantityList({ title, items, field, edit }: { title: string; items: QuantifiedItem[] | null | undefined; field: QuantityKey; edit?: Edit }) {
+/** Um item no seletor de Magic Items: do livro, ou criado (mestre ou jogador), que vem primeiro. */
+type MagicChoice = MagicItemIndexEntry & { custom?: CustomItemRow }
+
+function QuantityList({
+  title,
+  items,
+  field,
+  edit,
+  campaignID = null,
+}: {
+  title: string
+  items: QuantifiedItem[] | null | undefined
+  field: QuantityKey
+  edit?: Edit
+  /** Campanha da ficha: os itens criados dela entram no seletor. */
+  campaignID?: string | null
+}) {
   const rows = items ?? []
   const [picking, setPicking] = useState(false)
   // Itens mágicos: a descrição do compêndio (pelo id do seletor, ou pelo nome exato se foi digitado).
@@ -373,6 +403,60 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
   }, [isMagic, rows.length, index])
   const entryOf = (item: QuantifiedItem) =>
     index?.find((e) => e.id === item.matchedItemID) ?? (item.name.trim() !== '' ? index?.find((e) => normalize(e.name) === normalize(item.name)) : undefined) ?? null
+
+  // Itens criados (2026-10-24): a linha guarda uma cópia; quem pode editar a
+  // ficha a atualiza ao abrir, se o item mudou (decisão do usuário).
+  const { session } = useAuth()
+  const userID = session?.user.id ?? null
+  const [customRows, setCustomRows] = useState<CustomItemRow[]>([])
+  const [customDetail, setCustomDetail] = useState<QuantifiedItem | null>(null)
+  const [editor, setEditor] = useState<{ row: CustomItemRow | null } | null>(null)
+  const customIDs = rows.flatMap((r) => (r.customItem ? [r.customItem.id] : [])).join(',')
+  const refresh = useEffectEvent((list: CustomItemRow[]) => {
+    setCustomRows(list)
+    const probe = { page2MagicItems: structuredClone(rows) }
+    if (edit && refreshCustomItems(probe, list)) edit((x) => void refreshCustomItems(x, list))
+  })
+  useEffect(() => {
+    if (!isMagic || !userID || customIDs === '') return
+    let cancelled = false
+    void fetchCustomItemsByID(customIDs.split(','))
+      .then((list) => {
+        if (!cancelled) refresh(list)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isMagic, userID, customIDs])
+  const rowOf = (item: QuantifiedItem) => customRows.find((r) => sameID(r.id, item.customItem?.id)) ?? null
+  const loadChoices = async (): Promise<MagicChoice[]> => {
+    const [custom, book] = await Promise.all([userID ? fetchCustomItems(userID, campaignID).catch(() => []) : Promise.resolve([]), loadMagicIndex()])
+    const mine = custom.map((r) => ({
+      id: `custom:${r.id}`,
+      name: r.data.name,
+      category: `Homebrew · ${r.data.category ?? 'Miscellaneous'}${r.visibility === 'campaign' ? ' · campaign' : ''}`,
+      books: [],
+      summary: r.data.summary ?? '',
+      file: '',
+      custom: r,
+    }))
+    return [...mine, ...book]
+  }
+  const addCustom = (row: CustomItemRow) =>
+    edit?.((x) => void (x[field] = [...(x[field] ?? []), { id: newID(), name: row.data.name, quantity: 1, matchedItemID: null, customItem: customSnapshot(row) }]))
+  async function saveCustom(data: CustomMagicItemData, visibility: CustomItemVisibility) {
+    if (!userID || !editor) return
+    if (!editor.row) {
+      addCustom(await createCustomItem(userID, campaignID, visibility, data))
+    } else {
+      const saved = await updateCustomItem(editor.row, data, visibility)
+      setCustomRows((list) => list.map((r) => (sameID(r.id, saved.id) ? saved : r)))
+      edit?.((x) => void refreshCustomItems(x, [saved]))
+    }
+    setEditor(null)
+  }
+
   const add = (name: string, matchedItemID: string | null) =>
     edit?.((x) => void (x[field] = [...(x[field] ?? []), { id: newID(), name, quantity: 1, matchedItemID }]))
   const set = (id: string, patch: Partial<QuantifiedItem>) =>
@@ -389,26 +473,29 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
           {rows.map((item) => {
             const used = item.usedCount ?? 0
             const exhausted = item.quantity > 0 && used >= item.quantity
-            const entry = isMagic ? entryOf(item) : null
+            const entry = isMagic && !item.customItem ? entryOf(item) : null
+            // Abre a descrição: a do item criado (a cópia da ficha, ou a do banco se já chegou) ou a do livro.
+            const open = item.customItem ? () => setCustomDetail(item) : entry ? () => setDetail(entry) : null
             return (
               <tr key={item.id}>
                 <td className="rec-value sheet-rows-name">
                   {edit ? (
                     <span className="row-with-remove">
                       <InkInput value={item.name} label={`${title} item`} placeholder="…" onChange={(v) => set(item.id, { name: v, matchedItemID: null })} />
-                      {entry && (
-                        <button className="info-btn" aria-label={`About ${item.name}`} title="Read the item description" onClick={() => setDetail(entry)}>
+                      {open && (
+                        <button className="info-btn" aria-label={`About ${item.name}`} title="Read the item description" onClick={open}>
                           ⓘ
                         </button>
                       )}
                     </span>
-                  ) : entry ? (
-                    <button className="memorized-link" title="Read the item description" onClick={() => setDetail(entry)}>
+                  ) : open ? (
+                    <button className="memorized-link" title="Read the item description" onClick={open}>
                       {item.name}
                     </button>
                   ) : (
                     item.name || <span className="rec-soft">…</span>
                   )}
+                  {item.customItem && <span className="rec-auto-tag">homebrew</span>}
                 </td>
                 <td className="sheet-rows-tally">
                   {edit ? (
@@ -437,14 +524,21 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
         </tbody>
       </table>
       {/* Itens mágicos vêm do compêndio (MagicItemPickerSheet); outras posses, linha em branco. */}
-      {edit && <AddLine label="add" onClick={() => (field === 'page2MagicItems' ? setPicking(true) : add('', null))} />}
+      {edit && (
+        <span className="add-line-row">
+          <AddLine label="add" onClick={() => (field === 'page2MagicItems' ? setPicking(true) : add('', null))} />
+          {/* Item criado pelo mestre ou pelo jogador (precisa da conta: fica no servidor). */}
+          {isMagic && userID && <AddLine label="new item" onClick={() => setEditor({ row: null })} />}
+        </span>
+      )}
       {picking && (
-        <CompendiumPicker<MagicItemIndexEntry>
+        <CompendiumPicker<MagicChoice>
           title="Add a magic item"
-          load={loadMagicIndex}
+          load={loadChoices}
           hint={(i) => i.category}
           onChoose={(i) => {
-            add(i.name, i.id)
+            if (i.custom) addCustom(i.custom)
+            else add(i.name, i.id)
             setPicking(false)
           }}
           onTyped={(name) => {
@@ -455,6 +549,38 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
         />
       )}
       {detail && createPortal(<MagicItemDetail entry={detail} onClose={() => setDetail(null)} />, document.body)}
+      {customDetail?.customItem && (
+        <CustomItemDetail
+          data={rowOf(customDetail)?.data ?? customDetail.customItem.data}
+          onEdit={
+            edit && rowOf(customDetail) && sameID(rowOf(customDetail)!.owner_id, userID)
+              ? () => {
+                  setEditor({ row: rowOf(customDetail) })
+                  setCustomDetail(null)
+                }
+              : undefined
+          }
+          onClose={() => setCustomDetail(null)}
+        />
+      )}
+      {editor && (
+        <CustomItemEditor
+          initial={editor.row?.data ?? emptyCustomItem()}
+          initialVisibility={editor.row?.visibility ?? 'private'}
+          inCampaign={!!(editor.row?.campaign_id ?? campaignID)}
+          isNew={!editor.row}
+          onSave={saveCustom}
+          onDelete={
+            editor.row
+              ? async () => {
+                  await deleteCustomItem(editor.row!)
+                  setEditor(null)
+                }
+              : undefined
+          }
+          onClose={() => setEditor(null)}
+        />
+      )}
     </SheetBlock>
   )
 }
@@ -578,7 +704,7 @@ function WildTalent({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   )
 }
 
-export function RecordPageTwo({ character: c, edit }: { character: PlayerCharacter; edit?: Edit }) {
+export function RecordPageTwo({ character: c, edit, campaignID = null }: { character: PlayerCharacter; edit?: Edit; campaignID?: string | null }) {
   return (
     <div className="rec-sheet">
       <Armor c={c} edit={edit} />
@@ -593,7 +719,7 @@ export function RecordPageTwo({ character: c, edit }: { character: PlayerCharact
           <LevelChanges c={c} edit={edit} />
         </div>
       </div>
-      <QuantityList title="Magic Items" items={c.page2MagicItems} field="page2MagicItems" edit={edit} />
+      <QuantityList title="Magic Items" items={c.page2MagicItems} field="page2MagicItems" edit={edit} campaignID={campaignID} />
       <QuantityList title="Treasure / Other Possessions" items={c.page2TreasureItems} field="page2TreasureItems" edit={edit} />
       <div className="rec-three">
         <Treasure c={c} edit={edit} />

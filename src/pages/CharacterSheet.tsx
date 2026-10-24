@@ -514,7 +514,7 @@ export function CharacterSheet() {
                   onSelect={(next) => setParams(next === 1 ? {} : { page: String(next) }, { replace: true })}
                 />
                 {page === '1' && <RecordSheet character={character} campaignName={campaignName} campaignSettings={campaignSettings} edit={edit} onClassChanged={(classes) => void afterClassChange(classes)} />}
-                {page === '2' && <RecordPageTwo character={character} edit={edit} />}
+                {page === '2' && <RecordPageTwo character={character} edit={edit} campaignID={campaignID} />}
                 {page === '3' && sheetError && <p className="paper-soft save-error">{sheetError}</p>}
                 {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} onPortrait={changePortrait} />}
                 {page === '4' && <RecordPageFour character={character} />}
