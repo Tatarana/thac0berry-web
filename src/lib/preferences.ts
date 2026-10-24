@@ -16,6 +16,8 @@ export interface Preferences {
   combat_settings: Partial<CombatSettings> | null
   /** Combat Tracker interativo (I2): aceitar sozinho o que o mestre manda ao personagem (dano, cura). */
   accept_dm_changes: boolean
+  /** Magias favoritas (estrela do grimório; topo do seletor da folha de magia). */
+  favorite_spell_ids: string[]
 }
 
 export async function loadPreferences(userID: string): Promise<Partial<Preferences>> {

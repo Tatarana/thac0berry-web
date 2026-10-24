@@ -370,3 +370,12 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   tabelas de progressão de Militant Psionicist, Feralan, Ghosthunter,
   Justifier, Mountain Man, Seeker e Votary viraram tabelas markdown (como a
   do Mind Monk) e a ficha do kit as desenha como tabela.
+- 2026-10-24, favoritar magias no grimório (web v0.109.0, pedido do usuário:
+  "não consigo favoritar magias"). A web nunca teve o botão, só lia as
+  favoritas importadas do iPad para o topo do seletor da folha de magia.
+  Agora, como no `SpellbookView` do iPad: estrela ☆/★ em cada magia do
+  grimório (priest e mago) e na ficha da magia, e o filtro "★ Favorites
+  only". Grava em `user_preferences.favorite_spell_ids` (`useFavoriteSpells`
+  em `src/lib/favoriteSpells.ts`, gravações em fila com a lista inteira; se
+  falhar, volta e avisa). Sem sessão, a estrela não aparece. Sem migração (a
+  coluna e a permissão do dono já existiam).
