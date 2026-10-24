@@ -612,6 +612,29 @@ export function dualProficiencySlots(c: WithClasses, kind: 'weapon' | 'nonweapon
 }
 
 /**
+ * Slots de proficiência nonweapon (Tabela 34): classe única, multiclasse
+ * (maior inicial, ritmo mais rápido) ou classe dupla (cada classe soma os
+ * dela). O bônus de Inteligência fica nos slots de arma, como a ficha já faz.
+ */
+export function nonweaponProficiencySlots(c: WithClasses): number {
+  if (isMultiClass(c)) return combinedProficiencySlots(classLevels(c), 'nonweapon')
+  if (isDualClass(c)) return dualProficiencySlots(c, 'nonweapon')
+  return combinedProficiencySlots([{ characterClass: c.characterClass, level: c.level }], 'nonweapon')
+}
+
+/** ProficiencyEntry.init(from:) do iPad: `slots` antigo em texto vale pelos dígitos (sem dígito nenhum, 1). */
+export function proficiencySlotCount(slots: number | string | undefined): number {
+  if (typeof slots === 'number') return slots
+  const digits = typeof slots === 'string' ? slots.replace(/\D/g, '') : ''
+  return digits === '' ? 1 : Number(digits)
+}
+
+/** Slots nonweapon gastos: as linhas com nome (as bônus de kit/raça têm 0). */
+export function nonweaponSlotsUsed(c: Pick<PlayerCharacter, 'proficiencies'>): number {
+  return (c.proficiencies ?? []).filter((p) => (p.name ?? '').trim() !== '').reduce((sum, p) => sum + proficiencySlotCount(p.slots), 0)
+}
+
+/**
  * Penalidade sem proficiência da classe dupla (decisão 17): na restrição, a da
  * classe atual; depois, a melhor entre as classes (como THAC0 e saves).
  */

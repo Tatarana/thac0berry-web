@@ -58,6 +58,22 @@ test('proficiências: maior inicial e ritmo mais rápido; penalidade menor', () 
   assert.equal(M.combinedNonProficiencyPenalty(classes), '-2')
 })
 
+test('slots nonweapon (Tabela 34): classe única, multiclasse e gasto (bônus contam 0)', () => {
+  // Fighter: 3 iniciais, +1 a cada 3 níveis; Thief: 3, +1 a cada 4; Mage: 4, +1 a cada 3.
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Fighter', level: 6 }), 3 + 2)
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Thief', level: 5 }), 3 + 1)
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Fighter', level: 6, multiClasses: [{ characterClass: 'Mage', level: 7 }] }), 4 + 2)
+  const c = {
+    proficiencies: [
+      { name: 'Riding', slots: 1 },
+      { name: 'Endurance', slots: 0, grantedBy: { kind: 'race', name: 'Dwarf' } },
+      { name: 'Old text', slots: '2 slots' },
+      { name: '', slots: 1 },
+    ],
+  } as unknown as PlayerCharacter
+  assert.equal(M.nonweaponSlotsUsed(c), 3)
+})
+
 test('avisos: combinação da raça, humano, especialista, limite racial', () => {
   const base = { characterClass: 'Fighter' as const, level: 3, wizardSchool: null }
   assert.deepEqual(M.multiClassWarnings({ ...base, race: 'Elf', multiClasses: [{ characterClass: 'Mage', level: 3 }] }), [])

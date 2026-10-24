@@ -324,4 +324,14 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   rótulo do "não" ("Keep"). Regras em `src/rules/raceKit.ts`
   (`grantProficiencies`, `revokeProficiencies`, `usedGrantedProficiencies`,
   `raceBonusProficiencies`). iPad: pendência no `TODO.md` de lá (o iPad perde
-  o campo ao salvar).
+  o campo ao salvar). Nota: `src/types/library.ts` é gerado do schema
+  (`npm run types`); editado à mão, quebrou o `--check` do CI — regerado
+  depois que o schema entrou na `main` do `thac0berry-data`.
+- 2026-10-24, slots de nonweapon (web v0.106.1, pedido do usuário): embaixo
+  de Proficiencies, "Nonweapon Proficiency Slots: 3/5 used (2 left)" (vermelha
+  se passou, "N over"), como a linha dos slots de arma. Total pela Tabela 34
+  (`nonweaponProficiencySlots` em `src/rules/multiclass.ts`: classe única,
+  multiclasse pelo maior inicial e ritmo mais rápido, classe dupla somando
+  as classes); gasto = soma dos slots das linhas (`nonweaponSlotsUsed`; as
+  bônus de kit/raça têm 0). O bônus de Inteligência continua só nos slots de
+  arma, como já era (o PHB o põe em nonweapon; a decidir com o usuário).

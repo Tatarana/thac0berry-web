@@ -22,7 +22,7 @@ import {
 } from '../rules/consequences'
 import { backstabMultiplier, bonusLanguages, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, rogueClass, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
 import { gypsyCanSpecialize, gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
@@ -1259,12 +1259,18 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 
 // --- Proficiências e perícias de ladrão -----------------------------------
 
-// Igual ao ProficiencyEntry.init(from:) do iPad: `slots` antigo em texto vale
-// só pelos dígitos (sem dígito nenhum, 1).
-function proficiencySlots(slots: number | string | undefined): number {
-  if (typeof slots === 'number') return slots
-  const digits = typeof slots === 'string' ? slots.replace(/\D/g, '') : ''
-  return digits === '' ? 1 : Number(digits)
+const proficiencySlots = proficiencySlotCount
+
+/** "Nonweapon Proficiency Slots: 3/4 used (1 left)", como a linha dos slots de arma; vermelha se passou. */
+function NonweaponSlotsLine({ c }: { c: PlayerCharacter }) {
+  const used = nonweaponSlotsUsed(c)
+  const total = nonweaponProficiencySlots(c)
+  const left = total - used
+  return (
+    <p className={left < 0 ? 'rec-soft rec-red' : 'rec-soft'}>
+      Nonweapon Proficiency Slots: {used}/{total} used ({left < 0 ? `${-left} over` : `${left} left`})
+    </p>
+  )
 }
 
 function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
@@ -1339,6 +1345,7 @@ function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           + add proficiency
         </button>
       )}
+      <NonweaponSlotsLine c={c} />
       {picking && edit && (
         <CompendiumPicker<Proficiency>
           title="Add a proficiency"
