@@ -310,3 +310,18 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   números, o botão quebrava o layout do quadro de Hit Points): agora fica ao
   lado do título "Hit Points" (junto do "?" da multiclasse). Conferido com
   "17 / 122" no navegador e no celular (375 px): os números numa linha só.
+- 2026-10-24, proficiências bônus com a origem (web v0.106.0, pedido do
+  usuário). `ProficiencyEntry.grantedBy` (`{ kind: kit | race | tribe, name }`,
+  opcional; schema no `thac0berry-data`, gerador no branch do iPad). Ao
+  escolher kit, raça ou tribo, as bônus entram marcadas, com 0 slots e a
+  etiqueta da origem na linha; o que o personagem já tem não se repete (a
+  comprada fica como está). Raça: Endurance automática para anão (Complete
+  Book of Dwarves, "0 Slots - Dwarf"; decisão do usuário). Ao trocar kit,
+  raça ou tribo (e na troca de classe, que tira o kit), saem as bônus da
+  origem antiga; as já usadas (Chk preenchido) são perguntadas antes: Remove
+  tira, Keep mantém como comprada (sem marca, com os slots do compêndio).
+  Fichas antigas não migram (decisão do usuário). `useConfirm` ganhou o
+  rótulo do "não" ("Keep"). Regras em `src/rules/raceKit.ts`
+  (`grantProficiencies`, `revokeProficiencies`, `usedGrantedProficiencies`,
+  `raceBonusProficiencies`). iPad: pendência no `TODO.md` de lá (o iPad perde
+  o campo ao salvar).

@@ -8,7 +8,7 @@
 // TODO.md do iPad como provável bug).
 
 import { normalize } from '../lib/search.ts'
-import type { AbilityScores, CharacterClass, PlayerCharacter, ProficiencyEntry } from '../types/library.ts'
+import type { AbilityScores, CharacterClass, PlayerCharacter, ProficiencyEntry, ProficiencyGrant } from '../types/library.ts'
 import { ensureConsequenceSnapshot } from './consequences.ts'
 import { canonicalClass } from './rules.ts'
 
@@ -420,17 +420,30 @@ export function kitsAllowedFor<T extends KitChoice>(kits: T[], characterClass: C
   return kits.filter((k) => k.classEligibility.allowedClasses.includes(cls) || (cls === 'Cleric' && k.classEligibility.allowedClasses.includes('Specialty Priest')))
 }
 
+// --- Proficiências bônus (kit, raça, tribo) ------------------------------------------------
+//
+// Decisões do usuário (2026-10-24): entram marcadas com a origem (`grantedBy`)
+// e 0 slots (só as aplicadas daqui em diante; as fichas antigas ficam como
+// estão); não duplicam o que o jogador já tem; saem quando a origem sai, mas
+// a tela pergunta antes de tirar uma que já foi usada (marcada ou com notas).
+
+type CompendiumProficiency = { id: string; name: string; mechanics?: { slotsRequired?: number } }
+
+/** Proficiências bônus da raça. Complete Book of Dwarves: Endurance a 0 slots para anão (os dados: "0 Slots - Dwarf"). */
+export function raceBonusProficiencies(race: RaceName | null): string[] {
+  return race === 'Dwarf' ? ['Endurance'] : []
+}
+
+const sameGrant = (a: ProficiencyGrant | null | undefined, b: ProficiencyGrant) => !!a && a.kind === b.kind && a.name === b.name
+
 /**
- * addBonusProficiencies (A1): as proficiências bônus do kit entram na ficha,
- * casadas pelo nome com o compêndio; não repete o que já tem; ocupa primeiro
- * as linhas vazias.
+ * addBonusProficiencies (A1): as bônus entram na ficha casadas pelo nome com o
+ * compêndio, marcadas com a origem e com 0 slots; o que o personagem já tem
+ * (comprado ou dado por outra origem) não se repete; ocupa primeiro as linhas
+ * vazias.
  */
-export function addKitBonusProficiencies(
-  c: Pick<PlayerCharacter, 'proficiencies'>,
-  bonusNames: string[],
-  compendium: { id: string; name: string }[],
-) {
-  if (bonusNames.length === 0) return
+export function grantProficiencies(c: Pick<PlayerCharacter, 'proficiencies'>, grant: ProficiencyGrant, names: string[], compendium: CompendiumProficiency[]) {
+  if (names.length === 0) return
   const entries: ProficiencyEntry[] = (c.proficiencies ?? []).map((e) => ({ ...e }))
   const existing = new Set(
     entries.flatMap((e) => {
@@ -440,11 +453,11 @@ export function addKitBonusProficiencies(
     }),
   )
   let added = false
-  for (const bonus of bonusNames) {
+  for (const bonus of names) {
     const matched = compendium.find((p) => normalize(p.name) === normalize(bonus))
     const key = matched?.id ?? normalize(bonus)
     if (key === '' || existing.has(key)) continue
-    const entry = { name: matched?.name ?? bonus, slots: 1, matchedProficiencyID: matched?.id ?? null }
+    const entry = { name: matched?.name ?? bonus, slots: 0, matchedProficiencyID: matched?.id ?? null, grantedBy: grant }
     const blank = entries.findIndex((e) => (e.name ?? '').trim() === '' && !e.matchedProficiencyID)
     if (blank >= 0) entries[blank] = { ...entries[blank], ...entry }
     else entries.push({ id: crypto.randomUUID().toUpperCase(), checked: false, ...entry })
@@ -452,4 +465,29 @@ export function addKitBonusProficiencies(
     added = true
   }
   if (added) c.proficiencies = entries
+}
+
+/** As bônus de uma origem que o jogador já usou: marcadas ("checked") ou com anotação. A tela pergunta antes de tirar. */
+export function usedGrantedProficiencies(c: Pick<PlayerCharacter, 'proficiencies'>, grant: ProficiencyGrant): ProficiencyEntry[] {
+  return (c.proficiencies ?? []).filter((e) => sameGrant(e.grantedBy, grant) && (e.checked === true || (e.target ?? '').trim() !== ''))
+}
+
+/**
+ * Tira as bônus de uma origem. As de `keepIDs` (o jogador escolheu ficar)
+ * viram compradas: perdem a marca e passam a custar os slots do compêndio.
+ */
+export function revokeProficiencies(
+  c: Pick<PlayerCharacter, 'proficiencies'>,
+  grant: ProficiencyGrant,
+  keepIDs: Set<string>,
+  compendium: CompendiumProficiency[],
+) {
+  const entries = c.proficiencies ?? []
+  if (!entries.some((e) => sameGrant(e.grantedBy, grant))) return
+  c.proficiencies = entries.flatMap((e) => {
+    if (!sameGrant(e.grantedBy, grant)) return [e]
+    if (!e.id || !keepIDs.has(e.id)) return []
+    const slots = compendium.find((p) => p.id === e.matchedProficiencyID)?.mechanics?.slotsRequired ?? 1
+    return [{ ...e, grantedBy: null, slots }]
+  })
 }
