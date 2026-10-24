@@ -2,7 +2,10 @@ import type { EncumbranceRow, LevelChangeRow, LevelChangesTable, MovementRates, 
 import { dash } from '../lib/format'
 import { defaultEncumbranceTable, levelChanges, xpNeededForNextLevel, xpNote } from '../rules/rules'
 import { classProgress, isMultiClass } from '../rules/multiclass'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { normalize } from '../lib/search'
+import { MagicItemDetail } from './MagicItemDetail'
 import { loadData } from '../data/load'
 import type { MundaneItem } from '../data/gear'
 import { loadMagicIndex, type MagicItemIndexEntry } from '../data/magicItems'
@@ -354,6 +357,22 @@ type QuantityKey = 'page2MagicItems' | 'page2TreasureItems'
 function QuantityList({ title, items, field, edit }: { title: string; items: QuantifiedItem[] | null | undefined; field: QuantityKey; edit?: Edit }) {
   const rows = items ?? []
   const [picking, setPicking] = useState(false)
+  // Itens mágicos: a descrição do compêndio (pelo id do seletor, ou pelo nome exato se foi digitado).
+  const isMagic = field === 'page2MagicItems'
+  const [index, setIndex] = useState<MagicItemIndexEntry[] | null>(null)
+  const [detail, setDetail] = useState<MagicItemIndexEntry | null>(null)
+  useEffect(() => {
+    if (!isMagic || rows.length === 0 || index) return
+    let cancelled = false
+    void loadMagicIndex().then((list) => {
+      if (!cancelled) setIndex(list)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isMagic, rows.length, index])
+  const entryOf = (item: QuantifiedItem) =>
+    index?.find((e) => e.id === item.matchedItemID) ?? (item.name.trim() !== '' ? index?.find((e) => normalize(e.name) === normalize(item.name)) : undefined) ?? null
   const add = (name: string, matchedItemID: string | null) =>
     edit?.((x) => void (x[field] = [...(x[field] ?? []), { id: newID(), name, quantity: 1, matchedItemID }]))
   const set = (id: string, patch: Partial<QuantifiedItem>) =>
@@ -370,11 +389,23 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
           {rows.map((item) => {
             const used = item.usedCount ?? 0
             const exhausted = item.quantity > 0 && used >= item.quantity
+            const entry = isMagic ? entryOf(item) : null
             return (
               <tr key={item.id}>
                 <td className="rec-value sheet-rows-name">
                   {edit ? (
-                    <InkInput value={item.name} label={`${title} item`} placeholder="…" onChange={(v) => set(item.id, { name: v, matchedItemID: null })} />
+                    <span className="row-with-remove">
+                      <InkInput value={item.name} label={`${title} item`} placeholder="…" onChange={(v) => set(item.id, { name: v, matchedItemID: null })} />
+                      {entry && (
+                        <button className="info-btn" aria-label={`About ${item.name}`} title="Read the item description" onClick={() => setDetail(entry)}>
+                          ⓘ
+                        </button>
+                      )}
+                    </span>
+                  ) : entry ? (
+                    <button className="memorized-link" title="Read the item description" onClick={() => setDetail(entry)}>
+                      {item.name}
+                    </button>
                   ) : (
                     item.name || <span className="rec-soft">…</span>
                   )}
@@ -423,6 +454,7 @@ function QuantityList({ title, items, field, edit }: { title: string; items: Qua
           onClose={() => setPicking(false)}
         />
       )}
+      {detail && createPortal(<MagicItemDetail entry={detail} onClose={() => setDetail(null)} />, document.body)}
     </SheetBlock>
   )
 }
