@@ -400,3 +400,8 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   `src/rules/itemSpells.ts` (puro, com testes) e `src/lib/itemSpells.ts`
   (carrega o catálogo; se falhar, a folha nasce sem os itens). Próximos lotes
   de dados, se o usuário quiser: anéis e itens diversos do DMG.
+- 2026-10-24, descrições em Magic Item Spells (web v0.111.1, pedido do
+  usuário: seguir o padrão de Magic Items da ficha). Na folha de magia, o
+  item do compêndio (pelo id ou pelo nome exato) e cada magia ligada abrem a
+  descrição: ⓘ ao lado do campo na edição; o nome vira link na leitura (a
+  magia já virava).
