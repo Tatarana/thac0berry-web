@@ -21,6 +21,7 @@ import {
   type AbilityKey,
 } from '../rules/consequences'
 import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { itemACBonus, itemACParts, type ItemACPart } from '../rules/armorClass'
 import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
@@ -784,6 +785,94 @@ function ArmorClassNotice({ c, dexAC, edit }: { c: PlayerCharacter; dexAC: numbe
   )
 }
 
+/** O racional da CA (o "?" do escudo): armadura, DEX e cada item mágico, com o que não conta e por quê. */
+function ACRationale({ c, dexAC, parts }: { c: PlayerCharacter; dexAC: number; parts: ItemACPart[] }) {
+  return (
+    <>
+      <p>In AD&amp;D 2e a lower Armor Class is better. The sheet starts from your armor and subtracts the bonuses:</p>
+      <table className="rec-table ac-rationale">
+        <tbody>
+          <tr>
+            <td className="rec-left">Armor (the box under the shield: armor, shield, effects)</td>
+            <td className="rec-value">{c.armorClass}</td>
+          </tr>
+          <tr>
+            <td className="rec-left">Dexterity defensive adjustment</td>
+            <td className="rec-value">{signed(dexAC)}</td>
+          </tr>
+          {parts.map((p) => (
+            <tr key={p.id}>
+              <td className="rec-left">
+                {p.name || 'Magic item'} <span className="rec-soft">({signed(p.bonus)} AC bonus{p.ignored ? `; doesn’t count: ${p.ignored}` : ''})</span>
+              </td>
+              <td className="rec-value">{p.ignored ? '—' : signed(-p.bonus)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td className="rec-left">
+              <strong>Armor Class</strong>
+            </td>
+            <td className="rec-value">{finalArmorClass(c)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="rec-soft">
+        Magic items count while marked “worn” in Magic Items (page 2). Their bonus comes from the item (homebrew) or the “+N” in the name of
+        armor, shields and items of protection; you can correct it there. Rings of protection don’t improve AC with magical armor and don’t
+        combine with each other; a cloak of protection doesn’t work with magical armor, any shield, or non-leather armor.
+      </p>
+    </>
+  )
+}
+
+/**
+ * 2026-10-24: a CA final passou a tirar os bônus dos itens mágicos em uso. Se a
+ * caixa ARMOR já os contava, contariam duas vezes: o aviso aparece uma vez por
+ * personagem (neste aparelho) até o jogador responder, como o da DEX.
+ */
+function ItemsACNotice({ c, itemsAC, edit }: { c: PlayerCharacter; itemsAC: number; edit: Edit }) {
+  const key = `thac0berry.acItemsReviewed.${c.id.toUpperCase()}`
+  const [done, setDone] = useState(() => {
+    try {
+      return localStorage.getItem(key) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (done) return null
+  const dismiss = () => {
+    try {
+      localStorage.setItem(key, '1')
+    } catch {
+      // sem armazenamento: some só nesta visita
+    }
+    setDone(true)
+  }
+  const without = c.armorClass + itemsAC
+  return (
+    <div className="ac-notice" role="note">
+      <p>
+        Armor Class now counts your magic items in use ({signed(-itemsAC)}, see Magic Items on page 2). If the Armor box already included them,
+        they would count twice.
+      </p>
+      <div className="slot-actions ac-notice-actions">
+        <button
+          className="paper-link"
+          onClick={() => {
+            edit((x) => void (x.armorClass = without))
+            dismiss()
+          }}
+        >
+          It already included them — set Armor to {without}
+        </button>
+        <button className="paper-link" onClick={dismiss}>
+          It didn’t — keep {c.armorClass}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const k = c.combat ?? {}
   type CombatKey = Exclude<keyof NonNullable<PlayerCharacter['combat']>, 'wounds' | 'hitDiceType'>
@@ -796,15 +885,18 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
     )
   const wounds = (k.wounds ?? '').split('\n').filter((w) => w.trim() !== '')
   const dexAC = dexDefenseAdjustment(c)
+  const acParts = itemACParts(c.page2MagicItems)
+  const itemsAC = itemACBonus(c.page2MagicItems)
   return (
     <section className="rec-section">
       <SectionTitle>Combat</SectionTitle>
       {edit && dexAC !== 0 && <ArmorClassNotice c={c} dexAC={dexAC} edit={edit} />}
+      {edit && itemsAC !== 0 && <ItemsACNotice c={c} itemsAC={itemsAC} edit={edit} />}
       <div className="rec-combat">
         <div className="rec-shield">
           <span>ARMOR</span>
-          {/* CA final = a da armadura (digitada) + o ajuste defensivo da DEX (ajuste 7). */}
-          <span className="rec-shield-shape" title={`Armor ${c.armorClass} ${signed(dexAC)} Dexterity`}>
+          {/* CA final = a da armadura (digitada) + o ajuste defensivo da DEX (ajuste 7) − os itens mágicos em uso. */}
+          <span className="rec-shield-shape" title={`Armor ${c.armorClass} ${signed(dexAC)} Dexterity${itemsAC ? ` ${signed(-itemsAC)} magic items` : ''}`}>
             <span className="rec-value">{finalArmorClass(c)}</span>
           </span>
           <span>CLASS</span>
@@ -816,6 +908,10 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
               <span className="rec-value">{c.armorClass}</span>
             )}{' '}
             · DEX {signed(dexAC)}
+            {itemsAC !== 0 && <> · Items {signed(-itemsAC)}</>}
+            <RuleLink ruleID="phb_ch06_armor" title="How Armor Class is figured">
+              <ACRationale c={c} dexAC={dexAC} parts={acParts} />
+            </RuleLink>
           </span>
         </div>
         <div className="rec-lines">
@@ -1014,6 +1110,18 @@ function Thac0Table({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 
 type ModifierKey = 'toHitModifiers' | 'damageModifiers' | 'acModifiers'
 
+/** Linha automática de modificador: da raça (padrão) ou de um item mágico. */
+type AutoModifier = RaceCombatModifier & { tag?: string; title?: string }
+
+/** Os itens mágicos em uso com bônus de AC, como linhas de AC Modifiers. */
+const itemACModifiers = (c: PlayerCharacter): AutoModifier[] =>
+  itemACParts(c.page2MagicItems).map((p) => ({
+    label: p.ignored ? `${p.name} (${p.ignored})` : p.name,
+    value: p.ignored ? '—' : signed(-p.bonus),
+    tag: 'item',
+    title: 'From Magic Items (page 2): items in use with an AC bonus',
+  }))
+
 function ModifierList({
   title,
   items,
@@ -1025,8 +1133,8 @@ function ModifierList({
   items: EquipmentItem[] | null | undefined
   field: ModifierKey
   edit?: Edit
-  /** Linhas automáticas (da raça): no topo, só leitura, não gravadas. */
-  auto?: RaceCombatModifier[]
+  /** Linhas automáticas (da raça, dos itens): no topo, só leitura, não gravadas. */
+  auto?: AutoModifier[]
 }) {
   // Editando, mostra todas as linhas (o iPad grava 3 vazias); só leitura, só as preenchidas.
   const filled = (items ?? []).filter((item) => edit || item.name.trim() !== '' || item.note.trim() !== '')
@@ -1043,9 +1151,9 @@ function ModifierList({
         </thead>
         <tbody>
           {auto.map((m) => (
-            <tr key={m.label} className="rec-auto-mod" title="From the character's race (PHB, Chapter 2); updates when the race changes">
+            <tr key={m.label} className="rec-auto-mod" title={m.title ?? "From the character's race (PHB, Chapter 2); updates when the race changes"}>
               <td className="rec-left">
-                {m.label} <span className="rec-auto-tag">race</span>
+                {m.label} <span className="rec-auto-tag">{m.tag ?? 'race'}</span>
               </td>
               <td>{m.value}</td>
               {edit && <td />}
@@ -1093,7 +1201,7 @@ function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       <div className="rec-modifier-grid">
         <ModifierList title="To Hit Modifiers" items={c.toHitModifiers} field="toHitModifiers" edit={edit} auto={racial.toHit} />
         <ModifierList title="Damage Modifiers" items={c.damageModifiers} field="damageModifiers" edit={edit} />
-        <ModifierList title="AC Modifiers" items={c.acModifiers} field="acModifiers" edit={edit} auto={racial.ac} />
+        <ModifierList title="AC Modifiers" items={c.acModifiers} field="acModifiers" edit={edit} auto={[...itemACModifiers(c), ...racial.ac]} />
       </div>
     </section>
   )

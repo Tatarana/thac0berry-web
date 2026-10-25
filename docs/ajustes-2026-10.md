@@ -412,3 +412,17 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   `power.spell` de efeito passivo (Ring of Free Action, Ring of Spell
   Turning) recebe `uses: []`, e a web passou a tratar a lista vazia como
   "nenhuma função": esses anéis não entram mais na spell sheet.
+- 2026-10-24, bônus de AC dos itens mágicos (web v0.112.0, proposta aprovada,
+  com o "?" pedido pelo usuário). Cada linha de Magic Items (página 2) tem um
+  bônus de AC (`QuantifiedItem.acBonus`, ou o sugerido: o do item criado, ou o
+  "+N" do nome de armadura, escudo ou item de proteção) e a marca "worn"
+  (`QuantifiedItem.worn`; schema pelo gerador do iPad, web primeiro). A CA
+  final passa a ser Armor + DEX − itens em uso (`finalArmorClass`, que o
+  Combat Tracker também usa), com as regras do DMG: Ring of Protection não
+  melhora a AC com armadura mágica e anéis não somam; Cloak of Protection não
+  funciona com armadura mágica nem com escudo. Os itens aparecem como linhas
+  automáticas em AC Modifiers (etiqueta "item"), e o "?" ao lado da conta do
+  escudo mostra o racional (armadura, DEX, cada item e o que não conta e por
+  quê). Aviso de transição, como o da DEX: se a caixa Armor já contava os
+  itens, a ficha oferece corrigir. `src/rules/armorClass.ts` (com testes).
+  Backlog novo em `docs/backlog.md`.

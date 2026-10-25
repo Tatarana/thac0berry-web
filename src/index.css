@@ -5966,6 +5966,36 @@ button.slot-dot:hover {
   text-align: center;
 }
 
+/* Bônus de AC dos itens mágicos (página 2) e o racional da CA (o "?" do escudo). */
+.item-ac {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.item-ac-edit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.item-ac-edit .ink-short {
+  width: 2.6em;
+}
+
+.item-ac-worn {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.ac-rationale td {
+  padding: 3px 6px;
+}
+
+.ac-rationale td.rec-value {
+  text-align: right;
+}
+
 .ac-notice {
   margin: 6px 0 10px;
   padding: 8px 10px;

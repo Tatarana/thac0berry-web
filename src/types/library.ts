@@ -454,6 +454,10 @@ export interface QuantifiedItem {
   matchedItemID?: string | null
   /** Item mágico criado (mestre ou jogador): id e versão em custom_magic_item e a cópia dos dados; ausente/null = item do livro ou digitado. */
   customItem?: CustomItemSnapshot | null
+  /** Bônus de AC do item (+2 = AC 2 melhor), digitado ou corrigido pelo jogador; ausente/null = o sugerido (item criado, ou o +N do nome de armadura, escudo ou item de proteção). */
+  acBonus?: number | null
+  /** Item em uso (o bônus de AC conta); false = guardado; ausente/null = em uso. */
+  worn?: boolean | null
 }
 
 export interface SavingThrows {
