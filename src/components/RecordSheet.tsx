@@ -20,8 +20,8 @@ import {
   undoDualClass,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
-import { itemACBonus, itemACParts, type ItemACPart } from '../rules/armorClass'
+import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, rearArmorClass, shieldlessArmorClass, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { armorBoxFromPieces, itemACBonus, itemACParts, parsedRating, type ItemACPart } from '../rules/armorClass'
 import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, type ClassChoice } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
@@ -787,15 +787,44 @@ function ArmorClassNotice({ c, dexAC, edit }: { c: PlayerCharacter; dexAC: numbe
 
 /** O racional da CA (o "?" do escudo): armadura, DEX e cada item mágico, com o que não conta e por quê. */
 function ACRationale({ c, dexAC, parts }: { c: PlayerCharacter; dexAC: number; parts: ItemACPart[] }) {
+  const pieces = armorBoxFromPieces(c)
+  const armorRating = parsedRating(c.armorRating)
+  const shieldRating = parsedRating(c.shieldRating)
   return (
     <>
+      {c.combat?.typeWorn && <p className="rec-soft">Worn: {c.combat.typeWorn}</p>}
       <p>In AD&amp;D 2e a lower Armor Class is better. The sheet starts from your armor and subtracts the bonuses:</p>
       <table className="rec-table ac-rationale">
         <tbody>
-          <tr>
-            <td className="rec-left">Armor (the box under the shield: armor, shield, effects)</td>
-            <td className="rec-value">{c.armorClass}</td>
-          </tr>
+          {pieces == null ? (
+            <tr>
+              <td className="rec-left">Armor (the box under the shield: armor, shield, effects)</td>
+              <td className="rec-value">{c.armorClass}</td>
+            </tr>
+          ) : (
+            <>
+              <tr>
+                <td className="rec-left">
+                  Armor <span className="rec-soft">({armorRating == null ? 'none: base AC 10' : 'page 2'})</span>
+                </td>
+                <td className="rec-value">{armorRating ?? 10}</td>
+              </tr>
+              {shieldRating != null && (
+                <tr>
+                  <td className="rec-left">
+                    Shield <span className="rec-soft">(page 2)</span>
+                  </td>
+                  <td className="rec-value">{signed(shieldRating)}</td>
+                </tr>
+              )}
+              {c.armorClass !== pieces && (
+                <tr>
+                  <td className="rec-left">Typed over the Armor box (effects, house rules)</td>
+                  <td className="rec-value">{signed(c.armorClass - pieces)}</td>
+                </tr>
+              )}
+            </>
+          )}
           <tr>
             <td className="rec-left">Dexterity defensive adjustment</td>
             <td className="rec-value">{signed(dexAC)}</td>
@@ -817,7 +846,8 @@ function ACRationale({ c, dexAC, parts }: { c: PlayerCharacter; dexAC: number; p
         </tbody>
       </table>
       <p className="rec-soft">
-        Magic items count while marked “worn” in Magic Items (page 2). Their bonus comes from the item (homebrew) or the “+N” in the name of
+        Armor and shield come from the Armor block on page 2 (any shield improves AC by 1); changing them recalculates the Armor box.
+        Shieldless AC drops the shield; Rear AC also drops the Dexterity bonus. Magic items count while marked “worn” in Magic Items (page 2). Their bonus comes from the item (homebrew) or the “+N” in the name of
         armor, shields and items of protection; you can correct it there. Rings of protection don’t improve AC with magical armor and don’t
         combine with each other; a cloak of protection doesn’t work with magical armor, any shield, or non-leather armor.
       </p>
@@ -884,6 +914,22 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       <Cell label={label} value={dash(k[key])} />
     )
   const wounds = (k.wounds ?? '').split('\n').filter((w) => w.trim() !== '')
+  // Shieldless e Rear AC (2026-10-24): calculados da CA final; o que o jogador
+  // digitar vale por cima (vazio volta ao calculado).
+  const autoLine = (label: string, key: CombatKey, computed: number) =>
+    edit ? (
+      <div className="rec-cell">
+        <span className="rec-cell-label">{label}</span>
+        <InkInput
+          value={k[key] ?? ''}
+          placeholder={`${computed} (auto)`}
+          label={label}
+          onChange={(v) => edit((x) => void (x.combat = { ...(x.combat ?? {}), [key]: v === '' ? null : v }))}
+        />
+      </div>
+    ) : (
+      <Cell label={label} value={k[key] || String(computed)} />
+    )
   const dexAC = dexDefenseAdjustment(c)
   const acParts = itemACParts(c.page2MagicItems)
   const itemsAC = itemACBonus(c.page2MagicItems)
@@ -916,8 +962,8 @@ function Combat({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         </div>
         <div className="rec-lines">
           {line('Surprised AC', 'surprisedAC')}
-          {line('Shieldless AC', 'shieldlessAC')}
-          {line('Rear AC', 'rearAC')}
+          {autoLine('Shieldless AC', 'shieldlessAC', shieldlessArmorClass(c))}
+          {autoLine('Rear AC', 'rearAC', rearArmorClass(c))}
           {line('Type Worn', 'typeWorn')}
           {line('Dex Checks', 'dexChecks')}
           {line('Vision Checks', 'visionChecks')}

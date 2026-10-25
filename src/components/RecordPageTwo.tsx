@@ -15,14 +15,14 @@ import {
   type CustomItemVisibility,
 } from '../lib/customItems'
 import { normalize } from '../lib/search'
-import { lineACBonus, suggestedACBonus } from '../rules/armorClass'
+import { currentPiece, lineACBonus, parsedRating, setArmorPieces, suggestedACBonus } from '../rules/armorClass'
 import { customSnapshot, emptyCustomItem, refreshCustomItems, sameID } from '../rules/customItems'
 import type { CustomMagicItemData } from '../types/library'
 import { CustomItemDetail } from './CustomItemDetail'
 import { CustomItemEditor } from './CustomItemEditor'
 import { MagicItemDetail } from './MagicItemDetail'
 import { loadData } from '../data/load'
-import type { MundaneItem } from '../data/gear'
+import type { ArmorPiece, MundaneItem } from '../data/gear'
 import { loadMagicIndex, type MagicItemIndexEntry } from '../data/magicItems'
 import { leastFilledColumn } from '../rules/sheetEdits'
 import { CompendiumPicker } from './CompendiumPicker'
@@ -58,12 +58,94 @@ function AddLine({ label, onClick }: { label: string; onClick: () => void }) {
   )
 }
 
+const shieldRating = (piece: ArmorPiece) => piece.baseAC ?? -1
+
+/**
+ * Armadura e escudo comuns (2026-10-24, como o ArmorPickerSheet do iPad): o
+ * seletor grava o número (AC base; escudo −1), os nomes em Type Worn e
+ * recalcula a caixa ARMOR da página 1 (src/rules/armorClass.ts).
+ */
+function ArmorPieceSelect({
+  label,
+  options,
+  current,
+  ratingOf,
+  onChange,
+}: {
+  label: string
+  options: ArmorPiece[]
+  current: ArmorPiece | null
+  ratingOf: (piece: ArmorPiece) => number
+  onChange: (piece: ArmorPiece | null) => void
+}) {
+  return (
+    <label className="rec-cell armor-pick">
+      <span className="rec-cell-label">{label}</span>
+      <select
+        className="ink-input armor-pick-select"
+        aria-label={label}
+        value={current?.id ?? ''}
+        onChange={(e) => onChange(options.find((p) => p.id === e.target.value) ?? null)}
+      >
+        <option value="">— none —</option>
+        {options.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name} ({ratingOf(p) > 0 ? `AC ${ratingOf(p)}` : `${ratingOf(p)}`.replace('-', '−')})
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function Armor({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+  const [pieces, setPieces] = useState<ArmorPiece[] | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void loadData<ArmorPiece[]>('armor.json')
+      .then((list) => {
+        if (!cancelled) setPieces(list)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  const armors = (pieces ?? []).filter((p) => p.kind === 'armor' && p.baseAC != null)
+  const shields = (pieces ?? []).filter((p) => p.kind === 'shield')
+  const armor = currentPiece(armors, parsedRating(c.armorRating), c.combat?.typeWorn, (p) => p.baseAC ?? null)
+  const shield = currentPiece(shields, parsedRating(c.shieldRating), c.combat?.typeWorn, shieldRating)
+  const shown = (piece: ArmorPiece | null, rating: string) => (piece ? `${piece.name} (${rating.replace('-', '−')})` : dash(rating))
   return (
     <SheetBlock title="Armor" trailing="base AC 10">
       <div className="rec-lines rec-lines-4">
-        <Cell label="Armor" value={dash(c.armorRating)} />
-        <Cell label="Shield" value={dash(c.shieldRating)} />
+        {edit && pieces ? (
+          <>
+            <ArmorPieceSelect
+              label="Armor"
+              options={armors}
+              current={armor}
+              ratingOf={(p) => p.baseAC ?? 10}
+              onChange={(p) =>
+                edit((x) => setArmorPieces(x, { armor: p ? { name: p.name, rating: p.baseAC ?? 10 } : null, shieldName: shield?.name ?? null }))
+              }
+            />
+            <ArmorPieceSelect
+              label="Shield"
+              options={shields}
+              current={shield}
+              ratingOf={shieldRating}
+              onChange={(p) =>
+                edit((x) => setArmorPieces(x, { shield: p ? { name: p.name, rating: shieldRating(p) } : null, armorName: armor?.name ?? null }))
+              }
+            />
+          </>
+        ) : (
+          <>
+            <Cell label="Armor" value={shown(armor, c.armorRating)} />
+            <Cell label="Shield" value={shown(shield, c.shieldRating)} />
+          </>
+        )}
         <Cell label="Dexterity" value={dash(c.details.dexterityDefense)} />
         {edit ? (
           <NumberCell label="Movement" value={c.movement} min={0} max={30} onChange={(v) => edit((x) => void (x.movement = v))} />

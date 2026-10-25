@@ -44,3 +44,30 @@ test('CA final: armadura + DEX − itens em uso', () => {
   assert.equal(R.finalArmorClass(c), 5 - 1 - 2)
   assert.equal(R.finalArmorClass({ ...c, page2MagicItems: [line('Shield +2', { worn: false })] }), 4)
 })
+
+test('armadura e escudo comuns: número no formato do iPad, Type Worn e a caixa recalculada', () => {
+  const c = { armorRating: '', shieldRating: '', armorClass: 6, combat: null } as unknown as Parameters<typeof A.setArmorPieces>[0]
+  A.setArmorPieces(c, { armor: { name: 'Plate mail', rating: 3 } })
+  assert.deepEqual([c.armorRating, c.armorClass, c.combat?.typeWorn], ['3', 3, 'Plate mail'])
+  A.setArmorPieces(c, { shield: { name: 'Medium Shield', rating: -1 }, armorName: 'Plate mail' })
+  assert.deepEqual([c.shieldRating, c.armorClass, c.combat?.typeWorn], ['-1', 2, 'Plate mail, Medium Shield'])
+  A.setArmorPieces(c, { armor: null, shieldName: 'Medium Shield' })
+  assert.deepEqual([c.armorRating, c.armorClass, c.combat?.typeWorn], ['', 9, 'Medium Shield'])
+  assert.equal(A.parsedRating('−1'), -1)
+  assert.equal(A.armorBoxFromPieces({ armorRating: '', shieldRating: '' }), null)
+})
+
+test('Shieldless e Rear AC: sem escudo (comum e mágico); pelas costas, também sem o bônus de DEX', () => {
+  const c = {
+    armorClass: 2,
+    armorRating: '3',
+    shieldRating: '-1',
+    details: { dexterityDefense: '-2' },
+    page2MagicItems: [line('Shield +1'), line('Plate Mail +1')],
+  }
+  assert.equal(R.finalArmorClass(c), 2 - 2 - 1 - 1)
+  assert.equal(R.shieldlessArmorClass(c), -2 + 1 + 1)
+  assert.equal(R.rearArmorClass(c), 0 + 2)
+  // DEX ruim continua pelas costas.
+  assert.equal(R.rearArmorClass({ ...c, details: { dexterityDefense: '+1' } }), R.shieldlessArmorClass({ ...c, details: { dexterityDefense: '+1' } }))
+})

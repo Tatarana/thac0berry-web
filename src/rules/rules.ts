@@ -15,7 +15,7 @@
 
 import { normalize } from '../lib/search.ts'
 import type { AbilityScores, CharacterClass, ClassLevel, EncumbranceTable, LevelChangesTable, QuantifiedItem, SavingThrows } from '../types/library.ts'
-import { itemACBonus } from './armorClass.ts'
+import { itemACBonus, itemACParts, parsedRating } from './armorClass.ts'
 import data from './generated/rules-data.json' with { type: 'json' }
 
 // --- Tipos dos dados -----------------------------------------------------------
@@ -794,4 +794,25 @@ export function finalArmorClass(c: {
   page2MagicItems?: QuantifiedItem[] | null
 }): number {
   return c.armorClass + dexDefenseAdjustment(c) - itemACBonus(c.page2MagicItems)
+}
+
+type ACInput = Parameters<typeof finalArmorClass>[0] & { shieldRating?: string | null }
+
+/**
+ * CA sem o escudo (PHB: ataque pelo flanco do escudo, ou sem tempo de usá-lo):
+ * a final, devolvendo o −1 do escudo comum e o bônus dos escudos mágicos que
+ * contam. Sem escudo, é a própria final.
+ */
+export function shieldlessArmorClass(c: ACInput): number {
+  const shield = parsedRating(c.shieldRating) ?? 0
+  const magicShields = itemACParts(c.page2MagicItems)
+    .filter((p) => p.kind === 'shield' && !p.ignored)
+    .reduce((sum, p) => sum + p.bonus, 0)
+  return finalArmorClass(c) - shield + magicShields
+}
+
+/** CA pelas costas (PHB, ataques pela retaguarda): sem o escudo e sem o bônus de DEX (a penalidade continua). */
+export function rearArmorClass(c: ACInput): number {
+  const dex = dexDefenseAdjustment(c)
+  return shieldlessArmorClass(c) - (dex < 0 ? dex : 0)
 }
