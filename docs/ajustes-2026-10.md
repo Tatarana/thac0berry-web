@@ -405,3 +405,10 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   item do compêndio (pelo id ou pelo nome exato) e cada magia ligada abrem a
   descrição: ⓘ ao lado do campo na edição; o nome vira link na leitura (a
   magia já virava).
+- 2026-10-24, mais itens que lançam magias (web v0.111.2; dados no
+  `thac0berry-data`). Lotes 2 e 3 de `power.uses`: os 31 anéis do DMG e os 179
+  itens diversos do DMG (43 com funções: elementais, colar de contas de
+  oração, colar de mísseis, chifres, gemas, tridentes...). Item com
+  `power.spell` de efeito passivo (Ring of Free Action, Ring of Spell
+  Turning) recebe `uses: []`, e a web passou a tratar a lista vazia como
+  "nenhuma função": esses anéis não entram mais na spell sheet.

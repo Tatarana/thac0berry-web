@@ -12,10 +12,14 @@ const newID = () => crypto.randomUUID().toUpperCase()
 /** O padrão de usos de uma linha de item quando o livro não dá limite (o mesmo do "+ add spell"). */
 export const defaultItemUses = 20
 
-/** As funções do item: `power.uses`, ou só a magia do `power.spell` dos itens antigos. */
+/**
+ * As funções do item: `power.uses`, ou só a magia do `power.spell` dos itens
+ * ainda não levantados. `uses: []` é "nenhuma função" (efeito passivo, como o
+ * Ring of Free Action), mesmo com `power.spell`.
+ */
 export function itemPowerUses(item: Pick<CatalogItem, 'power'>): PowerUse[] {
   const power = item.power
-  if (power?.uses && power.uses.length > 0) return power.uses
+  if (power?.uses) return power.uses
   if (power?.spell) return [{ name: power.spell.name, spell: power.spell, chargeCost: power.chargeBased ? 1 : null }]
   return []
 }
