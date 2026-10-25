@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { loadMagicIndex, type MagicItemIndexEntry } from '../data/magicItems'
 import { damageText, findSpellEntry, loadSpell, shortCastingTime, type Spell, type SpellIndexEntry } from '../data/spells'
 import type { FavoriteSpells } from '../lib/favoriteSpells'
+import { normalize } from '../lib/search'
 import type { ServerSheet } from '../lib/useSpellSheets'
 import { casterLevel, classLabel, formerLabel, levelLabel } from '../rules/multiclass'
 import { bonusSpellTotals, canonicalClass, hasSpellSheet, isArcaneCaster } from '../rules/rules'
 import { assignSlot, clearSlot, logCast, spellMatches, toggleSpent } from '../rules/spellSheets'
 import type { CharacterClass, ClassLevel, PlayerCharacter, SpellSlot } from '../types/library'
+import { MagicItemDetail } from './MagicItemDetail'
 import { InkInput, InkNumber, SheetBlock, TallyBoard, TallyMarks } from './SheetBits'
 import { SlotEditor } from './SlotEditor'
 import { useSpellChoices, type Caster } from '../lib/spellChoices'
@@ -300,6 +304,25 @@ export function SpellSheetPage({
     return [...set].sort()
   }, [sheet])
   const spells = useSpells(ids)
+  // Itens mágicos: a descrição do compêndio (pelo id do seletor, ou pelo nome
+  // exato se foi digitado), como em Magic Items na página 2 da ficha.
+  const [magicIndex, setMagicIndex] = useState<MagicItemIndexEntry[] | null>(null)
+  const [itemDetail, setItemDetail] = useState<MagicItemIndexEntry | null>(null)
+  const hasItems = sheet.magicItems.length > 0
+  useEffect(() => {
+    if (!hasItems || magicIndex) return
+    let cancelled = false
+    void loadMagicIndex().then((list) => {
+      if (!cancelled) setMagicIndex(list)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [hasItems, magicIndex])
+  const itemEntry = (item: { name: string; matchedItemID?: string | null }) =>
+    magicIndex?.find((e) => e.id === item.matchedItemID) ??
+    (item.name.trim() !== '' ? magicIndex?.find((e) => normalize(e.name) === normalize(item.name)) : undefined) ??
+    null
 
   // Círculos na ordem do iPad: conjurador (arcane, divine) e nível; slots na
   // ordem gravada (o iPad já grava ordenado por orderKey).
@@ -382,127 +405,148 @@ export function SpellSheetPage({
 
       <SheetBlock title="Magic Item Spells" trailing="rings, wands, staves, armor">
         {sheet.magicItems.length === 0 && <p className="rec-soft">{edit ? 'No magic items logged for today yet.' : '—'}</p>}
-        {sheet.magicItems.map((item) => (
-          <div key={item.id} className="item-card">
-            <div className="item-card-head">
-              <span className="rec-cell-label rec-left-label">Item</span>
-              {edit ? (
-                <span className="item-card-line">
-                  <InkInput
-                    value={item.name}
-                    placeholder="item name"
-                    label="Magic item name"
-                    onChange={(v) => edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, name: v, matchedItemID: null } : m))))}
+        {sheet.magicItems.map((item) => {
+          const entry = itemEntry(item)
+          return (
+            <div key={item.id} className="item-card">
+              <div className="item-card-head">
+                <span className="rec-cell-label rec-left-label">Item</span>
+                {edit ? (
+                  <span className="item-card-line">
+                    <InkInput
+                      value={item.name}
+                      placeholder="item name"
+                      label="Magic item name"
+                      onChange={(v) => edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, name: v, matchedItemID: null } : m))))}
+                    />
+                    {entry && (
+                      <button className="info-btn" aria-label={`About ${item.name}`} title="Read the item description" onClick={() => setItemDetail(entry)}>
+                        ⓘ
+                      </button>
+                    )}
+                    <RemoveButton label={`Remove ${item.name || 'this item'}`} onClick={() => edit((s) => void (s.magicItems = s.magicItems.filter((m) => m.id !== item.id)))} />
+                  </span>
+                ) : (
+                  entry ? (
+                    <button className="memorized-link" title="Read the item description" onClick={() => setItemDetail(entry)}>
+                      {item.name}
+                    </button>
+                  ) : (
+                    <span className="rec-value">{item.name || 'item name'}</span>
+                  )
+                )}
+                {edit ? (
+                  <textarea
+                    className="ink-input ink-area item-description"
+                    value={item.itemDescription}
+                    placeholder="description"
+                    aria-label={`${item.name || 'Item'} description`}
+                    onChange={(e) => edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, itemDescription: e.target.value } : m))))}
                   />
-                  <RemoveButton label={`Remove ${item.name || 'this item'}`} onClick={() => edit((s) => void (s.magicItems = s.magicItems.filter((m) => m.id !== item.id)))} />
-                </span>
-              ) : (
-                <span className="rec-value">{item.name || 'item name'}</span>
-              )}
-              {edit ? (
-                <textarea
-                  className="ink-input ink-area item-description"
-                  value={item.itemDescription}
-                  placeholder="description"
-                  aria-label={`${item.name || 'Item'} description`}
-                  onChange={(e) => edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, itemDescription: e.target.value } : m))))}
-                />
-              ) : (
-                item.itemDescription && <p className="rec-soft">{item.itemDescription}</p>
-              )}
-            </div>
-            <table className="sheet-rows">
-              <tbody>
-                {item.spells.map((use) => {
-                  const resolved = use.matchedSpellID ? spells.get(use.matchedSpellID) : undefined
-                  const exhausted = use.usedCount >= use.maxUses
-                  return (
-                    <tr key={use.id}>
-                      <td className="rec-value sheet-rows-name">
-                        {edit ? (
-                          // Um item pode lançar qualquer magia: sacerdote e mago, ou livre.
-                          <SpellNameField
-                            value={use.spellName}
-                            placeholder="spell"
-                            label={`${item.name || 'Item'} spell`}
-                            casters={['divine', 'arcane']}
-                            onChange={(name, spellID) => edit((s) => setItemSpell(s, item.id, use.id, { spellName: name, matchedSpellID: spellID }))}
-                          />
-                        ) : resolved ? (
-                          <button className="memorized-link" onClick={() => setOpen(resolved.entry)}>
-                            {use.spellName || resolved.entry.name}
-                          </button>
-                        ) : (
-                          use.spellName || <span className="rec-soft">spell</span>
-                        )}
-                      </td>
-                      <td className="sheet-rows-tally">
-                        <Counter
-                          count={use.usedCount}
-                          exhausted={exhausted}
-                          label={`${use.spellName || 'Spell'} uses`}
-                          onChange={edit && ((n) => edit((s) => setItemSpell(s, item.id, use.id, { usedCount: n })))}
-                        />
-                      </td>
-                      <td className="sheet-rows-count">
-                        <span className={exhausted ? 'rec-value rec-red' : 'rec-value'}>{use.usedCount}</span>
-                        <span className="rec-soft"> of </span>
-                        {edit ? (
-                          <InkNumber
-                            className="ink-short"
-                            value={use.maxUses}
-                            min={1}
-                            max={99}
-                            label={`${use.spellName || 'Spell'} maximum uses`}
-                            onChange={(n) => edit((s) => setItemSpell(s, item.id, use.id, { maxUses: n }))}
-                          />
-                        ) : (
-                          <span className="rec-value">{use.maxUses}</span>
-                        )}
-                      </td>
-                      <td className="rec-value item-dmg">
-                        {edit ? (
-                          <InkInput
-                            value={use.damageNote}
-                            placeholder="1d6+1"
-                            label={`${use.spellName || 'Spell'} damage`}
-                            onChange={(v) => edit((s) => setItemSpell(s, item.id, use.id, { damageNote: v }))}
-                          />
-                        ) : (
-                          use.damageNote || '—'
-                        )}
-                      </td>
-                      {edit && (
-                        <td className="remove-cell">
-                          <RemoveButton
-                            label={`Remove ${use.spellName || 'this spell'}`}
-                            onClick={() =>
-                              edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, spells: m.spells.filter((u) => u.id !== use.id) } : m))))
-                            }
+                ) : (
+                  item.itemDescription && <p className="rec-soft">{item.itemDescription}</p>
+                )}
+              </div>
+              <table className="sheet-rows">
+                <tbody>
+                  {item.spells.map((use) => {
+                    const resolved = use.matchedSpellID ? spells.get(use.matchedSpellID) : undefined
+                    const exhausted = use.usedCount >= use.maxUses
+                    return (
+                      <tr key={use.id}>
+                        <td className="rec-value sheet-rows-name">
+                          {edit ? (
+                            // Um item pode lançar qualquer magia: sacerdote e mago, ou livre.
+                            <span className="row-with-remove">
+                              <SpellNameField
+                                value={use.spellName}
+                                placeholder="spell"
+                                label={`${item.name || 'Item'} spell`}
+                                casters={['divine', 'arcane']}
+                                onChange={(name, spellID) => edit((s) => setItemSpell(s, item.id, use.id, { spellName: name, matchedSpellID: spellID }))}
+                              />
+                              {resolved && (
+                                <button className="info-btn" aria-label={`About ${resolved.entry.name}`} title="Read the spell description" onClick={() => setOpen(resolved.entry)}>
+                                  ⓘ
+                                </button>
+                              )}
+                            </span>
+                          ) : resolved ? (
+                            <button className="memorized-link" onClick={() => setOpen(resolved.entry)}>
+                              {use.spellName || resolved.entry.name}
+                            </button>
+                          ) : (
+                            use.spellName || <span className="rec-soft">spell</span>
+                          )}
+                        </td>
+                        <td className="sheet-rows-tally">
+                          <Counter
+                            count={use.usedCount}
+                            exhausted={exhausted}
+                            label={`${use.spellName || 'Spell'} uses`}
+                            onChange={edit && ((n) => edit((s) => setItemSpell(s, item.id, use.id, { usedCount: n })))}
                           />
                         </td>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-            {edit && (
-              <button
-                className="paper-link add-line"
-                onClick={() =>
-                  edit((s) =>
-                    void (s.magicItems = s.magicItems.map((m) =>
-                      m.id === item.id ? { ...m, spells: [...m.spells, { id: newID(), spellName: '', damageNote: '', maxUses: 20, usedCount: 0 }] } : m,
-                    )),
-                  )
-                }
-              >
-                + add spell
-              </button>
-            )}
-          </div>
-        ))}
+                        <td className="sheet-rows-count">
+                          <span className={exhausted ? 'rec-value rec-red' : 'rec-value'}>{use.usedCount}</span>
+                          <span className="rec-soft"> of </span>
+                          {edit ? (
+                            <InkNumber
+                              className="ink-short"
+                              value={use.maxUses}
+                              min={1}
+                              max={99}
+                              label={`${use.spellName || 'Spell'} maximum uses`}
+                              onChange={(n) => edit((s) => setItemSpell(s, item.id, use.id, { maxUses: n }))}
+                            />
+                          ) : (
+                            <span className="rec-value">{use.maxUses}</span>
+                          )}
+                        </td>
+                        <td className="rec-value item-dmg">
+                          {edit ? (
+                            <InkInput
+                              value={use.damageNote}
+                              placeholder="1d6+1"
+                              label={`${use.spellName || 'Spell'} damage`}
+                              onChange={(v) => edit((s) => setItemSpell(s, item.id, use.id, { damageNote: v }))}
+                            />
+                          ) : (
+                            use.damageNote || '—'
+                          )}
+                        </td>
+                        {edit && (
+                          <td className="remove-cell">
+                            <RemoveButton
+                              label={`Remove ${use.spellName || 'this spell'}`}
+                              onClick={() =>
+                                edit((s) => void (s.magicItems = s.magicItems.map((m) => (m.id === item.id ? { ...m, spells: m.spells.filter((u) => u.id !== use.id) } : m))))
+                              }
+                            />
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {edit && (
+                <button
+                  className="paper-link add-line"
+                  onClick={() =>
+                    edit((s) =>
+                      void (s.magicItems = s.magicItems.map((m) =>
+                        m.id === item.id ? { ...m, spells: [...m.spells, { id: newID(), spellName: '', damageNote: '', maxUses: 20, usedCount: 0 }] } : m,
+                      )),
+                    )
+                  }
+                >
+                  + add spell
+                </button>
+              )}
+            </div>
+          )
+        })}
         {edit && (
           <button
             className="paper-link add-line"
@@ -567,6 +611,7 @@ export function SpellSheetPage({
           favorite={favorites?.available ? { on: favorites.has(open.id), toggle: () => favorites.toggle(open.id) } : undefined}
         />
       )}
+      {itemDetail && createPortal(<MagicItemDetail entry={itemDetail} onClose={() => setItemDetail(null)} />, document.body)}
       {edit && pickedSlot && character && (
         <SlotEditor
           slot={pickedSlot}
