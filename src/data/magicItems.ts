@@ -17,6 +17,16 @@ export interface SpellRef {
   class: string
 }
 
+/** Uma função do item (schema PowerUse). */
+export interface PowerUse {
+  name: string
+  spell?: SpellRef | null
+  /** Cargas por uso (0 = não gasta; null = varia, ver effect). */
+  chargeCost?: number | null
+  perDay?: number | null
+  effect?: string | null
+}
+
 export interface MagicItem {
   id: string
   name: string
@@ -37,7 +47,14 @@ export interface MagicItem {
     regenerates: boolean
   } | null
   enchantment?: { attackBonus?: number | null; damageBonus?: number | null } | null
-  power?: { name?: string | null; chargeBased?: boolean | null; maxCharges?: number | null; spell?: SpellRef | null } | null
+  power?: {
+    name?: string | null
+    chargeBased?: boolean | null
+    maxCharges?: number | null
+    spell?: SpellRef | null
+    /** Funções que o item ativa (magias ou poderes); só nos itens já levantados (2026-10-24). */
+    uses?: PowerUse[] | null
+  } | null
   containsSpells?: SpellRef[]
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { startSpellSheet } from '../rules/spellSheets'
 import type { SpellSheet } from '../types/library'
 import { loadValidators } from './libraryImport'
+import { withCharacterItems } from './itemSpells'
 import { spellSheetBasis } from './roster'
 import { supabase } from './supabase'
 import type { ServerCharacter } from './useCharacterDoc'
@@ -182,7 +183,7 @@ export async function startSessionDay(characterID: string, sessionID: string) {
   if (existing.error) throw new Error(existing.error.message)
   const c = (character.data as { data: ServerCharacter }).data
   const sheets = (existing.data as { data: SpellSheet }[]).map((row) => row.data)
-  const sheet = startSpellSheet(spellSheetBasis(c), sheets, { sessionID, title: 'Day 1' })
+  const sheet = await withCharacterItems(startSpellSheet(spellSheetBasis(c), sheets, { sessionID, title: 'Day 1' }), c)
   const { spellSheet } = await loadValidators()
   const problem = spellSheet(sheet)
   if (problem) throw new Error(`the new spell sheet would not open on the iPad (${problem})`)

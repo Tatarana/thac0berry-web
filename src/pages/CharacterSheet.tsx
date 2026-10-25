@@ -11,6 +11,7 @@ import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
 import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEffects'
 import { useFavoriteSpells } from '../lib/favoriteSpells'
+import { withCharacterItems } from '../lib/itemSpells'
 import { supabase } from '../lib/supabase'
 import { useCharacterDoc, type SaveState } from '../lib/useCharacterDoc'
 import { Notebook } from '../components/Notebook'
@@ -214,11 +215,15 @@ export function CharacterSheet() {
   async function newDay(current: { sessionID?: string | null }) {
     if (!character || !sheets) return
     const sameSession = sheets.filter((s) => (s.sessionID ?? null) === (current.sessionID ?? null))
-    const sheet = startSpellSheet(sheetBasis(character), sheets, {
-      sessionID: current.sessionID ?? null,
-      title: `Day ${sameSession.length + 1}`,
-      continuingFrom: sameSession[sameSession.length - 1] ?? null,
-    })
+    // Os itens de Magic Items que lançam magias entram na folha (se ainda não estão).
+    const sheet = await withCharacterItems(
+      startSpellSheet(sheetBasis(character), sheets, {
+        sessionID: current.sessionID ?? null,
+        title: `Day ${sameSession.length + 1}`,
+        continuingFrom: sameSession[sameSession.length - 1] ?? null,
+      }),
+      character,
+    )
     try {
       setSheetError(null)
       await spellSheets.createSheet(sheet)
@@ -252,7 +257,7 @@ export function CharacterSheet() {
     try {
       const sessionID = await activeSessionID(campaignID)
       setSheetError(null)
-      await spellSheets.createSheet(startSpellSheet(sheetBasis(character, classes), [], { sessionID, title: 'First day' }))
+      await spellSheets.createSheet(await withCharacterItems(startSpellSheet(sheetBasis(character, classes), [], { sessionID, title: 'First day' }), character))
     } catch (reason) {
       setSheetError(reason instanceof Error ? reason.message : String(reason))
     } finally {

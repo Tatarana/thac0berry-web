@@ -385,3 +385,18 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   ordem da lista fica a de quando a janela abriu (a linha não pula ao marcar);
   na próxima abertura, as favoritas sobem. A ficha usa o mesmo
   `useFavoriteSpells` do grimório (antes só lia a lista).
+- 2026-10-24, itens que lançam magias entram sozinhos na spell sheet (web
+  v0.111.0, pedido do usuário; dados primeiro, por decisão dele). No
+  `thac0berry-data`: campo novo `power.uses` (nome da função, magia
+  equivalente, cargas por uso, limite por dia, efeito), escrito à mão a partir
+  do texto (`scripts/add_magic_item_uses.py`), lote 1 com os 43
+  Rods/Staves/Wands do DMG (33 com funções; armas e itens sem função ficam
+  sem). Na web: ao criar uma folha (dia novo, "First day", sessão nova da
+  campanha), cada item de Magic Items da ficha com funções no catálogo (ou com
+  o `power.spell` antigo) entra na folha com uma linha por função: a magia
+  ligada (abre a descrição), o limite (por dia, senão as cargas do item,
+  senão 20) e o dano/cura do item. Item já na folha (herdado do dia anterior,
+  pelo id do catálogo ou pelo nome) não se repete; item homebrew não entra.
+  `src/rules/itemSpells.ts` (puro, com testes) e `src/lib/itemSpells.ts`
+  (carrega o catálogo; se falhar, a folha nasce sem os itens). Próximos lotes
+  de dados, se o usuário quiser: anéis e itens diversos do DMG.
