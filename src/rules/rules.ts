@@ -14,7 +14,8 @@
 // registrado no TODO.md de lá).
 
 import { normalize } from '../lib/search.ts'
-import type { AbilityScores, CharacterClass, ClassLevel, EncumbranceTable, LevelChangesTable, SavingThrows } from '../types/library.ts'
+import type { AbilityScores, CharacterClass, ClassLevel, EncumbranceTable, LevelChangesTable, QuantifiedItem, SavingThrows } from '../types/library.ts'
+import { itemACBonus } from './armorClass.ts'
 import data from './generated/rules-data.json' with { type: 'json' }
 
 // --- Tipos dos dados -----------------------------------------------------------
@@ -769,10 +770,11 @@ export function refreshLevelChanges(
 }
 
 // --- Classe de armadura (ajuste 7, 2026-10-10) ------------------------------------
-// A caixa ARMOR da ficha é a CA da armadura (armadura, escudo, mágicos e os
-// efeitos que mexem na CA); a CA final soma o ajuste defensivo da DEX (PHB,
-// Tabela 2: −2 melhora, +2 piora). O ajuste é o da linha da DEX na ficha (que
-// acompanha efeitos como poções); vazio, vem da tabela pelo valor da DEX.
+// A caixa ARMOR da ficha é a CA da armadura (armadura, escudo e os efeitos que
+// mexem na CA); a CA final soma o ajuste defensivo da DEX (PHB, Tabela 2: −2
+// melhora, +2 piora) e, desde 2026-10-24, tira os bônus de AC dos itens mágicos
+// em uso (src/rules/armorClass.ts). O ajuste da DEX é o da linha da DEX na
+// ficha (que acompanha efeitos como poções); vazio, vem da tabela.
 
 const intOf = (text: string | null | undefined) => (text != null && /^\s*[+-]?\d+\s*$/.test(text) ? parseInt(text, 10) : null)
 
@@ -785,6 +787,11 @@ export function charismaReactionAdjustment(c: { abilities?: AbilityScores | null
   return intOf(c.details?.charismaReaction) ?? (c.abilities ? intOf(abilityDetail('charismaReaction', c.abilities)) : null) ?? 0
 }
 
-export function finalArmorClass(c: { armorClass: number; abilities?: AbilityScores | null; details?: { dexterityDefense?: string | null } | null }): number {
-  return c.armorClass + dexDefenseAdjustment(c)
+export function finalArmorClass(c: {
+  armorClass: number
+  abilities?: AbilityScores | null
+  details?: { dexterityDefense?: string | null } | null
+  page2MagicItems?: QuantifiedItem[] | null
+}): number {
+  return c.armorClass + dexDefenseAdjustment(c) - itemACBonus(c.page2MagicItems)
 }

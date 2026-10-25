@@ -15,6 +15,7 @@ import {
   type CustomItemVisibility,
 } from '../lib/customItems'
 import { normalize } from '../lib/search'
+import { lineACBonus, suggestedACBonus } from '../rules/armorClass'
 import { customSnapshot, emptyCustomItem, refreshCustomItems, sameID } from '../rules/customItems'
 import type { CustomMagicItemData } from '../types/library'
 import { CustomItemDetail } from './CustomItemDetail'
@@ -371,6 +372,57 @@ type QuantityKey = 'page2MagicItems' | 'page2TreasureItems'
 /** Um item no seletor de Magic Items: do livro, ou criado (mestre ou jogador), que vem primeiro. */
 type MagicChoice = MagicItemIndexEntry & { custom?: CustomItemRow }
 
+const signedAC = (n: number) => (n > 0 ? `+${n}` : `−${-n}`)
+
+/**
+ * Bônus de AC do item mágico (2026-10-24): o digitado ou o sugerido (item
+ * criado, "+N" do nome de armadura, escudo ou item de proteção) e se está em
+ * uso; o que está em uso entra na CA da página 1 (src/rules/armorClass.ts).
+ */
+function ItemACCell({ item, set }: { item: QuantifiedItem; set?: (patch: Partial<QuantifiedItem>) => void }) {
+  const bonus = lineACBonus(item)
+  const suggested = suggestedACBonus(item)
+  const worn = item.worn !== false
+  // O texto enquanto digita ("-" ou "+" sozinhos ainda não são número).
+  const [draft, setDraft] = useState<string | null>(null)
+  if (!set) {
+    return (
+      <td className="item-ac">
+        {bonus ? (
+          <span className={worn ? 'rec-value' : 'rec-soft'} title={worn ? 'AC bonus (in use)' : 'AC bonus (not worn)'}>
+            AC {signedAC(bonus)}
+            {!worn && ' · stored'}
+          </span>
+        ) : null}
+      </td>
+    )
+  }
+  return (
+    <td className="item-ac">
+      <span className="item-ac-edit">
+        <span className="rec-soft">AC</span>
+        <InkInput
+          className="ink-short"
+          value={draft ?? (item.acBonus == null ? '' : signedAC(item.acBonus))}
+          placeholder={suggested ? signedAC(suggested) : '—'}
+          label={`${item.name || 'Item'} AC bonus`}
+          onChange={(v) => {
+            setDraft(v)
+            const t = v.trim().replace('−', '-')
+            if (t === '') set({ acBonus: null })
+            else if (/^[+-]?\d{1,2}$/.test(t)) set({ acBonus: parseInt(t, 10) })
+          }}
+        />
+        {bonus ? (
+          <label className="item-ac-worn" title="Counts in Armor Class while worn">
+            <input type="checkbox" checked={worn} onChange={(e) => set({ worn: e.target.checked ? null : false })} /> worn
+          </label>
+        ) : null}
+      </span>
+    </td>
+  )
+}
+
 function QuantityList({
   title,
   items,
@@ -513,6 +565,7 @@ function QuantityList({
                     <span className="rec-value">{item.quantity}</span>
                   )}
                 </td>
+                {isMagic && <ItemACCell item={item} set={edit ? (patch) => set(item.id, patch) : undefined} />}
                 {edit && (
                   <td className="remove-cell">
                     <RowRemove label={`Remove ${item.name || 'this line'}`} onClick={() => edit((x) => void (x[field] = (x[field] ?? []).filter((q) => q.id !== item.id)))} />
