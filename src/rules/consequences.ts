@@ -25,6 +25,7 @@ import {
   type RuleKey,
   type RuleValue,
 } from './rules.ts'
+import { raiseExperienceToLevel } from './multiclass.ts'
 
 export type ConsequenceKind = 'autoApplicable' | 'alreadyAutomatic'
 
@@ -223,6 +224,7 @@ export function setMultiClasses(c: PlayerCharacter, multiClasses: ClassLevel[]) 
   // Primeiro multiclasse da ficha: o retrato guarda o estado de antes (classe única).
   if (c.lastAppliedMultiClasses === undefined) c.lastAppliedMultiClasses = (c.multiClasses ?? []).map((k) => ({ ...k }))
   c.multiClasses = multiClasses.length ? multiClasses.map((k) => ({ ...k })) : null
+  raiseExperienceToLevel(c)
   // Dado de vida "d10/d4" quando não foi escrito à mão (o padrão segue as classes).
   const dice = [c.characterClass, ...multiClasses.map((k) => k.characterClass)].map((k) => hitDieType(k)).join('/')
   const current = c.combat?.hitDiceType
@@ -239,6 +241,8 @@ export function setMultiClassLevel(c: PlayerCharacter, index: number, level: num
 export function setLevel(c: PlayerCharacter, level: number) {
   ensureConsequenceSnapshot(c)
   c.level = level
+  // XP abaixo do nível novo vira o XP base dele (pedido do usuário, 2026-10-25).
+  raiseExperienceToLevel(c)
   refreshXPNeeded(c)
   refreshLevelChanges(c)
 }

@@ -191,6 +191,24 @@ export function classProgress(c: WithClasses & Pick<PlayerCharacter, 'experience
   })
 }
 
+/**
+ * O XP mínimo para os níveis da ficha (2026-10-25, pedido do usuário): o XP base
+ * do nível. Multiclasse divide o XP igualmente (PHB, cap. 3), então o total
+ * precisa cobrir a classe mais exigente em cada parte: classes × maior
+ * requisito. Classe dupla: só a classe atual (as anteriores ficaram congeladas).
+ */
+export function minimumExperience(c: WithClasses): number {
+  const classes = classLevels(c)
+  const most = Math.max(0, ...classes.map((k) => xpRequired(k.level, k.characterClass) ?? 0))
+  return most * classes.length
+}
+
+/** Sobe o XP para o mínimo dos níveis da ficha, se estiver abaixo (nunca baixa). */
+export function raiseExperienceToLevel(c: WithClasses & Pick<PlayerCharacter, 'experience'>) {
+  const min = minimumExperience(c)
+  if ((c.experience ?? 0) < min) c.experience = min
+}
+
 // --- Proficiências: maior número inicial, ritmo mais rápido -------------------------
 
 const num = (text: string | undefined) => (text !== undefined && /^[+-]?\d+$/.test(text) ? Number(text) : null)

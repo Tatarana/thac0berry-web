@@ -274,3 +274,17 @@ test('dreno de nível (PHB): classe mais alta; empate, a que exige mais XP', () 
   assert.equal(tie?.characterClass, expected)
   assert.equal(M.levelDrainTarget({ characterClass: 'Fighter', level: 1, multiClasses: [{ characterClass: 'Mage', level: 1 }] }), null)
 })
+
+test('XP mínimo do nível: classe única, multiclasse (classes × maior requisito) e só sobe', () => {
+  // Fighter 3 = 4.000; Mage 3 = 5.000.
+  assert.equal(M.minimumExperience({ characterClass: 'Fighter', level: 3 }), 4000)
+  assert.equal(M.minimumExperience({ characterClass: 'Fighter', level: 3, multiClasses: [{ characterClass: 'Mage', level: 3 }] }), 2 * 5000)
+  // Classe dupla: só a classe atual.
+  assert.equal(M.minimumExperience({ characterClass: 'Mage', level: 1, formerClasses: [{ characterClass: 'Fighter', level: 5 }] }), 0)
+  const c = { characterClass: 'Fighter' as const, level: 3, experience: 100 }
+  M.raiseExperienceToLevel(c)
+  assert.equal(c.experience, 4000)
+  const rich = { characterClass: 'Fighter' as const, level: 1, experience: 9000 }
+  M.raiseExperienceToLevel(rich)
+  assert.equal(rich.experience, 9000)
+})
