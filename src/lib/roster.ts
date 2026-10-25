@@ -2,6 +2,7 @@ import { hasSpellSheetAny, spellSheetAbility } from '../rules/multiclass'
 import { computedSpellSlotAllotments } from '../rules/rules'
 import { startSpellSheet } from '../rules/spellSheets'
 import type { PlayerCharacter } from '../types/library'
+import { withCharacterItems } from './itemSpells'
 import { loadValidators } from './libraryImport'
 import { defaultPlayerName } from './preferences'
 import { activeSessionID } from './sessions'
@@ -90,7 +91,7 @@ async function seedFirstSpellSheet(characterID: string, c: ServerCharacter, camp
   if (existing.error) throw new Error(existing.error.message)
   if (existing.data.length > 0) return
   const sessionID = await activeSessionID(campaignID)
-  const sheet = startSpellSheet(spellSheetBasis(c), [], { sessionID, title: 'First day' })
+  const sheet = await withCharacterItems(startSpellSheet(spellSheetBasis(c), [], { sessionID, title: 'First day' }), c)
   const { spellSheet } = await loadValidators()
   const problem = spellSheet(sheet)
   if (problem) throw new Error(`the first spell sheet would not open on the iPad (${problem})`)
