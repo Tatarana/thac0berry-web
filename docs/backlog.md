@@ -13,6 +13,5 @@ mil), por lotes. Item sem `power.uses` ainda entra na spell sheet se tiver o
 
 ## Bônus de AC dos itens mágicos, segunda etapa
 
-Bracers of Defense (trocam a AC base em vez de dar bônus) e o `acBonus` fixo do
-catálogo (88 itens, quase todos armaduras especiais), que hoje não é lido: a
-ficha usa o do item criado ou o "+N" do nome.
+Bracers of Defense (trocam a AC base em vez de dar bônus). O `acBonus` fixo do
+catálogo já é lido (v0.112.1).

@@ -28,6 +28,17 @@ test('só os em uso contam; anel com armadura mágica e anéis repetidos não co
   assert.equal(A.itemACBonus([line('Cloak of Protection +2'), line('Shield +1')]), 1)
 })
 
+test('bônus do livro: preenche a linha sem bônus nem +N no nome; não mexe no resto', () => {
+  const index = [
+    { id: 'laeral_s_storm_armor', name: "Laeral's Storm Armor", acBonus: 2 },
+    { id: 'shield_of_the_holy', name: 'Shield of the Holy', acBonus: 1 },
+  ]
+  const c = { page2MagicItems: [line("Laeral's Storm Armor"), line('Shield of the Holy', { acBonus: 2 }), line('Shield +1'), line('Staff of Curing')] }
+  assert.equal(A.fillCatalogACBonuses(c, index), true)
+  assert.deepEqual(c.page2MagicItems.map((l) => l.acBonus ?? null), [2, 2, null, null])
+  assert.equal(A.fillCatalogACBonuses(c, index), false)
+})
+
 test('CA final: armadura + DEX − itens em uso', () => {
   const c = { armorClass: 5, details: { dexterityDefense: '-1' }, page2MagicItems: [line('Shield +2')] }
   assert.equal(R.finalArmorClass(c), 5 - 1 - 2)
