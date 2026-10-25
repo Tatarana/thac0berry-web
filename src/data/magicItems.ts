@@ -9,6 +9,8 @@ export interface MagicItemIndexEntry {
   books: string[]
   summary: string
   file: string
+  /** Bônus de AC fixo do livro (`defenseBonus.acBonus`), quando há. */
+  acBonus?: number
 }
 
 export interface SpellRef {

@@ -10,6 +10,7 @@ import { PageBeads } from '../components/SheetBits'
 import { SpellSheetPage } from '../components/SpellSheetPage'
 import { WizardSpellbook } from '../components/WizardSpellbook'
 import { ActiveEffectsWindow, AttackNegationFloat } from '../components/ActiveEffects'
+import { loadMagicIndex, type MagicItemIndexEntry } from '../data/magicItems'
 import { useFavoriteSpells } from '../lib/favoriteSpells'
 import { withCharacterItems } from '../lib/itemSpells'
 import { supabase } from '../lib/supabase'
@@ -28,6 +29,7 @@ import { useSpellSheets } from '../lib/useSpellSheets'
 import { activeSessionID } from '../lib/sessions'
 import { useBackTo } from '../lib/shieldBack'
 import { spellSheetBasis } from '../lib/roster'
+import { fillCatalogACBonuses } from '../rules/armorClass'
 import { spellUsageCounts, startSpellSheet } from '../rules/spellSheets'
 import { allClasses, hasClass, type ClassChoice, hasSpellSheetAny, isArcaneCasterAny, isDualClass, isMultiClass, recordSheetPages } from '../rules/multiclass'
 import type { PlayerCharacter } from '../types/library'
@@ -302,6 +304,25 @@ export function CharacterSheet() {
   const loaded = doc
   const error = loadError
   const edit = update as (mutate: (c: PlayerCharacter) => void) => void
+  // Bônus de AC do livro nos itens mágicos (Storm Armor +2...): ao abrir a ficha,
+  // a linha sem bônus nem "+N" no nome recebe o do catálogo (src/rules/armorClass.ts).
+  const magicLinesKey = (character?.page2MagicItems ?? []).map((l) => `${l.id}:${l.acBonus ?? ''}:${l.matchedItemID ?? l.name}`).join('|')
+  const fillACBonuses = useEffectEvent((index: MagicItemIndexEntry[]) => {
+    if (!character) return
+    if (fillCatalogACBonuses({ page2MagicItems: structuredClone(character.page2MagicItems ?? []) }, index)) edit((x) => void fillCatalogACBonuses(x, index))
+  })
+  useEffect(() => {
+    if (magicLinesKey === '') return
+    let cancelled = false
+    void loadMagicIndex()
+      .then((index) => {
+        if (!cancelled) fillACBonuses(index)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [magicLinesKey])
   const pages = allPages.slice(0, character ? recordSheetPages(character) : 3)
   const page = pages.some((p) => p.id === params.get('page')) ? params.get('page')! : '1'
 

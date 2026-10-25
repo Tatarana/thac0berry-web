@@ -145,6 +145,8 @@ for (const file of files.filter((f) => f.startsWith('magic_')).sort()) {
       books: (item.sources ?? []).map((s) => s.book).filter(Boolean),
       summary: item.description.briefSummary,
       file,
+      // Bônus de AC fixo do livro (a ficha preenche a linha com ele, src/rules/armorClass.ts).
+      ...(item.defenseBonus?.acBonus ? { acBonus: item.defenseBonus.acBonus } : {}),
     })
   }
 }

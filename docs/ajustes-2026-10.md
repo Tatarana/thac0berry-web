@@ -426,3 +426,11 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   quê). Aviso de transição, como o da DEX: se a caixa Armor já contava os
   itens, a ficha oferece corrigir. `src/rules/armorClass.ts` (com testes).
   Backlog novo em `docs/backlog.md`.
+- 2026-10-24, bônus de AC do livro nos itens mágicos (web v0.112.1; caso do
+  Kelmon the Third: Laeral's Storm Armor e Shield of the Holy não têm "+N" no
+  nome e ficavam sem bônus). O índice de itens (`magic-index.json`) passa a
+  levar o `defenseBonus.acBonus` (92 itens), e ao abrir a ficha a linha de
+  Magic Items sem bônus nem sugestão pelo nome recebe o do livro
+  (`fillCatalogACBonuses`, gravado na linha para o Combat Tracker ver). O
+  jogador corrige se o dele for outro (Shield of the Holy: +2 com sacerdote da
+  mesma divindade).

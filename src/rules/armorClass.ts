@@ -8,7 +8,7 @@
 //   também não com armadura comum que não seja de couro; isso a ficha não sabe).
 // Só funções puras; a CA final fica em `finalArmorClass` (rules.ts).
 
-import type { QuantifiedItem } from '../types/library.ts'
+import type { PlayerCharacter, QuantifiedItem } from '../types/library.ts'
 
 export type ACItemKind = 'ring' | 'cloak' | 'shield' | 'armor' | 'other'
 
@@ -30,6 +30,30 @@ export function suggestedACBonus(line: Pick<QuantifiedItem, 'name' | 'customItem
   const m = /(?:^|[\s,(])([+\-−])\s?(\d)\b/.exec(line.name)
   if (!m) return null
   return (m[1] === '+' ? 1 : -1) * Number(m[2])
+}
+
+/**
+ * Preenche o bônus de AC das linhas de Magic Items ligadas a um item do livro
+ * com bônus fixo (Laeral's Storm Armor +2, Shield of the Holy +1...), quando a
+ * linha ainda não tem bônus nem sugestão pelo nome. Grava na linha (o Combat
+ * Tracker lê a ficha); o jogador corrige se o dele for outro. Devolve true se
+ * mudou algo.
+ */
+export function fillCatalogACBonuses(
+  c: Pick<PlayerCharacter, 'page2MagicItems'>,
+  index: { id: string; name: string; acBonus?: number }[],
+): boolean {
+  let changed = false
+  for (const line of c.page2MagicItems ?? []) {
+    if (line.acBonus != null || line.customItem || suggestedACBonus(line) != null) continue
+    const entry =
+      index.find((e) => e.id === line.matchedItemID) ?? index.find((e) => e.name.trim().toLowerCase() === line.name.trim().toLowerCase())
+    if (entry?.acBonus) {
+      line.acBonus = entry.acBonus
+      changed = true
+    }
+  }
+  return changed
 }
 
 /** O bônus que vale para a linha: o digitado, senão o sugerido. */
