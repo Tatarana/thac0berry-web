@@ -156,7 +156,7 @@ export function PrintSheet({
       )}
       {choice.sheets.map((sheet) => (
         <section key={sheet.id} className="print-page print-flow">
-          <SpellSheetPage sheet={sheet} characterName={character.name} classes={allClasses(character)} character={character} />
+          <SpellSheetPage sheet={sheet} characterName={character.name} classes={allClasses(character)} character={character} collapsible={false} />
         </section>
       ))}
       {choice.psionics && (

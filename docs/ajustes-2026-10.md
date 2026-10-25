@@ -454,3 +454,10 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (`minimumExperience` e `raiseExperienceToLevel` em `multiclass.ts`, chamados
   por `setLevel` e `setMultiClasses`). Personagem novo nasce no nível 1 com 0
   XP, que já é o mínimo. iPad: pendência no `TODO.md`.
+- 2026-10-25, recolher as magias dos itens (web v0.115.0, pedido do usuário):
+  em Magic Item Spells (Mage e Priest Spell Sheet), cada item tem uma seta
+  ▾/▸ que esconde a descrição, as magias e o "+ add spell", deixando o nome e
+  o resumo ("4 spells · 2 used"); com mais de um item, "collapse all / expand
+  all". A escolha fica neste aparelho (`localStorage`), pelo item do catálogo
+  ou pelo nome, então vale também nos dias seguintes. A impressão mostra tudo
+  (`collapsible={false}` no PrintSheet).
