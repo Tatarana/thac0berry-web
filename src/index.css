@@ -5966,6 +5966,17 @@ button.slot-dot:hover {
   text-align: center;
 }
 
+/* Armadura e escudo comuns (página 2). */
+.armor-pick-select {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgb(47 39 28 / 0.25);
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--pen-ink);
+}
+
 /* Bônus de AC dos itens mágicos (página 2) e o racional da CA (o "?" do escudo). */
 .item-ac {
   white-space: nowrap;

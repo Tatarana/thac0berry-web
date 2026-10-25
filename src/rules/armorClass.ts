@@ -97,3 +97,62 @@ export function itemACParts(items: QuantifiedItem[] | null | undefined): ItemACP
 /** Soma dos bônus que contam (a CA baixa nesse tanto). */
 export const itemACBonus = (items: QuantifiedItem[] | null | undefined): number =>
   itemACParts(items).reduce((sum, p) => sum + (p.ignored ? 0 : p.bonus), 0)
+
+// --- Armadura e escudo comuns (página 2, 2026-10-24) ------------------------------
+// Os campos Armor/Shield da página 2 guardam o número, no formato do iPad
+// (`ArmorPickerSheet`): a armadura grava o AC base dela ("3" = plate mail), o
+// escudo grava "-1" (regra do PHB: qualquer escudo melhora a AC em 1). A caixa
+// ARMOR da página 1 é armadura + escudo, recalculada quando uma peça muda (o
+// jogador pode digitar por cima; a próxima troca recalcula). Os nomes vão para
+// "Type Worn". Diferença do iPad: lá o bônus mágico também sai da caixa; aqui
+// ele sai da CA final (itemACParts), e o iPad tem a pendência de alinhar.
+
+/** "3", "-1", "−1" → número; vazio ou outra coisa → null. */
+export function parsedRating(text: string | null | undefined): number | null {
+  const t = (text ?? '').trim().replace(/[−–—]/g, '-')
+  return /^[+-]?\d+$/.test(t) ? parseInt(t, 10) : null
+}
+
+/** A caixa ARMOR pelas peças: AC base da armadura (sem armadura, 10) + escudo; null se não há peça. */
+export function armorBoxFromPieces(c: Pick<PlayerCharacter, 'armorRating' | 'shieldRating'>): number | null {
+  const armor = parsedRating(c.armorRating)
+  const shield = parsedRating(c.shieldRating)
+  if (armor == null && shield == null) return null
+  return (armor ?? 10) + (shield ?? 0)
+}
+
+export interface ArmorPick {
+  name: string
+  /** AC base da armadura; escudo: o ajuste (−1). */
+  rating: number
+}
+
+/**
+ * Troca a armadura ou o escudo (null = tirar; undefined = não mexer): grava o
+ * número no formato do iPad, os nomes em Type Worn e recalcula a caixa ARMOR.
+ */
+export function setArmorPieces(
+  c: Pick<PlayerCharacter, 'armorRating' | 'shieldRating' | 'armorClass' | 'combat'>,
+  pieces: { armor?: ArmorPick | null; shield?: ArmorPick | null; armorName?: string | null; shieldName?: string | null },
+) {
+  if (pieces.armor !== undefined) c.armorRating = pieces.armor ? String(pieces.armor.rating) : ''
+  if (pieces.shield !== undefined) c.shieldRating = pieces.shield ? String(pieces.shield.rating) : ''
+  const armorName = pieces.armor !== undefined ? (pieces.armor?.name ?? null) : (pieces.armorName ?? null)
+  const shieldName = pieces.shield !== undefined ? (pieces.shield?.name ?? null) : (pieces.shieldName ?? null)
+  const worn = [armorName, shieldName].filter((n): n is string => !!n).join(', ')
+  c.combat = { ...(c.combat ?? {}), typeWorn: worn === '' ? null : worn }
+  c.armorClass = armorBoxFromPieces(c) ?? 10
+}
+
+/** A peça escolhida, achada pelo nome em Type Worn (e conferida pelo número) ou só pelo número. */
+export function currentPiece<T extends { name: string; baseAC?: number | null }>(
+  options: T[],
+  rating: number | null,
+  typeWorn: string | null | undefined,
+  ratingOf: (piece: T) => number | null,
+): T | null {
+  if (rating == null) return null
+  const worn = (typeWorn ?? '').toLowerCase()
+  const same = options.filter((p) => ratingOf(p) === rating)
+  return same.find((p) => worn.includes(p.name.toLowerCase())) ?? same[0] ?? null
+}

@@ -434,3 +434,15 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   (`fillCatalogACBonuses`, gravado na linha para o Combat Tracker ver). O
   jogador corrige se o dele for outro (Shield of the Holy: +2 com sacerdote da
   mesma divindade).
+- 2026-10-24, armadura e escudo comuns (web v0.113.0, proposta aprovada com
+  o item 5). Página 2, bloco Armor: Armor e Shield viram seletores (lista do
+  PHB, `armor.json`), gravando no formato do iPad (`armorRating` = AC base da
+  armadura, `shieldRating` = "-1") e os nomes em Type Worn. A caixa ARMOR da
+  página 1 é recalculada (armadura, ou 10 sem armadura, + escudo) quando uma
+  peça muda; dá para digitar por cima, e a próxima troca recalcula (como o
+  iPad). O "?" da CA mostra armadura, escudo e o que foi digitado por cima.
+  Shieldless AC (sem o escudo comum nem os mágicos) e Rear AC (também sem o
+  bônus de DEX) passam a ser calculados; o texto digitado vale por cima.
+  `src/rules/armorClass.ts` e `rules.ts` (`shieldlessArmorClass`,
+  `rearArmorClass`), com testes. iPad: pendência de parar de tirar o bônus
+  mágico da caixa ARMOR (a web tira na CA final).
