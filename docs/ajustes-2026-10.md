@@ -446,3 +446,11 @@ Log do trabalho: decisões, entregas e pendências. Atualizar a cada entrega.
   `src/rules/armorClass.ts` e `rules.ts` (`shieldlessArmorClass`,
   `rearArmorClass`), com testes. iPad: pendência de parar de tirar o bônus
   mágico da caixa ARMOR (a web tira na CA final).
+- 2026-10-25, XP mínimo do nível (web v0.114.0, pedido do usuário): ao mudar
+  o nível (cabeçalho, setas, nível de uma classe do multiclasse), se o XP da
+  ficha está abaixo do necessário para os níveis, ele vira o XP base do nível;
+  nunca baixa. Multiclasse divide o XP igualmente (PHB), então o mínimo é
+  classes × o maior requisito; classe dupla conta só a classe atual
+  (`minimumExperience` e `raiseExperienceToLevel` em `multiclass.ts`, chamados
+  por `setLevel` e `setMultiClasses`). Personagem novo nasce no nível 1 com 0
+  XP, que já é o mínimo. iPad: pendência no `TODO.md`.
