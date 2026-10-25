@@ -37,6 +37,9 @@ test('sem limite por dia: cargas do item, senão o padrão; power.spell antigo v
   const wand = { id: 'w', name: 'Wand', power: { uses: [{ name: 'Zap', chargeCost: 1 }] } } as unknown as MagicItem
   assert.equal(I.sheetItemFromCatalog(wand, () => null)!.spells[0].maxUses, I.defaultItemUses)
   assert.equal(I.sheetItemFromCatalog({ id: 'sword', name: 'Sword +1', power: null } as unknown as MagicItem, () => null), null)
+  // Efeito passivo levantado (`uses: []`): não entra, mesmo com power.spell.
+  const freeAction = { id: 'ring_of_free_action', name: 'Ring of Free Action', power: { spell: { id: 'free_action', name: 'Free Action', class: 'Priest' }, uses: [] } } as unknown as MagicItem
+  assert.equal(I.sheetItemFromCatalog(freeAction, () => 'x'), null)
 })
 
 test('não repete o item que a folha já tem (herdado do dia anterior)', () => {
