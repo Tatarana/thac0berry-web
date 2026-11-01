@@ -144,6 +144,7 @@ export function Characters() {
               <button className="btn" disabled={creating} onClick={() => void newCharacter()}>
                 {creating ? 'Creating…' : '+ New character'}
               </button>
+              <Link className="btn" to="/characters/forge">Build a character</Link>
               <Link className="btn" to="/import">Import iPad backup</Link>
             </div>
           </section>

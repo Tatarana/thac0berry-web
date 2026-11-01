@@ -6,6 +6,7 @@ import { CampaignDetail } from './pages/CampaignDetail'
 import { LiveCombat } from './pages/LiveCombat'
 import { Campaigns } from './pages/Campaigns'
 import { Characters } from './pages/Characters'
+import { CharacterForge } from './pages/CharacterForge'
 import { CharacterSheet } from './pages/CharacterSheet'
 import { CompendiumHub } from './pages/CompendiumHub'
 import { DeityCompendium } from './pages/DeityCompendium'
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/dm/tables" element={<TableGrimoire />} />
           <Route path="/dm/combat" element={<CombatTracker />} />
           <Route path="/characters" element={<Characters />} />
+          <Route path="/characters/forge" element={<CharacterForge />} />
           <Route path="/characters/:id" element={<CharacterSheet />} />
           <Route path="/import" element={<ImportBackup />} />
           <Route path="/campaigns" element={<Campaigns />} />
