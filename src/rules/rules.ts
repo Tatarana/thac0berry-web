@@ -473,6 +473,20 @@ export function xpNote(value: CharacterClass | string, level: number): string | 
   return note && level >= note.fromLevel ? note.text : null
 }
 
+/**
+ * Inverso de `xpRequired`: o maior nível cujo XP mínimo a experiência já
+ * alcança (The Forge, etapa "Starting point" — o jogador digita o XP e o
+ * nível se ajusta). Sempre 1 ou mais.
+ */
+export function levelForExperience(value: CharacterClass | string, xp: number): number {
+  let level = 1
+  for (let candidate = 2; candidate <= 20; candidate++) {
+    const required = xpRequired(candidate, value)
+    if (required !== null && xp >= required) level = candidate
+  }
+  return level
+}
+
 // --- Proficiências -----------------------------------------------------------------
 
 /** Linha da tabela de proficiências usada pela classe (Fighter, Thief, Wizard, Cleric). */

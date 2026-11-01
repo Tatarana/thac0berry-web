@@ -197,3 +197,15 @@ test('nomes de classe antigos em português (CharacterClass.init(from:))', () =>
   assert.equal(R.canonicalClass('Desconhecida'), 'Fighter')
   assert.equal(R.thac0ForLevel('Mago', 1), R.thac0ForLevel('Mage', 1))
 })
+
+test('levelForExperience: inverso de xpRequired (The Forge, etapa Starting point)', () => {
+  assert.equal(R.levelForExperience('Fighter', 0), 1)
+  assert.equal(R.levelForExperience('Fighter', -100), 1)
+  for (const level of [2, 5, 10, 20]) {
+    const xp = R.xpRequired(level, 'Fighter')!
+    assert.equal(R.levelForExperience('Fighter', xp), level)
+    assert.equal(R.levelForExperience('Fighter', xp - 1), level - 1)
+  }
+  // Muito acima da Tabela 1 (20º nível): fica no 20, não extrapola.
+  assert.equal(R.levelForExperience('Fighter', R.xpRequired(20, 'Fighter')! + 10_000_000), 20)
+})

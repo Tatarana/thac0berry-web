@@ -102,9 +102,12 @@ async function seedFirstSpellSheet(characterID: string, c: ServerCharacter, camp
 /**
  * addCharacter(campaignID:) do iPad: personagem em branco (Fighter 1), já na
  * campanha. O campo "Player" vem do nome padrão da conta (Settings, 2026-10-10).
+ * `overrides` (The Forge, B1): o rascunho já montado nas etapas do construtor
+ * guiado — tudo que não vem nele continua o padrão do personagem em branco.
  */
-export async function createCharacter(campaignID: string | null): Promise<string> {
-  const data = blankCharacter(campaignID)
+export async function createCharacter(campaignID: string | null, overrides?: Partial<ServerCharacter>): Promise<string> {
+  const base = blankCharacter(campaignID)
+  const data = overrides ? { ...base, ...overrides, id: base.id, campaignID: base.campaignID } : base
   data.playerName = await defaultPlayerName()
   await checkCharacter(data)
   const { error } = await supabase.from('character').insert({ id: data.id, campaign_id: campaignID, data })
