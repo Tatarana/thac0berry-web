@@ -288,3 +288,36 @@ test('XP mínimo do nível: classe única, multiclasse (classes × maior requisi
   M.raiseExperienceToLevel(rich)
   assert.equal(rich.experience, 9000)
 })
+
+test('níveis de cada classe pelo XP total (parte igual, tabela de cada uma)', () => {
+  const c = { characterClass: 'Fighter', level: 1, multiClasses: [{ characterClass: 'Thief', level: 1 }] } as unknown as PlayerCharacter
+  assert.deepEqual(M.levelsForExperience(c, 5000), [
+    { characterClass: 'Fighter', level: 2 },
+    { characterClass: 'Thief', level: 3 },
+  ])
+  assert.deepEqual(M.levelsForExperience(c, 0), [
+    { characterClass: 'Fighter', level: 1 },
+    { characterClass: 'Thief', level: 1 },
+  ])
+  const single = { characterClass: 'Mage', level: 1 } as unknown as PlayerCharacter
+  assert.deepEqual(M.levelsForExperience(single, 2500), [{ characterClass: 'Mage', level: 2 }])
+})
+
+test('pontos de vida do multiclasse: dados de cada classe somados e divididos', () => {
+  const classes = [
+    { characterClass: 'Fighter', level: 2 },
+    { characterClass: 'Thief', level: 3 },
+  ] as { characterClass: 'Fighter' | 'Thief'; level: number }[]
+  assert.equal(M.multiClassHitPoints(classes, 1, (sides) => sides), 21)
+  assert.equal(M.multiClassHitPoints(classes, -3, () => 1), 2)
+  assert.equal(M.multiClassHitPoints([], 0, (s) => s), 1)
+})
+
+test('slots de arma: o kit que define os slots vale na classe única', () => {
+  const thief = { characterClass: 'Thief', level: 4 } as unknown as PlayerCharacter
+  assert.equal(M.weaponProficiencySlots(thief), 3)
+  assert.equal(M.weaponProficiencySlots(thief, { initial: 1, additional: 4, nonproficiencyPenalty: '-3' }), 2)
+  assert.equal(M.weaponProficiencySlots(thief, { initial: null }), 3)
+  const multi = { characterClass: 'Fighter', level: 1, multiClasses: [{ characterClass: 'Thief', level: 1 }] } as unknown as PlayerCharacter
+  assert.equal(M.weaponProficiencySlots(multi, { initial: 1, additional: 4 }), 4)
+})

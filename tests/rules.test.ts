@@ -209,3 +209,14 @@ test('levelForExperience: inverso de xpRequired (The Forge, etapa Starting point
   // Muito acima da Tabela 1 (20º nível): fica no 20, não extrapola.
   assert.equal(R.levelForExperience('Fighter', R.xpRequired(20, 'Fighter')! + 10_000_000), 20)
 })
+
+test('proficiência de arma: variações (munição, empunhadura) contam uma vez', async () => {
+  const { weaponProficiencyKey, weaponSlotsSpent } = await import('../src/rules/rules.ts')
+  assert.equal(weaponProficiencyKey('Long bow (Sheaf arrow)'), 'long bow')
+  assert.equal(weaponProficiencyKey('Bastard sword (Two-handed grip)'), 'bastard sword')
+  assert.equal(weaponProficiencyKey('Club'), 'club')
+  const bow = [{ name: 'Long bow (Flight arrow)' }, { name: 'Long bow (Sheaf arrow)' }]
+  assert.equal(weaponSlotsSpent(bow), 1)
+  assert.equal(weaponSlotsSpent([{ name: 'Long bow (Flight arrow)', isSpecialized: true }, { name: 'Long bow (Sheaf arrow)' }]), 3)
+  assert.equal(weaponSlotsSpent([...bow, { name: 'Long sword', isSpecialized: true }, { name: '' }]), 3)
+})

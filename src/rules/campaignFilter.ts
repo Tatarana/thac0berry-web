@@ -35,5 +35,14 @@ export function campaignMonsterCollections(settings: string[] | null | undefined
   return new Set([...coreMonsterCollections, ...settings.flatMap((s) => settingCollections[s] ?? [])])
 }
 
+/**
+ * Algo de um cenário (raça, classe, kit; null = livros gerais) entra no filtro
+ * de cenários escolhido? Filtro vazio = tudo; senão, Core mais os escolhidos.
+ */
+export function allowedBySettings(setting: string | null | undefined, settings: string[] | null | undefined): boolean {
+  const allowed = campaignSettingSet(settings)
+  return allowed === null || allowed.has(setting ?? CORE_SETTING)
+}
+
 /** Rótulo do chip: "Campaign (Core + Dark Sun)". */
 export const campaignFilterLabel = (settings: string[]) => `Campaign (${[CORE_SETTING, ...settings].join(' + ')})`

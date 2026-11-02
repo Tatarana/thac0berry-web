@@ -722,6 +722,33 @@ export function weaponSlotCost(weapon: { name: string; isSpecialized?: boolean |
   return 1 + (trueBow ? 2 : 1)
 }
 
+/**
+ * A proficiência de uma linha de arma: o nome sem a variação entre parênteses
+ * ("Long bow (Sheaf arrow)" → "long bow"). Munição e empunhadura mudam o dano,
+ * não pedem outra proficiência (PHB cap. 5: a proficiência é na arma).
+ */
+export function weaponProficiencyKey(name: string): string {
+  return name
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .trim()
+    .toLowerCase()
+}
+
+/**
+ * Slots gastos na lista de armas: um por proficiência (as variações da mesma
+ * arma contam uma vez), mais o extra da especialização se alguma linha dela
+ * for especializada.
+ */
+export function weaponSlotsSpent(weapons: { name: string; isSpecialized?: boolean | null }[]): number {
+  const groups = new Map<string, number>()
+  for (const w of weapons) {
+    const key = weaponProficiencyKey(w.name)
+    if (key === '') continue
+    groups.set(key, Math.max(groups.get(key) ?? 0, weaponSlotCost(w)))
+  }
+  return [...groups.values()].reduce((sum, cost) => sum + cost, 0)
+}
+
 /** Tabela de carga que o iPad grava quando a ficha ainda não tem uma (EncumbranceForm). */
 export function defaultEncumbranceTable(): EncumbranceTable {
   const row = (attackPenalty: string, acPenalty: string, moveRate = '') => ({ weightCarried: '', moveRate, attackPenalty, acPenalty })

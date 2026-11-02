@@ -211,3 +211,9 @@ test('kits de Ravenloft: sempre na lista; aviso (não bloqueio) sem o cenário n
   const known = new Set(list.map((p) => p.name))
   for (const k of ravenloft) for (const b of k.mechanics.proficiencies.bonus) assert.ok(known.has(b), `${k.name}: ${b}`)
 })
+
+test('cenário de cada classe: Anchorite e Gypsy são de Ravenloft', () => {
+  assert.equal(V.classCampaignSetting('Anchorite'), 'Ravenloft')
+  assert.equal(V.classCampaignSetting('Gypsy'), 'Ravenloft')
+  assert.equal(V.classCampaignSetting('Fighter'), null)
+})

@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { abilityEffect, abilityStats } from '../rules/effects'
 import { classLevels, dualClassRestriction, isDualClass, isMultiClass, levelOf } from '../rules/multiclass'
 import { canonicalClass } from '../rules/rules'
-import { defenseModes, disciplines, initialCost, powerCounts, powerScoreFor, progression, psionicXP, pspMax, pspMaximum, shortRange } from '../rules/psionics'
+import { defenseModes, disciplines, emptyPsionics, initialCost, powerCounts, powerScoreFor, progression, psionicXP, pspMax, pspMaximum, shortRange } from '../rules/psionics'
 import { primeRequisites } from '../rules/sessionReport'
 import { isoNow } from '../rules/spellSheets'
 import type { PlayerCharacter, Psionics, PsionicPowerEntry, PsionicUse } from '../types/library'
@@ -26,7 +26,6 @@ import { InkNumber, InkPicker, SheetBlock } from './SheetBits'
 type PowerData = PsionicPower
 
 const newID = () => crypto.randomUUID().toUpperCase()
-const emptyPsionics = (): Psionics => ({ pspMaxOverride: null, pspCurrent: null, primaryDiscipline: null, disciplines: [], powers: [], defenseModes: [], uses: [] })
 const abilityShort: Record<string, string> = { constitution: 'CON', wisdom: 'WIS' }
 
 type Tier = 'Science' | 'Devotion'

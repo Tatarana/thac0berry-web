@@ -126,3 +126,36 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
 
 - 2026-10-31: plano definido nesta conversa; B1 encomendado ao subagent
   `thac0berry-coder` (Sonnet, só este repo, nunca `thac0berry-ipad`).
+- 2026-11-01: etapas 1 e 2 refeitas no visual do protótipo e publicadas
+  (v0.116.0).
+- 2026-11-01: etapas 3 a 6 no visual novo (ainda sem publicar, esperando a
+  arte de raças e classes — `docs/forge-arte.md`). Raça: só as do sexo
+  escolhido, imagem por gênero, troca sem acumular ajustes (`replaceRace`).
+  Raça e classe: filtro pelos Campaign Settings (também nos kits e
+  proficiências). Multiclasse com as ilustrações das classes. Nível/XP com
+  multiclasse (XP dividido, PV somados e divididos). Etapa 6, Proficiencies:
+  custo pela Tabela 37 (fora dos grupos da classe, +1 slot), bônus de raça e
+  kit de graça e sincronizados com a escolha (`proficiencyCost.ts`), slots de
+  arma e nonweapon como na ficha, especialização do Fighter. O personagem é
+  criado ao fim da etapa 6. Próximas: magias (conjuradores) e equipamento.
+- **Ajustes da etapa 6.** Armas agrupadas por proficiência (um arco é uma só,
+  qualquer flecha; `weaponSlotsSpent`, também na ficha), em seções: de disparo,
+  depois por tipo de dano (as de arremesso no seu tipo, com o alcance). Slots de
+  arma do kit (`weaponProficiencySlots`) e armas exigidas/sugeridas pelo kit,
+  lidas do texto. Bônus nonweapon do kit lidas do texto quando
+  `proficiencies.bonus` vem vazio (~80 kits; pendência do thac0berry-data).
+  Descrição das nonweapon ("about") com o `ProficiencyDetail` do compêndio.
+- **Etapas 6 e 7 separadas.** Weapon Proficiencies (6) e Nonweapon
+  Proficiencies (7) viraram páginas da jornada, para não sair sem escolher as
+  nonweapon; cada uma avisa os slots que sobraram. Armas num carrossel por grupo
+  (`ForgeCarousel`, com a ilustração do grupo ao fundo; prompts em
+  `docs/forge-arte.md`). `ForgeSlotSockets` passou para o `ForgeParts`.
+- **Etapa 8, Psionic Powers (só psionicistas, também multiclasse).** Mapa
+  mental, como o protótipo aprovado no canvas: a mente no centro com as seis
+  disciplinas e os modos de defesa; ao abrir uma, os poderes em árvore radial
+  (cada um um anel além do poder que exige; `src/lib/psionicMap.ts`). Regras
+  do CPH, cap. 1, em `src/rules/psionics.ts` (`learnVerdict`): Tabela 4,
+  devoções ≥ 2× ciências por disciplina, nenhuma disciplina iguala a primária,
+  pré-requisitos de poder e de nível. Fontes: CPH sempre, The Will and the Way
+  (ligado) e Dragon Magazine; Dragon Kings fora (Psionic Enhancements, 21º+).
+  Grava no mesmo bloco `psionics` da aba Psionics da ficha.

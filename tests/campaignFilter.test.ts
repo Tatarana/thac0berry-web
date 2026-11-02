@@ -26,3 +26,13 @@ test('dados reais: toda coleção mapeada existe no catálogo de monstros', () =
   const all = campaignMonsterCollections(['Al-Qadim', 'Council of Wyrms', 'Dark Sun', 'Forgotten Realms', 'Greyhawk', 'Planescape', 'Ravenloft', 'Spelljammer'])!
   for (const c of all) assert.ok(collections.has(c), c)
 })
+
+test('filtro de cenários do construtor: vazio = tudo; senão Core mais os escolhidos', async () => {
+  const { allowedBySettings } = await import('../src/rules/campaignFilter.ts')
+  assert.equal(allowedBySettings('Ravenloft', []), true)
+  assert.equal(allowedBySettings(null, null), true)
+  assert.equal(allowedBySettings(null, ['Ravenloft']), true)
+  assert.equal(allowedBySettings('Ravenloft', ['Ravenloft']), true)
+  assert.equal(allowedBySettings('Planescape', ['Ravenloft']), false)
+  assert.equal(allowedBySettings('Forgotten Realms', ['Dark Sun', 'Forgotten Realms']), true)
+})

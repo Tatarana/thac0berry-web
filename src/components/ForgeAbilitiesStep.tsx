@@ -208,6 +208,9 @@ export function ForgeAbilitiesStep({
 
   const allFilled = method === 'write' ? order.every(({ key }) => validScore(written[key])) : filled
 
+  // Back / Next no topo e no fim da etapa (o mesmo rodapé).
+  const nav = { onNext, nextLabel: 'Next: Name & Gender →', ready: allFilled }
+
   return (
     <section className="forge-step forge-hero">
       <svg className="ability-watermark" viewBox="0 0 64 64" aria-hidden="true">
@@ -216,6 +219,7 @@ export function ForgeAbilitiesStep({
         <path d="M14 14 50 14 50 24 14 24Z" fill="currentColor" />
       </svg>
       <ForgeEmbers />
+      <ForgeFooter {...nav} top />
 
       <p className="forge-kicker">The Forge · Step 1</p>
       <h2 className="forge-title">
@@ -345,7 +349,7 @@ export function ForgeAbilitiesStep({
         <p className="lore-attr">— a dead apprentice&rsquo;s spellbook</p>
       </div>
 
-      <ForgeFooter onNext={onNext} nextLabel="Next: Name & Gender →" ready={allFilled} />
+      <ForgeFooter {...nav} />
     </section>
   )
 }
