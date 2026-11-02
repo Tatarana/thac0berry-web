@@ -184,3 +184,8 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   sacerdote só a partir do 9º nível, pela Tabela 17 (até o 4º nível de magia;
   nível de conjuração = nível − 8; sem bônus de Sabedoria). Grava
   `sphereAccess`. A tabela de slots da ficha ainda não dá slots ao paladino.
+- **Ranger na etapa de magias.** Como o paladino: esferas fixas Plant e Animal
+  (PHB cap. 3), magias de sacerdote a partir do 8º nível pela Tabela 18 (até o
+  3º nível de magia; nível de conjuração = nível − 7). As regras dos dois estão
+  em `warriorCasters` (`src/rules/spellbook.ts`). Slots na ficha: ver o backlog.
+

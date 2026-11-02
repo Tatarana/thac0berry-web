@@ -20,13 +20,13 @@ import type { SphereAccessLevel, WizardSpellbookEntry } from '../types/library.t
 import { hasClass } from './multiclass.ts'
 import { isOpposedBySchool } from './spellSheets.ts'
 
-export type DivineCaster = 'Cleric' | 'Druid' | 'Paladin'
+export type DivineCaster = 'Cleric' | 'Druid' | 'Paladin' | 'Ranger'
 
-/** As classes da etapa: mago ou bardo (grimório) e clérigo, druida ou paladino (esferas); multiclasse conta. */
+/** As classes da etapa: mago ou bardo (grimório) e clérigo, druida, paladino ou ranger (esferas); multiclasse conta. */
 export function spellCasting(c: Parameters<typeof hasClass>[0]): { arcane: 'Mage' | 'Bard' | null; divine: DivineCaster | null } {
   return {
     arcane: hasClass(c, 'Mage') ? 'Mage' : hasClass(c, 'Bard') ? 'Bard' : null,
-    divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : hasClass(c, 'Paladin') ? 'Paladin' : null,
+    divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : hasClass(c, 'Paladin') ? 'Paladin' : hasClass(c, 'Ranger') ? 'Ranger' : null,
   }
 }
 
@@ -234,22 +234,46 @@ const classSpheres: Record<DivineCaster, { major: string[]; minor: string[] }> =
   Druid: { major: ['All', 'Animal', 'Elemental', 'Healing', 'Plant', 'Weather'], minor: ['Divination'] },
   // PHB cap. 3: "only spells of the combat, divination, healing, and protective spheres".
   Paladin: { major: ['Combat', 'Divination', 'Healing', 'Protection'], minor: [] },
+  // PHB cap. 3: "only those of the plant or animal spheres".
+  Ranger: { major: ['Animal', 'Plant'], minor: [] },
 }
 
-// PHB Tabela 17 (Paladin Spell Progression), níveis 9 a 20: magias de sacerdote do 1º ao 4º nível.
-const paladinRows: number[][] = [
-  [1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [2, 2, 0, 0], [2, 2, 1, 0], [3, 2, 1, 0],
-  [3, 2, 1, 1], [3, 3, 2, 1], [3, 3, 3, 1], [3, 3, 3, 1], [3, 3, 3, 2], [3, 3, 3, 3],
-]
+export type WarriorCaster = 'Paladin' | 'Ranger'
 
-/** Tabela 17: magias por nível de magia (nada antes do 9º nível; sem bônus de Sabedoria). */
-export function paladinSpellProgression(level: number): number[] {
-  if (level < 9) return []
-  return paladinRows[Math.min(level, 20) - 9]
+/**
+ * Paladino e ranger rezam magias de sacerdote só a partir de um nível
+ * (PHB Tabelas 17 e 18): as linhas começam nesse nível; depois da última, vale
+ * a última.
+ */
+export const warriorCasters: Record<WarriorCaster, { start: number; topSpellLevel: number; table: string; rows: number[][] }> = {
+  Paladin: {
+    start: 9,
+    topSpellLevel: 4,
+    table: 'PHB Table 17',
+    rows: [
+      [1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [2, 2, 0, 0], [2, 2, 1, 0], [3, 2, 1, 0],
+      [3, 2, 1, 1], [3, 3, 2, 1], [3, 3, 3, 1], [3, 3, 3, 1], [3, 3, 3, 2], [3, 3, 3, 3],
+    ],
+  },
+  Ranger: {
+    start: 8,
+    topSpellLevel: 3,
+    table: 'PHB Table 18',
+    rows: [[1, 0, 0], [2, 0, 0], [2, 1, 0], [2, 2, 0], [2, 2, 1], [3, 2, 1], [3, 2, 2], [3, 3, 2], [3, 3, 3]],
+  },
 }
 
-/** Tabela 17: nível de conjuração do paladino (nível − 8, no máximo 9). */
-export const paladinCastingLevel = (level: number) => (level < 9 ? 0 : Math.min(9, level - 8))
+export const isWarriorCaster = (cls: string): cls is WarriorCaster => cls === 'Paladin' || cls === 'Ranger'
+
+/** Magias por nível de magia do paladino ou do ranger (nada antes do nível inicial; sem bônus de Sabedoria). */
+export function warriorSpellProgression(cls: WarriorCaster, level: number): number[] {
+  const { start, rows } = warriorCasters[cls]
+  if (level < start) return []
+  return rows[Math.min(level - start, rows.length - 1)]
+}
+
+/** Nível de conjuração: o nível menos o anterior ao inicial (paladino − 8, ranger − 7), no máximo 9. */
+export const warriorCastingLevel = (cls: WarriorCaster, level: number) => (level < warriorCasters[cls].start ? 0 : Math.min(9, level - warriorCasters[cls].start + 1))
 
 /** As esferas da classe (PHB cap. 3): Cleric, Druid ou Paladin. */
 export function defaultSphereAccess(characterClass: DivineCaster): Record<string, SphereAccessLevel> {
