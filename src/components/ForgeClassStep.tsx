@@ -15,6 +15,7 @@ import {
   kitWarnings,
   multiClassOptions,
 } from '../rules/multiclass'
+import { classAlignmentWarning, kitAlignmentWarning } from '../rules/alignment'
 import { allowedBySettings } from '../rules/campaignFilter'
 import { kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
 import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
@@ -24,7 +25,7 @@ import { classImages, genderOf, type Gender } from '../lib/forgeImages'
 import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker, ForgeThumbButton } from './ForgeParts'
 import { KitDetail } from './KitDetail'
 
-// Etapa 4 do The Forge: a classe em cards ilustrados (o mesmo ForgeCard das
+// Etapa 5 do The Forge: a classe em cards ilustrados (o mesmo ForgeCard das
 // etapas 2 e 3), com o limite de nível da raça em cada card; depois o ramo de
 // multiclasse (semi-humano, também com as ilustrações) ou classe dupla
 // (humano) e o kit. Classes e kits seguem os cenários da mesa escolhidos na
@@ -79,7 +80,7 @@ export function ForgeClassStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 4</p>
+      <p className="forge-kicker">The Forge · Step 5</p>
       <h2 className="forge-title">
         Choose Your Calling
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
@@ -88,7 +89,7 @@ export function ForgeClassStep({
       {help && (
         <ForgeHelpNote ruleID="phb_ch03_multi_class_and_dual_class_characters">
           Each card shows how high your kindred can rise in that class (PHB Table 7). A &ldquo;!&rdquo; marks a class your race can&rsquo;t normally
-          take, or one whose setting rules you don&rsquo;t meet — you can still choose it. Demihumans may become multi-class; humans may already be
+          take, one your alignment doesn&rsquo;t fit, or one whose setting rules you don&rsquo;t meet — you can still choose it. Demihumans may become multi-class; humans may already be
           dual-classed. The kit is optional.
         </ForgeHelpNote>
       )}
@@ -106,6 +107,7 @@ export function ForgeClassStep({
           const warnings = [
             ...(limit === 'forbidden' && race ? [`${race} cannot normally be a ${canonical} (PHB Table 7).`] : []),
             ...ravenloftWarnings({ characterClass: cls, abilities: draft.abilities, race: draft.race }, null),
+            ...[classAlignmentWarning(cls, draft.alignment)].filter((w): w is string => !!w),
           ]
           const group = (ravenloftClasses as string[]).includes(canonical) ? 'Ravenloft' : classGroup(cls)
           return (
@@ -344,7 +346,8 @@ function KitGallery({ draft, mutate, settings }: { draft: PlayerCharacter; mutat
             </button>
           </div>
           {visible.map((kit) => {
-            const warnings = kitWarnings(kit, draft, null)
+            const alignmentWarning = kitAlignmentWarning(kit.mechanics.requirements?.alignments, draft.alignment)
+            const warnings = [...kitWarnings(kit, draft, null), ...(alignmentWarning ? [alignmentWarning] : [])]
             return (
               <div key={kit.id} className={draft.kit === kit.name ? 'kit-tile kit-tile-chosen' : 'kit-tile'}>
                 <button type="button" className="kit-tile-hit" onClick={() => chooseKit(kit)}>

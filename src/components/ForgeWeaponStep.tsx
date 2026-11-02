@@ -137,7 +137,7 @@ export function ForgeWeaponStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 6</p>
+      <p className="forge-kicker">The Forge · Step 7</p>
       <h2 className="forge-title">
         Arm Yourself
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

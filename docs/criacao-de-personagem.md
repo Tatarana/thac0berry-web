@@ -188,4 +188,21 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   (PHB cap. 3), magias de sacerdote a partir do 8º nível pela Tabela 18 (até o
   3º nível de magia; nível de conjuração = nível − 7). As regras dos dois estão
   em `warriorCasters` (`src/rules/spellbook.ts`). Slots na ficha: ver o backlog.
+- **Anchorite na etapa de magias.** Constelação de sacerdote com os slots do
+  PHB (Tabela 24, com bônus de Sabedoria). As esferas vêm do alinhamento, pela
+  Table 92 do Domains of Dread (passada pelo usuário em 2026-11-02): o jogador
+  escolhe ali mesmo entre lawful good, lawful neutral e true neutral (grava
+  `alignment` também). As esferas do Tome of Magic (Wards, Law, Chaos) ficam
+  sempre à vista para o anchorite. A etapa refaz as esferas gravadas quando a
+  classe (ou o alinhamento do anchorite) muda.
+- **Etapa 4, alinhamento ("Weigh Your Soul").** Logo depois da raça, como o
+  protótipo "Step 4 · Alignment" do canvas: cinco dilemas movem o retrato do
+  herói por um tabuleiro 3×3 (Lei → Caos, Bem → Mal); no fim o Forge diz onde
+  ele ficou, e o jogador aceita, toca outra casa ou pula as perguntas. O
+  painel mostra o credo e as vocações que o alinhamento abre ou fecha. Regras
+  em `src/rules/alignment.ts`: o que cada classe aceita (PHB, CPsiH, Ninja,
+  Domains of Dread) e a leitura dos textos de alinhamento dos kits. Na etapa
+  de classe, classe ou kit fora do alinhamento vira aviso "!" (não bloqueia).
+  As etapas seguintes andaram um número (classe 5 … proficiências 8). O
+  anchorite lê as esferas do alinhamento escolhido aqui.
 

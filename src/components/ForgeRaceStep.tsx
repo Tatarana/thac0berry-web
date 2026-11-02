@@ -68,7 +68,7 @@ export function ForgeRaceStep({
   const chosenDeltas = current ? raceAdjustments(current) : []
 
   // Back / Next no topo e no fim da etapa (o mesmo rodapé).
-  const nav = { onBack, onNext, nextLabel: 'Next: Class & Kit →', ready: !!current }
+  const nav = { onBack, onNext, nextLabel: 'Next: Alignment →', ready: !!current }
 
   return (
     <section className="forge-step forge-hero">

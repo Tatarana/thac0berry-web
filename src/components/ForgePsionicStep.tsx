@@ -90,6 +90,7 @@ export function ForgePsionicStep({
   onFinish,
   creating,
   finishLabel = 'Create character',
+  stepNumber,
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
@@ -98,6 +99,7 @@ export function ForgePsionicStep({
   creating: boolean
   /** Quem tem mais etapas depois desta (magias) avança em vez de criar. */
   finishLabel?: string
+  stepNumber: number
 }) {
   const [help, setHelp] = useState(false)
   const [compendium, setCompendium] = useState<PsionicPower[] | null>(null)
@@ -248,7 +250,7 @@ export function ForgePsionicStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 8</p>
+      <p className="forge-kicker">The Forge · Step {stepNumber}</p>
       <h2 className="forge-title mm-title">
         Awaken Your Mind
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

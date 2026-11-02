@@ -138,7 +138,7 @@ export function ForgeStartStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 5</p>
+      <p className="forge-kicker">The Forge · Step 6</p>
       <h2 className="forge-title">
         Where Does Your Story Begin?
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

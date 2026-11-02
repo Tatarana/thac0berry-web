@@ -20,13 +20,13 @@ import type { SphereAccessLevel, WizardSpellbookEntry } from '../types/library.t
 import { hasClass } from './multiclass.ts'
 import { isOpposedBySchool } from './spellSheets.ts'
 
-export type DivineCaster = 'Cleric' | 'Druid' | 'Paladin' | 'Ranger'
+export type DivineCaster = 'Cleric' | 'Druid' | 'Anchorite' | 'Paladin' | 'Ranger'
 
-/** As classes da etapa: mago ou bardo (grimório) e clérigo, druida, paladino ou ranger (esferas); multiclasse conta. */
+/** As classes da etapa: mago ou bardo (grimório) e clérigo, druida, anchorite, paladino ou ranger (esferas); multiclasse conta. */
 export function spellCasting(c: Parameters<typeof hasClass>[0]): { arcane: 'Mage' | 'Bard' | null; divine: DivineCaster | null } {
   return {
     arcane: hasClass(c, 'Mage') ? 'Mage' : hasClass(c, 'Bard') ? 'Bard' : null,
-    divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : hasClass(c, 'Paladin') ? 'Paladin' : hasClass(c, 'Ranger') ? 'Ranger' : null,
+    divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : hasClass(c, 'Anchorite') ? 'Anchorite' : hasClass(c, 'Paladin') ? 'Paladin' : hasClass(c, 'Ranger') ? 'Ranger' : null,
   }
 }
 
@@ -229,7 +229,7 @@ export function bookEntries(state: Pick<BookState, 'book'>, byID: Map<string, Bo
 export const coreSpheres = ['All', 'Animal', 'Astral', 'Charm', 'Combat', 'Creation', 'Divination', 'Elemental', 'Guardian', 'Healing', 'Necromantic', 'Plant', 'Protection', 'Summoning', 'Sun', 'Weather']
 export const tomeSpheres = ['Chaos', 'Law', 'Numbers', 'Thought', 'Time', 'Travelers', 'War', 'Wards']
 
-const classSpheres: Record<DivineCaster, { major: string[]; minor: string[] }> = {
+const classSpheres: Record<Exclude<DivineCaster, 'Anchorite'>, { major: string[]; minor: string[] }> = {
   Cleric: { major: ['All', 'Astral', 'Charm', 'Combat', 'Creation', 'Divination', 'Guardian', 'Healing', 'Necromantic', 'Protection', 'Summoning', 'Sun'], minor: ['Elemental'] },
   Druid: { major: ['All', 'Animal', 'Elemental', 'Healing', 'Plant', 'Weather'], minor: ['Divination'] },
   // PHB cap. 3: "only spells of the combat, divination, healing, and protective spheres".
@@ -275,8 +275,26 @@ export function warriorSpellProgression(cls: WarriorCaster, level: number): numb
 /** Nível de conjuração: o nível menos o anterior ao inicial (paladino − 8, ranger − 7), no máximo 9. */
 export const warriorCastingLevel = (cls: WarriorCaster, level: number) => (level < warriorCasters[cls].start ? 0 : Math.min(9, level - warriorCasters[cls].start + 1))
 
-/** As esferas da classe (PHB cap. 3): Cleric, Druid ou Paladin. */
-export function defaultSphereAccess(characterClass: DivineCaster): Record<string, SphereAccessLevel> {
+/**
+ * Domains of Dread, Table 92 (passada pelo usuário em 2026-11-02): as esferas
+ * do Anchorite de Ezra por alinhamento. Wards, Law e Chaos são do Tome of
+ * Magic. Esfera fora da lista: sem acesso.
+ */
+export const anchoriteSpheres: Record<string, Record<string, SphereAccessLevel>> = {
+  'Lawful Good': { All: 'major', Charm: 'major', Divination: 'major', Guardian: 'minor', Healing: 'major', Protection: 'major', Wards: 'major', Sun: 'minor' },
+  'Lawful Neutral': { All: 'major', Charm: 'major', Divination: 'major', Guardian: 'minor', Healing: 'major', Protection: 'major', Wards: 'minor', Law: 'major', Weather: 'minor' },
+  'True Neutral': { All: 'major', Charm: 'major', Divination: 'major', Guardian: 'major', Healing: 'major', Protection: 'major', Wards: 'minor', Chaos: 'minor' },
+}
+
+/** Os alinhamentos do Anchorite (os da Table 92). */
+export const anchoriteAlignments = Object.keys(anchoriteSpheres)
+
+/**
+ * As esferas da classe: Cleric, Druid, Paladin, Ranger (PHB cap. 3) ou
+ * Anchorite (pelo alinhamento; sem um dos três da Table 92, nenhuma ainda).
+ */
+export function defaultSphereAccess(characterClass: DivineCaster, alignment?: string | null): Record<string, SphereAccessLevel> {
+  if (characterClass === 'Anchorite') return { ...(anchoriteSpheres[alignment ?? ''] ?? {}) }
   const base = classSpheres[characterClass]
   return Object.fromEntries([...base.major.map((s) => [s, 'major'] as const), ...base.minor.map((s) => [s, 'minor'] as const)])
 }
