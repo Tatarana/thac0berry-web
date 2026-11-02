@@ -8713,6 +8713,39 @@ button.trail-done:hover .trail-label {
   font-style: italic;
 }
 
+/* PSPs máximos (CPH Tabela 5), à direita do retrato. */
+.mm-psp {
+  margin-left: auto;
+  flex: none;
+  min-width: 64px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(165, 139, 255, 0.55);
+  background: radial-gradient(circle at 50% 30%, rgba(165, 139, 255, 0.28), rgba(20, 15, 11, 0.6));
+  box-shadow: 0 0 18px rgba(165, 139, 255, 0.25);
+  text-align: center;
+}
+
+.mm-who .mm-psp b {
+  font-size: 1.45rem;
+  line-height: 1.1;
+  color: #e6dcff;
+}
+
+.mm-who .mm-psp span {
+  display: block;
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: #b9a8ff;
+}
+
+.mm-chip .mm-lg-sci,
+.mm-chip .mm-lg-dev {
+  width: 9px;
+  height: 9px;
+}
+
 .mm-pools {
   flex-direction: column;
   align-items: stretch;

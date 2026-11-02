@@ -113,3 +113,17 @@ test('mapa radial: cada poder um anel além do que ele exige', () => {
   const spread = Math.abs(at('Attraction').angle - at('Aversion').angle)
   assert.ok(spread <= 160)
 })
+
+test('pré-requisitos com "&" e "and" viram vários; "or" é escolha do jogador', () => {
+  const keys = (list: string[]) => P.powerPrerequisites(list).map((r) => (r.kind === 'power' ? r.key : r.level))
+  assert.deepEqual(keys(['Mindlink & Contact (Original)\nMindlink (Revised)']), ['mindlink', 'contact'])
+  assert.deepEqual(keys(['6th level', 'body weaponry and mind thrust']), [6, 'body weaponry', 'mind thrust'])
+  assert.deepEqual(keys(['Empower or valuable gem']), [])
+})
+
+test('filtro por tipo: só ciências ou só devoções', () => {
+  assert.equal(P.passesTierFilter(find('Mindlink'), 'sciences'), true)
+  assert.equal(P.passesTierFilter(find('Contact'), 'sciences'), false)
+  assert.equal(P.passesTierFilter(find('Contact'), 'devotions'), true)
+  assert.equal(P.passesTierFilter(find('Mindlink'), 'all'), true)
+})

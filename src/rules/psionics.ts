@@ -176,21 +176,29 @@ export type PowerPrerequisite = { kind: 'level'; level: number } | { kind: 'powe
 
 /**
  * Pré-requisitos do compêndio, limpos: "Contact\n(None - Revised)" vira
- * "Contact"; "Clairvoyance, detection, 10th level" vira três; "None" some.
+ * "Contact"; "Clairvoyance, detection, 10th level" e "Mindlink & Contact"
+ * viram vários; "None" some. Uma alternativa ("Empower or valuable gem") não
+ * se cobra: o jogador escolhe.
  */
 export function powerPrerequisites(list: string[]): PowerPrerequisite[] {
   const out: PowerPrerequisite[] = []
   for (const item of list) {
     const first = item.split('\n')[0].replace(/\(.*?\)/g, '')
-    for (const raw of first.split(',')) {
+    for (const raw of first.split(/,|&|\band\b/i)) {
       const text = raw.trim().replace(/\.$/, '')
-      if (!text || /^(none|na|-)$/i.test(text)) continue
+      if (!text || /^(none|na|-)$/i.test(text) || /\bor\b/i.test(text)) continue
       const level = /(\d+)(?:st|nd|rd|th)\s*level/i.exec(text)
       out.push(level ? { kind: 'level', level: Number(level[1]) } : { kind: 'power', key: powerKey(text), text })
     }
   }
   return out
 }
+
+export type PowerTierFilter = 'all' | 'sciences' | 'devotions'
+
+/** O filtro do Forge por tipo de poder (os modos de defesa são devoções). */
+export const passesTierFilter = (p: Pick<PowerChoice, 'science'>, filter: PowerTierFilter) =>
+  filter === 'all' || (filter === 'sciences') === p.science
 
 export type PsionicBook = 'CPH' | 'WatW' | 'Dragon'
 
