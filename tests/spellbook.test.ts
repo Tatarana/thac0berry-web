@@ -178,3 +178,25 @@ test('gypsy: só Detect Magic de graça; bardo, nada', () => {
   assert.equal(B.spellCasting({ characterClass: 'Gypsy', level: 1 } as never).arcane, 'Gypsy')
   assert.equal(B.spellCasting({ characterClass: 'Mage', level: 1, multiClasses: [{ characterClass: 'Gypsy', level: 1 }] } as never).arcane, 'Mage')
 })
+
+test('ranger na ficha: folha do 8º nível em diante, slots da Tabela 18, conjura como nível − 7', async () => {
+  const R = await import('../src/rules/rules.ts')
+  const M = await import('../src/rules/multiclass.ts')
+  const ranger = (level: number, wisdom = 18) => ({
+    characterClass: 'Ranger',
+    level,
+    abilities: { strength: 13, dexterity: 13, constitution: 14, intelligence: 10, wisdom, charisma: 10 },
+  })
+  assert.equal(R.hasSpellSheet('Ranger', 7), false)
+  assert.equal(R.hasSpellSheet('Ranger', 8), true)
+  assert.deepEqual(R.computedSpellSlotAllotments(ranger(7)), [])
+  // sem bônus de Sabedoria, mesmo com Sabedoria 18
+  assert.deepEqual(R.computedSpellSlotAllotments(ranger(12)), [
+    { caster: 'divine', level: 1, count: 2 },
+    { caster: 'divine', level: 2, count: 2 },
+    { caster: 'divine', level: 3, count: 1 },
+  ])
+  assert.equal(M.hasSpellSheetAny(ranger(7)), false)
+  assert.equal(M.hasSpellSheetAny(ranger(8)), true)
+  assert.equal(M.casterLevel(ranger(12), 'divine'), 5)
+})

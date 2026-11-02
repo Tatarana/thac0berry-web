@@ -251,42 +251,7 @@ const classSpheres: Record<Exclude<DivineCaster, 'Anchorite'>, { major: string[]
   Ranger: { major: ['Animal', 'Plant'], minor: [] },
 }
 
-export type WarriorCaster = 'Paladin' | 'Ranger'
-
-/**
- * Paladino e ranger rezam magias de sacerdote só a partir de um nível
- * (PHB Tabelas 17 e 18): as linhas começam nesse nível; depois da última, vale
- * a última.
- */
-export const warriorCasters: Record<WarriorCaster, { start: number; topSpellLevel: number; table: string; rows: number[][] }> = {
-  Paladin: {
-    start: 9,
-    topSpellLevel: 4,
-    table: 'PHB Table 17',
-    rows: [
-      [1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [2, 2, 0, 0], [2, 2, 1, 0], [3, 2, 1, 0],
-      [3, 2, 1, 1], [3, 3, 2, 1], [3, 3, 3, 1], [3, 3, 3, 1], [3, 3, 3, 2], [3, 3, 3, 3],
-    ],
-  },
-  Ranger: {
-    start: 8,
-    topSpellLevel: 3,
-    table: 'PHB Table 18',
-    rows: [[1, 0, 0], [2, 0, 0], [2, 1, 0], [2, 2, 0], [2, 2, 1], [3, 2, 1], [3, 2, 2], [3, 3, 2], [3, 3, 3]],
-  },
-}
-
-export const isWarriorCaster = (cls: string): cls is WarriorCaster => cls === 'Paladin' || cls === 'Ranger'
-
-/** Magias por nível de magia do paladino ou do ranger (nada antes do nível inicial; sem bônus de Sabedoria). */
-export function warriorSpellProgression(cls: WarriorCaster, level: number): number[] {
-  const { start, rows } = warriorCasters[cls]
-  if (level < start) return []
-  return rows[Math.min(level - start, rows.length - 1)]
-}
-
-/** Nível de conjuração: o nível menos o anterior ao inicial (paladino − 8, ranger − 7), no máximo 9. */
-export const warriorCastingLevel = (cls: WarriorCaster, level: number) => (level < warriorCasters[cls].start ? 0 : Math.min(9, level - warriorCasters[cls].start + 1))
+export { isWarriorCaster, warriorCasters, warriorCastingLevel, warriorSpellProgression, type WarriorCaster } from './rules.ts'
 
 /**
  * Domains of Dread, Table 92 (passada pelo usuário em 2026-11-02): as esferas

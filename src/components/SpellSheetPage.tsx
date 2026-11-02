@@ -364,6 +364,9 @@ export function SpellSheetPage({
     (item.name.trim() !== '' ? magicIndex?.find((e) => normalize(e.name) === normalize(item.name)) : undefined) ??
     null
 
+  // A magia divina vem só do ranger (sem clérigo nem anchorite): sem bônus de Sabedoria.
+  const divineIsRanger =
+    classes.some((k) => canonicalClass(k.characterClass) === 'Ranger') && !classes.some((k) => ['Cleric', 'Anchorite'].includes(canonicalClass(k.characterClass)))
   // Círculos na ordem do iPad: conjurador (arcane, divine) e nível; slots na
   // ordem gravada (o iPad já grava ordenado por orderKey).
   const circles = casterOrder.flatMap((caster) => {
@@ -373,7 +376,8 @@ export function SpellSheetPage({
       caster,
       level: lvl,
       // Bônus pela Sabedoria do dia em que a folha foi criada, como no iPad.
-      bonus: caster === 'divine' ? (bonusSpellTotals(sheet.wisdomAtCreation)?.[lvl] ?? 0) : 0,
+      // O ranger (PHB Tabela 18) não ganha magias extras pela Sabedoria.
+      bonus: caster === 'divine' && !divineIsRanger ? (bonusSpellTotals(sheet.wisdomAtCreation)?.[lvl] ?? 0) : 0,
       slots: sheet.slotBoard.slots.filter((s) => s.caster === caster && s.level === lvl),
     }))
   })
@@ -382,7 +386,7 @@ export function SpellSheetPage({
   const turnsUndead = hasDivine && !classes.every((k) => canonicalClass(k.characterClass) === 'Anchorite')
   // Classes que conjuram (multiclasse: cada tipo de magia pelo nível da sua classe).
   const who = { characterClass: classes[0].characterClass, level: classes[0].level, multiClasses: classes.slice(1) }
-  const casters = classes.filter((k) => hasSpellSheet(k.characterClass))
+  const casters = classes.filter((k) => hasSpellSheet(k.characterClass, k.level))
   const casterOf = (caster: Caster) => casters.find((k) => isArcaneCaster(k.characterClass) === (caster === 'arcane'))
   // Conjuradores da folha (pelos slots; sem slots, pela classe).
   const slotCasters = casterOrder.filter((caster) => sheet.slotBoard.slots.some((s) => s.caster === caster))
