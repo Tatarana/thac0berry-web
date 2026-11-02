@@ -18,7 +18,8 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 2. Livro novo `DoD` ("Domains of Dread"), cenário "Ravenloft".
 3. **Anchorite e Gypsy jogáveis** em campanhas Ravenloft.
 4. Esferas do Anchorite: a fonte cita a "Table 92" (esferas por alinhamento),
-   que não está no dump → por enquanto, as esferas do Cleric, com aviso.
+   que não estava no dump → as do Cleric, com aviso. **Revisto em
+   2026-11-02:** o usuário passou a tabela; o Forge usa as do alinhamento.
 5. Pontos de perícia de ladrão do Gypsy por nível: a fonte não diz → por
    enquanto, os do Thief (60 no 1º nível + 30 por nível), com aviso.
 
@@ -59,8 +60,11 @@ maldições, as Brumas, os domínios) nem tabelas roláveis além da Vistani Anc
 
 ## Pendências para o futuro
 
-- **Tabela 92 do DoD** (esferas do Anchorite por alinhamento): não está no
-  dump. Se aparecer (livro do usuário), trocar as esferas do Cleric pelas dela.
+- ~~**Tabela 92 do DoD** (esferas do Anchorite por alinhamento)~~: resolvida em
+  2026-11-02 com a tabela que o usuário passou (`anchoriteSpheres` em
+  `src/rules/spellbook.ts`; LG, LN e TN). O Forge usa na etapa de magias. A
+  ficha (página 4) ainda mostra as esferas gravadas, sem recalcular pelo
+  alinhamento se ele mudar depois.
 - **Pontos de perícia de ladrão do Gypsy por nível**: a fonte só dá as bases e
   os ajustes (Tabelas 97–100). Se aparecer a regra, trocar a do Thief.
 - **Regras centrais de Ravenloft** (powers checks, maldições, o texto dos

@@ -156,3 +156,16 @@ test('ranger: Plant e Animal, magias do 8º nível em diante (Tabela 18)', () =>
   assert.equal(B.warriorCastingLevel('Ranger', 20), 9)
   assert.equal(B.spellCasting({ characterClass: 'Ranger', level: 1 } as never).divine, 'Ranger')
 })
+
+test('anchorite: esferas pelo alinhamento (Domains of Dread, Table 92)', () => {
+  assert.deepEqual(B.defaultSphereAccess('Anchorite'), {})
+  assert.deepEqual(B.defaultSphereAccess('Anchorite', 'Chaotic Good'), {})
+  const ln = B.defaultSphereAccess('Anchorite', 'Lawful Neutral')
+  assert.equal(ln.Law, 'major')
+  assert.equal(ln.Weather, 'minor')
+  assert.equal(ln.Sun, undefined)
+  assert.equal(B.defaultSphereAccess('Anchorite', 'Lawful Good').Wards, 'major')
+  assert.equal(B.defaultSphereAccess('Anchorite', 'True Neutral').Guardian, 'major')
+  assert.deepEqual(B.anchoriteAlignments, ['Lawful Good', 'Lawful Neutral', 'True Neutral'])
+  assert.equal(B.spellCasting({ characterClass: 'Anchorite', level: 1 } as never).divine, 'Anchorite')
+})

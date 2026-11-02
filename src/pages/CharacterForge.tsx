@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ForgeAbilitiesStep } from '../components/ForgeAbilitiesStep'
+import { ForgeAlignmentStep } from '../components/ForgeAlignmentStep'
 import { ForgeClassStep } from '../components/ForgeClassStep'
 import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
@@ -12,6 +13,7 @@ import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { PageHeader } from '../components/PageHeader'
 import { blankCharacter, createCharacter } from '../lib/roster'
 import { applyAutomatic, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
+import type { Lean } from '../rules/alignment'
 import { hasClass } from '../rules/multiclass'
 import { spellCasting, type BookState } from '../rules/spellbook'
 import type { PlayerCharacter } from '../types/library'
@@ -24,7 +26,7 @@ import type { PlayerCharacter } from '../types/library'
 // faz hoje — só que chegando lá com nome, gênero, raça, classe/kit,
 // nível/XP, HP, THAC0 e saves já certos.
 
-const baseSteps = ['Ability Scores', 'Name & Gender', 'Race', 'Class & Kit', 'Starting point', 'Weapon Proficiencies', 'Nonweapon Proficiencies']
+const baseSteps = ['Ability Scores', 'Name & Gender', 'Race', 'Alignment', 'Class & Kit', 'Starting point', 'Weapon Proficiencies', 'Nonweapon Proficiencies']
 
 // Trilha de contas com o nome de cada etapa (como no protótipo); as já
 // feitas são botões para voltar.
@@ -79,6 +81,10 @@ export function CharacterForge() {
   // O grimório em construção (método, dados, falhas), por classe arcana: voltar à
   // etapa não rola de novo; trocar de mago para bardo recomeça.
   const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(null)
+  // Para que classe as esferas gravadas foram feitas (ver ForgeSpellStep).
+  // As respostas dos dilemas do alinhamento (null = pulou as perguntas).
+  const [alignmentAnswers, setAlignmentAnswers] = useState<Lean[] | null>([])
+  const [sphereFor, setSphereFor] = useState<string | null>(null)
 
   // Etapas extras depois das proficiências: poderes psiônicos (psionicista,
   // também multiclasse) e magias (mago, bardo, clérigo, druida).
@@ -129,6 +135,17 @@ export function CharacterForge() {
         <ForgeRaceStep draft={draft} mutate={mutate} settings={settings} onSettings={setSettings} onNext={() => setStep(4)} onBack={() => setStep(2)} />
       )}
       {step === 4 && (
+        <ForgeAlignmentStep
+          draft={draft}
+          mutate={mutate}
+          settings={settings}
+          answers={alignmentAnswers}
+          onAnswers={setAlignmentAnswers}
+          onNext={() => setStep(5)}
+          onBack={() => setStep(3)}
+        />
+      )}
+      {step === 5 && (
         <ForgeClassStep
           draft={draft}
           mutate={mutate}
@@ -136,25 +153,33 @@ export function CharacterForge() {
           onSettings={setSettings}
           chosen={classChosen}
           onChoose={() => setClassChosen(true)}
-          onNext={() => setStep(5)}
-          onBack={() => setStep(3)}
+          onNext={() => setStep(6)}
+          onBack={() => setStep(4)}
         />
       )}
-      {step === 5 && <ForgeStartStep draft={draft} mutate={mutate} onBack={() => setStep(4)} onNext={() => setStep(6)} />}
-      {step === 6 && <ForgeWeaponStep draft={draft} mutate={mutate} onBack={() => setStep(5)} onNext={() => setStep(7)} />}
-      {step === 7 && (
+      {step === 6 && <ForgeStartStep draft={draft} mutate={mutate} onBack={() => setStep(5)} onNext={() => setStep(7)} />}
+      {step === 7 && <ForgeWeaponStep draft={draft} mutate={mutate} onBack={() => setStep(6)} onNext={() => setStep(8)} />}
+      {step === 8 && (
         <ForgeSkillStep
           draft={draft}
           mutate={mutate}
           settings={settings}
-          onBack={() => setStep(6)}
-          onFinish={nextAfter(7)}
+          onBack={() => setStep(7)}
+          onFinish={nextAfter(8)}
           creating={creating}
-          finishLabel={labelAfter(7)}
+          finishLabel={labelAfter(8)}
         />
       )}
       {extra === 'Psionic Powers' && (
-        <ForgePsionicStep draft={draft} mutate={mutate} onBack={() => setStep(step - 1)} onFinish={nextAfter(step)} creating={creating} finishLabel={labelAfter(step)} />
+        <ForgePsionicStep
+          draft={draft}
+          mutate={mutate}
+          stepNumber={step}
+          onBack={() => setStep(step - 1)}
+          onFinish={nextAfter(step)}
+          creating={creating}
+          finishLabel={labelAfter(step)}
+        />
       )}
       {extra === 'Spells' && (
         <ForgeSpellStep
@@ -164,6 +189,8 @@ export function CharacterForge() {
           stepNumber={step}
           book={spellBook && spellBook.cls === casting.arcane ? spellBook.state : null}
           onBook={(state) => setSpellBook({ cls: casting.arcane ?? '', state })}
+          sphereFor={sphereFor}
+          onSphereFor={setSphereFor}
           onBack={() => setStep(step - 1)}
           onFinish={() => void finish()}
           creating={creating}

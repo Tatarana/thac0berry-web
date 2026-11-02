@@ -13,6 +13,7 @@ import {
   chooseSchool,
   circleCounts,
   circleName,
+  anchoriteAlignments,
   coreSpheres,
   cycleSphere,
   defaultSphereAccess,
@@ -125,6 +126,8 @@ export function ForgeSpellStep({
   settings,
   book,
   onBook,
+  sphereFor,
+  onSphereFor,
   onBack,
   onFinish,
   creating,
@@ -136,6 +139,9 @@ export function ForgeSpellStep({
   stepNumber: number
   book: BookState | null
   onBook: (next: BookState) => void
+  /** Para que classe (e alinhamento, no anchorite) as esferas gravadas foram feitas: trocou, refaz. */
+  sphereFor: string | null
+  onSphereFor: (key: string) => void
   onBack: () => void
   onFinish: () => void
   creating: boolean
@@ -153,7 +159,9 @@ export function ForgeSpellStep({
   const gender = genderOf(draft.sex)
   const race = matchRace(draft.race)
   const showArcane = view === 'arcane' && !!casting.arcane
-  const cls = showArcane ? casting.arcane! : casting.divine!
+  const cls = showArcane ? casting.arcane : casting.divine
+  // Sem classe que conjure (não deveria chegar aqui: o CharacterForge só abre a etapa para conjuradores).
+  if (!cls) return null
   const portrait = [...classImages(cls, gender), ...(race ? raceImages(race, gender) : [])]
 
   return (
@@ -173,7 +181,9 @@ export function ForgeSpellStep({
             : 'A bard collects spells along the road, never by right. Roll for the spells you picked up, then study each one — your wits decide what sticks.'
           : casting.divine && isWarriorCaster(casting.divine)
             ? warriorText[casting.divine].intro
-            : 'A priest keeps no spellbook: the god grants every spell of the spheres the priest can reach. Major access opens a sphere at every level; minor, only up to the 3rd.'}
+            : casting.divine === 'Anchorite'
+              ? 'An anchorite of Ezra keeps no spellbook: Ezra grants every spell of the spheres the anchorite’s alignment reaches — lawful good, lawful neutral or true neutral.'
+              : 'A priest keeps no spellbook: the god grants every spell of the spheres the priest can reach. Major access opens a sphere at every level; minor, only up to the 3rd.'}
       </p>
       {help &&
         (showArcane ? (
@@ -183,10 +193,20 @@ export function ForgeSpellStep({
             and can never learn the opposed schools.
           </ForgeHelpNote>
         ) : (
-          <ForgeHelpNote ruleID={casting.divine && isWarriorCaster(casting.divine) ? warriorText[casting.divine].ruleID : 'phb_ch03_priests_of_specific_mythoi'}>
+          <ForgeHelpNote
+            ruleID={
+              casting.divine && isWarriorCaster(casting.divine)
+                ? warriorText[casting.divine].ruleID
+                : casting.divine === 'Anchorite'
+                  ? 'dod_ch00_anchorite'
+                  : 'phb_ch03_priests_of_specific_mythoi'
+            }
+          >
             {casting.divine && isWarriorCaster(casting.divine)
               ? warriorText[casting.divine].help
-              : 'Clerics and druids reach a fixed set of spheres (PHB chapter 3). A specialty priest of a particular god has spheres of their own — set them here.'}
+              : casting.divine === 'Anchorite'
+                ? 'Domains of Dread gives each anchorite of Ezra the spheres of their alignment (Table 92): lawful good, lawful neutral or true neutral. Wards, Law and Chaos come from the Tome of Magic.'
+                : 'Clerics and druids reach a fixed set of spheres (PHB chapter 3). A specialty priest of a particular god has spheres of their own — set them here.'}
           </ForgeHelpNote>
         ))}
 
@@ -206,7 +226,16 @@ export function ForgeSpellStep({
       ) : showArcane ? (
         <ArcaneBook draft={draft} mutate={mutate} settings={settings} index={index.arcane} cls={casting.arcane!} book={book} onBook={onBook} portrait={portrait} />
       ) : (
-        <SphereSky draft={draft} mutate={mutate} settings={settings} index={index.divine} cls={casting.divine!} portrait={portrait} />
+        <SphereSky
+          draft={draft}
+          mutate={mutate}
+          settings={settings}
+          index={index.divine}
+          cls={casting.divine!}
+          portrait={portrait}
+          sphereFor={sphereFor}
+          onSphereFor={onSphereFor}
+        />
       )}
 
       <ForgeFooter {...nav} />
@@ -761,6 +790,8 @@ function SphereSky({
   index,
   cls,
   portrait,
+  sphereFor,
+  onSphereFor,
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
@@ -768,23 +799,32 @@ function SphereSky({
   index: SpellIndexEntry[]
   cls: DivineCaster
   portrait: string[]
+  sphereFor: string | null
+  onSphereFor: (key: string) => void
 }) {
   const level = levelOf(draft, cls) ?? draft.level
+  // Anchorite: esferas pelo alinhamento (Domains of Dread, Table 92).
+  const anchorite = cls === 'Anchorite'
+  const alignment = anchorite && anchoriteAlignments.includes(draft.alignment) ? draft.alignment : null
   // Paladino e ranger: esferas fixas e magias só a partir de um nível (PHB Tabelas 17 e 18).
   const warrior = isWarriorCaster(cls) ? cls : null
   const start = warrior ? warriorCasters[warrior].start : 1
   const castable = (warrior ? warriorSpellProgression(warrior, level) : priestSpellProgression(level, draft.abilities.wisdom)).filter((n) => n > 0).length
-  const access = useMemo(() => draft.sphereAccess ?? defaultSphereAccess(cls), [draft.sphereAccess, cls])
+  const access = useMemo(() => draft.sphereAccess ?? defaultSphereAccess(cls, draft.alignment), [draft.sphereAccess, cls, draft.alignment])
   const [custom, setCustom] = useState(false)
-  const [tome, setTome] = useState(() => Object.keys(access).some((k) => tomeSpheres.includes(k)))
+  const [tome, setTome] = useState(() => anchorite || Object.keys(access).some((k) => tomeSpheres.includes(k)))
   const [sphere, setSphere] = useState<string | null>(null)
   const box = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(820)
 
-  // A ficha nasce com as esferas da classe, já gravadas.
+  // A ficha nasce com as esferas da classe, já gravadas; trocar de classe (ou o
+  // alinhamento do anchorite) refaz. Ajuste à mão fica enquanto a chave não muda.
+  const key = anchorite ? `Anchorite:${alignment ?? ''}` : cls
   useEffect(() => {
-    if (!draft.sphereAccess) mutate((c) => void (c.sphereAccess = defaultSphereAccess(cls)))
-  }, [draft.sphereAccess, cls, mutate])
+    if (draft.sphereAccess && sphereFor === key) return
+    mutate((c) => void (c.sphereAccess = defaultSphereAccess(cls, c.alignment)))
+    onSphereFor(key)
+  }, [draft.sphereAccess, sphereFor, key, cls, mutate, onSphereFor])
 
   useEffect(() => {
     const el = box.current
@@ -806,7 +846,7 @@ function SphereSky({
 
   const tap = (k: string) => {
     setSphere(k)
-    if (custom) mutate((c) => void (c.sphereAccess = cycleSphere(c.sphereAccess ?? defaultSphereAccess(cls), k)))
+    if (custom) mutate((c) => void (c.sphereAccess = cycleSphere(c.sphereAccess ?? defaultSphereAccess(cls, c.alignment), k)))
   }
 
   const levels = sphere
@@ -823,7 +863,7 @@ function SphereSky({
   return (
     <div className="sp-layout">
       <div className="sp-col">
-        {!warrior && (
+        {!warrior && !anchorite && (
           <div className="sp-later">
             <button type="button" className={custom ? 'mm-chip mm-chip-on' : 'mm-chip'} aria-pressed={custom} onClick={() => setCustom(!custom)}>
               Specialty priest — set my own spheres
@@ -832,11 +872,18 @@ function SphereSky({
               Tome of Magic spheres
             </button>
             {custom && (
-              <button type="button" className="mm-chip" onClick={() => mutate((c) => void (c.sphereAccess = defaultSphereAccess(cls)))}>
+              <button type="button" className="mm-chip" onClick={() => mutate((c) => void (c.sphereAccess = defaultSphereAccess(cls, c.alignment)))}>
                 Back to the {cls.toLowerCase()}’s spheres
               </button>
             )}
           </div>
+        )}
+        {anchorite && !alignment && (
+          <p className="sp-provisional">
+            Ezra’s anchorites are lawful good, lawful neutral or true neutral, and the alignment decides which spheres they reach (Domains of Dread,
+            Table 92). {draft.alignment ? `${draft.alignment} isn’t one of them` : 'You haven’t chosen one yet'} — go back to Weigh Your Soul (step 4)
+            and choose to light your spheres.
+          </p>
         )}
         <div className="sp-sky" ref={box} style={{ height: S * scale }}>
           <div className="sp-sky-stage" style={{ width: S, height: S, transform: `scale(${scale})` }}>
@@ -935,8 +982,10 @@ function SphereSky({
               {custom
                 ? 'Tap the orb again to change its access: none → minor → major.'
                 : access[sphere]
-                  ? `Granted by your calling as a ${cls.toLowerCase()}.`
-                  : `Not granted to a ${cls.toLowerCase()}.${warrior ? '' : ' A specialty priest may differ.'}`}
+                  ? anchorite
+                    ? `Granted to a ${alignment?.toLowerCase()} anchorite (Domains of Dread, Table 92).`
+                    : `Granted by your calling as a ${cls.toLowerCase()}.`
+                  : `Not granted to ${anchorite ? (alignment ? `a ${alignment.toLowerCase()} anchorite` : 'an anchorite without an alignment') : `a ${cls.toLowerCase()}`}.${warrior || anchorite ? '' : ' A specialty priest may differ.'}`}
             </p>
             <div className="sp-levels">
               {levels.map((l) => (
@@ -956,7 +1005,11 @@ function SphereSky({
             <p className="sp-hint">
               {warrior
                 ? `A ${warrior.toLowerCase()} reaches ${warriorText[warrior].spheres}. Tap one to see its spells.${castable === 0 ? ` Your first spell comes at ${start}th level.` : ''}`
-                : `These are the spheres every ${cls.toLowerCase()} reaches (PHB chapter 3). Tap one to see the spells it grants. A specialty priest of a particular god? Turn on “set my own spheres” and tap the orbs.`}
+                : anchorite
+                  ? alignment
+                    ? `The spheres of a ${alignment.toLowerCase()} anchorite of Ezra (Table 92). Tap one to see the spells it grants.`
+                    : 'Your alignment decides your spheres — choose it on the Weigh Your Soul step.'
+                  : `These are the spheres every ${cls.toLowerCase()} reaches (PHB chapter 3). Tap one to see the spells it grants. A specialty priest of a particular god? Turn on “set my own spheres” and tap the orbs.`}
             </p>
           </div>
         )}

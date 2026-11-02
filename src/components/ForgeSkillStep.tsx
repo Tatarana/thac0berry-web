@@ -131,7 +131,7 @@ export function ForgeSkillStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 7</p>
+      <p className="forge-kicker">The Forge · Step 8</p>
       <h2 className="forge-title">
         Hone Your Skills
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
