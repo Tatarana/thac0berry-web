@@ -26,6 +26,7 @@ import {
   levelForExperience,
   proficiencyRow,
   referenceKind,
+  warriorCastingLevel,
   xpRequired,
   type CanonicalClass,
   type ReferenceKind,
@@ -75,7 +76,7 @@ export const hasClass = (c: WithClasses, wanted: CanonicalClass) => levelOf(c, w
 
 /** Alguma classe tem folha de magia (Cleric, Mage, Bard). */
 export const hasSpellSheetAny = (c: WithClasses) =>
-  allClasses(c).some((k) => hasSpellSheet(k.characterClass)) || kitCasts(c, 'arcane') || kitCasts(c, 'divine')
+  allClasses(c).some((k) => hasSpellSheet(k.characterClass, k.level)) || kitCasts(c, 'arcane') || kitCasts(c, 'divine')
 
 /** Conjuração por kit ligada para o tipo (ajuste 6; o array pode estar vazio = sem slots ainda). */
 export const kitCasts = (c: WithClasses, caster: 'arcane' | 'divine') => Array.isArray(c.kitSpellcasting?.[caster])
@@ -85,7 +86,7 @@ export const isArcaneCasterAny = (c: WithClasses) => allClasses(c).some((k) => i
 
 /** Alguma classe conjura magia divina com folha (Cleric). */
 export const isDivineCasterAny = (c: WithClasses) =>
-  allClasses(c).some((k) => hasSpellSheet(k.characterClass) && !isArcaneCaster(k.characterClass)) || kitCasts(c, 'divine')
+  allClasses(c).some((k) => hasSpellSheet(k.characterClass, k.level) && !isArcaneCaster(k.characterClass)) || kitCasts(c, 'divine')
 
 /**
  * Atributo congelado na folha de magia: Sabedoria (dá slots extras ao
@@ -97,10 +98,12 @@ export function spellSheetAbility(c: WithClasses & Pick<PlayerCharacter, 'abilit
 
 /**
  * Nível de conjurador para os slots de um tipo: o da classe arcana (Mage, Bard)
- * ou divina (Cleric). Sem classe desse tipo, o da principal.
+ * ou divina (Cleric). O ranger conjura como se tivesse o nível menos 7 (PHB
+ * Tabela 18). Sem classe desse tipo, o da principal.
  */
 export function casterLevel(c: WithClasses, caster: 'arcane' | 'divine'): number {
-  const k = allClasses(c).find((x) => hasSpellSheet(x.characterClass) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
+  const k = allClasses(c).find((x) => hasSpellSheet(x.characterClass, x.level) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
+  if (k && canonicalClass(k.characterClass) === 'Ranger') return warriorCastingLevel('Ranger', k.level)
   return k?.level ?? c.level
 }
 

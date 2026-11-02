@@ -125,9 +125,56 @@ export function hitDieType(value: CharacterClass | string): string {
   return { Warrior: 'd10', Wizard: 'd4', Priest: 'd8', Rogue: 'd6', Psionicist: 'd6' }[classGroup(value)]
 }
 
-export function hasSpellSheet(value: CharacterClass | string): boolean {
-  return ['Cleric', 'Mage', 'Bard', 'Anchorite', 'Gypsy'].includes(canonicalClass(value))
+/**
+ * A classe tem folha de magias. O ranger (web primeiro, 2026-11-02; o iPad
+ * ainda não) só a partir do 8º nível, quando reza as primeiras magias (PHB
+ * Tabela 18); sem nível informado, conta como conjurador.
+ */
+export function hasSpellSheet(value: CharacterClass | string, level?: number): boolean {
+  const cls = canonicalClass(value)
+  if (cls === 'Ranger') return level === undefined || level >= warriorCasters.Ranger.start
+  return ['Cleric', 'Mage', 'Bard', 'Anchorite', 'Gypsy'].includes(cls)
 }
+
+// --- Paladino e ranger: magias de sacerdote a partir de um nível (PHB Tabelas 17 e 18) ---
+
+export type WarriorCaster = 'Paladin' | 'Ranger'
+
+/**
+ * Paladino e ranger rezam magias de sacerdote só a partir de um nível
+ * (PHB Tabelas 17 e 18): as linhas começam nesse nível; depois da última, vale
+ * a última.
+ */
+export const warriorCasters: Record<WarriorCaster, { start: number; topSpellLevel: number; table: string; rows: number[][] }> = {
+  Paladin: {
+    start: 9,
+    topSpellLevel: 4,
+    table: 'PHB Table 17',
+    rows: [
+      [1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [2, 2, 0, 0], [2, 2, 1, 0], [3, 2, 1, 0],
+      [3, 2, 1, 1], [3, 3, 2, 1], [3, 3, 3, 1], [3, 3, 3, 1], [3, 3, 3, 2], [3, 3, 3, 3],
+    ],
+  },
+  Ranger: {
+    start: 8,
+    topSpellLevel: 3,
+    table: 'PHB Table 18',
+    rows: [[1, 0, 0], [2, 0, 0], [2, 1, 0], [2, 2, 0], [2, 2, 1], [3, 2, 1], [3, 2, 2], [3, 3, 2], [3, 3, 3]],
+  },
+}
+
+export const isWarriorCaster = (cls: string): cls is WarriorCaster => cls === 'Paladin' || cls === 'Ranger'
+
+/** Magias por nível de magia do paladino ou do ranger (nada antes do nível inicial; sem bônus de Sabedoria). */
+export function warriorSpellProgression(cls: WarriorCaster, level: number): number[] {
+  const { start, rows } = warriorCasters[cls]
+  if (level < start) return []
+  return rows[Math.min(level - start, rows.length - 1)]
+}
+
+/** Nível de conjuração: o nível menos o anterior ao inicial (paladino − 8, ranger − 7), no máximo 9. */
+export const warriorCastingLevel = (cls: WarriorCaster, level: number) => (level < warriorCasters[cls].start ? 0 : Math.min(9, level - warriorCasters[cls].start + 1))
+
 
 /** Magia arcana: Mage, Bard e o Gypsy (só adivinhação, sem grimório: lista de magias conhecidas). */
 export function isArcaneCaster(value: CharacterClass | string): boolean {
@@ -629,6 +676,9 @@ export function computedSpellSlotAllotments(c: {
         return toAllotments(bardSpellProgression(level, c.abilities.intelligence), 'arcane')
       case 'Gypsy':
         return toAllotments(gypsySpellProgression(level), 'arcane')
+      case 'Ranger':
+        // PHB Tabela 18: magias de sacerdote (Plant e Animal) a partir do 8º nível, sem bônus de Sabedoria.
+        return toAllotments(warriorSpellProgression('Ranger', level), 'divine')
       default:
         return []
     }

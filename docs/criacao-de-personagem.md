@@ -213,4 +213,10 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   Magic); sem escola nem filtros de escola. Grava em `wizardSpellbook`, que a
   ficha mostra como "Known Spells". Gypsy multiclasse com mago ou bardo usa o
   grimório da outra classe.
+- **Ranger na ficha (fora do Forge).** `hasSpellSheet` aceita o nível: o
+  ranger tem folha de magias do 8º nível em diante, com slots divinos da
+  Tabela 18 (`computedSpellSlotAllotments`), sem bônus de Sabedoria (a folha
+  também não mostra o "(x+y)" do bônus) e nível de conjurador = nível − 7
+  (`casterLevel`). Web primeiro; o teste de paridade com o iPad lista a
+  diferença em `webAhead`.
 
