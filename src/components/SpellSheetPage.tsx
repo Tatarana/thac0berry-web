@@ -364,9 +364,10 @@ export function SpellSheetPage({
     (item.name.trim() !== '' ? magicIndex?.find((e) => normalize(e.name) === normalize(item.name)) : undefined) ??
     null
 
-  // A magia divina vem só do ranger (sem clérigo nem anchorite): sem bônus de Sabedoria.
-  const divineIsRanger =
-    classes.some((k) => canonicalClass(k.characterClass) === 'Ranger') && !classes.some((k) => ['Cleric', 'Anchorite'].includes(canonicalClass(k.characterClass)))
+  // A magia divina vem só do ranger ou do paladino (sem sacerdote de verdade): sem bônus de Sabedoria.
+  const divineIsWarrior =
+    classes.some((k) => ['Ranger', 'Paladin'].includes(canonicalClass(k.characterClass))) &&
+    !classes.some((k) => ['Cleric', 'Druid', 'Anchorite'].includes(canonicalClass(k.characterClass)))
   // Círculos na ordem do iPad: conjurador (arcane, divine) e nível; slots na
   // ordem gravada (o iPad já grava ordenado por orderKey).
   const circles = casterOrder.flatMap((caster) => {
@@ -376,14 +377,16 @@ export function SpellSheetPage({
       caster,
       level: lvl,
       // Bônus pela Sabedoria do dia em que a folha foi criada, como no iPad.
-      // O ranger (PHB Tabela 18) não ganha magias extras pela Sabedoria.
-      bonus: caster === 'divine' && !divineIsRanger ? (bonusSpellTotals(sheet.wisdomAtCreation)?.[lvl] ?? 0) : 0,
+      // Ranger e paladino (PHB Tabelas 18 e 17) não ganham magias extras pela Sabedoria.
+      bonus: caster === 'divine' && !divineIsWarrior ? (bonusSpellTotals(sheet.wisdomAtCreation)?.[lvl] ?? 0) : 0,
       slots: sheet.slotBoard.slots.filter((s) => s.caster === caster && s.level === lvl),
     }))
   })
   const hasDivine = sheet.slotBoard.slots.some((s) => s.caster === 'divine')
-  // O Anchorite (Domains of Dread) conjura como sacerdote, mas não expulsa mortos-vivos.
-  const turnsUndead = hasDivine && !classes.every((k) => canonicalClass(k.characterClass) === 'Anchorite')
+  // Expulsar mortos-vivos: o clérigo, e o paladino do 3º nível em diante (PHB cap. 3). O
+  // anchorite (Domains of Dread), o druida e o ranger conjuram como sacerdotes, mas não expulsam.
+  const turnsUndead =
+    hasDivine && classes.some((k) => canonicalClass(k.characterClass) === 'Cleric' || (canonicalClass(k.characterClass) === 'Paladin' && k.level >= 3))
   // Classes que conjuram (multiclasse: cada tipo de magia pelo nível da sua classe).
   const who = { characterClass: classes[0].characterClass, level: classes[0].level, multiClasses: classes.slice(1) }
   const casters = classes.filter((k) => hasSpellSheet(k.characterClass, k.level))

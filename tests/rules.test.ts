@@ -101,9 +101,11 @@ test('por classe e nível: THAC0, saves, slots, XP, backstab, slots de arma', ()
 /** Divergências de propósito com o iPad (a web foi primeiro; pendência no TODO.md de lá). */
 const webAhead: Record<string, { hasReferencePage?: boolean; recordSheetPageCount?: number; hasSpellSheet?: boolean }> = {
   // Página 4 do Druid (2026-10-23): progressão de magias de sacerdote e a seção da raça.
-  Druid: { hasReferencePage: true, recordSheetPageCount: 4 },
-  // Ranger conjura (2026-11-02): folha de magias do 8º nível em diante (PHB Tabela 18).
+  // Folha de magias do Druid (2026-11-02): a mesma progressão do clérigo.
+  Druid: { hasReferencePage: true, recordSheetPageCount: 4, hasSpellSheet: true },
+  // Ranger e paladino conjuram (2026-11-02): folha de magias do 8º / 9º nível em diante (PHB Tabelas 18 e 17).
   Ranger: { hasSpellSheet: true },
+  Paladin: { hasSpellSheet: true },
 }
 
 test('propriedades de cada classe e Level Changes', () => {

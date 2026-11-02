@@ -200,3 +200,29 @@ test('ranger na ficha: folha do 8º nível em diante, slots da Tabela 18, conjur
   assert.equal(M.hasSpellSheetAny(ranger(8)), true)
   assert.equal(M.casterLevel(ranger(12), 'divine'), 5)
 })
+
+test('paladino e druida na ficha: Tabela 17 do 9º nível; druida como o clérigo', async () => {
+  const R = await import('../src/rules/rules.ts')
+  const M = await import('../src/rules/multiclass.ts')
+  const who = (characterClass: string, level: number, wisdom = 17) => ({
+    characterClass,
+    level,
+    abilities: { strength: 15, dexterity: 12, constitution: 12, intelligence: 10, wisdom, charisma: 17 },
+  })
+  assert.equal(R.hasSpellSheet('Paladin', 8), false)
+  assert.equal(R.hasSpellSheet('Paladin', 9), true)
+  assert.deepEqual(R.computedSpellSlotAllotments(who('Paladin', 8)), [])
+  // sem bônus de Sabedoria
+  assert.deepEqual(R.computedSpellSlotAllotments(who('Paladin', 15)), [
+    { caster: 'divine', level: 1, count: 3 },
+    { caster: 'divine', level: 2, count: 2 },
+    { caster: 'divine', level: 3, count: 1 },
+    { caster: 'divine', level: 4, count: 1 },
+  ])
+  assert.equal(M.casterLevel(who('Paladin', 12), 'divine'), 4)
+  // druida: a progressão do clérigo, com bônus de Sabedoria
+  assert.equal(R.hasSpellSheet('Druid'), true)
+  assert.deepEqual(R.computedSpellSlotAllotments(who('Druid', 3)), R.computedSpellSlotAllotments(who('Cleric', 3)))
+  assert.equal(M.casterLevel(who('Druid', 3), 'divine'), 3)
+})
+

@@ -98,12 +98,13 @@ export function spellSheetAbility(c: WithClasses & Pick<PlayerCharacter, 'abilit
 
 /**
  * Nível de conjurador para os slots de um tipo: o da classe arcana (Mage, Bard)
- * ou divina (Cleric). O ranger conjura como se tivesse o nível menos 7 (PHB
- * Tabela 18). Sem classe desse tipo, o da principal.
+ * ou divina (Cleric). O ranger conjura como se tivesse o nível menos 7 e o
+ * paladino, menos 8 (PHB Tabelas 18 e 17). Sem classe desse tipo, o da principal.
  */
 export function casterLevel(c: WithClasses, caster: 'arcane' | 'divine'): number {
   const k = allClasses(c).find((x) => hasSpellSheet(x.characterClass, x.level) && isArcaneCaster(x.characterClass) === (caster === 'arcane'))
-  if (k && canonicalClass(k.characterClass) === 'Ranger') return warriorCastingLevel('Ranger', k.level)
+  const cls = k ? canonicalClass(k.characterClass) : null
+  if (k && (cls === 'Ranger' || cls === 'Paladin')) return warriorCastingLevel(cls, k.level)
   return k?.level ?? c.level
 }
 
