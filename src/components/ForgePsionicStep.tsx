@@ -89,12 +89,15 @@ export function ForgePsionicStep({
   onBack,
   onFinish,
   creating,
+  finishLabel = 'Create character',
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
   onBack: () => void
   onFinish: () => void
   creating: boolean
+  /** Quem tem mais etapas depois desta (magias) avança em vez de criar. */
+  finishLabel?: string
 }) {
   const [help, setHelp] = useState(false)
   const [compendium, setCompendium] = useState<PsionicPower[] | null>(null)
@@ -235,7 +238,7 @@ export function ForgePsionicStep({
 
   const chosen = selected ? byID.get(selected) : undefined
   const verdict = chosen ? learnVerdict(chosen.choice, level, psi, all) : null
-  const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : 'Create character', ready: !creating }
+  const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : finishLabel, ready: !creating }
   const gender = genderOf(draft.sex)
   const race = matchRace(draft.race)
   const portrait = [...classImages('Psionicist', gender), ...(race ? raceImages(race, gender) : [])]

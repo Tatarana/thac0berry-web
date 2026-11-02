@@ -6,17 +6,19 @@ import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
 import { ForgeRaceStep } from '../components/ForgeRaceStep'
 import { ForgeSkillStep } from '../components/ForgeSkillStep'
+import { ForgeSpellStep } from '../components/ForgeSpellStep'
 import { ForgeStartStep } from '../components/ForgeStartStep'
 import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { PageHeader } from '../components/PageHeader'
 import { blankCharacter, createCharacter } from '../lib/roster'
 import { applyAutomatic, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
 import { hasClass } from '../rules/multiclass'
+import { spellCasting, type BookState } from '../rules/spellbook'
 import type { PlayerCharacter } from '../types/library'
 
 // The Forge (docs/criacao-de-personagem.md): construtor guiado em etapas —
 // Ability Scores, Name & Gender, Race, Class/Kit, Starting point,
-// proficiências e, para psionicistas, os poderes psiônicos —, separado da ficha. O rascunho fica só em memória; nada grava no Supabase
+// proficiências e, para psionicistas e conjuradores, os poderes psiônicos e as magias —, separado da ficha. O rascunho fica só em memória; nada grava no Supabase
 // até o fim, quando vira um personagem de verdade (createCharacter) e o
 // jogador cai na CharacterSheet normal, exatamente como "+ New character"
 // faz hoje — só que chegando lá com nome, gênero, raça, classe/kit,
@@ -74,17 +76,33 @@ export function CharacterForge() {
       return next
     })
 
-  // Psionicista (também multiclasse) ganha a etapa 8, dos poderes.
+  // O grimório em construção (método, dados, falhas), por classe arcana: voltar à
+  // etapa não rola de novo; trocar de mago para bardo recomeça.
+  const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(null)
+
+  // Etapas extras depois das proficiências: poderes psiônicos (psionicista,
+  // também multiclasse) e magias (mago, bardo, clérigo, druida).
   const psionic = hasClass(draft, 'Psionicist')
-  const stepTitles = psionic ? [...baseSteps, 'Psionic Powers'] : baseSteps
+  const casting = spellCasting(draft)
+  const caster = !!(casting.arcane || casting.divine)
+  const extras = [...(psionic ? (['Psionic Powers'] as const) : []), ...(caster ? (['Spells'] as const) : [])]
+  const stepTitles = [...baseSteps, ...extras]
+  const extra = step > baseSteps.length ? extras[step - baseSteps.length - 1] : undefined
+  const nextAfter = (s: number) => (s < stepTitles.length ? () => setStep(s + 1) : () => void finish())
+  const labelAfter = (s: number) => (s < stepTitles.length ? `Next: ${stepTitles[s]} →` : undefined)
 
   const finish = async () => {
     setCreating(true)
     setError(null)
     try {
       const final = structuredClone(draft)
-      // Escolheu poderes e depois trocou de classe: não leva o bloco junto.
+      // Escolheu poderes ou magias e depois trocou de classe: não leva junto.
       if (!psionic) final.psionics = null
+      if (!casting.arcane) {
+        final.wizardSpellbook = []
+        final.wizardSchool = null
+      }
+      if (!casting.divine) final.sphereAccess = null
       applyAutomatic(pendingConsequences(final), final)
       markConsequencesReviewed(final)
       const id = await createCharacter(null, final)
@@ -96,7 +114,7 @@ export function CharacterForge() {
   }
 
   return (
-    <div className={step === 8 ? 'page page-wide' : 'page'}>
+    <div className={extra ? 'page page-wide' : 'page'}>
       <PageHeader title="The Forge" backTo="/characters" />
       <ForgeTrail stepTitles={stepTitles} current={step} onSelect={setStep} />
       {error && (
@@ -130,12 +148,27 @@ export function CharacterForge() {
           mutate={mutate}
           settings={settings}
           onBack={() => setStep(6)}
-          onFinish={psionic ? () => setStep(8) : () => void finish()}
+          onFinish={nextAfter(7)}
           creating={creating}
-          finishLabel={psionic ? 'Next: Psionic Powers →' : undefined}
+          finishLabel={labelAfter(7)}
         />
       )}
-      {step === 8 && psionic && <ForgePsionicStep draft={draft} mutate={mutate} onBack={() => setStep(7)} onFinish={() => void finish()} creating={creating} />}
+      {extra === 'Psionic Powers' && (
+        <ForgePsionicStep draft={draft} mutate={mutate} onBack={() => setStep(step - 1)} onFinish={nextAfter(step)} creating={creating} finishLabel={labelAfter(step)} />
+      )}
+      {extra === 'Spells' && (
+        <ForgeSpellStep
+          draft={draft}
+          mutate={mutate}
+          settings={settings}
+          stepNumber={step}
+          book={spellBook && spellBook.cls === casting.arcane ? spellBook.state : null}
+          onBook={(state) => setSpellBook({ cls: casting.arcane ?? '', state })}
+          onBack={() => setStep(step - 1)}
+          onFinish={() => void finish()}
+          creating={creating}
+        />
+      )}
     </div>
   )
 }

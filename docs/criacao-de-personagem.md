@@ -164,3 +164,18 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   viram vários e "X or Y" fica a critério do jogador. Dados (thac0berry-data):
   disciplina e tipo de 33 poderes corrigidos (Metapsionics de 11 para 31) e os
   pré-requisitos de Static Discharge (Magnetize) e Teleport Lock.
+- **Etapa de magias (mago, bardo, clérigo, druida; também multiclasse).** Vem
+  depois dos poderes psiônicos, como o protótipo "Step 9 · Spells" do canvas.
+  Mago: escola (especialista: +15%/−15% e escolas opostas lacradas; adivinhação
+  menor aberta a todos) e um dos três jeitos do DMG cap. 7 de encher o
+  grimório, à escolha do jogador (3d4 com Read/Detect Magic e o presente da
+  escola; 6 sem rolar; escolha livre rolando). Acima do 1º nível, o jogador
+  escolhe: uma magia por nível ou até o máximo da Inteligência por círculo.
+  Bardo: 1d4 magias a partir do 2º nível. Cada magia rola a chance de aprender
+  (PHB Tabela 4) com d100 na mesa; a que falha fica trancada até o próximo
+  nível. Dados animados em `ForgeDice` (arremesso, quiques, tombo em 3D,
+  sombra, assentar com brilho; relógio de segurança se a aba pausar a
+  animação). Sacerdote: constelação das esferas da classe, ajustável para
+  sacerdote especialista (Tome of Magic opcional). Regras em
+  `src/rules/spellbook.ts`; grava `wizardSchool`, `wizardSpellbook` e
+  `sphereAccess`. Só magias genéricas e dos cenários escolhidos na etapa 3.
