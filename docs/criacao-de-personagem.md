@@ -159,3 +159,8 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   pré-requisitos de poder e de nível. Fontes: CPH sempre, The Will and the Way
   (ligado) e Dragon Magazine; Dragon Kings fora (Psionic Enhancements, 21º+).
   Grava no mesmo bloco `psionics` da aba Psionics da ficha.
+- **Etapa 8, ajustes.** Total de PSPs (CPH Tabela 5) ao lado do retrato;
+  filtro All powers / Sciences / Devotions; pré-requisitos com "&" e "and"
+  viram vários e "X or Y" fica a critério do jogador. Dados (thac0berry-data):
+  disciplina e tipo de 33 poderes corrigidos (Metapsionics de 11 para 31) e os
+  pré-requisitos de Static Discharge (Magnetize) e Teleport Lock.

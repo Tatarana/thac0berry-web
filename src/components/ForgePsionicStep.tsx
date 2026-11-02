@@ -9,14 +9,17 @@ import {
   emptyPsionics,
   knownPowerKeys,
   learnVerdict,
+  passesTierFilter,
   powerChoice,
   powerCounts,
   powerKey,
   progression,
   psionicBook,
+  pspMaximum,
   toggleDiscipline,
   togglePower,
   type PowerChoice,
+  type PowerTierFilter,
   type PsionicBook,
 } from '../rules/psionics'
 import { matchRace } from '../rules/raceKit'
@@ -59,6 +62,8 @@ const blurbs: Record<string, string> = {
 
 const bookNames: Record<PsionicBook, string> = { CPH: 'Complete Psionics Handbook', WatW: 'The Will and the Way', Dragon: 'Dragon Magazine' }
 
+const tierNames: Record<PowerTierFilter, string> = { all: 'All powers', sciences: 'Sciences', devotions: 'Devotions' }
+
 function Glyph({ name, className }: { name: string; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -97,6 +102,7 @@ export function ForgePsionicStep({
   const [selected, setSelected] = useState<string | null>(null)
   const [reading, setReading] = useState<PsionicPower | null>(null)
   const [books, setBooks] = useState<Record<PsionicBook, boolean>>({ CPH: true, WatW: true, Dragon: false })
+  const [tierFilter, setTierFilter] = useState<PowerTierFilter>('all')
   const [zoom, setZoom] = useState<number | null>(null)
   const [box, setBox] = useState({ w: 900, h: 760 })
   const scroller = useRef<HTMLDivElement>(null)
@@ -119,6 +125,7 @@ export function ForgePsionicStep({
   const psi = draft.psionics ?? emptyPsionics()
   const known = knownPowerKeys(psi)
   const counts = powerCounts(psi.powers ?? [])
+  const psp = pspMaximum(level, draft.abilities)
 
   // Todos os poderes dos livros do Forge (para os pré-requisitos) e os que os filtros mostram.
   const entries = useMemo(
@@ -130,7 +137,7 @@ export function ForgePsionicStep({
     [compendium],
   )
   const all = useMemo(() => entries.map((e) => e.choice), [entries])
-  const shown = entries.filter((e) => books[e.book])
+  const shown = entries.filter((e) => books[e.book] && passesTierFilter(e.choice, tierFilter))
   const byID = new Map(entries.map((e) => [e.choice.id, e]))
 
   const change = (fn: (x: Psionics) => void) =>
@@ -282,6 +289,23 @@ export function ForgePsionicStep({
                   onClick={() => toggleBook(b)}
                 >
                   {bookNames[b]}
+                </button>
+              ))}
+            </div>
+            <div className="mm-chips" aria-label="Power type">
+              {(Object.keys(tierNames) as PowerTierFilter[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={tierFilter === t ? 'mm-chip mm-chip-on' : 'mm-chip'}
+                  aria-pressed={tierFilter === t}
+                  onClick={() => {
+                    setTierFilter(t)
+                    setSelected(null)
+                  }}
+                >
+                  {t !== 'all' && <i className={t === 'sciences' ? 'mm-lg-sci' : 'mm-lg-dev'} />}
+                  {tierNames[t]}
                 </button>
               ))}
             </div>
@@ -448,6 +472,10 @@ export function ForgePsionicStep({
               <div>
                 <b>Psionicist, level {level}</b>
                 <span>What this level lets you hold (CPH Table 4)</span>
+              </div>
+              <div className="mm-psp" title={psp === null ? 'CPH Table 5 only covers Wisdom 15–18: write your maximum on the sheet.' : 'Psionic strength points (CPH Table 5)'}>
+                <b>{psp ?? '—'}</b>
+                <span>PSPs</span>
               </div>
             </div>
             <div className="slot-pools mm-pools">
