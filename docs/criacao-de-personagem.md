@@ -219,4 +219,12 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   também não mostra o "(x+y)" do bônus) e nível de conjurador = nível − 7
   (`casterLevel`). Web primeiro; o teste de paridade com o iPad lista a
   diferença em `webAhead`.
+- **Paladino e druida na ficha.** Como o ranger: o paladino tem folha de
+  magias do 9º nível em diante (Tabela 17, sem bônus de Sabedoria, conjura como
+  nível − 8). O druida, que não tinha folha nenhuma (web e iPad), ganhou a
+  progressão do clérigo (Tabela 24, com bônus de Sabedoria). Corrigido junto:
+  o contador de Turn Undead da folha aparecia para qualquer magia divina; agora
+  só para o clérigo e o paladino do 3º nível em diante (ranger, druida e
+  anchorite não expulsam). Web primeiro; as diferenças com o iPad estão em
+  `webAhead` (`tests/rules.test.ts`).
 

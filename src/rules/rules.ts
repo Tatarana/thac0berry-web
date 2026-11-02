@@ -126,14 +126,15 @@ export function hitDieType(value: CharacterClass | string): string {
 }
 
 /**
- * A classe tem folha de magias. O ranger (web primeiro, 2026-11-02; o iPad
- * ainda não) só a partir do 8º nível, quando reza as primeiras magias (PHB
- * Tabela 18); sem nível informado, conta como conjurador.
+ * A classe tem folha de magias. Web primeiro (2026-11-02; o iPad ainda não):
+ * o druida sempre; o ranger e o paladino só a partir do nível em que rezam as
+ * primeiras magias (8º e 9º, PHB Tabelas 18 e 17). Sem nível informado, o
+ * ranger e o paladino contam como conjuradores.
  */
 export function hasSpellSheet(value: CharacterClass | string, level?: number): boolean {
   const cls = canonicalClass(value)
-  if (cls === 'Ranger') return level === undefined || level >= warriorCasters.Ranger.start
-  return ['Cleric', 'Mage', 'Bard', 'Anchorite', 'Gypsy'].includes(cls)
+  if (cls === 'Ranger' || cls === 'Paladin') return level === undefined || level >= warriorCasters[cls].start
+  return ['Cleric', 'Druid', 'Mage', 'Bard', 'Anchorite', 'Gypsy'].includes(cls)
 }
 
 // --- Paladino e ranger: magias de sacerdote a partir de um nível (PHB Tabelas 17 e 18) ---
@@ -667,6 +668,7 @@ export function computedSpellSlotAllotments(c: {
   const forClass = (cls: CharacterClass | string, level: number): SlotAllotment[] => {
     switch (canonicalClass(cls)) {
       case 'Cleric':
+      case 'Druid':
       case 'Anchorite':
         return toAllotments(priestSpellProgression(level, c.abilities.wisdom), 'divine')
       case 'Mage':
@@ -677,8 +679,9 @@ export function computedSpellSlotAllotments(c: {
       case 'Gypsy':
         return toAllotments(gypsySpellProgression(level), 'arcane')
       case 'Ranger':
-        // PHB Tabela 18: magias de sacerdote (Plant e Animal) a partir do 8º nível, sem bônus de Sabedoria.
-        return toAllotments(warriorSpellProgression('Ranger', level), 'divine')
+      case 'Paladin':
+        // PHB Tabelas 18 e 17: magias de sacerdote a partir do 8º (ranger) ou 9º nível (paladino), sem bônus de Sabedoria.
+        return toAllotments(warriorSpellProgression(canonicalClass(cls) as WarriorCaster, level), 'divine')
       default:
         return []
     }
