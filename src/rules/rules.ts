@@ -262,6 +262,18 @@ export function maxSpellLevelInt(intelligence: number): number {
   return swiftInt(text.replace(/\D/g, '')) ?? 0
 }
 
+/**
+ * Tabela 4 para o grimório (The Forge, etapa de magias): chance de aprender
+ * (%) e o máximo de magias por círculo (null = "All"). Fora da tabela
+ * (Inteligência abaixo de 9): null.
+ */
+export function wizardLearning(intelligence: number): { chance: number; perCircle: number | null } | null {
+  const row = T['IntelligenceTable.byScore'][intelligence]
+  const chance = swiftInt(row?.learnChance?.replace(/\D/g, ''))
+  if (!row || chance === null) return null
+  return { chance, perCircle: row.maxSpellsPerLevel === 'All' ? null : (swiftInt(row.maxSpellsPerLevel) ?? null) }
+}
+
 /** Tabela 4: idiomas extras como número. */
 export function bonusLanguages(intelligence: number): number {
   return swiftInt(T['IntelligenceTable.byScore'][intelligence]?.languages) ?? 0
