@@ -4,7 +4,8 @@ import { classImages, genderOf, raceImages } from '../lib/forgeImages'
 import { allowedBySettings } from '../rules/campaignFilter'
 import { levelOf } from '../rules/multiclass'
 import { matchRace } from '../rules/raceKit'
-import { bardSpellProgression, priestSpellProgression, wizardLearning, wizardSpellProgression } from '../rules/rules'
+import { isGypsySpell } from '../rules/ravenloft'
+import { bardSpellProgression, gypsySpellProgression, maxSpellLevelInt, priestSpellProgression, wizardLearning, wizardSpellProgression } from '../rules/rules'
 import {
   bookContext,
   bookEntries,
@@ -30,6 +31,8 @@ import {
   spellVerdict,
   studySpell,
   tomeSpheres,
+  trainingSpells,
+  type ArcaneCaster,
   type BookMethod,
   type BookSpell,
   type BookState,
@@ -75,16 +78,30 @@ const specialistNeeds: Record<string, string> = {
 }
 const artOf = (s: BookSpell) => schoolArt[s.schools[0]] ?? schoolArt.All
 
-const methods: { id: BookMethod; name: string; source: string; text: (specialist: boolean) => string }[] = [
+/** "Read Magic and Detect Magic" / "Detect Magic". */
+const listed = (names: string[]) => names.join(' and ')
+const numberWords = ['no', 'one', 'two', 'three', 'four', 'five', 'six']
+
+const methods: { id: BookMethod; name: string; source: string; text: (specialist: boolean, training: string[]) => string }[] = [
   {
     id: 'trial',
     name: 'The Apprentice’s Trial',
     source: 'Player / DM collaboration',
-    text: (sp) =>
-      `Roll 3d4 for the size of the book. Read Magic and Detect Magic are already there${sp ? ', and one spell of your school is a gift' : ''}; every other spell you choose must pass your chance to learn.`,
+    text: (sp, tr) =>
+      `Roll 3d4 for the size of the book. ${listed(tr)} ${tr.length > 1 ? 'are' : 'is'} already there${sp ? ', and one spell of your school is a gift' : ''}; every other spell you choose must pass your chance to learn.`,
   },
-  { id: 'gift', name: 'The Master’s Gift', source: 'DM choice', text: () => 'Read Magic, Detect Magic and four more spells you choose. No rolls — you mastered them all during your apprenticeship.' },
-  { id: 'library', name: 'The Open Library', source: 'Player choice', text: () => 'Choose any spell and roll to learn it, one by one, until your Intelligence allows no more. Nothing is given — not even Read Magic.' },
+  {
+    id: 'gift',
+    name: 'The Master’s Gift',
+    source: 'DM choice',
+    text: (_, tr) => `${listed(tr)} and ${numberWords[6 - tr.length]} more spells you choose. No rolls — you mastered them all during your apprenticeship.`,
+  },
+  {
+    id: 'library',
+    name: 'The Open Library',
+    source: 'Player choice',
+    text: (_, tr) => `Choose any spell and roll to learn it, one by one, until your Intelligence allows no more. Nothing is given — not even ${tr[0]}.`,
+  },
 ]
 
 // Paladino e ranger: as esferas fixas do PHB cap. 3 e o que a tela diz deles.
@@ -171,14 +188,16 @@ export function ForgeSpellStep({
 
       <p className="forge-kicker">The Forge · Step {stepNumber}</p>
       <h2 className="forge-title">
-        {showArcane ? 'Open Your Spellbook' : 'Commune with the Spheres'}
+        {showArcane ? (casting.arcane === 'Gypsy' ? 'Read the Signs' : 'Open Your Spellbook') : 'Commune with the Spheres'}
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
       </h2>
       <p className="forge-sub">
         {showArcane
           ? casting.arcane === 'Mage'
             ? 'Every wizard leaves apprenticeship with a book of spells. Choose your school, choose how your master filled the book — then study the library, one spell at a time.'
-            : 'A bard collects spells along the road, never by right. Roll for the spells you picked up, then study each one — your wits decide what sticks.'
+            : casting.arcane === 'Gypsy'
+              ? 'A gypsy keeps no spellbook: the tribe’s divinations live in memory. Choose how the elders taught you, then learn the signs one at a time — only lesser and greater divinations.'
+              : 'A bard collects spells along the road, never by right. Roll for the spells you picked up, then study each one — your wits decide what sticks.'
           : casting.divine && isWarriorCaster(casting.divine)
             ? warriorText[casting.divine].intro
             : casting.divine === 'Anchorite'
@@ -187,10 +206,10 @@ export function ForgeSpellStep({
       </p>
       {help &&
         (showArcane ? (
-          <ForgeHelpNote ruleID="dmg_ch07_magic">
-            The DMG gives three ways to fill a starting spellbook, and you pick one. Your Intelligence (PHB Table 4) sets the chance to learn each spell,
-            the most spells per circle and the highest circle you can understand. A specialist adds 15% for their own school, loses 15% for the others,
-            and can never learn the opposed schools.
+          <ForgeHelpNote ruleID={casting.arcane === 'Gypsy' ? 'dod_ch00_gypsy' : 'dmg_ch07_magic'}>
+            {casting.arcane === 'Gypsy'
+              ? 'Gypsies cast wizard spells of the lesser and greater divination schools only (Domains of Dread, Table 104). They keep no spellbook and need not choose their spells ahead of time, but every casting takes three turns. They learn their spells much as wizards do: here, by the DMG’s three ways, with your Intelligence setting the chance to learn.'
+              : 'The DMG gives three ways to fill a starting spellbook, and you pick one. Your Intelligence (PHB Table 4) sets the chance to learn each spell, the most spells per circle and the highest circle you can understand. A specialist adds 15% for their own school, loses 15% for the others, and can never learn the opposed schools.'}
           </ForgeHelpNote>
         ) : (
           <ForgeHelpNote
@@ -265,26 +284,37 @@ function ArcaneBook({
   mutate: (fn: (c: PlayerCharacter) => void) => void
   settings: string[]
   index: SpellIndexEntry[]
-  cls: 'Mage' | 'Bard'
+  cls: ArcaneCaster
   book: BookState | null
   onBook: (next: BookState) => void
   portrait: string[]
 }) {
+  // mage: a escola. book: o livro pelos três jeitos do DMG (mago e gypsy); o bardo rola 1d4.
   const mage = cls === 'Mage'
+  const gypsy = cls === 'Gypsy'
+  const book3 = cls !== 'Bard'
+  const training = trainingSpells(cls)
   const level = levelOf(draft, cls) ?? draft.level
   const intelligence = draft.abilities.intelligence
   const learning = wizardLearning(intelligence)
-  const castable = (mage ? wizardSpellProgression : bardSpellProgression)(level, intelligence).filter((n) => n > 0).length
+  const progression = gypsy
+    ? gypsySpellProgression(level).slice(0, Math.max(1, maxSpellLevelInt(intelligence)))
+    : (mage ? wizardSpellProgression : bardSpellProgression)(level, intelligence)
+  const castable = progression.filter((n) => n > 0).length
   const school = mage ? (draft.wizardSchool ?? null) : null
 
   const spells = useMemo(
     () =>
       index.flatMap((e): BookSpell[] => {
         if (e.level < 1 || e.level > 9 || !(isGenericSetting(e.setting) || allowedBySettings(e.setting, settings))) return []
+        // Gypsy: só adivinhação (lesser e greater divination).
+        if (gypsy && !isGypsySpell(e.schools)) return []
         const schools = e.schools.filter((s) => s in schoolArt || s === 'All Schools').map((s) => (s === 'All Schools' ? 'All' : s))
+        // Para o gypsy, a adivinhação vem primeiro (é ela que dá a cor e o emblema do pergaminho).
+        if (gypsy) schools.sort((a, b) => Number(b === 'Divination') - Number(a === 'Divination'))
         return schools.length ? [{ id: e.id, name: e.name, level: e.level, schools }] : []
       }),
-    [index, settings],
+    [index, settings, gypsy],
   )
   const byID = useMemo(() => new Map(spells.map((s) => [s.id, s])), [spells])
   const entryByID = useMemo(() => new Map(index.map((e) => [e.id, e])), [index])
@@ -298,13 +328,13 @@ function ArcaneBook({
   const [rolling, setRolling] = useState<Rolling | null>(null)
   const [rollKey, setRollKey] = useState(0)
 
-  const state = book ?? chooseMethod('trial', 'perLevel', mage, spells)
-  // Primeira visita: o livro nasce no "trial" (com Read e Detect Magic, no mago).
+  const state = book ?? chooseMethod('trial', 'perLevel', training, spells)
+  // Primeira visita: o livro nasce no "trial" (com as magias de treino da classe).
   const started = useRef(false)
   useEffect(() => {
     if (book || started.current || spells.length === 0) return
     started.current = true
-    commit(chooseMethod('trial', 'perLevel', mage, spells))
+    commit(chooseMethod('trial', 'perLevel', training, spells))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book, spells.length])
 
@@ -325,7 +355,7 @@ function ArcaneBook({
       </div>
     )
   }
-  const ctx = bookContext({ mage, level, castable, chance: learning.chance, perCircle: learning.perCircle, school }, state)
+  const ctx = bookContext({ mage: book3, level, castable, chance: learning.chance, perCircle: learning.perCircle, school }, state)
   const counts = circleCounts(state, byID)
   const total = Object.keys(state.book).length
 
@@ -338,7 +368,7 @@ function ArcaneBook({
 
   const setMethod = (m: BookMethod) => {
     if (m === state.method) return
-    commit({ ...chooseMethod(m, state.later, mage, spells) })
+    commit({ ...chooseMethod(m, state.later, training, spells) })
     setSelected(null)
     setRolling(null)
   }
@@ -352,7 +382,7 @@ function ArcaneBook({
   }
 
   const rollBook = () => {
-    const dice = mage ? [rollD(4), rollD(4), rollD(4)] : [rollD(4)]
+    const dice = book3 ? [rollD(4), rollD(4), rollD(4)] : [rollD(4)]
     setRolling({ kind: 'book', dice })
     setRollKey((k) => k + 1)
   }
@@ -384,8 +414,8 @@ function ArcaneBook({
   let dice: DieSpec[] = []
   if (rolling?.kind === 'study') dice = [{ kind: 'd10x10', value: Math.floor((rolling.roll % 100) / 10) }, { kind: 'd10', value: rolling.roll % 10 }]
   else if (rolling?.kind === 'book') dice = rolling.dice.map((v) => ({ kind: 'd4', value: v }))
-  else if (ctx.first === null) dice = (mage ? [0, 0, 0] : [0]).map(() => ({ kind: 'd4' as const, value: 1 }))
-  const trayOpen = !!rolling || ctx.first === null || (!mage && level < 2)
+  else if (ctx.first === null) dice = (book3 ? [0, 0, 0] : [0]).map(() => ({ kind: 'd4' as const, value: 1 }))
+  const trayOpen = !!rolling || ctx.first === null || (!book3 && level < 2)
 
   // Página do círculo: magias escritas e linhas em branco até a capacidade.
   const shownCircles = Math.max(1, ctx.castable)
@@ -466,15 +496,17 @@ function ArcaneBook({
         )}
 
         <div>
-          <p className="sp-label">{mage ? 'How your master filled the book (DMG, chapter 7)' : 'Spells of the road (PHB, chapter 3)'}</p>
+          <p className="sp-label">
+            {mage ? 'How your master filled the book (DMG, chapter 7)' : gypsy ? 'How the elders taught you (DMG, chapter 7)' : 'Spells of the road (PHB, chapter 3)'}
+          </p>
           <div className="sp-paths">
-            {mage ? (
+            {book3 ? (
               methods.map((m) => (
                 <button key={m.id} type="button" className={state.method === m.id ? 'sp-path sp-path-on' : 'sp-path'} aria-pressed={state.method === m.id} onClick={() => setMethod(m.id)}>
                   {state.method === m.id && <span className="sp-path-mark">Chosen</span>}
                   <b>{m.name}</b>
                   <i>{m.source}</i>
-                  <span>{m.text(!!school)}</span>
+                  <span>{m.text(!!school, training)}</span>
                 </button>
               ))
             ) : (
@@ -491,7 +523,7 @@ function ArcaneBook({
           </div>
           {ctx.extra > 0 && (
             <div className="sp-later">
-              <span>Since level {mage ? 1 : 2}:</span>
+              <span>Since level {book3 ? 1 : 2}:</span>
               {(
                 [
                   ['perLevel', `One spell per level gained (${ctx.extra})`],
@@ -552,11 +584,13 @@ function ArcaneBook({
                   <b>
                     {rolling?.kind === 'study'
                       ? `Studying ${rolling.spell.name}`
-                      : !mage && level < 2
+                      : !book3 && level < 2
                         ? 'No spells yet'
-                        : mage
-                          ? 'How thick is your book?'
-                          : 'What did you pick up?'}
+                        : gypsy
+                          ? 'How much did the elders teach you?'
+                          : mage
+                            ? 'How thick is your book?'
+                            : 'What did you pick up?'}
                   </b>
                   {dice.length > 0 && <ForgeDice dice={dice} rollKey={rolling ? rollKey : 0} onSettled={settled} />}
                   {rolling?.kind === 'study' && rolling.done && (
@@ -569,15 +603,15 @@ function ArcaneBook({
                         : `Chance to learn: ${rolling.chance}%`
                       : rolling?.kind === 'book'
                         ? 'The dice are rolling…'
-                        : !mage && level < 2
+                        : !book3 && level < 2
                           ? 'Bards cast their first spell at 2nd level. Come back when you level up — or start higher on the Starting point step.'
-                          : mage
-                            ? `Your master taught you 3d4 spells of the first circle (at most ${learning.perCircle ?? 'all'}, for your Intelligence). Read Magic and Detect Magic are two of them.`
+                          : book3
+                            ? `${gypsy ? 'The elders taught you 3d4 divinations' : 'Your master taught you 3d4 spells'} of the first circle (at most ${learning.perCircle ?? 'all'}, for your Intelligence). ${listed(training)} ${training.length > 1 ? 'are two' : 'is one'} of them.`
                             : `Roll 1d4: that many first-circle spells crossed your path (at most ${learning.perCircle ?? 'all'}).`}
                   </p>
                   {!rolling && ctx.first === null && (
                     <button type="button" className="sp-roll" onClick={rollBook}>
-                      {mage ? 'Roll 3d4' : 'Roll 1d4'}
+                      {book3 ? 'Roll 3d4' : 'Roll 1d4'}
                     </button>
                   )}
                   {rolling?.kind === 'study' && rolling.done && (
@@ -598,12 +632,17 @@ function ArcaneBook({
           </div>
 
           <div className="sp-lib">
-            <p className="sp-label">The library · Circle {circleName(page)}</p>
+            <p className="sp-label">
+              {gypsy ? 'The signs' : 'The library'} · Circle {circleName(page)}
+            </p>
             <div className="sp-lib-bar" role="group" aria-label="Filter by school">
-              <button type="button" className={!filter ? 'sp-sch sp-sch-all sp-sch-on' : 'sp-sch sp-sch-all'} aria-pressed={!filter} onClick={() => setFilter(null)}>
-                All
-              </button>
-              {wizardSchools.map((w) => {
+              {!gypsy && (
+                <button type="button" className={!filter ? 'sp-sch sp-sch-all sp-sch-on' : 'sp-sch sp-sch-all'} aria-pressed={!filter} onClick={() => setFilter(null)}>
+                  All
+                </button>
+              )}
+              {/* Gypsy: só adivinhação, nada a filtrar por escola. */}
+              {(gypsy ? [] : wizardSchools).map((w) => {
                 const opp = !!school && opposedSpell(school, { level: 9, schools: [w.name] })
                 return (
                   <button
@@ -665,7 +704,7 @@ function ArcaneBook({
             </span>
             <div>
               <b>
-                {mage ? (school ? wizardSchools.find((w) => w.name === school)!.specialist : 'Mage') : 'Bard'}, level {level}
+                {mage ? (school ? wizardSchools.find((w) => w.name === school)!.specialist : 'Mage') : cls}, level {level}
               </b>
               <span>Intelligence {intelligence} (PHB Table 4)</span>
             </div>
@@ -690,9 +729,9 @@ function ArcaneBook({
             ) : (
               <>
                 {ctx.first === null ? (
-                  <p className="sp-note">{mage ? 'First book: roll 3d4 on the book to see how many spells it holds.' : 'Roll 1d4 on the book to see how many spells you picked up.'}</p>
+                  <p className="sp-note">{book3 ? 'First book: roll 3d4 on the book to see how many spells it holds.' : 'Roll 1d4 on the book to see how many spells you picked up.'}</p>
                 ) : (
-                  <ForgeSlotSockets label={mage ? 'First book' : 'Spells'} used={Math.min(total, ctx.first)} total={Math.min(ctx.first, learning.perCircle ?? 20, 20)} />
+                  <ForgeSlotSockets label={mage ? 'First book' : gypsy ? 'Known spells' : 'Spells'} used={Math.min(total, ctx.first)} total={Math.min(ctx.first, learning.perCircle ?? 20, 20)} />
                 )}
                 {ctx.extra > 0 && <ForgeSlotSockets label="Since then" used={extraUsed} total={ctx.extra} />}
               </>
@@ -762,7 +801,9 @@ function ArcaneBook({
               {ctx.first === null
                 ? mage
                   ? 'Pick your school, then roll 3d4 on the book to learn how many spells your master gave you.'
-                  : 'Roll 1d4 on the book, then study the library.'
+                  : gypsy
+                    ? 'Roll 3d4 on the book to learn how many divinations the elders taught you.'
+                    : 'Roll 1d4 on the book, then study the library.'
                 : 'Browse the library. Each scroll shows your chance to learn it; tap twice to study. A failed roll locks the spell until you gain a level.'}
             </p>
           </div>
@@ -771,10 +812,22 @@ function ArcaneBook({
         <div className="mm-card">
           <p className="mm-card-label">Laws of the art</p>
           <ul className="sp-rules">
-            <li>Your Intelligence sets your chance to learn, the most spells per circle and the highest circle you can ever understand.</li>
-            <li>A spell you fail to learn stays beyond you until you gain a level.</li>
-            <li>Specialists add 15% for their own school and lose 15% for the others; their opposed schools are sealed for good.</li>
-            <li>Lesser divinations — Read Magic, Detect Magic and the like — are open to every wizard.</li>
+            {(gypsy
+              ? [
+                  'Only lesser and greater divinations — no other school answers you.',
+                  'No spellbook: you need not choose your spells ahead of time, but every casting takes three turns.',
+                  'Your Intelligence sets your chance to learn and the most spells per circle.',
+                  'A spell you fail to learn stays beyond you until you gain a level.',
+                ]
+              : [
+                  'Your Intelligence sets your chance to learn, the most spells per circle and the highest circle you can ever understand.',
+                  'A spell you fail to learn stays beyond you until you gain a level.',
+                  'Specialists add 15% for their own school and lose 15% for the others; their opposed schools are sealed for good.',
+                  'Lesser divinations — Read Magic, Detect Magic and the like — are open to every wizard.',
+                ]
+            ).map((law) => (
+              <li key={law}>{law}</li>
+            ))}
           </ul>
         </div>
       </aside>
