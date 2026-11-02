@@ -23,6 +23,7 @@ import {
   hasThievingSkills,
   hitDieType,
   isArcaneCaster,
+  levelForExperience,
   proficiencyRow,
   referenceKind,
   xpRequired,
@@ -201,6 +202,32 @@ export function minimumExperience(c: WithClasses): number {
   const classes = classLevels(c)
   const most = Math.max(0, ...classes.map((k) => xpRequired(k.level, k.characterClass) ?? 0))
   return most * classes.length
+}
+
+/**
+ * Níveis de cada classe para um XP total (multiclasse: cada classe recebe a
+ * mesma parte e sobe pela tabela dela). Ordem de `classLevels`: a principal primeiro.
+ */
+export function levelsForExperience(c: WithClasses, xp: number): ClassLevel[] {
+  const classes = classLevels(c)
+  const share = xpShare(xp, classes.length)
+  return classes.map((k) => ({ characterClass: k.characterClass, level: levelForExperience(k.characterClass, share) }))
+}
+
+/**
+ * Pontos de vida de um multiclasse (PHB cap. 3): soma os dados de vida de cada
+ * classe no nível dela (mais o bônus de Constituição a cada dado) e divide pelo
+ * número de classes, para baixo; nunca menos de 1. `die(lados)` rola ou devolve
+ * a média — o mesmo cálculo para os dois botões.
+ */
+export function multiClassHitPoints(classes: ClassLevel[], conBonus: number, die: (sides: number) => number): number {
+  if (classes.length === 0) return 1
+  let total = 0
+  for (const k of classes) {
+    const sides = Number(hitDieType(k.characterClass).replace(/\D/g, '')) || 6
+    for (let level = 1; level <= k.level; level++) total += Math.max(1, die(sides) + conBonus)
+  }
+  return Math.max(1, Math.floor(total / classes.length))
 }
 
 /** Sobe o XP para o mínimo dos níveis da ficha, se estiver abaixo (nunca baixa). */
@@ -642,6 +669,30 @@ export function nonweaponProficiencySlots(c: WithClasses & { abilities?: Pick<Pl
   if (isMultiClass(c)) return combinedProficiencySlots(classLevels(c), 'nonweapon') + intBonus
   if (isDualClass(c)) return dualProficiencySlots(c, 'nonweapon') + intBonus
   return combinedProficiencySlots([{ characterClass: c.characterClass, level: c.level }], 'nonweapon') + intBonus
+}
+
+/** Slots de arma do kit (Kit.mechanics.weaponSlots), quando o kit muda a Tabela 34. */
+export interface KitWeaponSlots {
+  initial?: number | null
+  additional?: number | null
+  nonproficiencyPenalty?: string | null
+}
+
+/**
+ * Slots de proficiência de arma: classe única pela Tabela 34 — ou pelos slots
+ * do kit, quando ele os define (iniciais e um a cada N níveis) —, multiclasse
+ * (maior inicial, ritmo mais rápido) ou classe dupla (cada classe soma os
+ * dela). O kit só vale na classe única: os kits que mudam os slots são de
+ * guerreiro e de ladrão, que só valem para classe única (CFH, CTH).
+ */
+export function weaponProficiencySlots(c: WithClasses, kitSlots?: KitWeaponSlots | null): number {
+  if (isMultiClass(c)) return combinedProficiencySlots(classLevels(c), 'weapon')
+  if (isDualClass(c)) return dualProficiencySlots(c, 'weapon')
+  if (kitSlots?.initial != null) {
+    const every = kitSlots.additional ?? 0
+    return kitSlots.initial + (every > 0 ? Math.trunc(c.level / every) : 0)
+  }
+  return combinedProficiencySlots([{ characterClass: c.characterClass, level: c.level }], 'weapon')
 }
 
 /** ProficiencyEntry.init(from:) do iPad: `slots` antigo em texto vale pelos dígitos (sem dígito nenhum, 1). */

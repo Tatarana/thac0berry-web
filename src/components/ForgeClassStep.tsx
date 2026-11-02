@@ -15,95 +15,132 @@ import {
   kitWarnings,
   multiClassOptions,
 } from '../rules/multiclass'
+import { allowedBySettings } from '../rules/campaignFilter'
 import { kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
-import { ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
-import { canonicalClass } from '../rules/rules'
+import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
+import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
+import { classImages, genderOf, type Gender } from '../lib/forgeImages'
+import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker, ForgeThumbButton } from './ForgeParts'
 import { KitDetail } from './KitDetail'
-import { RuleLink } from './RuleLink'
 
-// Etapa 4 do The Forge: classe principal, com o ramo natural de classe dupla
-// (humano) ou multiclasse (semi-humano) de multiclass.ts, e depois o kit —
-// mesma lógica e dados de kits.ts/RaceKitPickers.tsx, numa galeria de cartões
-// em vez de uma janela pequena.
+// Etapa 4 do The Forge: a classe em cards ilustrados (o mesmo ForgeCard das
+// etapas 2 e 3), com o limite de nível da raça em cada card; depois o ramo de
+// multiclasse (semi-humano, também com as ilustrações) ou classe dupla
+// (humano) e o kit. Classes e kits seguem os cenários da mesa escolhidos na
+// etapa de raça. Regras de multiclass.ts / raceKit.ts / ravenloft.ts; avisos
+// nunca bloqueiam.
 
 const classOptions: CharacterClass[] = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist', ...ravenloftClasses]
+
+const KIT_PREVIEW = 12
 
 export function ForgeClassStep({
   draft,
   mutate,
+  settings,
+  onSettings,
+  chosen,
+  onChoose,
   onNext,
   onBack,
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
+  settings: string[]
+  onSettings: (next: string[]) => void
+  /** A classe já foi escolhida nesta criação (a ficha em branco nasce como Fighter). */
+  chosen: boolean
+  onChoose: () => void
   onNext: () => void
   onBack: () => void
 }) {
+  const [help, setHelp] = useState(false)
   const race = matchRace(draft.race)
-  const primary = canonicalClass(draft.characterClass)
+  const gender = genderOf(draft.sex)
+  const primary = chosen ? canonicalClass(draft.characterClass) : null
+  const shownClasses = classOptions.filter((cls) => canonicalClass(cls) === primary || allowedBySettings(classCampaignSetting(cls), settings))
 
   const selectPrimary = (cls: CharacterClass) => {
     mutate((c) => {
       changeClass(c, cls, null)
       c.multiClasses = null
       c.formerClasses = null
+      c.kit = null
     })
+    onChoose()
   }
 
-  return (
-    <section className="forge-step">
-      <h2 className="forge-step-title">
-        Class &amp; Kit
-        <RuleLink ruleID="phb_ch03_multi_class_and_dual_class_characters" title="Multi-class and dual-class characters" />
-      </h2>
+  // Back / Next no topo e no fim da etapa (o mesmo rodapé).
+  const nav = { onBack, onNext, nextLabel: 'Next: Starting point →', ready: !!primary }
 
-      <div className="forge-grid">
-        {classOptions.map((cls) => {
+  return (
+    <section className="forge-step forge-hero">
+      <ForgeEmbers />
+      <ForgeFooter {...nav} top />
+
+      <p className="forge-kicker">The Forge · Step 4</p>
+      <h2 className="forge-title">
+        Choose Your Calling
+        <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
+      </h2>
+      <p className="forge-sub">The class decides how you fight, what you cast and how far your kindred can rise in it. Then pick a kit to give it a story.</p>
+      {help && (
+        <ForgeHelpNote ruleID="phb_ch03_multi_class_and_dual_class_characters">
+          Each card shows how high your kindred can rise in that class (PHB Table 7). A &ldquo;!&rdquo; marks a class your race can&rsquo;t normally
+          take, or one whose setting rules you don&rsquo;t meet — you can still choose it. Demihumans may become multi-class; humans may already be
+          dual-classed. The kit is optional.
+        </ForgeHelpNote>
+      )}
+
+      <div className="rule" aria-hidden="true">
+        <span className="rule-gem" />
+      </div>
+
+      <ForgeSettingsPicker settings={settings} onChange={onSettings} />
+
+      <div className="forge-card-grid">
+        {shownClasses.map((cls) => {
           const canonical = canonicalClass(cls)
           const limit = race ? levelLimit(race, cls) : 'unlimited'
-          const limitText = limit === 'unlimited' ? 'no level limit for this race' : limit === 'forbidden' ? `${race} cannot normally be a ${canonical}` : `${race} is limited to level ${limit} as ${canonical}`
-          const warnings = ravenloftWarnings({ characterClass: cls, abilities: draft.abilities, race: draft.race }, null)
+          const warnings = [
+            ...(limit === 'forbidden' && race ? [`${race} cannot normally be a ${canonical} (PHB Table 7).`] : []),
+            ...ravenloftWarnings({ characterClass: cls, abilities: draft.abilities, race: draft.race }, null),
+          ]
+          const group = (ravenloftClasses as string[]).includes(canonical) ? 'Ravenloft' : classGroup(cls)
           return (
-            <button
+            <ForgeCard
               key={cls}
-              type="button"
-              className={primary === canonical ? 'ember-card forge-card-selected' : 'ember-card'}
+              image={classImages(canonical, gender)}
+              alt={canonical}
+              label={canonical}
+              chosen={primary === canonical}
+              dimmed={!!primary && primary !== canonical}
+              flag={warnings.length > 0 ? warnings.join(' ') : undefined}
               onClick={() => selectPrimary(cls)}
             >
-              <span className="card-title">
-                {primary === canonical ? '★ ' : ''}
-                {canonical}
-              </span>
-              <span className="soft">{race ? limitText : 'choose a race first for the level limit'}</span>
-              {limit === 'forbidden' && <span className="forge-warn">⚠ {limitText}</span>}
-              {warnings.map((w) => (
-                <span key={w} className="forge-warn">
-                  ⚠ {w}
+              <span className="adj-pills">
+                <span className="adj-pill">{group}</span>
+                <span className={limit === 'forbidden' ? 'adj-pill adj-down' : 'adj-pill adj-up'}>
+                  {limit === 'unlimited' ? 'no level limit' : limit === 'forbidden' ? 'not for your race' : `max level ${limit}`}
                 </span>
-              ))}
-            </button>
+              </span>
+            </ForgeCard>
           )
         })}
       </div>
 
-      {race === 'Human' && <DualClassBranch draft={draft} mutate={mutate} />}
-      {race && race !== 'Human' && <MultiClassBranch draft={draft} mutate={mutate} />}
+      {primary && race === 'Human' && <DualClassBranch draft={draft} mutate={mutate} />}
+      {primary && race && race !== 'Human' && <MultiClassBranch draft={draft} mutate={mutate} gender={gender} />}
+      {primary && <KitGallery draft={draft} mutate={mutate} settings={settings} />}
 
-      <KitGallery draft={draft} mutate={mutate} />
-
-      <div className="btn-row">
-        <button className="btn" onClick={onBack}>← Back</button>
-        <button className="btn" onClick={onNext}>
-          Next →
-        </button>
-      </div>
+      <ForgeFooter {...nav} />
     </section>
   )
 }
 
 /** Semi-humano: acrescentar classes (multiclasse), com as combinações padrão da raça como atalho. */
-function MultiClassBranch({ draft, mutate }: { draft: PlayerCharacter; mutate: (fn: (c: PlayerCharacter) => void) => void }) {
+function MultiClassBranch({ draft, mutate, gender }: { draft: PlayerCharacter; mutate: (fn: (c: PlayerCharacter) => void) => void; gender: Gender | null }) {
   const [open, setOpen] = useState(isMultiClass(draft))
   const extra = draft.multiClasses ?? []
   const all = classLevels(draft)
@@ -115,70 +152,92 @@ function MultiClassBranch({ draft, mutate }: { draft: PlayerCharacter; mutate: (
 
   const change = (multiClasses: ClassLevel[]) => mutate((c) => setMultiClasses(c, multiClasses))
 
+  const asClasses = (combo: string[]) => combo.map((n) => (n === 'Illusionist' ? 'Mage' : n))
+  const isCurrent = (combo: string[]) => {
+    const wanted = new Set(asClasses(combo))
+    const have = new Set<string>(taken)
+    return wanted.size === have.size && [...wanted].every((n) => have.has(n))
+  }
+  const comboParts = (combo: string[]) => asClasses(combo).map((n) => ({ images: classImages(n, gender), alt: n }))
+
   const adopt = (combo: string[]) => {
-    const wanted = combo.map((n) => (n === 'Illusionist' ? 'Mage' : n)).filter((n) => n !== primary)
+    const wanted = asClasses(combo).filter((n) => n !== primary)
     const keep = extra.filter((k) => wanted.includes(canonicalClass(k.characterClass)))
     const add = wanted.filter((n) => !keep.some((k) => canonicalClass(k.characterClass) === n)).map((n) => ({ characterClass: n as CharacterClass, level: 1 }))
     change([...keep, ...add])
   }
 
-  if (!open) {
-    return (
-      <button className="btn" onClick={() => setOpen(true)}>
-        + Make this a multi-class character ({draft.race} demihuman)
-      </button>
-    )
-  }
-
   return (
-    <div className="ember-card">
-      <p className="soft">Only demihumans can be multi-class. Experience is divided equally between the classes; the character uses the best THAC0 and the best saving throw among them.</p>
-      <div className="forge-chip-row">
-        {extra.map((k, index) => (
-          <button key={`${k.characterClass}-${index}`} className="forge-chip forge-chip-on" onClick={() => change(extra.filter((_, i) => i !== index))}>
-            {canonicalClass(k.characterClass)} {k.level} ✕
-          </button>
-        ))}
+    <div className="forge-panel">
+      <div className="method-row">
+        <button
+          type="button"
+          className={open ? 'method-pill method-active' : 'method-pill'}
+          onClick={() => {
+            if (open) change([])
+            setOpen(!open)
+          }}
+        >
+          {open ? `Multi-class ${draft.race} — tap to cancel` : `Make this ${draft.race} multi-class`}
+        </button>
       </div>
-      <p className="forge-sub-label">Add a class</p>
-      <div className="forge-chip-row">
-        {multiClassOptions.filter((o) => !taken.has(canonicalClass(o))).map((o) => (
-          <button key={o} className="forge-chip" onClick={() => change([...extra, { characterClass: o, level: 1 }])}>
-            + {o}
-          </button>
-        ))}
-      </div>
-      {combos.length > 0 && (
+      {open && (
         <>
-          <p className="forge-sub-label">Standard {draft.race} combinations</p>
-          <div className="forge-chip-row">
-            {combos.map((combo) => (
-              <button key={combo.join('/')} className="forge-chip" onClick={() => adopt(combo)}>
-                {combo.join('/')}
-              </button>
+          <p className="forge-panel-note">Experience is split equally between the classes; the character uses the best THAC0 and the best saving throw among them.</p>
+          {(combos.length > 0 || bardCombos.length > 0) && (
+            <>
+              <p className="forge-panel-label">Standard {draft.race} combinations</p>
+              <div className="forge-card-grid forge-combo-grid">
+                {combos.map((combo) => (
+                  <ForgeComboCard
+                    key={combo.join('/')}
+                    parts={comboParts(combo)}
+                    label={asClasses(combo).join(' / ')}
+                    chosen={isCurrent(combo)}
+                    dimmed={isMultiClass(draft) && !isCurrent(combo)}
+                    onClick={() => adopt(combo)}
+                  />
+                ))}
+                {bardCombos.map((combo) => (
+                  <ForgeComboCard
+                    key={combo.classes.join('/')}
+                    parts={comboParts(combo.classes)}
+                    label={asClasses(combo.classes).join(' / ')}
+                    sub={`kit: ${combo.kits.join(' or ')}`}
+                    chosen={isCurrent(combo.classes)}
+                    dimmed={isMultiClass(draft) && !isCurrent(combo.classes)}
+                    onClick={() => adopt(combo.classes)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+          <p className="forge-panel-label">Or build your own · tap a class to add or remove it</p>
+          <div className="forge-thumbs">
+            <ForgeThumbButton images={classImages(primary, gender)} label={primary} on />
+            {extra.map((k, index) => (
+              <ForgeThumbButton
+                key={`${k.characterClass}-${index}`}
+                images={classImages(canonicalClass(k.characterClass), gender)}
+                label={canonicalClass(k.characterClass)}
+                on
+                onClick={() => change(extra.filter((_, i) => i !== index))}
+              />
             ))}
+            {multiClassOptions
+              .filter((o) => !taken.has(canonicalClass(o)))
+              .map((o) => (
+                <ForgeThumbButton key={o} images={classImages(o, gender)} label={o} onClick={() => change([...extra, { characterClass: o, level: 1 }])} />
+              ))}
           </div>
+          {warnings.map((w) => (
+            <p key={w} className="forge-warn-line">
+              ! {w}
+            </p>
+          ))}
+          {all.length > 1 && <p className="forge-panel-note">Hit points (worked out by hand on the sheet): {hitPointsRule(all)}</p>}
         </>
       )}
-      {bardCombos.length > 0 && (
-        <>
-          <p className="forge-sub-label">{draft.race} bard combinations (with the kit)</p>
-          <div className="forge-chip-row">
-            {bardCombos.map((combo) => (
-              <button key={combo.classes.join('/')} className="forge-chip" title={`Kit: ${combo.kits.join(' or ')}`} onClick={() => adopt(combo.classes)}>
-                {combo.classes.join('/')} · {combo.kits.join(', ')}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-      {warnings.map((w) => (
-        <p key={w} className="forge-warn">⚠ {w}</p>
-      ))}
-      {all.length > 1 && <p className="soft">Hit points (work them out by hand on the sheet): {hitPointsRule(all)}</p>}
-      <button className="btn" onClick={() => { setOpen(false); change([]) }}>
-        Cancel multi-class
-      </button>
     </div>
   )
 }
@@ -193,69 +252,69 @@ function DualClassBranch({ draft, mutate }: { draft: PlayerCharacter; mutate: (f
   const warnings = classWarnings(draft)
 
   const changeFormer = (formerClasses: ClassLevel[]) => mutate((c) => setFormerClasses(c, formerClasses))
-
-  if (!open) {
-    return (
-      <button className="btn" onClick={() => setOpen(true)}>
-        + This human is already dual-classed
-      </button>
-    )
-  }
+  const setLevel = (index: number, level: number) => changeFormer(former.map((x, i) => (i === index ? { ...x, level: Math.max(1, Math.min(30, level)) } : x)))
 
   return (
-    <div className="ember-card">
-      <p className="soft">
-        Only humans can be dual-classed. The class chosen above is the one that keeps advancing; a former class freezes at the level it was left
-        (set the level for each one here) and the Starting point step sets the level of the current class.
-      </p>
-      <div className="forge-chip-row">
-        {former.map((k, index) => (
-          <span key={`${k.characterClass}-${index}`} className="forge-row">
-            <span className="forge-chip forge-chip-on">ex-{canonicalClass(k.characterClass)}</span>
-            <input
-              type="number"
-              className="forge-field"
-              min={1}
-              max={30}
-              value={k.level}
-              aria-label={`${canonicalClass(k.characterClass)} level`}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                if (Number.isFinite(v) && v >= 1) changeFormer(former.map((x, i) => (i === index ? { ...x, level: v } : x)))
-              }}
-            />
-            <button className="forge-link" onClick={() => changeFormer(former.filter((_, i) => i !== index))}>
-              remove
-            </button>
-          </span>
-        ))}
+    <div className="forge-panel">
+      <div className="method-row">
+        <button
+          type="button"
+          className={open ? 'method-pill method-active' : 'method-pill'}
+          onClick={() => {
+            if (open) changeFormer([])
+            setOpen(!open)
+          }}
+        >
+          {open ? 'Dual-classed human — tap to cancel' : 'This human is already dual-classed'}
+        </button>
       </div>
-      <p className="forge-sub-label">Add a former class</p>
-      <div className="forge-chip-row">
-        {options.map((o) => (
-          <button key={o} className="forge-chip" onClick={() => changeFormer([...former, { characterClass: o, level: 2 }])}>
-            + ex-{o}
-          </button>
-        ))}
-      </div>
-      {current && former.some((k) => canonicalClass(k.characterClass) === current) && (
-        <p className="forge-warn">⚠ {current} is already a former class: a dual-class character cannot go back to a class he left.</p>
+      {open && (
+        <>
+          <p className="forge-panel-note">
+            {current} keeps advancing; a former class freezes at the level it was left. The Starting point step sets the level of {current}.
+          </p>
+          <div className="method-row">
+            {former.map((k, index) => (
+              <span key={`${k.characterClass}-${index}`} className="former-class">
+                <span className="former-class-name">ex-{canonicalClass(k.characterClass)}</span>
+                <button type="button" className="former-step" aria-label="One level less" onClick={() => setLevel(index, k.level - 1)}>
+                  −
+                </button>
+                <span className="former-level">{k.level}</span>
+                <button type="button" className="former-step" aria-label="One level more" onClick={() => setLevel(index, k.level + 1)}>
+                  +
+                </button>
+                <button type="button" className="former-step" aria-label={`Remove ex-${canonicalClass(k.characterClass)}`} onClick={() => changeFormer(former.filter((_, i) => i !== index))}>
+                  ✕
+                </button>
+              </span>
+            ))}
+            {options.map((o) => (
+              <button key={o} type="button" className="method-pill" onClick={() => changeFormer([...former, { characterClass: o, level: 2 }])}>
+                + ex-{o}
+              </button>
+            ))}
+          </div>
+          {former.some((k) => canonicalClass(k.characterClass) === current) && (
+            <p className="forge-warn-line">! {current} is already a former class: a dual-class character cannot go back to a class he left.</p>
+          )}
+          {warnings.map((w) => (
+            <p key={w} className="forge-warn-line">
+              ! {w}
+            </p>
+          ))}
+          {former.length > 0 && <p className="forge-panel-note">Hit points (worked out by hand on the sheet): {dualHitPointsRule(draft)}</p>}
+        </>
       )}
-      {warnings.map((w) => (
-        <p key={w} className="forge-warn">⚠ {w}</p>
-      ))}
-      {former.length > 0 && <p className="soft">Hit points (work them out by hand on the sheet): {dualHitPointsRule(draft)}</p>}
-      <button className="btn" onClick={() => { setOpen(false); changeFormer([]) }}>
-        Cancel dual-class
-      </button>
     </div>
   )
 }
 
 /** Kit da classe (ou de qualquer classe do personagem, no multiclasse/classe dupla) — igual ao KitPicker da ficha. */
-function KitGallery({ draft, mutate }: { draft: PlayerCharacter; mutate: (fn: (c: PlayerCharacter) => void) => void }) {
+function KitGallery({ draft, mutate, settings }: { draft: PlayerCharacter; mutate: (fn: (c: PlayerCharacter) => void) => void; settings: string[] }) {
   const [kits, setKits] = useState<Kit[] | null>(null)
   const [detail, setDetail] = useState<Kit | null>(null)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     const classes = allClasses(draft).map((k) => k.characterClass)
@@ -268,38 +327,47 @@ function KitGallery({ draft, mutate }: { draft: PlayerCharacter; mutate: (fn: (c
   }, [draft.characterClass, JSON.stringify(draft.multiClasses ?? []), JSON.stringify(draft.formerClasses ?? [])])
 
   const chooseKit = (kit: Kit | null) => mutate((c) => { c.kit = kit ? kit.name : null })
+  // Kits dos cenários da mesa (o já escolhido continua à vista).
+  const list = (kits ?? []).filter((kit) => kit.name === draft.kit || allowedBySettings(kit.setting, settings))
+  const visible = showAll ? list : list.slice(0, KIT_PREVIEW)
 
   return (
-    <div>
-      <p className="forge-sub-label">Kit</p>
-      {kits === null && <p className="soft">Loading kits…</p>}
-      <div className="forge-grid">
-        <button type="button" className={draft.kit ? 'ember-card' : 'ember-card forge-card-selected'} onClick={() => chooseKit(null)}>
-          <span className="card-title">{!draft.kit ? '★ ' : ''}None</span>
-          <span className="soft">no kit</span>
-        </button>
-        {(kits ?? []).map((kit) => {
-          const warnings = kitWarnings(kit, draft, null)
-          return (
-            <div key={kit.id} className={draft.kit === kit.name ? 'ember-card forge-card-selected' : 'ember-card'}>
-              <button type="button" className="forge-kit-hit" onClick={() => chooseKit(kit)}>
-                <span className="card-title">
-                  {draft.kit === kit.name ? '★ ' : ''}
-                  {kit.name}
-                </span>
-                <span className="soft">{[kit.classEligibility.subclass, kit.deity].filter(Boolean).join(' · ')}</span>
-              </button>
-              {warnings.map((w) => (
-                <span key={w} className="forge-warn">⚠ {w}</span>
-              ))}
-              <button className="forge-link" onClick={() => setDetail(kit)}>
-                about this kit
-              </button>
-            </div>
-          )
-        })}
-        {kits !== null && kits.length === 0 && <p className="soft">No kit for this class.</p>}
-      </div>
+    <div className="kit-section">
+      <p className="forge-kicker">Kit · optional</p>
+      {kits === null && <p className="forge-panel-note">Opening the kit books…</p>}
+      {kits !== null && (
+        <div className="kit-grid">
+          <div className={draft.kit ? 'kit-tile' : 'kit-tile kit-tile-chosen'}>
+            <button type="button" className="kit-tile-hit" onClick={() => chooseKit(null)}>
+              <span className="kit-tile-name">No kit</span>
+              <span className="kit-tile-sub">the class as the Player&rsquo;s Handbook describes it</span>
+            </button>
+          </div>
+          {visible.map((kit) => {
+            const warnings = kitWarnings(kit, draft, null)
+            return (
+              <div key={kit.id} className={draft.kit === kit.name ? 'kit-tile kit-tile-chosen' : 'kit-tile'}>
+                <button type="button" className="kit-tile-hit" onClick={() => chooseKit(kit)}>
+                  <span className="kit-tile-name">{kit.name}</span>
+                  <span className="kit-tile-sub">{[kit.classEligibility.subclass, kit.deity].filter(Boolean).join(' · ') || kit.classEligibility.classGroup}</span>
+                  {warnings.length > 0 && <span className="kit-tile-warn">! {warnings[0]}</span>}
+                </button>
+                <button type="button" className="kit-tile-about" onClick={() => setDetail(kit)}>
+                  about
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {kits !== null && list.length > KIT_PREVIEW && (
+        <div className="method-row">
+          <button type="button" className="method-pill" onClick={() => setShowAll(!showAll)}>
+            {showAll ? 'Show fewer kits' : `Show all ${list.length} kits`}
+          </button>
+        </div>
+      )}
+      {kits !== null && list.length === 0 && <p className="forge-panel-note">No kit for this class.</p>}
       {detail && <KitDetail kit={detail} onClose={() => setDetail(null)} />}
     </div>
   )

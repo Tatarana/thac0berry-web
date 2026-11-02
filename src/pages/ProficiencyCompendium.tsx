@@ -1,36 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { Field, PaperModal, TextBlock } from '../components/DetailBits'
 import { GroupSection } from '../components/GroupSection'
+import { ProficiencyDetail } from '../components/ProficiencyDetail'
 import { loadData } from '../data/load'
-import {
-  abbreviatedMechanics,
-  proficiencyGroupOrder,
-  signedModifier,
-  skillsAndPowersText,
-  type Proficiency,
-} from '../data/proficiencies'
+import { abbreviatedMechanics, proficiencyGroupOrder, type Proficiency } from '../data/proficiencies'
 import { isGenericSetting } from '../data/spells'
 import { normalize } from '../lib/search'
 import { useGroupToggle } from '../lib/useGroupToggle'
-
-function ProficiencyDetail({ proficiency, onClose }: { proficiency: Proficiency; onClose: () => void }) {
-  const { mechanics } = proficiency
-  return (
-    <PaperModal title={proficiency.name} subtitle={proficiency.primaryGroup} onClose={onClose}>
-      <div className="detail-grid">
-        <Field label="Ability" value={mechanics.relevantAbility} />
-        <Field label="Check Modifier" value={signedModifier(mechanics.checkModifier)} />
-        <Field label="Slots Required" value={String(mechanics.slotsRequired)} />
-        <Field label="Setting" value={proficiency.campaignSettings.join(', ')} />
-        <Field label="Learned by" value={mechanics.groups.join('; ')} />
-        <Field label="Prerequisites" value={mechanics.prerequisites.join(', ')} />
-      </div>
-      <TextBlock label="Description" text={proficiency.description.fullText} />
-      <TextBlock label="Skills & Powers (optional rule)" text={skillsAndPowersText(proficiency)} />
-    </PaperModal>
-  )
-}
 
 // Compêndio de proficiências (ProficiencyCompendiumView do iPad): filtro por
 // cenário (as de "Core" aparecem sempre), busca por nome, grupos fixos.

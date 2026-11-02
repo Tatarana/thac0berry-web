@@ -406,6 +406,54 @@ export function applyRace(c: PlayerCharacter, race: RaceName) {
   if (movement.base === '') c.page2Movement = { ...movement, base: baseMovement[race] }
 }
 
+/** Raça de um sexo só (variações por sexo, como "Bariaur (male)"); null = qualquer sexo. */
+export function raceGender(race: RaceName): 'male' | 'female' | null {
+  return race.endsWith('(male)') ? 'male' : race.endsWith('(female)') ? 'female' : null
+}
+
+/** Nome da raça sem a marca de sexo: "Bariaur (female)" → "Bariaur". */
+export const raceLabel = (race: RaceName) => race.replace(/ \((male|female)\)$/, '')
+
+/** A variação da raça para o outro sexo ("Bariaur (male)" → "Bariaur (female)"); a mesma raça se ela não tiver variação. */
+export function raceForGender(race: RaceName, gender: 'male' | 'female'): RaceName {
+  const only = raceGender(race)
+  if (!only || only === gender) return race
+  const other = race.replace(`(${only})`, `(${gender})`) as RaceName
+  return allRaces.includes(other) ? other : race
+}
+
+/** Raças que um personagem desse sexo pode ter (as variações do outro sexo saem). */
+export function racesForGender(gender: 'male' | 'female' | null): RaceName[] {
+  return allRaces.filter((race) => {
+    const only = raceGender(race)
+    return !gender || !only || only === gender
+  })
+}
+
+/** Ajustes de atributo da raça, um por atributo (ex.: Dwarf → CON +1, CHA −1). */
+export function raceAdjustments(race: RaceName): { ability: keyof AbilityScores; delta: number }[] {
+  return adjustments[race].map(([name, delta]) => ({ ability: abilityKey[name], delta }))
+}
+
+/**
+ * Troca de raça para o construtor (The Forge), onde se escolhe e troca à
+ * vontade: desfaz os ajustes da raça anterior — e as habilidades raciais e o
+ * movimento base que ela preencheu, se ainda forem os dela — antes de aplicar
+ * a nova. O `applyRace` puro soma por cima (comportamento da ficha, igual ao iPad).
+ */
+export function replaceRace(c: PlayerCharacter, race: RaceName) {
+  const previous = matchRace(c.race)
+  if (previous === race) return
+  if (previous) {
+    const abilities = { ...c.abilities }
+    for (const [name, delta] of adjustments[previous]) (abilities[abilityKey[name]] as number) -= delta
+    c.abilities = abilities
+    if (c.racialAbilities && c.racialAbilities === specialAbilities[previous]) c.racialAbilities = null
+    if (c.page2Movement && c.page2Movement.base === baseMovement[previous]) c.page2Movement = { ...c.page2Movement, base: '' }
+  }
+  applyRace(c, race)
+}
+
 // --- Kit -----------------------------------------------------------------------------
 
 export interface KitChoice {

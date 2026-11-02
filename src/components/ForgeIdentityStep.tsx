@@ -1,14 +1,14 @@
 import { useState } from 'react'
+import { matchRace, raceForGender, replaceRace } from '../rules/raceKit'
 import type { PlayerCharacter } from '../types/library'
-import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
+import { forgeImage, genderOf, type Gender } from '../lib/forgeImages'
+import { ForgeCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
 
 // Etapa 2 do The Forge, fiel ao protótipo aprovado (NameGender.dc.html):
 // dois cards ilustrados para o gênero (AD&D 2e: masculino ou feminino; grava
 // "Male"/"Female" em `sex`) e o nome entalhado numa faixa, com um dado que
 // sugere nomes. Vem antes de raça/classe porque alguns kits são de um gênero
 // só (gap: nenhum kit tem esse campo em thac0berry-data ainda).
-
-type Gender = 'male' | 'female'
 
 const genders: { key: Gender; label: string; image: string; alt: string }[] = [
   { key: 'male', label: 'Male', image: 'gender-male', alt: 'A young male adventurer walking out of a town gate' },
@@ -19,11 +19,6 @@ const suggestions: Record<Gender | 'any', string[]> = {
   male: ['Aldric', 'Thorvald', 'Corwin', 'Brannoc', 'Garrick', 'Ulfric', 'Tobin', 'Emeric'],
   female: ['Isolde', 'Maelis', 'Brynja', 'Seraphine', 'Ysolde', 'Rowena', 'Kestra', 'Aveline'],
   any: ['Wren', 'Ash', 'Rook', 'Sable', 'Morrow', 'Quill', 'Ember', 'Vesper'],
-}
-
-const genderOf = (sex: string): Gender | null => {
-  const text = sex.trim().toLowerCase()
-  return text === 'male' ? 'male' : text === 'female' ? 'female' : null
 }
 
 export function ForgeIdentityStep({
@@ -41,7 +36,13 @@ export function ForgeIdentityStep({
   const gender = genderOf(draft.sex)
   const named = draft.name.trim() !== ''
 
-  const pick = (next: Gender) => mutate((c) => { c.sex = next === 'male' ? 'Male' : 'Female' })
+  // Raça de um sexo só (Bariaur) acompanha a troca de sexo.
+  const pick = (next: Gender) =>
+    mutate((c) => {
+      c.sex = next === 'male' ? 'Male' : 'Female'
+      const race = matchRace(c.race)
+      if (race && raceForGender(race, next) !== race) replaceRace(c, raceForGender(race, next))
+    })
 
   const suggest = () => {
     const pool = suggestions[gender ?? 'any'].filter((n) => n !== draft.name)
@@ -49,9 +50,13 @@ export function ForgeIdentityStep({
     mutate((c) => { c.name = name })
   }
 
+  // Back / Next no topo e no fim da etapa (o mesmo rodapé).
+  const nav = { onBack, onNext, nextLabel: 'Next: Race →', ready: !!gender && named }
+
   return (
     <section className="forge-step forge-hero">
       <ForgeEmbers />
+      <ForgeFooter {...nav} top />
 
       <p className="forge-kicker">The Forge · Step 2</p>
       <h2 className="forge-title">
@@ -72,18 +77,16 @@ export function ForgeIdentityStep({
 
       <div className="hero-row" role="group" aria-label="Gender">
         {genders.map(({ key, label, image, alt }) => (
-          <button
+          <ForgeCard
             key={key}
-            type="button"
-            className={gender === key ? 'hero-card hero-chosen' : gender ? 'hero-card hero-dimmed' : 'hero-card'}
-            aria-pressed={gender === key}
+            size="hero"
+            image={forgeImage(image)}
+            alt={alt}
+            label={label}
+            chosen={gender === key}
+            dimmed={!!gender && gender !== key}
             onClick={() => pick(key)}
-          >
-            <img src={`${import.meta.env.BASE_URL}images/forge/${image}.webp`} alt={alt} />
-            <span className="hero-shade" />
-            <span className="hero-stamp">Chosen</span>
-            <span className="hero-name">{label}</span>
-          </button>
+          />
         ))}
       </div>
 
@@ -109,7 +112,7 @@ export function ForgeIdentityStep({
         </button>
       </div>
 
-      <ForgeFooter onBack={onBack} onNext={onNext} nextLabel="Next: Race →" ready={!!gender && named} />
+      <ForgeFooter {...nav} />
     </section>
   )
 }

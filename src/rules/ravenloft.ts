@@ -15,6 +15,9 @@ export const ravenloftClasses: CanonicalClass[] = ['Anchorite', 'Gypsy']
 
 export const isRavenloftClass = (cls: CharacterClass | string) => ravenloftClasses.includes(canonicalClass(cls))
 
+/** Cenário de onde a classe vem: Ravenloft para Anchorite e Gypsy; null = livros gerais. */
+export const classCampaignSetting = (cls: CharacterClass | string): string | null => (isRavenloftClass(cls) ? RAVENLOFT : null)
+
 /**
  * Campanha tem o cenário ligado. Decisão do usuário (2026-10-17): não esconde
  * mais a classe do seletor (o mestre pode misturar mundos) — só alimenta

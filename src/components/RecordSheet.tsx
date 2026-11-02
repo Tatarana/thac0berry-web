@@ -20,13 +20,15 @@ import {
   undoDualClass,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, rearArmorClass, shieldlessArmorClass, thievingSkillsShown, totalWeaponSlots, weaponSlotCost } from '../rules/rules'
+import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, rearArmorClass, shieldlessArmorClass, thievingSkillsShown, weaponSlotsSpent } from '../rules/rules'
+import { loadAllKits } from '../data/kits'
 import { armorBoxFromPieces, itemACBonus, itemACParts, parsedRating, type ItemACPart } from '../rules/armorClass'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, combinedProficiencySlots, dualClassRestriction, dualProficiencyNote, dualProficiencySlots, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, type ClassChoice } from '../rules/multiclass'
+import { classLabel, classLevels, dualClassRestriction, dualProficiencyNote, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, weaponProficiencySlots, type ClassChoice, type KitWeaponSlots } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
 import { gypsyCanSpecialize, gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
+import { kitBonusProficiencies } from '../rules/proficiencyCost'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -162,7 +164,7 @@ function RecordHeader({
    * (perguntando antes pelas já usadas: marcadas ou com notas) e põe as da
    * nova, junto com a mudança, numa gravação só.
    */
-  async function regrant(old: ProficiencyGrant | null, next: ProficiencyGrant | null, names: string[], change: (x: PlayerCharacter) => void) {
+  async function regrant(old: ProficiencyGrant | null, next: ProficiencyGrant | null, names: string[] | ((compendium: Proficiency[]) => string[]), change: (x: PlayerCharacter) => void) {
     if (!edit) return
     const compendium = await loadData<Proficiency[]>('proficiencies.json')
     let keep = new Set<string>()
@@ -179,7 +181,7 @@ function RecordHeader({
     edit((x) => {
       if (old) revokeProficiencies(x, old, keep, compendium)
       change(x)
-      if (next) grantProficiencies(x, next, names, compendium)
+      if (next) grantProficiencies(x, next, typeof names === 'function' ? names(compendium) : names, compendium)
     })
   }
   const kitGrant = (name: string | null | undefined): ProficiencyGrant | null => (name ? { kind: 'kit', name } : null)
@@ -399,7 +401,7 @@ function RecordHeader({
               onChoose={(kit) => {
                 setPickingKit(false)
                 // A1: as bônus do kit anterior saem e as do novo entram (casadas com o compêndio, 0 slots).
-                void regrant(kitGrant(c.kit), kitGrant(kit?.name), kit?.mechanics.proficiencies?.bonus ?? [], (x) => void (x.kit = kit?.name ?? null))
+                void regrant(kitGrant(c.kit), kitGrant(kit?.name), (compendium) => kitBonusProficiencies(kit, compendium), (x) => void (x.kit = kit?.name ?? null))
               }}
               onClose={() => setPickingKit(false)}
             />
@@ -1255,18 +1257,27 @@ function CombatModifiers({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
 
 // --- Armas -----------------------------------------------------------------
 
-// Cada arma listada já é uma proficiência; especializar custa mais (CFH cap. 4).
+// Cada arma listada já é uma proficiência (as variações da mesma arma, como
+// munição ou empunhadura, contam uma vez); especializar custa mais (CFH cap. 4).
 // O bônus de Inteligência vai para os slots nonweapon (PHB cap. 5), não para estes.
 function WeaponSlotsLine({ c }: { c: PlayerCharacter }) {
-  const spent = c.weapons.reduce((sum, w) => sum + weaponSlotCost(w), 0)
+  const [kitSlots, setKitSlots] = useState<KitWeaponSlots | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    if (!c.kit) return
+    void loadAllKits().then((kits) => {
+      if (!cancelled) setKitSlots(kits.find((k) => k.name === c.kit)?.mechanics.weaponSlots ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [c.kit])
+  const spent = weaponSlotsSpent(c.weapons)
   // Multiclasse: maior número inicial e ritmo mais rápido (PHB cap. 3).
   // Classe dupla (MC4d, decisão 17): iniciais e slots por nível de cada classe (Tabela 34).
+  // Classe única: a Tabela 34, ou os slots do kit quando ele os define.
   const dual = isDualClass(c) && !isMultiClass(c)
-  const total = isMultiClass(c)
-    ? combinedProficiencySlots(classLevels(c), 'weapon')
-    : dual
-      ? dualProficiencySlots(c, 'weapon')
-      : totalWeaponSlots(c.characterClass, c.level)
+  const total = weaponProficiencySlots(c, c.kit ? kitSlots : null)
   return (
     <>
       {/* Multiclasse (MC3c): restrições de armadura do mago e de armas do sacerdote. */}

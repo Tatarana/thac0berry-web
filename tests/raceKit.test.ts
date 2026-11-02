@@ -35,6 +35,42 @@ test('aplicar raça: ajustes de atributo, resistência a magia, habilidades e mo
   assert.equal(c.page2Movement?.base, '12"')
 })
 
+test('ajustes da raça, um por atributo', () => {
+  assert.deepEqual(K.raceAdjustments('Dwarf'), [
+    { ability: 'constitution', delta: 1 },
+    { ability: 'charisma', delta: -1 },
+  ])
+  assert.deepEqual(K.raceAdjustments('Human'), [])
+})
+
+test('trocar de raça no construtor desfaz a anterior antes de aplicar a nova', () => {
+  const c = base()
+  K.replaceRace(c, 'Dwarf')
+  assert.deepEqual([c.abilities.constitution, c.abilities.charisma], [10, 9])
+  assert.equal(c.page2Movement?.base, '6"')
+  assert.match(c.racialAbilities ?? '', /stonework traps/)
+  K.replaceRace(c, 'Elf')
+  assert.equal(c.race, 'Elf')
+  assert.deepEqual(c.abilities, { strength: 12, dexterity: 17, constitution: 8, intelligence: 10, wisdom: 10, charisma: 10 })
+  assert.equal(c.page2Movement?.base, '12"')
+  assert.match(c.racialAbilities ?? '', /^Infravision 60 ft\. 90% resistance/)
+  K.replaceRace(c, 'Elf')
+  assert.equal(c.abilities.dexterity, 17)
+  K.replaceRace(c, 'Human')
+  assert.deepEqual(c.abilities, { strength: 12, dexterity: 16, constitution: 9, intelligence: 10, wisdom: 10, charisma: 10 })
+  assert.equal(c.racialAbilities, null)
+})
+
+test('trocar de raça preserva o que o jogador escreveu à mão', () => {
+  const c = base()
+  K.replaceRace(c, 'Dwarf')
+  c.racialAbilities = 'Minhas anotações'
+  c.page2Movement = { ...c.page2Movement!, base: '9"' }
+  K.replaceRace(c, 'Gnome')
+  assert.equal(c.racialAbilities, 'Minhas anotações')
+  assert.equal(c.page2Movement?.base, '9"')
+})
+
 test('avisos: atributo fora da faixa e limite de nível da Tabela 7', () => {
   const c = base()
   assert.deepEqual(K.raceWarnings('Dwarf', c), [
@@ -217,4 +253,23 @@ test('modificadores de combate da raça (PHB cap. 2): ataque e penalidade de que
   assert.equal(K.racialCombatModifiers('Halfling').toHit[0].value, '+1')
   assert.deepEqual(K.racialCombatModifiers('Human'), { toHit: [], ac: [] })
   assert.deepEqual(K.racialCombatModifiers(null), { toHit: [], ac: [] })
+})
+
+test('raças de um sexo só: só aparecem para esse sexo, e o nome perde a marca', () => {
+  assert.equal(K.raceGender('Bariaur (male)'), 'male')
+  assert.equal(K.raceGender('Bariaur (female)'), 'female')
+  assert.equal(K.raceGender('Elf'), null)
+  assert.equal(K.raceLabel('Bariaur (female)'), 'Bariaur')
+  assert.equal(K.raceLabel('Genasi (air)'), 'Genasi (air)')
+  const forMale = K.racesForGender('male')
+  assert.ok(forMale.includes('Bariaur (male)') && !forMale.includes('Bariaur (female)'))
+  const forFemale = K.racesForGender('female')
+  assert.ok(forFemale.includes('Bariaur (female)') && !forFemale.includes('Bariaur (male)'))
+  assert.equal(K.racesForGender(null).length, K.allRaces.length)
+})
+
+test('mudar o sexo troca a raça para a variação certa', () => {
+  assert.equal(K.raceForGender('Bariaur (male)', 'female'), 'Bariaur (female)')
+  assert.equal(K.raceForGender('Bariaur (female)', 'female'), 'Bariaur (female)')
+  assert.equal(K.raceForGender('Elf', 'female'), 'Elf')
 })
