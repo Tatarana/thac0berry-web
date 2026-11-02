@@ -20,11 +20,13 @@ import type { SphereAccessLevel, WizardSpellbookEntry } from '../types/library.t
 import { hasClass } from './multiclass.ts'
 import { isOpposedBySchool } from './spellSheets.ts'
 
-/** As classes da etapa: mago ou bardo (grimório) e clérigo ou druida (esferas); multiclasse conta. */
-export function spellCasting(c: Parameters<typeof hasClass>[0]): { arcane: 'Mage' | 'Bard' | null; divine: 'Cleric' | 'Druid' | null } {
+export type DivineCaster = 'Cleric' | 'Druid' | 'Paladin'
+
+/** As classes da etapa: mago ou bardo (grimório) e clérigo, druida ou paladino (esferas); multiclasse conta. */
+export function spellCasting(c: Parameters<typeof hasClass>[0]): { arcane: 'Mage' | 'Bard' | null; divine: DivineCaster | null } {
   return {
     arcane: hasClass(c, 'Mage') ? 'Mage' : hasClass(c, 'Bard') ? 'Bard' : null,
-    divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : null,
+    divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : hasClass(c, 'Paladin') ? 'Paladin' : null,
   }
 }
 
@@ -227,13 +229,30 @@ export function bookEntries(state: Pick<BookState, 'book'>, byID: Map<string, Bo
 export const coreSpheres = ['All', 'Animal', 'Astral', 'Charm', 'Combat', 'Creation', 'Divination', 'Elemental', 'Guardian', 'Healing', 'Necromantic', 'Plant', 'Protection', 'Summoning', 'Sun', 'Weather']
 export const tomeSpheres = ['Chaos', 'Law', 'Numbers', 'Thought', 'Time', 'Travelers', 'War', 'Wards']
 
-const classSpheres: Record<string, { major: string[]; minor: string[] }> = {
+const classSpheres: Record<DivineCaster, { major: string[]; minor: string[] }> = {
   Cleric: { major: ['All', 'Astral', 'Charm', 'Combat', 'Creation', 'Divination', 'Guardian', 'Healing', 'Necromantic', 'Protection', 'Summoning', 'Sun'], minor: ['Elemental'] },
   Druid: { major: ['All', 'Animal', 'Elemental', 'Healing', 'Plant', 'Weather'], minor: ['Divination'] },
+  // PHB cap. 3: "only spells of the combat, divination, healing, and protective spheres".
+  Paladin: { major: ['Combat', 'Divination', 'Healing', 'Protection'], minor: [] },
 }
 
-/** As esferas da classe (PHB cap. 3): Cleric ou Druid. */
-export function defaultSphereAccess(characterClass: 'Cleric' | 'Druid'): Record<string, SphereAccessLevel> {
+// PHB Tabela 17 (Paladin Spell Progression), níveis 9 a 20: magias de sacerdote do 1º ao 4º nível.
+const paladinRows: number[][] = [
+  [1, 0, 0, 0], [2, 0, 0, 0], [2, 1, 0, 0], [2, 2, 0, 0], [2, 2, 1, 0], [3, 2, 1, 0],
+  [3, 2, 1, 1], [3, 3, 2, 1], [3, 3, 3, 1], [3, 3, 3, 1], [3, 3, 3, 2], [3, 3, 3, 3],
+]
+
+/** Tabela 17: magias por nível de magia (nada antes do 9º nível; sem bônus de Sabedoria). */
+export function paladinSpellProgression(level: number): number[] {
+  if (level < 9) return []
+  return paladinRows[Math.min(level, 20) - 9]
+}
+
+/** Tabela 17: nível de conjuração do paladino (nível − 8, no máximo 9). */
+export const paladinCastingLevel = (level: number) => (level < 9 ? 0 : Math.min(9, level - 8))
+
+/** As esferas da classe (PHB cap. 3): Cleric, Druid ou Paladin. */
+export function defaultSphereAccess(characterClass: DivineCaster): Record<string, SphereAccessLevel> {
   const base = classSpheres[characterClass]
   return Object.fromEntries([...base.major.map((s) => [s, 'major'] as const), ...base.minor.map((s) => [s, 'minor'] as const)])
 }

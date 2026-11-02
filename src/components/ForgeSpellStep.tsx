@@ -19,6 +19,8 @@ import {
   freeStudy,
   learnChance,
   opposedSpell,
+  paladinCastingLevel,
+  paladinSpellProgression,
   sphereGrants,
   sphereOf,
   spellCasting,
@@ -28,6 +30,7 @@ import {
   type BookMethod,
   type BookSpell,
   type BookState,
+  type DivineCaster,
   type LaterRule,
 } from '../rules/spellbook'
 import { wizardSchools } from '../rules/spellSheets'
@@ -138,7 +141,9 @@ export function ForgeSpellStep({
           ? casting.arcane === 'Mage'
             ? 'Every wizard leaves apprenticeship with a book of spells. Choose your school, choose how your master filled the book — then study the library, one spell at a time.'
             : 'A bard collects spells along the road, never by right. Roll for the spells you picked up, then study each one — your wits decide what sticks.'
-          : 'A priest keeps no spellbook: the god grants every spell of the spheres the priest can reach. Major access opens a sphere at every level; minor, only up to the 3rd.'}
+          : casting.divine === 'Paladin'
+            ? 'A paladin’s devotion is answered at 9th level: prayers from the combat, divination, healing and protection spheres, up to the 4th spell level.'
+            : 'A priest keeps no spellbook: the god grants every spell of the spheres the priest can reach. Major access opens a sphere at every level; minor, only up to the 3rd.'}
       </p>
       {help &&
         (showArcane ? (
@@ -148,9 +153,10 @@ export function ForgeSpellStep({
             and can never learn the opposed schools.
           </ForgeHelpNote>
         ) : (
-          <ForgeHelpNote ruleID="phb_ch03_priests_of_specific_mythoi">
-            Clerics and druids reach a fixed set of spheres (PHB chapter 3). A specialty priest of a particular god has spheres of their own — set
-            them here.
+          <ForgeHelpNote ruleID={casting.divine === 'Paladin' ? 'phb_ch03_paladin' : 'phb_ch03_priests_of_specific_mythoi'}>
+            {casting.divine === 'Paladin'
+              ? 'From 9th level a paladin casts priest spells of four spheres, by PHB Table 17. Casting level is the paladin’s level minus 8, and a high Wisdom gives no bonus spells.'
+              : 'Clerics and druids reach a fixed set of spheres (PHB chapter 3). A specialty priest of a particular god has spheres of their own — set them here.'}
           </ForgeHelpNote>
         ))}
 
@@ -730,11 +736,12 @@ function SphereSky({
   mutate: (fn: (c: PlayerCharacter) => void) => void
   settings: string[]
   index: SpellIndexEntry[]
-  cls: 'Cleric' | 'Druid'
+  cls: DivineCaster
   portrait: string[]
 }) {
   const level = levelOf(draft, cls) ?? draft.level
-  const castable = priestSpellProgression(level, draft.abilities.wisdom).filter((n) => n > 0).length
+  const paladin = cls === 'Paladin'
+  const castable = (paladin ? paladinSpellProgression(level) : priestSpellProgression(level, draft.abilities.wisdom)).filter((n) => n > 0).length
   const access = useMemo(() => draft.sphereAccess ?? defaultSphereAccess(cls), [draft.sphereAccess, cls])
   const [custom, setCustom] = useState(false)
   const [tome, setTome] = useState(() => Object.keys(access).some((k) => tomeSpheres.includes(k)))
@@ -776,7 +783,7 @@ function SphereSky({
         if (!names.length) return []
         const a = access[sphere]
         const open = !!a && l <= castable && (a === 'major' || l <= 3)
-        const note = open ? '' : a === 'minor' && l > 3 ? ' · beyond minor access' : !a ? '' : ' · not yet'
+        const note = open ? '' : paladin && l > 4 ? ' · beyond a paladin' : a === 'minor' && l > 3 ? ' · beyond minor access' : !a ? '' : ' · not yet'
         return [{ l, names, open, note }]
       })
     : []
@@ -784,19 +791,21 @@ function SphereSky({
   return (
     <div className="sp-layout">
       <div className="sp-col">
-        <div className="sp-later">
-          <button type="button" className={custom ? 'mm-chip mm-chip-on' : 'mm-chip'} aria-pressed={custom} onClick={() => setCustom(!custom)}>
-            Specialty priest — set my own spheres
-          </button>
-          <button type="button" className={tome ? 'mm-chip mm-chip-on' : 'mm-chip'} aria-pressed={tome} onClick={() => setTome(!tome)}>
-            Tome of Magic spheres
-          </button>
-          {custom && (
-            <button type="button" className="mm-chip" onClick={() => mutate((c) => void (c.sphereAccess = defaultSphereAccess(cls)))}>
-              Back to the {cls.toLowerCase()}’s spheres
+        {!paladin && (
+          <div className="sp-later">
+            <button type="button" className={custom ? 'mm-chip mm-chip-on' : 'mm-chip'} aria-pressed={custom} onClick={() => setCustom(!custom)}>
+              Specialty priest — set my own spheres
             </button>
-          )}
-        </div>
+            <button type="button" className={tome ? 'mm-chip mm-chip-on' : 'mm-chip'} aria-pressed={tome} onClick={() => setTome(!tome)}>
+              Tome of Magic spheres
+            </button>
+            {custom && (
+              <button type="button" className="mm-chip" onClick={() => mutate((c) => void (c.sphereAccess = defaultSphereAccess(cls)))}>
+                Back to the {cls.toLowerCase()}’s spheres
+              </button>
+            )}
+          </div>
+        )}
         <div className="sp-sky" ref={box} style={{ height: S * scale }}>
           <div className="sp-sky-stage" style={{ width: S, height: S, transform: `scale(${scale})` }}>
             <div className="mm-ring" style={{ left: C - R, top: C - R, width: 2 * R, height: 2 * R }} />
@@ -827,7 +836,7 @@ function SphereSky({
                   </button>
                   {a && (
                     <span className="sp-orb-tag" style={{ left: x - 60, top: y + 46 }}>
-                      {count} spells
+                      {castable === 0 ? 'at 9th level' : `${count} spells`}
                     </span>
                   )}
                 </div>
@@ -861,7 +870,13 @@ function SphereSky({
               <b>
                 {cls}, level {level}
               </b>
-              <span>Prays for spells up to level {castable} (PHB Table 24)</span>
+              <span>
+                {paladin
+                  ? castable === 0
+                    ? 'Spells begin at 9th level (PHB Table 17)'
+                    : `Casting level ${paladinCastingLevel(level)}, spells up to level ${castable} (PHB Table 17)`
+                  : `Prays for spells up to level ${castable} (PHB Table 24)`}
+              </span>
             </div>
           </div>
           <div className="sp-stats">
@@ -889,7 +904,7 @@ function SphereSky({
                 ? 'Tap the orb again to change its access: none → minor → major.'
                 : access[sphere]
                   ? `Granted by your calling as a ${cls.toLowerCase()}.`
-                  : `Not granted to a ${cls.toLowerCase()}. A specialty priest may differ.`}
+                  : `Not granted to a ${cls.toLowerCase()}.${paladin ? '' : ' A specialty priest may differ.'}`}
             </p>
             <div className="sp-levels">
               {levels.map((l) => (
@@ -907,8 +922,9 @@ function SphereSky({
           <div className="mm-card">
             <p className="mm-card-label">Your calling</p>
             <p className="sp-hint">
-              These are the spheres every {cls.toLowerCase()} reaches (PHB chapter 3). Tap one to see the spells it grants. A specialty priest of a
-              particular god? Turn on “set my own spheres” and tap the orbs.
+              {paladin
+                ? `A paladin reaches four spheres: combat, divination, healing and protection. Tap one to see its spells.${castable === 0 ? ' Your first spell comes at 9th level.' : ''}`
+                : `These are the spheres every ${cls.toLowerCase()} reaches (PHB chapter 3). Tap one to see the spells it grants. A specialty priest of a particular god? Turn on “set my own spheres” and tap the orbs.`}
             </p>
           </div>
         )}
@@ -916,10 +932,22 @@ function SphereSky({
         <div className="mm-card">
           <p className="mm-card-label">Laws of the faith</p>
           <ul className="sp-rules">
-            <li>Your god grants every spell in your spheres — there is nothing to study or roll.</li>
-            <li>Major access: all levels. Minor access: levels 1 to 3 only.</li>
-            <li>Your level sets the highest spell level you can pray for; Wisdom adds bonus spells.</li>
-            <li>All is the sphere of every priest: its spells are always yours.</li>
+            {(paladin
+              ? [
+                  'Spells come at 9th level; your casting level is your level minus 8.',
+                  'Only the combat, divination, healing and protection spheres — never above the 4th spell level.',
+                  'A high Wisdom gives a paladin no bonus spells.',
+                  'No priest scrolls, and only the magic items the warrior group may use.',
+                ]
+              : [
+                  'Your god grants every spell in your spheres — there is nothing to study or roll.',
+                  'Major access: all levels. Minor access: levels 1 to 3 only.',
+                  'Your level sets the highest spell level you can pray for; Wisdom adds bonus spells.',
+                  'All is the sphere of every priest: its spells are always yours.',
+                ]
+            ).map((law) => (
+              <li key={law}>{law}</li>
+            ))}
           </ul>
         </div>
       </aside>

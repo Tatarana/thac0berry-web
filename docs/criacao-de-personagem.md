@@ -179,3 +179,8 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   sacerdote especialista (Tome of Magic opcional). Regras em
   `src/rules/spellbook.ts`; grava `wizardSchool`, `wizardSpellbook` e
   `sphereAccess`. Só magias genéricas e dos cenários escolhidos na etapa 3.
+- **Paladino na etapa de magias.** Mesma constelação, com as quatro esferas do
+  PHB cap. 3 (Combat, Divination, Healing, Protection), fixas. Magias de
+  sacerdote só a partir do 9º nível, pela Tabela 17 (até o 4º nível de magia;
+  nível de conjuração = nível − 8; sem bônus de Sabedoria). Grava
+  `sphereAccess`. A tabela de slots da ficha ainda não dá slots ao paladino.

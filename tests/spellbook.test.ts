@@ -133,3 +133,14 @@ test('esferas: as da classe, o ciclo do especialista e o limite do minor', () =>
   assert.equal(B.sphereGrants({ level: 3, spheres: ['Elemental Fire'] }, cleric, 5), true)
   assert.equal(B.sphereGrants({ level: 4, spheres: ['Healing'] }, cleric, 3), false)
 })
+
+test('paladino: quatro esferas, magias só do 9º nível em diante (Tabela 17)', () => {
+  const access = B.defaultSphereAccess('Paladin')
+  assert.deepEqual(Object.keys(access).sort(), ['Combat', 'Divination', 'Healing', 'Protection'])
+  assert.deepEqual(B.paladinSpellProgression(8), [])
+  assert.deepEqual(B.paladinSpellProgression(9), [1, 0, 0, 0])
+  assert.deepEqual(B.paladinSpellProgression(15), [3, 2, 1, 1])
+  assert.deepEqual(B.paladinSpellProgression(25), [3, 3, 3, 3])
+  assert.equal(B.paladinCastingLevel(12), 4)
+  assert.equal(B.paladinCastingLevel(20), 9)
+})
