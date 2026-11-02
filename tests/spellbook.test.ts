@@ -29,7 +29,7 @@ test('Tabela 4: chance de aprender e máximo por círculo', () => {
 })
 
 test('trial: Read/Detect Magic de graça, 3d4 limitado pela Inteligência', () => {
-  let st = B.chooseMethod('trial', 'perLevel', true, spells)
+  let st = B.chooseMethod('trial', 'perLevel', B.trainingSpells('Mage'), spells)
   assert.deepEqual(Object.values(st.book), ['auto', 'auto'])
   let ctx = B.bookContext(base, st)
   assert.equal(ctx.first, null)
@@ -41,7 +41,7 @@ test('trial: Read/Detect Magic de graça, 3d4 limitado pela Inteligência', () =
 })
 
 test('rolagem: passa e escreve; falha e tranca até o próximo nível', () => {
-  let st = { ...B.chooseMethod('trial', 'perLevel', true, spells), dice: [1, 1, 2] }
+  let st = { ...B.chooseMethod('trial', 'perLevel', B.trainingSpells('Mage'), spells), dice: [1, 1, 2] }
   const ctx = B.bookContext(base, st)
   let r = B.studySpell(st, find('Sleep'), ctx, 70)
   assert.equal(r.ok, true)
@@ -57,7 +57,7 @@ test('rolagem: passa e escreve; falha e tranca até o próximo nível', () => {
 })
 
 test('gift: 6 magias sem rolar', () => {
-  const st = B.chooseMethod('gift', 'perLevel', true, spells)
+  const st = B.chooseMethod('gift', 'perLevel', B.trainingSpells('Mage'), spells)
   const ctx = B.bookContext(base, st)
   assert.equal(ctx.first, 6)
   assert.equal(ctx.rolls, false)
@@ -66,7 +66,7 @@ test('gift: 6 magias sem rolar', () => {
 })
 
 test('library: nada de graça, até o máximo da Inteligência', () => {
-  const st = B.chooseMethod('library', 'perLevel', true, spells)
+  const st = B.chooseMethod('library', 'perLevel', B.trainingSpells('Mage'), spells)
   assert.deepEqual(st.book, {})
   assert.equal(B.bookContext(base, st).first, 11)
 })
@@ -78,7 +78,7 @@ test('especialista: ±15%, escola oposta lacrada, adivinhação menor aberta, pr
   assert.equal(B.opposedSpell('Illusion/Phantasm', find('Magic Missile')), true)
   assert.equal(B.opposedSpell('Illusion/Phantasm', find('Detect Magic')), false)
   assert.equal(B.opposedSpell('Conjuration/Summoning', find('Detect Magic')), true)
-  const st = B.chooseMethod('trial', 'perLevel', true, spells)
+  const st = B.chooseMethod('trial', 'perLevel', B.trainingSpells('Mage'), spells)
   const r = B.studySpell({ ...st, dice: [3, 3, 3] }, find('Phantasmal Force'), ctx, null)
   assert.equal(r.state.book[find('Phantasmal Force').id], 'gift')
   assert.equal(B.schoolGiftOpen(ctx, r.state), false)
@@ -89,7 +89,7 @@ test('especialista: ±15%, escola oposta lacrada, adivinhação menor aberta, pr
 })
 
 test('acima do 1º nível: uma por nível, ou até a Inteligência em todo círculo', () => {
-  const st = B.chooseMethod('gift', 'perLevel', true, spells)
+  const st = B.chooseMethod('gift', 'perLevel', B.trainingSpells('Mage'), spells)
   const ctx = B.bookContext({ ...base, level: 3, castable: 2 }, st)
   assert.equal(ctx.extra, 2)
   assert.equal(B.bookRoom(1, ctx, 'perLevel'), 8)
@@ -113,7 +113,7 @@ test('bardo: nada no 1º nível; 1d4 no 2º', () => {
 })
 
 test('bookEntries guarda o id das entradas que já existiam', () => {
-  const st = B.chooseMethod('trial', 'perLevel', true, spells)
+  const st = B.chooseMethod('trial', 'perLevel', B.trainingSpells('Mage'), spells)
   let n = 0
   const entries = B.bookEntries(st, byID, [{ id: 'OLD', name: 'Read Magic', matchedSpellID: 'read-magic', level: null }], () => `N${++n}`)
   assert.deepEqual(entries.map((e) => [e.id, e.name]), [['N1', 'Detect Magic'], ['OLD', 'Read Magic']])
@@ -168,4 +168,13 @@ test('anchorite: esferas pelo alinhamento (Domains of Dread, Table 92)', () => {
   assert.equal(B.defaultSphereAccess('Anchorite', 'True Neutral').Guardian, 'major')
   assert.deepEqual(B.anchoriteAlignments, ['Lawful Good', 'Lawful Neutral', 'True Neutral'])
   assert.equal(B.spellCasting({ characterClass: 'Anchorite', level: 1 } as never).divine, 'Anchorite')
+})
+
+test('gypsy: só Detect Magic de graça; bardo, nada', () => {
+  assert.deepEqual(B.trainingSpells('Gypsy'), ['Detect Magic'])
+  assert.deepEqual(B.trainingSpells('Bard'), [])
+  const st = B.chooseMethod('trial', 'perLevel', B.trainingSpells('Gypsy'), spells)
+  assert.deepEqual(Object.keys(st.book), ['detect-magic'])
+  assert.equal(B.spellCasting({ characterClass: 'Gypsy', level: 1 } as never).arcane, 'Gypsy')
+  assert.equal(B.spellCasting({ characterClass: 'Mage', level: 1, multiClasses: [{ characterClass: 'Gypsy', level: 1 }] } as never).arcane, 'Mage')
 })

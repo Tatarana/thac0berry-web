@@ -205,4 +205,12 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   de classe, classe ou kit fora do alinhamento vira aviso "!" (não bloqueia).
   As etapas seguintes andaram um número (classe 5 … proficiências 8). O
   anchorite lê as esferas do alinhamento escolhido aqui.
+- **Gypsy na etapa de magias ("Read the Signs").** A mesma tela do grimório,
+  só com adivinhação (lesser e greater divination, Domains of Dread), slots da
+  Table 104 limitados pelo círculo máximo da Inteligência. O jogador escolhe
+  entre os três jeitos do DMG, como o mago (decisão do usuário, 2026-11-02):
+  Detect Magic vem de graça no 3d4 e no "gift" (o gypsy não precisa de Read
+  Magic); sem escola nem filtros de escola. Grava em `wizardSpellbook`, que a
+  ficha mostra como "Known Spells". Gypsy multiclasse com mago ou bardo usa o
+  grimório da outra classe.
 

@@ -22,10 +22,16 @@ import { isOpposedBySchool } from './spellSheets.ts'
 
 export type DivineCaster = 'Cleric' | 'Druid' | 'Anchorite' | 'Paladin' | 'Ranger'
 
-/** As classes da etapa: mago ou bardo (grimório) e clérigo, druida, anchorite, paladino ou ranger (esferas); multiclasse conta. */
-export function spellCasting(c: Parameters<typeof hasClass>[0]): { arcane: 'Mage' | 'Bard' | null; divine: DivineCaster | null } {
+export type ArcaneCaster = 'Mage' | 'Bard' | 'Gypsy'
+
+/**
+ * As classes da etapa: mago, bardo ou gypsy (grimório; o gypsy só quando não é
+ * também mago ou bardo) e clérigo, druida, anchorite, paladino ou ranger
+ * (esferas); multiclasse conta.
+ */
+export function spellCasting(c: Parameters<typeof hasClass>[0]): { arcane: ArcaneCaster | null; divine: DivineCaster | null } {
   return {
-    arcane: hasClass(c, 'Mage') ? 'Mage' : hasClass(c, 'Bard') ? 'Bard' : null,
+    arcane: hasClass(c, 'Mage') ? 'Mage' : hasClass(c, 'Bard') ? 'Bard' : hasClass(c, 'Gypsy') ? 'Gypsy' : null,
     divine: hasClass(c, 'Cleric') ? 'Cleric' : hasClass(c, 'Druid') ? 'Druid' : hasClass(c, 'Anchorite') ? 'Anchorite' : hasClass(c, 'Paladin') ? 'Paladin' : hasClass(c, 'Ranger') ? 'Ranger' : null,
   }
 }
@@ -54,8 +60,15 @@ export interface BookState {
 
 export const emptyBook = (method: BookMethod = 'trial', later: LaterRule = 'perLevel'): BookState => ({ method, later, dice: null, book: {}, failed: {} })
 
-/** As duas magias que todo mago aprende como aprendiz (DMG). */
-export const trainingSpells = ['Read Magic', 'Detect Magic']
+/**
+ * O que vem de graça no "trial" e no "gift": Read Magic e Detect Magic, que
+ * todo mago aprende como aprendiz (DMG); o gypsy, que só lança adivinhação e
+ * não precisa de Read Magic, só Detect Magic (decisão do usuário, 2026-11-02);
+ * o bardo, nada.
+ */
+export function trainingSpells(cls: ArcaneCaster): string[] {
+  return cls === 'Mage' ? ['Read Magic', 'Detect Magic'] : cls === 'Gypsy' ? ['Detect Magic'] : []
+}
 
 export interface BookContext {
   mage: boolean
@@ -154,7 +167,7 @@ export const circleName = (n: number) => roman[n] ?? String(n)
 export function spellVerdict(spell: BookSpell, ctx: BookContext, state: BookState, byID: Map<string, BookSpell>): SpellVerdict {
   const tag = state.book[spell.id]
   if (tag) {
-    if (tag === 'auto') return { ok: false, erase: true, reason: 'Part of every wizard’s training — it stays in the book.' }
+    if (tag === 'auto') return { ok: false, erase: true, reason: 'Part of your training — it stays in the book.' }
     return { ok: true, erase: true }
   }
   if (opposedSpell(ctx.school, spell)) return { ok: false, reason: 'That school opposes yours — a specialist can never learn it.' }
@@ -192,11 +205,11 @@ export function studySpell(state: BookState, spell: BookSpell, ctx: BookContext,
   return { ok, state: next }
 }
 
-/** Troca o jeito de encher o livro: recomeça, com Read/Detect Magic de graça no trial e no gift. */
-export function chooseMethod(method: BookMethod, later: LaterRule, mage: boolean, spells: BookSpell[]): BookState {
+/** Troca o jeito de encher o livro: recomeça, com as magias de treino (trainingSpells) de graça no trial e no gift. */
+export function chooseMethod(method: BookMethod, later: LaterRule, training: string[], spells: BookSpell[]): BookState {
   const state = emptyBook(method, later)
-  if (mage && method !== 'library') {
-    for (const s of spells) if (s.level === 1 && trainingSpells.includes(s.name)) state.book[s.id] = 'auto'
+  if (method !== 'library') {
+    for (const s of spells) if (s.level === 1 && training.includes(s.name)) state.book[s.id] = 'auto'
   }
   return state
 }
