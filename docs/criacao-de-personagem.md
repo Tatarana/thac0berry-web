@@ -240,4 +240,23 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   passa de 95%. Grava `thievingSkills` com os valores finais. Trocar a classe
   ladina recomeça o treino. A armadura (PHB Tabela 29) fica para a etapa de
   equipamento.
+- **Etapa 9, equipamento ("Fill Your Pack").** Para todas as classes, depois
+  das proficiências (as etapas de classe — perícias de ladrão, psiônica,
+  magias — vêm depois, 10 em diante), como o protótipo "Step 9 · Equipment"
+  do canvas. A bolsa rola com os dados na mesa (`ForgeDice`, que ganhou o d6):
+  PHB Tabela 43 pelo grupo da classe (psionicista: CPsiH), a faixa mais
+  vantajosa na multiclasse, ou o `startingCash` do kit; o jogador soma à mão
+  o ouro que o mestre der (acima do 1º nível, PHB). Trocar de classe ou kit
+  depois de rolar pede outra rolagem. Três barracas (ferreiro, armeiro,
+  armazém), com selos "Trained" (lista de proficiências) e "Kit"; munição à
+  parte; uma armadura, um escudo e um elmo (comprar outro troca); pacotes
+  prontos. Ao lado, o herói vestido: CA na hora, peso contra a Força
+  (`strengthRow`), mochila. O sacerdote só recebe o aviso de devolver ao
+  templo tudo menos 2 ou 3 po (decisão do usuário). Grava a armadura e o
+  escudo na caixa de armadura (`setArmorPieces`), o resto na tabela de
+  equipamento da página 2 (com local e peso; a lista de armas da ficha é a de
+  proficiências e não muda) e o troco no tesouro. Regras em
+  `src/rules/market.ts`. Dados: preço e peso das armas e a munição (PHB Table
+  44) entraram no `weapons.json` do thac0berry-data
+  (`scripts/add_weapon_costs.py`).
 

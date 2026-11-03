@@ -13,6 +13,11 @@ export interface Weapon {
   damageLarge?: string | null
   range?: { short?: string | null; medium?: string | null; long?: string | null } | null
   source?: string | null
+  /** PHB Table 44 (thac0berry-data, 2026-11-02): "15 gp"; "—" quando o livro não cobra nada. */
+  cost?: string | null
+  weight?: string | null
+  /** Armas de disparo: a munição vendida à parte (12 flechas por 3 sp). */
+  ammunition?: { name: string; cost: string; quantity: number; weight?: string | null } | null
 }
 
 export interface ArmorPiece {
