@@ -9,6 +9,7 @@ import { ForgeEquipmentStep } from '../components/ForgeEquipmentStep'
 import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
 import { ForgeRaceStep } from '../components/ForgeRaceStep'
+import { ForgeReveal } from '../components/ForgeReveal'
 import { ForgeSkillStep } from '../components/ForgeSkillStep'
 import { ForgeSpellStep } from '../components/ForgeSpellStep'
 import { ForgeStartStep } from '../components/ForgeStartStep'
@@ -17,7 +18,7 @@ import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { PageHeader } from '../components/PageHeader'
 import { portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { blankCharacter, createCharacter } from '../lib/roster'
-import { applyAutomatic, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
+import { applyAutomatic, applyClassTables, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
 import type { Lean } from '../rules/alignment'
 import { emptyMarket, type MarketState } from '../rules/market'
 import { hasClass, rogueClass } from '../rules/multiclass'
@@ -123,6 +124,21 @@ export function CharacterForge() {
   const nextAfter = (s: number) => (s < stepTitles.length ? () => setStep(s + 1) : () => void finish())
   const labelAfter = (s: number) => (s < stepTitles.length ? `Next: ${stepTitles[s]} →` : undefined)
 
+  // O fechamento: a cena do herói forjado roda enquanto o personagem é gravado.
+  const [reveal, setReveal] = useState<{ character: PlayerCharacter; id: string | null; error: string | null } | null>(null)
+
+  const save = async (final: PlayerCharacter) => {
+    setReveal({ character: final, id: null, error: null })
+    try {
+      const userID = session?.user.id ?? null
+      const attachment = portrait && userID ? await uploadAttachment(userID, await portraitJPEG(portrait.file), 'image/jpeg') : null
+      const id = await createCharacter(null, final, attachment)
+      setReveal({ character: final, id, error: null })
+    } catch (reason) {
+      setReveal({ character: final, id: null, error: reason instanceof Error ? reason.message : String(reason) })
+    }
+  }
+
   const finish = async () => {
     setCreating(true)
     setError(null)
@@ -137,15 +153,32 @@ export function CharacterForge() {
       if (!casting.divine) final.sphereAccess = null
       if (!rogue) final.thievingSkills = null
       applyAutomatic(pendingConsequences(final), final)
+      // THAC0 e saves da classe mesmo no 1º nível (não há consequência pendente ali).
+      applyClassTables(final)
       markConsequencesReviewed(final)
-      const userID = session?.user.id ?? null
-      const attachment = portrait && userID ? await uploadAttachment(userID, await portraitJPEG(portrait.file), 'image/jpeg') : null
-      const id = await createCharacter(null, final, attachment)
-      navigate(`/characters/${id}`)
+      setCreating(false)
+      await save(final)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
       setCreating(false)
     }
+  }
+
+  if (reveal) {
+    return (
+      <div className="page page-wide">
+        <PageHeader title="The Forge" backTo="/characters" />
+        <ForgeReveal
+          character={reveal.character}
+          portraitURL={portrait?.url ?? null}
+          savedID={reveal.id}
+          error={reveal.error}
+          onOpen={(id) => navigate(`/characters/${id}`)}
+          onRetry={() => void save(reveal.character)}
+          onBack={() => setReveal(null)}
+        />
+      </div>
+    )
   }
 
   return (

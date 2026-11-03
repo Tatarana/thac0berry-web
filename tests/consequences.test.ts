@@ -96,3 +96,18 @@ test('displaySummary como no iPad', () => {
   assert.equal(C.displaySummary([0, 0]), 'no spells yet')
   assert.equal(C.displaySummary(null), '—')
 })
+
+test('The Forge: THAC0 e saves da classe no 1º nível, mesmo sem consequência pendente', () => {
+  const c = cleric()
+  // os saves da ficha em branco (homem comum), como o Forge recebia
+  c.saves = { paralyzationPoisonDeath: 16, rodStaffWand: 18, petrificationPolymorph: 17, breathWeapon: 20, spell: 19, modifiers: { sp: 2 }, spellResistance: '5%' }
+  C.changeClass(c, 'Fighter', null)
+  C.applyClassTables(c)
+  assert.deepEqual(
+    [c.saves.paralyzationPoisonDeath, c.saves.rodStaffWand, c.saves.petrificationPolymorph, c.saves.breathWeapon, c.saves.spell],
+    [14, 16, 15, 17, 17],
+  )
+  assert.deepEqual(c.saves.modifiers, { sp: 2 })
+  assert.equal(c.saves.spellResistance, '5%')
+  assert.equal(c.thac0, 20)
+})
