@@ -206,6 +206,22 @@ export function applyAutomatic(items: ConsequenceItem[], c: PlayerCharacter) {
   }
 }
 
+/**
+ * The Forge (2026-11-02): THAC0 e saves pelas tabelas das classes de agora. A
+ * troca de classe já marca o retrato do último estado revisado, então um
+ * personagem de 1º nível não tem consequência pendente e ficava com os saves
+ * da ficha em branco (os de um homem comum). Preserva o que o jogador digitou.
+ */
+export function applyClassTables(c: PlayerCharacter) {
+  const ctx = currentRuleContext(c)
+  const thac0 = resolveRule('thac0', ctx)
+  const saves = resolveRule('savingThrows', ctx)
+  if (typeof thac0 === 'number') c.thac0 = thac0
+  if (saves && typeof saves === 'object' && !Array.isArray(saves)) {
+    c.saves = { ...(saves as SavingThrows), modifiers: c.saves.modifiers ?? null, spellResistance: c.saves.spellResistance ?? null }
+  }
+}
+
 // --- Mudanças que disparam consequências --------------------------------------------
 
 /** refreshXPNeededNextLevel: grava o XP do próximo nível quando a tabela tem (até o 20). */

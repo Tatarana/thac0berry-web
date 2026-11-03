@@ -272,4 +272,19 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   história num pergaminho com "Spark an idea". O retrato escolhido sobe para
   o Storage no "Create character" e vai junto no insert (`createCharacter`
   ganhou `portraitAttachment`). Regras em `src/rules/description.ts`.
+- **Fechamento ("Your hero is forged").** Depois do "Create character", como
+  o protótipo "Finale · Reveal" do canvas: a cena de ~8 s (retrato e nome, os
+  selos de raça, classe, alinhamento, nível e kit, os atributos cunhados, PV,
+  CA, THAC0 e o melhor save, o pergaminho do que o herói leva e as páginas da
+  ficha) roda enquanto o personagem é gravado. "Open your sheet" espera a
+  gravação; se ela falhar, a cena mostra o erro com "Try again" e "Back to the
+  Forge" (nada se perde). Com movimento reduzido, tudo aparece de uma vez.
+  `src/components/ForgeReveal.tsx`.
+- **Correção: THAC0 e saves no 1º nível.** A troca de classe marca o retrato
+  das consequências, então um personagem de 1º nível não tinha consequência
+  pendente e saía do Forge com os saves da ficha em branco (os de um homem
+  comum, 16/18/17/20/19). `applyClassTables` (`src/rules/consequences.ts`)
+  aplica as tabelas das classes ao criar, preservando os modificadores. Fichas
+  já criadas pelo Forge no 1º nível continuam com os saves antigos até o
+  jogador ajustar.
 
