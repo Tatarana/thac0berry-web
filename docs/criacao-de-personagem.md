@@ -288,3 +288,10 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   já criadas pelo Forge no 1º nível continuam com os saves antigos até o
   jogador ajustar.
 
+- **Imagens do Forge trocadas pelo admin (2026-11-03, v0.130.0).** Perfil Admin
+  no backend (`app_admin`, `is_admin()`). Conta admin vê um lápis nos cards de
+  gênero, raça e classe e nas faixas de armas, inclusive onde ainda não há arte.
+  O painel mostra a imagem, as versões e "Make current"; "Bring new art" converte
+  para WebP e recorta no tamanho do slot (896×1200; armas 1680×720; gênero 848×848,
+  o tamanho das imagens atuais). Nenhuma versão se apaga. O mesmo componente serve
+  ao Grimório. `scripts/seed-site-images.mjs` sobe as imagens do repo como versão 1.
