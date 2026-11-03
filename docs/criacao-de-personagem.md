@@ -259,4 +259,17 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   `src/rules/market.ts`. Dados: preço e peso das armas e a munição (PHB Table
   44) entraram no `weapons.json` do thac0berry-data
   (`scripts/add_weapon_costs.py`).
+- **Última etapa, descrição ("Tell Your Tale").** Depois de todas as outras,
+  como o protótipo "Last step · Description" do canvas (o título diz "Last
+  Step", porque o número muda com a classe). O espelho com o retrato e três
+  selos de cera — idade, altura e peso, com o dado da raça e do gênero (PHB
+  Tabelas 10 e 11; PWH para as raças planares; o modron não envelhece) e
+  ajuste ±; a fase da vida (Tabela 12) avisa quando a idade mexe nos
+  atributos. Aparência em amostras de cor (cabelo, olhos, pele). O patrono:
+  galeria das divindades (`deities.json`), filtrada por "até um passo do
+  alinhamento", cenário e busca; o deus do kit já vem escolhido (decisão do
+  usuário). Traços (até três, gravados em `personality`), terra natal e a
+  história num pergaminho com "Spark an idea". O retrato escolhido sobe para
+  o Storage no "Create character" e vai junto no insert (`createCharacter`
+  ganhou `portraitAttachment`). Regras em `src/rules/description.ts`.
 
