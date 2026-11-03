@@ -5,16 +5,19 @@
 
 import { readdir, readFile } from 'node:fs/promises'
 import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../src/config.ts'
 
-const url = process.env.SUPABASE_URL ?? 'https://azydmvnlzmyvtsgfogbq.supabase.co'
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!key) throw new Error('Falta SUPABASE_SERVICE_ROLE_KEY no ambiente.')
-const supabase = createClient(url, key, { auth: { persistSession: false } })
+const supabase = createClient(SUPABASE_URL, key, { auth: { persistSession: false } })
+// Na nuvem, tabela nova não abre para a service_role sem GRANT: a leitura vai
+// pela chave pública, e a escrita pela função add_site_image_version.
+const reader = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } })
 
 const dir = new URL('../public/images/forge/', import.meta.url)
 for (const file of (await readdir(dir)).filter((name) => name.endsWith('.webp'))) {
   const slot = `forge/${file.replace(/\.webp$/, '')}`
-  const { data, error } = await supabase.from('site_image_version').select('version').eq('slot', slot).limit(1)
+  const { data, error } = await reader.from('site_image_version').select('version').eq('slot', slot).limit(1)
   if (error) throw new Error(error.message)
   if (data.length) {
     console.log(`${slot}: já tem versão`)
