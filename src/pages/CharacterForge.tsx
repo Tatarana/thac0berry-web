@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useAuth } from '../auth/context'
 import { useNavigate } from 'react-router'
 import { ForgeAbilitiesStep } from '../components/ForgeAbilitiesStep'
 import { ForgeAlignmentStep } from '../components/ForgeAlignmentStep'
 import { ForgeClassStep } from '../components/ForgeClassStep'
+import { ForgeDescriptionStep } from '../components/ForgeDescriptionStep'
 import { ForgeEquipmentStep } from '../components/ForgeEquipmentStep'
 import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
@@ -13,6 +15,7 @@ import { ForgeStartStep } from '../components/ForgeStartStep'
 import { ForgeThievingStep } from '../components/ForgeThievingStep'
 import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { PageHeader } from '../components/PageHeader'
+import { portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { blankCharacter, createCharacter } from '../lib/roster'
 import { applyAutomatic, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
 import type { Lean } from '../rules/alignment'
@@ -86,6 +89,14 @@ export function CharacterForge() {
   // etapa não rola de novo; trocar de mago para bardo recomeça.
   const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(null)
   // Para que classe as esferas gravadas foram feitas (ver ForgeSpellStep).
+  // O retrato escolhido na última etapa: sobe para o Storage só no "Create character".
+  const [portrait, setPortrait] = useState<{ file: File; url: string } | null>(null)
+  const { session } = useAuth()
+  const changePortrait = (file: File | null) =>
+    setPortrait((old) => {
+      if (old) URL.revokeObjectURL(old.url)
+      return file ? { file, url: URL.createObjectURL(file) } : null
+    })
   // A bolsa (rolagem, ouro do mestre) e a sacola da etapa de equipamento.
   const [market, setMarket] = useState<MarketState>(emptyMarket)
   // Os pontos de treino das perícias de ladrão, por perícia; trocar a classe ladina recomeça.
@@ -105,6 +116,7 @@ export function CharacterForge() {
     ...(rogue ? (['Thieving Skills'] as const) : []),
     ...(psionic ? (['Psionic Powers'] as const) : []),
     ...(caster ? (['Spells'] as const) : []),
+    'Description' as const,
   ]
   const stepTitles = [...baseSteps, ...extras]
   const extra = step > baseSteps.length ? extras[step - baseSteps.length - 1] : undefined
@@ -126,7 +138,9 @@ export function CharacterForge() {
       if (!rogue) final.thievingSkills = null
       applyAutomatic(pendingConsequences(final), final)
       markConsequencesReviewed(final)
-      const id = await createCharacter(null, final)
+      const userID = session?.user.id ?? null
+      const attachment = portrait && userID ? await uploadAttachment(userID, await portraitJPEG(portrait.file), 'image/jpeg') : null
+      const id = await createCharacter(null, final, attachment)
       navigate(`/characters/${id}`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -231,8 +245,20 @@ export function CharacterForge() {
           sphereFor={sphereFor}
           onSphereFor={setSphereFor}
           onBack={() => setStep(step - 1)}
-          onFinish={() => void finish()}
+          onFinish={nextAfter(step)}
           creating={creating}
+          finishLabel={labelAfter(step)}
+        />
+      )}
+      {extra === 'Description' && (
+        <ForgeDescriptionStep
+          draft={draft}
+          mutate={mutate}
+          portraitURL={portrait?.url ?? null}
+          onPortrait={changePortrait}
+          creating={creating}
+          onBack={() => setStep(step - 1)}
+          onFinish={() => void finish()}
         />
       )}
     </div>

@@ -149,6 +149,7 @@ export function ForgeSpellStep({
   onFinish,
   creating,
   stepNumber,
+  finishLabel = 'Create character',
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
@@ -162,6 +163,8 @@ export function ForgeSpellStep({
   onBack: () => void
   onFinish: () => void
   creating: boolean
+  /** Próxima etapa (a descrição) ou criar. */
+  finishLabel?: string
 }) {
   const casting = spellCasting(draft)
   const [view, setView] = useState<'arcane' | 'divine'>(casting.arcane ? 'arcane' : 'divine')
@@ -172,7 +175,7 @@ export function ForgeSpellStep({
     void loadSpellIndex().then(setIndex)
   }, [])
 
-  const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : 'Create character', ready: !creating }
+  const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : finishLabel, ready: !creating }
   const gender = genderOf(draft.sex)
   const race = matchRace(draft.race)
   const showArcane = view === 'arcane' && !!casting.arcane

@@ -11497,3 +11497,445 @@ button.sp-line {
   font: inherit;
   cursor: pointer;
 }
+
+/* --- The Forge, última etapa: descrição (ForgeDescriptionStep; protótipo "Last step · Description") --- */
+.ds-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 26px;
+  margin-top: 26px;
+  align-items: start;
+  text-align: left;
+}
+
+@media (max-width: 1000px) {
+  .ds-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ds-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.ds-label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* O espelho */
+.ds-mirror {
+  position: relative;
+  width: min(100%, 260px);
+  aspect-ratio: 260 / 330;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 130px 130px 18px 18px;
+  background: linear-gradient(160deg, #8a6a2a, #3b2a12 60%, #6b4a1c);
+  box-shadow:
+    0 0 0 2px #c9a227,
+    0 18px 40px rgba(0, 0, 0, 0.6),
+    0 0 50px rgba(255, 178, 60, 0.18);
+}
+
+.ds-mirror-glass {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 120px 120px 10px 10px;
+  background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.1), rgba(10, 8, 6, 0.9) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-mirror-glass img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.ds-mirror-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #c9a227;
+  background: rgba(19, 14, 10, 0.85);
+  color: #ffd27a;
+  font: inherit;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ds-banner {
+  position: relative;
+  width: min(100%, 300px);
+  min-height: 48px;
+  margin: -14px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  clip-path: polygon(0 0, 100% 0, 94% 50%, 100% 100%, 0 100%, 6% 50%);
+  background: linear-gradient(180deg, #8f2a1f, #5e1712);
+  font-family: 'Caveat', cursive;
+  font-size: 1.9rem;
+  color: #ffe2a6;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.ds-remove {
+  display: block;
+  margin: 6px auto 0;
+}
+
+/* Os selos de cera */
+.ds-seals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.ds-seal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.ds-wax {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 38% 32%, #c8463a, #7d1d18 70%);
+  box-shadow:
+    inset 0 -4px 8px rgba(0, 0, 0, 0.4),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+  color: #ffe2a6;
+}
+
+.ds-wax b {
+  font-family: 'Caveat', cursive;
+  font-size: 1.75rem;
+  line-height: 0.9;
+}
+
+.ds-wax span {
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.ds-wax-spin {
+  animation: ds-spin 0.5s ease-out;
+}
+
+@keyframes ds-spin {
+  from {
+    transform: rotate(-200deg) scale(0.6);
+  }
+}
+
+.ds-seal-ctrl {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ds-mini {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #5c4a30;
+  background: rgba(19, 14, 10, 0.8);
+  color: #c9a227;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ds-dice {
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid #8a712a;
+  background: rgba(255, 178, 60, 0.1);
+  color: #ffd27a;
+  font: inherit;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.ds-seal small {
+  font-size: 0.66rem;
+  color: #8c7b66;
+  font-style: italic;
+}
+
+.ds-age-note {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: #b8a690;
+  font-style: italic;
+  text-align: center;
+}
+
+.ds-age-warn {
+  color: #f2a79c;
+}
+
+/* Aparência */
+.ds-look {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.ds-look-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8c7b66;
+}
+
+.ds-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ds-sw {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.ds-sw-on {
+  border-color: #ffd27a;
+  box-shadow:
+    0 0 0 2px rgba(255, 178, 60, 0.35),
+    0 0 12px rgba(255, 178, 60, 0.5);
+}
+
+.ds-look-pick {
+  grid-column: 2;
+  margin-top: -4px;
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  color: #ffd27a;
+}
+
+/* Patrono */
+.ds-gods {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  max-height: 340px;
+  overflow: auto;
+  margin-top: 12px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #8a712a transparent;
+}
+
+.ds-god {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #3a2d1f;
+  background: linear-gradient(170deg, rgba(40, 32, 48, 0.85), rgba(18, 14, 20, 0.95));
+  color: #efe4d3;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ds-god b {
+  font-size: 0.9rem;
+  padding-right: 34px;
+}
+
+.ds-god i {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a08436;
+  font-style: normal;
+}
+
+.ds-god p {
+  margin: 0;
+  color: #b8a690;
+  font-size: 0.72rem;
+}
+
+.ds-god em {
+  color: #cdbdff;
+  font-size: 0.7rem;
+}
+
+.ds-god-al {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.62rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid #5c4a30;
+  color: #b8a690;
+}
+
+.ds-god-fit .ds-god-al {
+  border-color: #6fbf8e;
+  color: #a6e3bd;
+}
+
+.ds-god-on {
+  border-color: #ffb23c;
+  box-shadow:
+    0 0 0 1px #ffb23c,
+    0 0 20px rgba(255, 178, 60, 0.3);
+}
+
+.ds-god-none {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #b8a690;
+  font-style: italic;
+}
+
+/* História */
+.ds-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ds-trait {
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid #3a2d1f;
+  background: rgba(12, 8, 5, 0.55);
+  color: #d8cbb8;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.ds-trait-on {
+  border-color: #ffb23c;
+  background: rgba(255, 178, 60, 0.14);
+  color: #ffe2a6;
+}
+
+.ds-trait:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ds-origin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ds-origin svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  color: #e05a4a;
+}
+
+.ds-origin input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px dashed #8a712a;
+  background: transparent;
+  color: #ffe2a6;
+  font-family: 'Caveat', cursive;
+  font-size: 1.4rem;
+}
+
+.ds-scroll {
+  position: relative;
+  margin-top: 14px;
+  padding: 18px 20px;
+  border-radius: 6px;
+  background: radial-gradient(ellipse at 50% 30%, #f1e4c6, #d8c39b 85%);
+  color: #3a2414;
+  box-shadow: inset 0 0 30px rgba(110, 70, 40, 0.35);
+}
+
+.ds-scroll textarea {
+  width: 100%;
+  min-height: 130px;
+  border: 0;
+  background: transparent;
+  resize: vertical;
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem;
+  line-height: 1.3;
+  color: #2c1a0e;
+}
+
+.ds-scroll textarea:focus {
+  outline: none;
+}
+
+.ds-spark-row {
+  margin-top: 12px;
+}
+
+.ds-spark {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #c9a227;
+  background: linear-gradient(180deg, #ffb23c, #e0581e);
+  color: #0c0805;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ds-hint {
+  font-size: 0.78rem;
+  color: #8c7b66;
+  font-style: italic;
+}
