@@ -9,13 +9,15 @@ import { ForgeRaceStep } from '../components/ForgeRaceStep'
 import { ForgeSkillStep } from '../components/ForgeSkillStep'
 import { ForgeSpellStep } from '../components/ForgeSpellStep'
 import { ForgeStartStep } from '../components/ForgeStartStep'
+import { ForgeThievingStep } from '../components/ForgeThievingStep'
 import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { PageHeader } from '../components/PageHeader'
 import { blankCharacter, createCharacter } from '../lib/roster'
 import { applyAutomatic, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
 import type { Lean } from '../rules/alignment'
-import { hasClass } from '../rules/multiclass'
+import { hasClass, rogueClass } from '../rules/multiclass'
 import { spellCasting, type BookState } from '../rules/spellbook'
+import type { Training } from '../rules/thievingPoints'
 import type { PlayerCharacter } from '../types/library'
 
 // The Forge (docs/criacao-de-personagem.md): construtor guiado em etapas —
@@ -82,6 +84,8 @@ export function CharacterForge() {
   // etapa não rola de novo; trocar de mago para bardo recomeça.
   const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(null)
   // Para que classe as esferas gravadas foram feitas (ver ForgeSpellStep).
+  // Os pontos de treino das perícias de ladrão, por perícia; trocar a classe ladina recomeça.
+  const [thiefTraining, setThiefTraining] = useState<{ cls: string; training: Training } | null>(null)
   // As respostas dos dilemas do alinhamento (null = pulou as perguntas).
   const [alignmentAnswers, setAlignmentAnswers] = useState<Lean[] | null>([])
   const [sphereFor, setSphereFor] = useState<string | null>(null)
@@ -91,7 +95,13 @@ export function CharacterForge() {
   const psionic = hasClass(draft, 'Psionicist')
   const casting = spellCasting(draft)
   const caster = !!(casting.arcane || casting.divine)
-  const extras = [...(psionic ? (['Psionic Powers'] as const) : []), ...(caster ? (['Spells'] as const) : [])]
+  // Perícias de ladrão (ladrão, bardo, ninja, gypsy; também multiclasse) vêm primeiro.
+  const rogue = !!rogueClass(draft)
+  const extras = [
+    ...(rogue ? (['Thieving Skills'] as const) : []),
+    ...(psionic ? (['Psionic Powers'] as const) : []),
+    ...(caster ? (['Spells'] as const) : []),
+  ]
   const stepTitles = [...baseSteps, ...extras]
   const extra = step > baseSteps.length ? extras[step - baseSteps.length - 1] : undefined
   const nextAfter = (s: number) => (s < stepTitles.length ? () => setStep(s + 1) : () => void finish())
@@ -109,6 +119,7 @@ export function CharacterForge() {
         final.wizardSchool = null
       }
       if (!casting.divine) final.sphereAccess = null
+      if (!rogue) final.thievingSkills = null
       applyAutomatic(pendingConsequences(final), final)
       markConsequencesReviewed(final)
       const id = await createCharacter(null, final)
@@ -168,6 +179,18 @@ export function CharacterForge() {
           onFinish={nextAfter(8)}
           creating={creating}
           finishLabel={labelAfter(8)}
+        />
+      )}
+      {extra === 'Thieving Skills' && (
+        <ForgeThievingStep
+          draft={draft}
+          mutate={mutate}
+          training={thiefTraining && thiefTraining.cls === rogueClass(draft)?.characterClass ? thiefTraining.training : {}}
+          onTraining={(training) => setThiefTraining({ cls: rogueClass(draft)?.characterClass ?? '', training })}
+          stepNumber={step}
+          nextLabel={labelAfter(step) ?? 'Create character'}
+          onBack={() => setStep(step - 1)}
+          onNext={nextAfter(step)}
         />
       )}
       {extra === 'Psionic Powers' && (
