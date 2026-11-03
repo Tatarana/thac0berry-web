@@ -9,16 +9,16 @@ import { useEffect, useRef } from 'react'
 // deve, e o valor final já vem decidido de fora. Anima direto no DOM
 // (requestAnimationFrame), sem re-render por quadro.
 
-export type DieKind = 'd4' | 'd10' | 'd10x10'
+export type DieKind = 'd4' | 'd6' | 'd10' | 'd10x10'
 
 export interface DieSpec {
   kind: DieKind
-  /** d4: 1–4; d10: 0–9; d10x10 (as dezenas do d100): 0–9, mostrado como "00"–"90". */
+  /** d4: 1–4; d6: 1–6; d10: 0–9; d10x10 (as dezenas do d100): 0–9, mostrado como "00"–"90". */
   value: number
 }
 
 const faceText = (kind: DieKind, v: number) => (kind === 'd10x10' ? `${v}0` : String(v))
-const randomFace = (kind: DieKind) => (kind === 'd4' ? 1 + Math.floor(Math.random() * 4) : Math.floor(Math.random() * 10))
+const randomFace = (kind: DieKind) => (kind === 'd4' ? 1 + Math.floor(Math.random() * 4) : kind === 'd6' ? 1 + Math.floor(Math.random() * 6) : Math.floor(Math.random() * 10))
 
 // Quiques: [duração relativa, altura]. O primeiro é a queda (meio arco).
 const bounces: [number, number][] = [
@@ -39,6 +39,17 @@ function DieShape({ kind }: { kind: DieKind }) {
         <polygon points="32,3 61,56 32,39" fill="#f0a640" />
         <polygon points="3,56 61,56 32,39" fill="#c8641f" />
         <polygon points="32,3 61,56 3,56" fill="none" stroke="#fff3cf" strokeOpacity=".55" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+  if (kind === 'd6') {
+    // Um cubo: a face de cima clara, as laterais em sombra.
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M10 18 32 8l22 10v28L32 58 10 46Z" fill="#c8641f" />
+        <path d="M10 18 32 8l22 10-22 10Z" fill="#ffe2a6" />
+        <path d="M32 28 54 18v28L32 58Z" fill="#e0901e" />
+        <path d="M10 18 32 8l22 10v28L32 58 10 46Z M10 18l22 10 22-10 M32 28v30" fill="none" stroke="#fff3cf" strokeOpacity=".5" strokeWidth="1.5" strokeLinejoin="round" />
       </svg>
     )
   }

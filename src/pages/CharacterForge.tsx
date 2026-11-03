@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { ForgeAbilitiesStep } from '../components/ForgeAbilitiesStep'
 import { ForgeAlignmentStep } from '../components/ForgeAlignmentStep'
 import { ForgeClassStep } from '../components/ForgeClassStep'
+import { ForgeEquipmentStep } from '../components/ForgeEquipmentStep'
 import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
 import { ForgeRaceStep } from '../components/ForgeRaceStep'
@@ -15,6 +16,7 @@ import { PageHeader } from '../components/PageHeader'
 import { blankCharacter, createCharacter } from '../lib/roster'
 import { applyAutomatic, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
 import type { Lean } from '../rules/alignment'
+import { emptyMarket, type MarketState } from '../rules/market'
 import { hasClass, rogueClass } from '../rules/multiclass'
 import { spellCasting, type BookState } from '../rules/spellbook'
 import type { Training } from '../rules/thievingPoints'
@@ -28,7 +30,7 @@ import type { PlayerCharacter } from '../types/library'
 // faz hoje — só que chegando lá com nome, gênero, raça, classe/kit,
 // nível/XP, HP, THAC0 e saves já certos.
 
-const baseSteps = ['Ability Scores', 'Name & Gender', 'Race', 'Alignment', 'Class & Kit', 'Starting point', 'Weapon Proficiencies', 'Nonweapon Proficiencies']
+const baseSteps = ['Ability Scores', 'Name & Gender', 'Race', 'Alignment', 'Class & Kit', 'Starting point', 'Weapon Proficiencies', 'Nonweapon Proficiencies', 'Equipment']
 
 // Trilha de contas com o nome de cada etapa (como no protótipo); as já
 // feitas são botões para voltar.
@@ -84,6 +86,8 @@ export function CharacterForge() {
   // etapa não rola de novo; trocar de mago para bardo recomeça.
   const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(null)
   // Para que classe as esferas gravadas foram feitas (ver ForgeSpellStep).
+  // A bolsa (rolagem, ouro do mestre) e a sacola da etapa de equipamento.
+  const [market, setMarket] = useState<MarketState>(emptyMarket)
   // Os pontos de treino das perícias de ladrão, por perícia; trocar a classe ladina recomeça.
   const [thiefTraining, setThiefTraining] = useState<{ cls: string; training: Training } | null>(null)
   // As respostas dos dilemas do alinhamento (null = pulou as perguntas).
@@ -131,7 +135,7 @@ export function CharacterForge() {
   }
 
   return (
-    <div className={extra ? 'page page-wide' : 'page'}>
+    <div className={extra || step === 9 ? 'page page-wide' : 'page'}>
       <PageHeader title="The Forge" backTo="/characters" />
       <ForgeTrail stepTitles={stepTitles} current={step} onSelect={setStep} />
       {error && (
@@ -179,6 +183,18 @@ export function CharacterForge() {
           onFinish={nextAfter(8)}
           creating={creating}
           finishLabel={labelAfter(8)}
+        />
+      )}
+      {step === 9 && (
+        <ForgeEquipmentStep
+          draft={draft}
+          mutate={mutate}
+          market={market}
+          onMarket={setMarket}
+          stepNumber={9}
+          nextLabel={labelAfter(9) ?? 'Create character'}
+          onBack={() => setStep(8)}
+          onNext={nextAfter(9)}
         />
       )}
       {extra === 'Thieving Skills' && (
