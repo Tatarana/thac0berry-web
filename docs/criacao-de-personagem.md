@@ -227,4 +227,17 @@ Entrada: um botão novo "Build a character" ao lado do "+ New character" existen
   só para o clérigo e o paladino do 3º nível em diante (ranger, druida e
   anchorite não expulsam). Web primeiro; as diferenças com o iPad estão em
   `webAhead` (`tests/rules.test.ts`).
+- **Perícias de ladrão ("Tricks of the Trade").** Etapa 9 para ladrão, bardo,
+  ninja e gypsy (também multiclasse), antes da psiônica e das magias, como o
+  protótipo "Step 9 · Thieving Skills" do canvas: um estojo de couro com uma
+  perícia por bolso (barra em camadas: base, raça, Destreza, treino,
+  penalidade; linha do teto de 95% e do limite por perícia), a bolsa de pontos
+  de treino (moedas de 5), atalhos (Cat Burglar, Cutpurse, Trapsmith, Even
+  Hand) e "Try your hand", que rola o d100 na mesa (`ForgeDice`) e conta a
+  cena. Regras em `src/rules/thievingPoints.ts`: ladrão e ninja, 60 pontos no
+  1º nível e 30 por nível, até 30 numa perícia no 1º nível e 15 por nível
+  depois; bardo, 20 e 15, sem limite por perícia; gypsy como o ladrão; nada
+  passa de 95%. Grava `thievingSkills` com os valores finais. Trocar a classe
+  ladina recomeça o treino. A armadura (PHB Tabela 29) fica para a etapa de
+  equipamento.
 
