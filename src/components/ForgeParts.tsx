@@ -2,8 +2,11 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { loadRulesIndex, type RuleIndexEntry } from '../data/rules'
 import { campaignSettings, settingLogo } from '../lib/campaigns'
+import { slotOfSrc } from '../lib/siteImageRules'
+import { useIsAdmin, useSiteImages } from '../lib/siteImages'
 import { BookCode } from './BookCode'
 import { RuleDetail } from './RuleDetail'
+import { SiteImageEdit } from './SiteImageEdit'
 
 // Peças repetidas em todas as etapas do The Forge (protótipo: Trail.dc.html /
 // Footer.dc.html). Regra de design 4 do docs/criacao-de-personagem.md: uma
@@ -53,23 +56,36 @@ export function ForgeEmbers() {
  * a única) e, sem nenhuma ainda, mostra a silhueta de "arte a caminho" — a
  * ilustração entra sozinha quando o arquivo existir.
  */
-export function ForgeImage({ images, alt, compact = false }: { images: string | string[]; alt: string; compact?: boolean }) {
-  const list = Array.isArray(images) ? images : [images]
+export function ForgeImage({ images, alt, compact = false, editable = false }: { images: string | string[]; alt: string; compact?: boolean; editable?: boolean }) {
+  const repo = Array.isArray(images) ? images : [images]
+  const list = useSiteImages(repo)
+  const isAdmin = useIsAdmin()
   const key = list.join('|')
   const [tried, setTried] = useState({ key, index: 0 })
   const index = tried.key === key ? tried.index : 0
+  // O lápis edita a imagem mais específica da lista (a do gênero, se houver).
+  const slot = editable && isAdmin ? slotOfSrc(repo[0]) : null
+  const pencil = slot && <SiteImageEdit slot={slot} shown={list[index] ?? null} />
   if (index >= list.length) {
     return (
-      <span className="forge-card-noart" aria-hidden="true">
-        <svg viewBox="0 0 64 72">
-          <circle cx="32" cy="24" r="13" fill="currentColor" />
-          <path d="M6 72c0-16 12-27 26-27s26 11 26 27Z" fill="currentColor" />
-        </svg>
-        {!compact && <span>Art coming</span>}
-      </span>
+      <>
+        <span className="forge-card-noart" aria-hidden="true">
+          <svg viewBox="0 0 64 72">
+            <circle cx="32" cy="24" r="13" fill="currentColor" />
+            <path d="M6 72c0-16 12-27 26-27s26 11 26 27Z" fill="currentColor" />
+          </svg>
+          {!compact && <span>Art coming</span>}
+        </span>
+        {pencil}
+      </>
     )
   }
-  return <img src={list[index]} alt={alt} onError={() => setTried({ key, index: index + 1 })} />
+  return (
+    <>
+      <img src={list[index]} alt={alt} onError={() => setTried({ key, index: index + 1 })} />
+      {pencil}
+    </>
+  )
 }
 
 /**
@@ -101,7 +117,7 @@ export function ForgeCard({
   const cls = ['forge-card', `forge-card-${size}`, chosen ? 'forge-card-chosen' : dimmed ? 'forge-card-dimmed' : ''].filter(Boolean).join(' ')
   return (
     <button type="button" className={cls} aria-pressed={chosen} onClick={onClick}>
-      <ForgeImage images={image} alt={alt} />
+      <ForgeImage images={image} alt={alt} editable />
       <span className="forge-card-shade" />
       {flag && (
         <span className="forge-card-flag" title={flag}>
@@ -272,7 +288,9 @@ export function ForgeSlotSockets({ label, used, total }: { label: string; used: 
 export function ForgeCarousel({ title, note, art, children }: { title: string; note?: string; art?: string; children: ReactNode }) {
   const track = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ start: true, end: true })
-  const [artOk, setArtOk] = useState(true)
+  const [artSrc] = useSiteImages(art ? [art] : [])
+  const [artFailed, setArtFailed] = useState<string | null>(null)
+  const artSlot = useIsAdmin() && art ? slotOfSrc(art) : null
 
   const measure = () => {
     const t = track.current
@@ -295,10 +313,11 @@ export function ForgeCarousel({ title, note, art, children }: { title: string; n
 
   return (
     <section className="forge-carousel">
-      {art && artOk && <img className="forge-carousel-art" src={art} alt="" aria-hidden="true" onError={() => setArtOk(false)} />}
+      {artSrc && artSrc !== artFailed && <img className="forge-carousel-art" src={artSrc} alt="" aria-hidden="true" onError={() => setArtFailed(artSrc)} />}
       <header className="forge-carousel-head">
         <p className="forge-panel-label">{title}</p>
         {note && <span className="forge-carousel-note">{note}</span>}
+        {artSlot && <SiteImageEdit slot={artSlot} shown={artSrc && artSrc !== artFailed ? artSrc : null} inline />}
         <span className="forge-carousel-arrows">
           <button type="button" className="forge-carousel-arrow" aria-label={`Scroll ${title} back`} disabled={edges.start} onClick={() => page(-1)}>
             ‹
