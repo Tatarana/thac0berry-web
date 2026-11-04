@@ -5,9 +5,14 @@ arquivo vai em `public/images/forge/` com o nome exato abaixo (`.webp`); o card
 mostra a silhueta "Art coming" até o arquivo existir e troca sozinho depois.
 
 Desde a v0.130.0, o admin também troca as imagens navegando pelo app: o lápis nos
-cards e nas faixas de armas abre o painel de versões (`src/components/SiteImageEdit.tsx`;
-versões no Supabase, bucket `site-images`). A imagem enviada é convertida para WebP e
-recortada no tamanho do slot. Vale a versão atual; sem versão, o arquivo do repo.
+cards e nas faixas de armas abre o painel de versões (`src/components/SiteImageEdit.tsx`).
+A imagem enviada é convertida para WebP e recortada no tamanho do slot. Vale a versão
+atual; sem versão, o arquivo do repo. As versões ficam no Supabase (tabela
+`site_image_version`); desde a v0.131.0 os arquivos ficam num bucket S3 atrás do
+CloudFront (`SITE_IMAGES_BASE_URL` em `src/config.ts`), não mais no bucket `site-images`
+do Supabase, que continua intacto como backup. O envio passa pela Edge Function
+`site-image-upload` do backend (URL assinada, PUT direto ao S3). Desenho e passo a passo:
+`thac0berry-backend/docs/imagens-fora-do-supabase.md` e `infra/site-images/README.md`.
 
 Estilo de todas: ilustração de livro de histórias, traço a nanquim com estilo
 fortemente realista, cara de RPG (revisto pelo usuário em 2026-11-03, a partir
