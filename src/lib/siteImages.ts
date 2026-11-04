@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useAuth } from '../auth/context'
 import { slotOfSrc } from './siteImageRules'
+import { SITE_IMAGES_BASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config'
 import { supabase } from './supabase'
+import { MAX_IMAGE_BYTES, functionErrorMessage, joinURL, parsePresign, putErrorMessage } from './siteImageUploadRules'
 
-// Imagens do site trocadas pelo admin navegando no app (versões no Supabase:
-// tabela site_image_version, bucket público site-images). Hoje, os personagens
-// do The Forge; depois, o Grimório. Quem manda é a versão atual do slot; sem
+// Imagens do site trocadas pelo admin navegando no app. As versões ficam no
+// Supabase (tabela site_image_version); os arquivos, num bucket S3 atrás do
+// CloudFront (SITE_IMAGES_BASE_URL). Hoje, os personagens do The Forge; depois,
+// o Grimório. Quem manda é a versão atual do slot; sem
 // versão (ou sem rede), vale o arquivo do repo. A lista das atuais é carregada
 // uma vez por sessão e recarregada depois de cada troca.
-
-const bucket = 'site-images'
 
 export interface SiteImageVersion {
   slot: string
@@ -19,7 +20,8 @@ export interface SiteImageVersion {
   is_current: boolean
 }
 
-export const siteImageURL = (path: string) => supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+/** Endereço público do arquivo (o `storage_path` é relativo e igual no S3 e no CloudFront). */
+export const siteImageURL = (path: string) => joinURL(SITE_IMAGES_BASE_URL, path)
 
 let current: ReadonlyMap<string, string> = new Map()
 let loaded = false
@@ -96,14 +98,48 @@ export async function siteImageVersions(slot: string): Promise<SiteImageVersion[
   return data as SiteImageVersion[]
 }
 
-/** Envia o WebP pronto como a versão seguinte do slot, que passa a ser a atual. */
+const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/site-image-upload`
+
+/** Chama a Edge Function site-image-upload com o login do usuário. */
+async function callUploadFunction(body: Record<string, unknown>): Promise<unknown> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) throw new Error('Sign in as the admin to change site images.')
+  let res: Response
+  try {
+    res = await fetch(FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, apikey: SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error('Could not reach the upload service. Check your connection.')
+  }
+  const answer: unknown = await res.json().catch(() => null)
+  if (!res.ok) {
+    const message = typeof answer === 'object' && answer !== null && 'error' in answer ? String((answer as { error: unknown }).error) : undefined
+    throw new Error(functionErrorMessage(res.status, message))
+  }
+  return answer
+}
+
+/**
+ * Envia o WebP pronto como a versão seguinte do slot, que passa a ser a atual:
+ * 1) a função confere o admin e devolve uma URL de PUT assinada (5 minutos);
+ * 2) o navegador envia o arquivo direto ao S3, com os cabeçalhos assinados;
+ * 3) a função confere o arquivo no bucket e registra a versão.
+ */
 export async function addSiteImageVersion(slot: string, webp: Blob, size: { width: number; height: number }): Promise<void> {
-  const path = `${slot}/${crypto.randomUUID()}.webp`
-  // Cada caminho é um arquivo que nunca muda: o navegador pode guardá-lo por um ano.
-  const upload = await supabase.storage.from(bucket).upload(path, webp, { contentType: 'image/webp', cacheControl: '31536000' })
-  if (upload.error) throw new Error(upload.error.message)
-  const { error } = await supabase.rpc('add_site_image_version', { p_slot: slot, p_storage_path: path, p_width: size.width, p_height: size.height })
-  if (error) throw new Error(error.message)
+  if (webp.size > MAX_IMAGE_BYTES) throw new Error('The image is larger than 5 MB. Lower the quality and try again.')
+  const presign = parsePresign(await callUploadFunction({ action: 'presign', slot, bytes: webp.size, width: size.width, height: size.height }), slot)
+  let put: Response
+  try {
+    put = await fetch(presign.url, { method: 'PUT', headers: presign.headers, body: webp })
+  } catch {
+    throw new Error('Could not send the file to the storage. Check your connection and try again.')
+  }
+  if (!put.ok) throw new Error(putErrorMessage(put.status))
+  await callUploadFunction({ action: 'finalize', slot, path: presign.path, width: size.width, height: size.height })
   await refreshSiteImages()
 }
 
