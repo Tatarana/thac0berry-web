@@ -1,7 +1,7 @@
 {
   "name": "thac0berry-web",
   "private": true,
-  "version": "0.132.2",
+  "version": "0.132.3",
   "type": "module",
   "scripts": {
     "data": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/build-data.mjs",
@@ -31,6 +31,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "aws4fetch": "1.0.20",
     "oxlint": "^1.81.0",
+    "sharp": "0.35.5",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }
