@@ -74,7 +74,7 @@ export function ForgeImage({ images, alt, compact = false, editable = false }: {
             <circle cx="32" cy="24" r="13" fill="currentColor" />
             <path d="M6 72c0-16 12-27 26-27s26 11 26 27Z" fill="currentColor" />
           </svg>
-          {!compact && <span>Art coming</span>}
+          {!compact && repo.length > 0 && <span>Art coming</span>}
         </span>
         {pencil}
       </>

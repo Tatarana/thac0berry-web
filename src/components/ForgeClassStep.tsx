@@ -21,7 +21,7 @@ import { kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
 import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
 import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
-import { classImages, comboImages, genderOf, type Gender } from '../lib/forgeImages'
+import { classCardImages, classImages, genderOf, type Gender } from '../lib/forgeImages'
 import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker, ForgeThumbButton } from './ForgeParts'
 import { KitDetail } from './KitDetail'
 
@@ -113,7 +113,7 @@ export function ForgeClassStep({
           return (
             <ForgeCard
               key={cls}
-              image={[...comboImages(race, canonical, gender), ...classImages(canonical, gender)]}
+              image={classCardImages(race, canonical, gender)}
               alt={canonical}
               label={canonical}
               chosen={primary === canonical}

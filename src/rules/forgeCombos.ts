@@ -1,4 +1,4 @@
-import { allRaces, levelLimit, raceGender, type RaceName } from './raceKit.ts'
+import { allRaces, demiBardKits, levelLimit, raceGender, type RaceName } from './raceKit.ts'
 import { ravenloftWarnings } from './ravenloft.ts'
 import { canonicalClass } from './rules.ts'
 
@@ -24,6 +24,17 @@ export const forgeSlug = (text: string) =>
 export function comboAllowed(race: RaceName, characterClass: string): boolean {
   if (levelLimit(race, characterClass) === 'forbidden') return false
   return ravenloftWarnings({ characterClass, race, abilities: bestAbilities } as Parameters<typeof ravenloftWarnings>[0], ['Ravenloft']).length === 0
+}
+
+/**
+ * A classe tem imagem para esta raça? Fora da regra, o card fica sem arte. Bardo
+ * por kit e ilusionista gnomo são permitidos, só não têm combinação própria.
+ */
+export function classArtAllowed(race: RaceName, characterClass: string): boolean {
+  const cls = canonicalClass(characterClass)
+  if (comboAllowed(race, cls)) return true
+  if (cls === 'Bard') return !!demiBardKits[race]
+  return cls === 'Mage' && race === 'Gnome'
 }
 
 /**

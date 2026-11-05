@@ -22,6 +22,16 @@ test('fora da regra não tem arte própria', () => {
   assert.equal(C.comboName('Elf', 'Anchorite', 'female'), null)
 })
 
+test('classe fora da regra fica sem arte; bardo por kit e ilusionista gnomo mantêm', () => {
+  assert.equal(C.classArtAllowed('Dwarf', 'Ranger'), false)
+  assert.equal(C.classArtAllowed('Dwarf', 'Paladin'), false)
+  assert.equal(C.classArtAllowed('Elf', 'Anchorite'), false)
+  assert.equal(C.classArtAllowed('Dwarf', 'Cleric'), true)
+  assert.equal(C.classArtAllowed('Dwarf', 'Bard'), true)
+  assert.equal(C.classArtAllowed('Gnome', 'Mage'), true)
+  assert.equal(C.classArtAllowed('Dwarf', 'Mage'), false)
+})
+
 test('a lista tem 173 imagens, sem nome repetido, e bate com comboName', () => {
   const list = C.forgeCombos()
   assert.equal(list.length, 173)
