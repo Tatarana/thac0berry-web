@@ -20,6 +20,7 @@ import {
   type Stall,
   type Ware,
 } from '../rules/market'
+import { classGear, fitsFirst, outsideRuleLine } from '../rules/classGear'
 import { allClasses } from '../rules/multiclass'
 import { kitWeaponHints } from '../rules/proficiencyCost'
 import { matchRace } from '../rules/raceKit'
@@ -38,8 +39,8 @@ import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeImage } 
 // sacola vivem no CharacterForge, para voltar à etapa sem perder as compras.
 
 const stalls: { id: Stall; name: string; icon: string; filters: [string, string][] }[] = [
-  { id: 'smithy', name: 'The Smithy', icon: 'M4 20l7-7 M14 4l6 6-9 9-6-6Z M3 21l3-3', filters: [['all', 'All weapons'], ['trained', 'Your weapons'], ['ammo', 'Ammunition']] },
-  { id: 'armorer', name: 'The Armorer', icon: 'M12 3l7.5 3v5.5c0 4.6-3.2 8-7.5 9.9-4.3-1.9-7.5-5.3-7.5-9.9V6Z', filters: [['all', 'Everything'], ['armor', 'Armor'], ['shield', 'Shields & helms']] },
+  { id: 'smithy', name: 'The Smithy', icon: 'M4 20l7-7 M14 4l6 6-9 9-6-6Z M3 21l3-3', filters: [['all', 'All weapons'], ['class', 'Your class'], ['trained', 'Your weapons'], ['ammo', 'Ammunition']] },
+  { id: 'armorer', name: 'The Armorer', icon: 'M12 3l7.5 3v5.5c0 4.6-3.2 8-7.5 9.9-4.3-1.9-7.5-5.3-7.5-9.9V6Z', filters: [['all', 'Everything'], ['class', 'Your class'], ['armor', 'Armor'], ['shield', 'Shields & helms']] },
   {
     id: 'store',
     name: 'The General Store',
@@ -151,11 +152,25 @@ export function ForgeEquipmentStep({
     kit?.features.weaponProficiencies,
     wares.filter((w) => w.kind === 'weapon').map((w) => w.proficiency ?? ''),
   )
+  // A regra da classe não proíbe: o que foge dela vem depois, apagado e com selo.
+  const gear = classGear(draft, {
+    specialtyPriest: kit?.classEligibility.allowedClasses.includes('Specialty Priest'),
+    kitWeapons: new Set([...hints.required, ...hints.recommended]),
+  })
+  const fits = (w: Ware) => {
+    if (w.kind === 'weapon') return gear.weaponFits({ name: w.name, type: w.weaponType })
+    if (w.kind === 'ammo') return (w.launchers ?? []).some(gear.weaponFits)
+    if (w.kind === 'armor' || w.kind === 'shield' || w.kind === 'helmet') return gear.armorFits({ name: w.name, kind: w.kind, baseAC: w.armorClass })
+    return true
+  }
   const current = stalls.find((s) => s.id === stall)!
+  const stallFilters = current.filters.filter(([id]) => id !== 'class' || wares.some((w) => w.stall === stall && !fits(w)))
+  const stallNotes = stall === 'smithy' ? gear.weaponNotes : stall === 'armorer' ? gear.armorNotes : []
   const q = query.trim().toLowerCase()
-  const shelf = wares.filter((w) => {
+  const onShelf = wares.filter((w) => {
     if (w.stall !== stall) return false
     if (q && !w.name.toLowerCase().includes(q)) return false
+    if (filter === 'class') return fits(w)
     if (filter === 'trained') return w.kind === 'weapon' && trained.has(w.proficiency ?? '')
     if (filter === 'ammo') return w.kind === 'ammo'
     if (filter === 'armor') return w.kind === 'armor'
@@ -163,8 +178,10 @@ export function ForgeEquipmentStep({
     if (filter === 'gear' || filter === 'clothing') return w.kind === filter
     return true
   })
+  const shelf = fitsFirst(onShelf, fits)
 
   const cartWares = Object.entries(market.cart).flatMap(([key, qty]) => (byKey.get(key) ? [{ ware: byKey.get(key)!, qty }] : []))
+  const outside = cartWares.filter((x) => !fits(x.ware)).map((x) => x.ware.name)
   const piece = (kind: Ware['kind']) => cartWares.find((x) => x.ware.kind === kind)?.ware ?? null
   const arms = cartWares.filter((x) => x.ware.kind === 'weapon').map((x) => x.ware.name)
   const ac = armorClassOf(market.cart, byKey, dexDefenseAdjustment(draft))
@@ -272,13 +289,19 @@ export function ForgeEquipmentStep({
             ))}
           </nav>
           <div className="eq-bar">
-            {current.filters.map(([id, name]) => (
+            {stallFilters.map(([id, name]) => (
               <button key={id} type="button" className={filter === id ? 'mm-chip mm-chip-on' : 'mm-chip'} aria-pressed={filter === id} onClick={() => setFilter(id)}>
                 {name}
               </button>
             ))}
             <input className="sp-search" type="search" placeholder="Search the stall…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search" />
           </div>
+          {stallNotes.map((note) => (
+            <p key={note} className="forge-class-law">
+              {note}
+            </p>
+          ))}
+          {outside.length > 0 && <p className="forge-warn-line">{outsideRuleLine(gear, outside)}</p>}
           {data === null ? (
             <p className="mm-loading sp-loading">Opening the market…</p>
           ) : (
@@ -286,6 +309,7 @@ export function ForgeEquipmentStep({
               {shelf.map((w) => {
                 const dear = !market.dice || w.price.cp > left
                 const owned = market.cart[w.key] ?? 0
+                const off = !fits(w)
                 const facts = [
                   w.damage ? `${w.damage}` : '',
                   w.armorClass != null ? `AC ${w.armorClass}` : '',
@@ -293,7 +317,7 @@ export function ForgeEquipmentStep({
                   w.weight ? `${Math.round(w.weight * 10) / 10} lb` : '',
                 ].filter(Boolean)
                 return (
-                  <button key={w.key} type="button" className={dear ? 'eq-ware eq-ware-dear' : 'eq-ware'} aria-label={`Buy ${w.name}, ${formatMoney(w.price.cp)}`} onClick={() => purchase(w, 1)}>
+                  <button key={w.key} type="button" className={`eq-ware${dear ? ' eq-ware-dear' : ''}${off ? ' eq-ware-outside' : ''}`} aria-label={`Buy ${w.name}, ${formatMoney(w.price.cp)}`} onClick={() => purchase(w, 1)}>
                     <span className="eq-tag">
                       {w.price.cp === 0 ? 'free' : formatMoney(w.price.cp)}
                       {w.price.per > 1 ? ` / ${w.price.per}` : ''}
@@ -303,6 +327,7 @@ export function ForgeEquipmentStep({
                       {facts.map((f) => (
                         <span key={f}>{f}</span>
                       ))}
+                      {off && <span className="eq-badge eq-badge-outside">Not for {gear.who}</span>}
                       {w.kind === 'weapon' && trained.has(w.proficiency ?? '') && <span className="eq-badge">Trained</span>}
                       {w.kind === 'weapon' && (hints.required.has(w.proficiency ?? '') || hints.recommended.has(w.proficiency ?? '')) && (
                         <span className="eq-badge eq-badge-kit">Kit</span>
