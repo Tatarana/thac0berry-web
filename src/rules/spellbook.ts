@@ -290,6 +290,11 @@ export function cycleSphere(access: Record<string, SphereAccessLevel>, sphere: s
 /** A esfera da magia como o Forge conta ("Elemental Fire" → "Elemental"). */
 export const sphereOf = (s: string) => (s.startsWith('Elemental') ? 'Elemental' : s)
 
+/** A ordem da ficha: acesso maior primeiro; dentro de cada grupo, alfabética. */
+export function sphereList(access: Record<string, SphereAccessLevel>): [string, SphereAccessLevel][] {
+  return Object.entries(access).sort(([a, x], [b, y]) => (x === y ? a.localeCompare(b) : x === 'major' ? -1 : 1))
+}
+
 /** Esta magia está ao alcance? Minor só até o 3º nível; e só os níveis que o sacerdote já reza. */
 export function sphereGrants(spell: { level: number; spheres: string[] }, access: Record<string, SphereAccessLevel>, castable: number): boolean {
   if (spell.level < 1 || spell.level > castable) return false

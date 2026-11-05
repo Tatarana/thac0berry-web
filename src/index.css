@@ -1535,6 +1535,61 @@ a.shield-combatant-row:hover {
   min-height: 1.3rem;
 }
 
+/* Esferas do sacerdote: selos à tinta. Cheio é acesso maior; vazado, menor. */
+.sphere-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.sphere-seal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--ink);
+  color: #f4ecd8;
+  cursor: help;
+}
+
+.sphere-seal svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sphere-minor {
+  background: transparent;
+  color: var(--ink);
+}
+
+.sphere-name {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: #f4ecd8;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 3px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.sphere-seal:hover .sphere-name,
+.sphere-seal:focus .sphere-name {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .rec-name {
   font-size: 1.6rem;
 }
@@ -8050,6 +8105,39 @@ button.trail-done:hover .trail-label {
   @page {
     size: A4 portrait;
     margin: 10mm;
+  }
+
+  /* No papel não há mouse: o selo pequeno leva o nome ao lado. */
+  .sphere-row {
+    gap: 1px 7px;
+  }
+
+  .sphere-seal {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #000;
+  }
+
+  .sphere-seal svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  .sphere-name {
+    position: static;
+    padding: 0;
+    background: none;
+    color: #000;
+    font-size: 7.5pt;
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 
   :root {
