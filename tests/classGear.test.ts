@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { marketWares } from '../src/rules/market.ts'
-import { classGear, fitsFirst, outsideRuleLine, type GearArmor, type GearWeapon } from '../src/rules/classGear.ts'
+import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine, type GearArmor, type GearWeapon } from '../src/rules/classGear.ts'
 import { weaponProficiencyKey } from '../src/rules/rules.ts'
 
 type Hero = Parameters<typeof classGear>[0]
@@ -66,6 +66,12 @@ test('classe dupla: vale a classe em uso', () => {
 test('Specialty Priest e arma do kit não levam selo', () => {
   assert.equal(classGear(hero('Cleric'), { specialtyPriest: true }).weaponFits(weapon('long sword')), true)
   assert.equal(classGear(hero('Mage'), { kitWeapons: new Set(['long sword']) }).weaponFits(weapon('long sword')), true)
+})
+
+test('kit de Cleric e Specialty Priest não tira a regra do clérigo', () => {
+  assert.equal(isSpecialtyKit(['Cleric', 'Specialty Priest']), false)
+  assert.equal(isSpecialtyKit(['Specialty Priest']), true)
+  assert.equal(isSpecialtyKit(undefined), false)
 })
 
 test('armaduras: cada classe com a sua regra', () => {
