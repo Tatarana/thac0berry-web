@@ -13,6 +13,17 @@ export const forgeClasses = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', '
 
 const bestAbilities = { strength: 18, dexterity: 18, constitution: 18, intelligence: 18, wisdom: 18, charisma: 18 }
 
+/** Sorteia `count` combinações de raças diferentes, para o banner da Home. */
+export function pickHeroes<T extends { race: string }>(combos: T[], count: number, random: () => number): T[] {
+  const pool = [...combos]
+  const picked: T[] = []
+  while (picked.length < count && pool.length) {
+    const [hero] = pool.splice(Math.floor(random() * pool.length), 1)
+    if (!picked.some((other) => other.race === hero.race)) picked.push(hero)
+  }
+  return picked
+}
+
 /** Nome de arquivo a partir do nome da raça/classe: "Genasi (air)" → "genasi-air". */
 export const forgeSlug = (text: string) =>
   text
