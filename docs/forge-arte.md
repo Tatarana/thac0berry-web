@@ -272,7 +272,8 @@ pelo lápis do card de classe, com a raça e o gênero já escolhidos no Forge. 
 imagem, o app mostra a da classe e, depois, a da raça, então dá para gerar aos poucos.
 
 Regras: multiclasse usa a imagem da classe principal. Quem só entra por kit (Bard
-Dwarf, Elf, Gnome e Halfling) fica fora da lista e usa a imagem genérica. O modron não
+Dwarf, Elf, Gnome e Halfling) fica fora da lista e sem imagem, porque a genérica mostra
+um humano. O modron não
 tem sexo, e a Bariaur já tem o sexo na raça, então não repetem o gênero no nome.
 
 Ordem sugerida: Human, Elf e Dwarf nas classes principais; depois as demais raças do
