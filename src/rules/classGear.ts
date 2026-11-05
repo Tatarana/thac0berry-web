@@ -120,6 +120,9 @@ function ruleFor(cls: CanonicalClass, alignment: string, specialtyPriest: boolea
   }
 }
 
+/** Kit só de Specialty Priest. Kit que também vale para Cleric não tira a regra do clérigo. */
+export const isSpecialtyKit = (allowedClasses: string[] | undefined) => !!allowedClasses?.includes('Specialty Priest') && !allowedClasses.includes('Cleric')
+
 export interface ClassGear {
   /** "Clerics", ou "your classes" no multiclasse: para o selo "Not for …". */
   who: string

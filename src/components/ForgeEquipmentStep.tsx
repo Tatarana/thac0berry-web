@@ -20,7 +20,7 @@ import {
   type Stall,
   type Ware,
 } from '../rules/market'
-import { classGear, fitsFirst, outsideRuleLine } from '../rules/classGear'
+import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine } from '../rules/classGear'
 import { allClasses } from '../rules/multiclass'
 import { kitWeaponHints } from '../rules/proficiencyCost'
 import { matchRace } from '../rules/raceKit'
@@ -154,7 +154,7 @@ export function ForgeEquipmentStep({
   )
   // A regra da classe não proíbe: o que foge dela vem depois, apagado e com selo.
   const gear = classGear(draft, {
-    specialtyPriest: kit?.classEligibility.allowedClasses.includes('Specialty Priest'),
+    specialtyPriest: isSpecialtyKit(kit?.classEligibility.allowedClasses),
     kitWeapons: new Set([...hints.required, ...hints.recommended]),
   })
   const fits = (w: Ware) => {
