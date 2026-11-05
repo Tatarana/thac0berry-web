@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { loadData } from '../data/load'
-import { classImages, genderOf, raceImages } from '../lib/forgeImages'
+import { genderOf, heroImages } from '../lib/forgeImages'
 import { powerMap } from '../lib/psionicMap'
 import { levelOf } from '../rules/multiclass'
 import {
@@ -243,7 +243,7 @@ export function ForgePsionicStep({
   const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : finishLabel, ready: !creating }
   const gender = genderOf(draft.sex)
   const race = matchRace(draft.race)
-  const portrait = [...classImages('Psionicist', gender), ...(race ? raceImages(race, gender) : [])]
+  const portrait = heroImages(race, 'Psionicist', gender)
 
   return (
     <section className="forge-step forge-hero">

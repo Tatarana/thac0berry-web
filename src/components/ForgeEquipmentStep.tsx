@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { loadAllKits, type Kit } from '../data/kits'
 import { loadData } from '../data/load'
 import type { ArmorPiece, MundaneItem, Weapon } from '../data/gear'
-import { classImages, genderOf, raceImages } from '../lib/forgeImages'
+import { genderOf, heroImages } from '../lib/forgeImages'
 import { setArmorPieces } from '../rules/armorClass'
 import {
   armorClassOf,
@@ -173,7 +173,7 @@ export function ForgeEquipmentStep({
 
   const gender = genderOf(draft.sex)
   const race = matchRace(draft.race)
-  const portrait = [...classImages(canonicalClass(draft.characterClass), gender), ...(race ? raceImages(race, gender) : [])]
+  const portrait = heroImages(race, canonicalClass(draft.characterClass), gender)
   const nav = { onBack, onNext, nextLabel, ready: true }
   const shownDice = rolling ?? market.dice ?? Array.from({ length: funds.count }, () => 1)
 
