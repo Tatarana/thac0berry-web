@@ -50,6 +50,7 @@ import { CompendiumPicker } from './CompendiumPicker'
 import { KitPicker, RacePicker, VistaniTribePicker } from './RaceKitPickers'
 import { PaperModal } from './DetailBits'
 import { Cell, HeaderLine, InkInput, InkNumber, InkPicker, SectionTitle } from './SheetBits'
+import { SphereRow } from './SphereIcons'
 
 /** Aplica uma mudança na ficha (a página grava sozinha). Ausente = só leitura. */
 export type Edit = (mutate: (c: PlayerCharacter) => void) => void
@@ -193,9 +194,6 @@ function RecordHeader({
   // Multiclasse e demi-bardo (MC5): todos os avisos de classe e kit.
   // Ravenloft (docs/ravenloft.md): requisitos da classe e campanha sem o cenário.
   const multiWarnings = [...classWarnings(c), ...ravenloftWarnings(c, campaignSettings)]
-  const spheres = Object.entries(c.sphereAccess ?? {})
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([sphere, level]) => `${sphere}${level === 'minor' ? ' (minor)' : ''}`)
   return (
     <header className="rec-header">
       {dialog}
@@ -330,7 +328,11 @@ function RecordHeader({
             onClose={() => setMultiOpen(false)}
           />
         )}
-        {spheres.length > 0 && <HeaderLine label="Spheres">{spheres.join(', ')}</HeaderLine>}
+        {Object.keys(c.sphereAccess ?? {}).length > 0 && (
+          <HeaderLine label="Spheres">
+            <SphereRow access={c.sphereAccess ?? {}} />
+          </HeaderLine>
+        )}
         <div className="rec-header-row">
           {edit ? (
             <div className="rec-header-line">

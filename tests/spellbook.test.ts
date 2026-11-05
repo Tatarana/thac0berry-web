@@ -226,3 +226,8 @@ test('paladino e druida na ficha: Tabela 17 do 9º nível; druida como o clérig
   assert.equal(M.casterLevel(who('Druid', 3), 'divine'), 3)
 })
 
+
+test('esferas na ficha: acesso maior primeiro, cada grupo em ordem alfabética', () => {
+  const list = B.sphereList({ Sun: 'minor', Healing: 'major', Animal: 'minor', Combat: 'major' })
+  assert.deepEqual(list.map(([name]) => name), ['Combat', 'Healing', 'Animal', 'Sun'])
+})
