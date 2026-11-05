@@ -1562,6 +1562,16 @@ a.shield-combatant-row:hover {
   font-weight: 700;
 }
 
+.rec-sketch-wait {
+  animation: rec-sketch-wait 1.4s ease-in-out infinite;
+}
+
+@keyframes rec-sketch-wait {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 .rec-soft {
   font-style: italic;
   font-size: 0.78rem;
