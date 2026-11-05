@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../auth/context'
 import { useNavigate } from 'react-router'
 import { ForgeAbilitiesStep } from '../components/ForgeAbilitiesStep'
@@ -6,6 +6,7 @@ import { ForgeAlignmentStep } from '../components/ForgeAlignmentStep'
 import { ForgeClassStep } from '../components/ForgeClassStep'
 import { ForgeDescriptionStep } from '../components/ForgeDescriptionStep'
 import { ForgeEquipmentStep } from '../components/ForgeEquipmentStep'
+import { ForgeGate } from '../components/ForgeGate'
 import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
 import { ForgeRaceStep } from '../components/ForgeRaceStep'
@@ -16,19 +17,24 @@ import { ForgeStartStep } from '../components/ForgeStartStep'
 import { ForgeThievingStep } from '../components/ForgeThievingStep'
 import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { PageHeader } from '../components/PageHeader'
-import { portraitJPEG, uploadAttachment } from '../lib/attachments'
+import { artAttachment, portraitJPEG, uploadAttachment } from '../lib/attachments'
+import { blobToDataURL, clearForgeDraft, dataURLToFile, keepForgeDraft, readForgeDraft } from '../lib/forgeDraft'
+import { genderOf, heroImages } from '../lib/forgeImages'
+import { currentSiteImages } from '../lib/siteImages'
 import { blankCharacter, createCharacter } from '../lib/roster'
 import { applyAutomatic, applyClassTables, markConsequencesReviewed, pendingConsequences } from '../rules/consequences'
 import type { Lean } from '../rules/alignment'
 import { emptyMarket, type MarketState } from '../rules/market'
 import { hasClass, rogueClass } from '../rules/multiclass'
+import { matchRace } from '../rules/raceKit'
+import { canonicalClass } from '../rules/rules'
 import { spellCasting, type BookState } from '../rules/spellbook'
 import type { Training } from '../rules/thievingPoints'
 import type { PlayerCharacter } from '../types/library'
 
 // The Forge (docs/criacao-de-personagem.md): construtor guiado em etapas —
 // Ability Scores, Name & Gender, Race, Class/Kit, Starting point,
-// proficiências e, para psionicistas e conjuradores, os poderes psiônicos e as magias —, separado da ficha. O rascunho fica só em memória; nada grava no Supabase
+// proficiências e, para psionicistas e conjuradores, os poderes psiônicos e as magias —, separado da ficha. O rascunho fica só em memória (e neste aparelho durante o login do fim, ver lib/forgeDraft); nada grava no Supabase
 // até o fim, quando vira um personagem de verdade (createCharacter) e o
 // jogador cai na CharacterSheet normal, exatamente como "+ New character"
 // faz hoje — só que chegando lá com nome, gênero, raça, classe/kit,
@@ -66,16 +72,18 @@ function ForgeTrail({ stepTitles, current, onSelect }: { stepTitles: string[]; c
 
 export function CharacterForge() {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
+  // Voltando do login do fim: tudo recomeça de onde estava.
+  const [resumed] = useState(readForgeDraft)
+  const [step, setStep] = useState(resumed?.step ?? 1)
   // blankCharacter devolve o personagem em branco sem `spellSheets` (campo
   // só do Supabase); aqui, em memória, completa com um array vazio, igual ao
   // que um personagem novo também tem antes da primeira folha de magia.
-  const [draft, setDraft] = useState<PlayerCharacter>(() => ({ ...blankCharacter(null), spellSheets: [] }))
+  const [draft, setDraft] = useState<PlayerCharacter>(() => resumed?.draft ?? { ...blankCharacter(null), spellSheets: [] })
   // A ficha em branco nasce como Fighter: a etapa 4 só mostra uma classe
   // escolhida depois que o jogador escolher uma de fato.
-  const [classChosen, setClassChosen] = useState(false)
+  const [classChosen, setClassChosen] = useState(resumed?.classChosen ?? false)
   // Cenários da mesa escolhidos na etapa de raça; valem também para classes e kits.
-  const [settings, setSettings] = useState<string[]>([])
+  const [settings, setSettings] = useState<string[]>(resumed?.settings ?? [])
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -88,23 +96,27 @@ export function CharacterForge() {
 
   // O grimório em construção (método, dados, falhas), por classe arcana: voltar à
   // etapa não rola de novo; trocar de mago para bardo recomeça.
-  const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(null)
+  const [spellBook, setSpellBook] = useState<{ cls: string; state: BookState } | null>(resumed?.spellBook ?? null)
   // Para que classe as esferas gravadas foram feitas (ver ForgeSpellStep).
   // O retrato escolhido na última etapa: sobe para o Storage só no "Create character".
-  const [portrait, setPortrait] = useState<{ file: File; url: string } | null>(null)
-  const { session } = useAuth()
+  const [portrait, setPortrait] = useState<{ file: File; url: string } | null>(() => {
+    if (!resumed?.portrait) return null
+    const file = dataURLToFile(resumed.portrait)
+    return { file, url: URL.createObjectURL(file) }
+  })
+  const { session, signInWithGoogle } = useAuth()
   const changePortrait = (file: File | null) =>
     setPortrait((old) => {
       if (old) URL.revokeObjectURL(old.url)
       return file ? { file, url: URL.createObjectURL(file) } : null
     })
   // A bolsa (rolagem, ouro do mestre) e a sacola da etapa de equipamento.
-  const [market, setMarket] = useState<MarketState>(emptyMarket)
+  const [market, setMarket] = useState<MarketState>(resumed?.market ?? emptyMarket)
   // Os pontos de treino das perícias de ladrão, por perícia; trocar a classe ladina recomeça.
-  const [thiefTraining, setThiefTraining] = useState<{ cls: string; training: Training } | null>(null)
+  const [thiefTraining, setThiefTraining] = useState<{ cls: string; training: Training } | null>(resumed?.thiefTraining ?? null)
   // As respostas dos dilemas do alinhamento (null = pulou as perguntas).
-  const [alignmentAnswers, setAlignmentAnswers] = useState<Lean[] | null>([])
-  const [sphereFor, setSphereFor] = useState<string | null>(null)
+  const [alignmentAnswers, setAlignmentAnswers] = useState<Lean[] | null>(resumed ? resumed.alignmentAnswers : [])
+  const [sphereFor, setSphereFor] = useState<string | null>(resumed?.sphereFor ?? null)
 
   // Etapas extras depois das proficiências: poderes psiônicos (psionicista,
   // também multiclasse) e magias (mago, bardo, clérigo, druida).
@@ -130,8 +142,11 @@ export function CharacterForge() {
   const save = async (final: PlayerCharacter) => {
     setReveal({ character: final, id: null, error: null })
     try {
-      const userID = session?.user.id ?? null
-      const attachment = portrait && userID ? await uploadAttachment(userID, await portraitJPEG(portrait.file), 'image/jpeg') : null
+      const userID = session?.user.id
+      if (!userID) throw new Error('sign in to keep this character')
+      // O retrato é o que o jogador enviou ou, sem ele, a arte que o Forge mostrou.
+      const art = () => currentSiteImages(heroImages(matchRace(final.race), canonicalClass(final.characterClass), genderOf(final.sex)))
+      const attachment = portrait ? await uploadAttachment(userID, await portraitJPEG(portrait.file), 'image/jpeg') : await artAttachment(userID, await art())
       const id = await createCharacter(null, final, attachment)
       setReveal({ character: final, id, error: null })
     } catch (reason) {
@@ -139,7 +154,36 @@ export function CharacterForge() {
     }
   }
 
+  // Todo personagem tem dono: sem login, o Forge pede antes de selar.
+  const [gate, setGate] = useState(false)
+  const signIn = async () => {
+    try {
+      const jpeg = portrait ? await portraitJPEG(portrait.file) : null
+      const kept = keepForgeDraft({
+        step,
+        draft,
+        classChosen,
+        settings,
+        spellBook,
+        market,
+        thiefTraining,
+        alignmentAnswers,
+        sphereFor,
+        portrait: jpeg ? await blobToDataURL(new Blob([jpeg as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' })) : null,
+      })
+      if (!kept) throw new Error('this browser would not keep your hero during sign-in')
+      await signInWithGoogle()
+    } catch (reason) {
+      setGate(false)
+      setError(reason instanceof Error ? reason.message : String(reason))
+    }
+  }
+
   const finish = async () => {
+    if (!session) {
+      setGate(true)
+      return
+    }
     setCreating(true)
     setError(null)
     try {
@@ -164,6 +208,17 @@ export function CharacterForge() {
     }
   }
 
+  // Voltou do login: o rascunho cumpriu o papel, e o herói é selado sem pedir de novo.
+  const sealed = useRef(false)
+  useEffect(() => {
+    clearForgeDraft()
+    if (resumed && session && !sealed.current) {
+      sealed.current = true
+      void finish()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao abrir a tela
+  }, [])
+
   if (reveal) {
     return (
       <div className="page page-wide">
@@ -185,6 +240,14 @@ export function CharacterForge() {
     <div className={extra || step === 9 ? 'page page-wide' : 'page'}>
       <PageHeader title="The Forge" backTo="/characters" />
       <ForgeTrail stepTitles={stepTitles} current={step} onSelect={setStep} />
+      {gate && (
+        <ForgeGate
+          images={portrait ? [portrait.url] : heroImages(matchRace(draft.race), canonicalClass(draft.characterClass), genderOf(draft.sex))}
+          name={draft.name}
+          onSignIn={() => void signIn()}
+          onBack={() => setGate(false)}
+        />
+      )}
       {error && (
         <div className="result-line">
           <span className="result-fail">✖</span>
