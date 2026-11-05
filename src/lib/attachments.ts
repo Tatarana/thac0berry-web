@@ -8,7 +8,9 @@ export async function uploadAttachment(userID: string, bytes: Uint8Array, mime: 
   const digest = await crypto.subtle.digest('SHA-256', bytes as Uint8Array<ArrayBuffer>)
   const sha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 
-  const known = await supabase.from('attachment').select('id').eq('sha256', sha256).maybeSingle()
+  // Só os do dono: a arte do Forge é a mesma para todos, e a ficha de um colega de mesa
+  // também aparece aqui.
+  const known = await supabase.from('attachment').select('id').eq('owner_id', userID).eq('sha256', sha256).maybeSingle()
   if (known.error) throw new Error(`attachment: ${known.error.message}`)
   if (known.data) return (known.data as { id: string }).id
 
@@ -25,6 +27,24 @@ export async function uploadAttachment(userID: string, bytes: Uint8Array, mime: 
   const { error } = await supabase.from('attachment').insert({ id, sha256, mime, bytes: bytes.length, storage_path: path })
   if (error) throw new Error(`attachment: ${error.message}`)
   return id
+}
+
+/**
+ * O retrato vindo da arte do Forge: a primeira imagem da lista que abrir vira anexo do
+ * jogador, como um retrato enviado por ele. `reload` porque a mesma imagem pode estar no
+ * cache do navegador sem os cabeçalhos de CORS, de quando apareceu na tela. Sem arte que
+ * abra, devolve null: falta de retrato não impede o personagem.
+ */
+export async function artAttachment(userID: string, images: string[]): Promise<string | null> {
+  for (const image of images) {
+    try {
+      const response = await fetch(image, { cache: 'reload' })
+      if (response.ok) return await uploadAttachment(userID, await portraitJPEG(await response.blob()), 'image/jpeg')
+    } catch {
+      // Tenta a próxima imagem.
+    }
+  }
+  return null
 }
 
 /** Link temporário (1 h) de um anexo; o bucket é privado. */

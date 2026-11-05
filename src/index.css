@@ -12071,6 +12071,60 @@ button.sp-line {
   text-shadow: 0 0 34px rgba(255, 178, 60, 0.5);
 }
 
+/* O pedido de login antes de selar o herói. */
+.fg-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 24px 16px;
+  overflow-y: auto;
+  background: radial-gradient(circle at 35% 45%, rgb(120 60 20 / 0.5), rgb(10 7 4 / 0.96) 70%);
+  color: #f4ecd8;
+}
+
+.fg-portrait {
+  position: relative;
+  width: min(300px, 62vw);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 0 60px rgb(230 130 40 / 0.45);
+}
+
+.fg-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fg-words {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 400px;
+}
+
+.fg-words h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1.1;
+}
+
+.fg-words p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.fg-back {
+  color: inherit;
+}
+
 .rv-stage {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);

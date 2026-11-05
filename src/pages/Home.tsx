@@ -1,10 +1,11 @@
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/context'
 import { HomeTile } from '../components/HomeTile'
 import { ModeChooser, ModeSwitch } from '../components/ModeChooser'
 import { CampaignChooserPage, CampaignSwitch } from '../components/CampaignChooser'
 import { useCheckedActiveCampaign } from '../lib/activeCampaign'
 import { useCampaigns, useCharacterCount } from '../lib/campaignCharacters'
+import { readForgeDraft } from '../lib/forgeDraft'
 import { useMode } from '../lib/mode'
 
 export function Home() {
@@ -16,6 +17,8 @@ export function Home() {
   const { campaigns } = useCampaigns()
   const characterCount = useCharacterCount()
   const counted = (n: number | null | undefined, label: string) => (!session ? 'Sign in to start' : n == null ? '…' : `${n} ${label}`)
+  // Voltou do login pedido pelo Forge: o herói espera para ser selado.
+  if (session && readForgeDraft()) return <Navigate to="/characters/forge" replace />
   // Primeiro acesso neste aparelho, já logado: escolher o modo (Jogador ou Mestre).
   if (session && !mode) {
     return (

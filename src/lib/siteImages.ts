@@ -64,6 +64,12 @@ export function useSiteImages(images: string[]): string[] {
   return useMemo(() => resolveSiteImages(key.split('|').filter(Boolean), map), [key, map])
 }
 
+/** O mesmo fora do React, para quem precisa do arquivo logo depois do login. */
+export async function currentSiteImages(images: string[]): Promise<string[]> {
+  if (current.size === 0) await refreshSiteImages()
+  return resolveSiteImages(images, current)
+}
+
 // Uma pergunta só por conta, por mais imagens que a tela tenha.
 let adminCheck: { uid: string; answer: Promise<boolean> } | null = null
 
