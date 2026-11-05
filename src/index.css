@@ -1347,6 +1347,122 @@ a.shield-combatant-row:hover {
   min-height: 12px;
 }
 
+/* A porta do The Forge: heróis saindo do escuro, à direita; o convite, à esquerda. */
+.hf-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 960px;
+  min-height: 280px;
+  margin: 0 auto 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: radial-gradient(circle at 70% 50%, #5a2c10, #120c07 72%);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.4), 0 0 28px rgb(230 130 40 / 0.22);
+  color: #f4ecd8;
+  text-decoration: none;
+}
+
+.hf-heroes {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 68%;
+  mask-image: linear-gradient(to right, transparent, #000 34%);
+}
+
+.hf-hero {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.hf-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 16%;
+  transition: transform 0.5s ease;
+}
+
+.hf-banner:hover .hf-hero img,
+.hf-banner:focus-visible .hf-hero img {
+  transform: scale(1.05);
+}
+
+.hf-words {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 44%;
+  padding: 24px 28px;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.8);
+}
+
+.hf-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #e8b45a;
+}
+
+.hf-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.08;
+}
+
+.hf-line {
+  line-height: 1.45;
+}
+
+.hf-go {
+  margin-top: 6px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #d9772a, #a8431a);
+  font-weight: 700;
+  text-shadow: none;
+  box-shadow: 0 0 16px rgb(230 130 40 / 0.5);
+}
+
+@media (max-width: 640px) {
+  .hf-banner {
+    min-height: 300px;
+    align-items: flex-end;
+  }
+
+  .hf-heroes {
+    width: 100%;
+    grid-template-columns: 1fr;
+    mask-image: linear-gradient(to top, transparent 22%, #000 72%);
+  }
+
+  .hf-hero img {
+    object-position: center 6%;
+  }
+
+  .hf-hero:not(:first-child) {
+    display: none;
+  }
+
+  .hf-words {
+    max-width: none;
+    gap: 5px;
+    padding: 16px;
+  }
+
+  .hf-title {
+    font-size: 1.6rem;
+  }
+}
+
 /* Import do backup e lista de personagens */
 .btn-disabled {
   opacity: 0.4;

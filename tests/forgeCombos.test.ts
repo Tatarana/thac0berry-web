@@ -36,3 +36,11 @@ test('a lista tem 173 imagens, sem nome repetido, e bate com comboName', () => {
   assert.equal(new Set(list.map((c) => c.name)).size, list.length)
   for (const c of list) assert.equal(C.comboName(c.race, c.characterClass, c.gender ?? 'male'), c.name)
 })
+
+test('banner: sorteia heróis de raças diferentes', () => {
+  const combos = C.forgeCombos()
+  const heroes = C.pickHeroes(combos, 3, () => 0)
+  assert.equal(heroes.length, 3)
+  assert.equal(new Set(heroes.map((h) => h.race)).size, 3)
+  assert.equal(C.pickHeroes([{ race: 'Elf' }, { race: 'Elf' }], 3, () => 0).length, 1)
+})

@@ -1,5 +1,6 @@
 import { Link, Navigate } from 'react-router'
 import { useAuth } from '../auth/context'
+import { HomeForgeBanner } from '../components/HomeForgeBanner'
 import { HomeTile } from '../components/HomeTile'
 import { ModeChooser, ModeSwitch } from '../components/ModeChooser'
 import { CampaignChooserPage, CampaignSwitch } from '../components/CampaignChooser'
@@ -48,6 +49,8 @@ export function Home() {
         </div>
       </div>
       <div className="home-spacer" />
+      {/* Só para o jogador: o modo DM tem outra rotina nesta tela. */}
+      {mode !== 'dm' && <HomeForgeBanner signedIn={!!session} />}
       <hr className="divider" />
       <div className="tile-grid">
         <HomeTile to="/campaigns" image="icon_campaigns" title="Campaigns" subtitle={counted(campaigns?.length, 'running')} accent="var(--amber)" />
