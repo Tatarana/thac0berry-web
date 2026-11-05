@@ -21,12 +21,15 @@ type OptionalText =
 export function RecordPageThree({
   character: c,
   portraitURL,
+  portraitPending = false,
   edit,
   onPortrait,
 }: {
   character: PlayerCharacter
   /** Link temporário do retrato no Storage; null = sem retrato. */
   portraitURL: string | null
+  /** A ficha tem retrato, mas ele ainda está chegando. */
+  portraitPending?: boolean
   edit?: Edit
   /** Trocar o retrato (arquivo de imagem) ou tirar (null). */
   onPortrait?: (file: File | null) => Promise<void>
@@ -95,6 +98,8 @@ export function RecordPageThree({
           <div className="rec-sketch-frame">
             {portraitURL ? (
               <img src={portraitURL} alt={`Portrait of ${c.name || 'the character'}`} />
+            ) : portraitPending ? (
+              <span className="rec-soft rec-sketch-wait">Summoning portrait…</span>
             ) : (
               <span className="rec-soft">No portrait</span>
             )}

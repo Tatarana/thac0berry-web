@@ -167,6 +167,8 @@ export function CharacterSheet() {
   // Cenários da campanha (Ravenloft libera as classes do Domains of Dread).
   const [campaignSettings, setCampaignSettings] = useState<string[] | null>(null)
   const [portrait, setPortrait] = useState<string | null>(null)
+  // O retrato que não veio do servidor: para de esperar por ele.
+  const [portraitLost, setPortraitLost] = useState<string | null>(null)
   const userID = session?.user.id ?? null
   const { doc, loadError, save, conflict, dismissConflict, remoteChange, dismissRemoteChange, update, setPortrait: savePortrait, retry } = useCharacterDoc(id, userID)
   const campaignID = doc?.campaignID ?? null
@@ -331,19 +333,33 @@ export function CharacterSheet() {
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
   const [printChoice, setPrintChoice] = useState<PrintChoice | null>(null)
   const printRecord = printChoice?.record ?? false
-  // O retrato só é buscado quando a página 3 abre (ou para imprimir a ficha).
+  // O retrato é buscado quando a ficha abre, e só aparece já baixado: a página 3 não pisca vazia.
   const attachment = doc?.portraitAttachment ?? null
-  const printing = printChoice !== null && (!printRecord || !attachment || !!portrait)
+  const portraitPending = !!attachment && !portrait && portraitLost !== attachment
+  const printing = printChoice !== null && (!printRecord || !portraitPending)
   useEffect(() => {
-    if ((page !== '3' && !printRecord) || !attachment || portrait) return
+    if (!attachment || portrait) return
     let cancelled = false
-    void attachmentURL(attachment).then((url) => {
-      if (!cancelled) setPortrait(url)
-    })
+    void attachmentURL(attachment)
+      .then(async (url) => {
+        if (!url) throw new Error('portrait not found')
+        const image = new Image()
+        image.src = url
+        await image.decode()
+        return url
+      })
+      .then(
+        (url) => {
+          if (!cancelled) setPortrait(url)
+        },
+        () => {
+          if (!cancelled) setPortraitLost(attachment)
+        },
+      )
     return () => {
       cancelled = true
     }
-  }, [page, attachment, portrait, printRecord])
+  }, [attachment, portrait])
 
   // Dia aberto nas Spell Sheets (o mesmo cálculo das bolinhas lá embaixo).
   const openSheetDay = (list: NonNullable<typeof sheets>) => {
@@ -529,7 +545,7 @@ export function CharacterSheet() {
                 {page === '1' && <RecordSheet character={character} campaignName={campaignName} campaignSettings={campaignSettings} edit={edit} onClassChanged={(classes) => void afterClassChange(classes)} />}
                 {page === '2' && <RecordPageTwo character={character} edit={edit} campaignID={campaignID} />}
                 {page === '3' && sheetError && <p className="paper-soft save-error">{sheetError}</p>}
-                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} edit={edit} onPortrait={changePortrait} />}
+                {page === '3' && <RecordPageThree character={character} portraitURL={portrait} portraitPending={portraitPending} edit={edit} onPortrait={changePortrait} />}
                 {page === '4' && <RecordPageFour character={character} />}
               </>
             )}
