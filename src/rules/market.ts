@@ -117,6 +117,10 @@ export interface Ware {
   /** CA base (armadura). */
   armorClass?: number | null
   damage?: string
+  /** Tipo de dano (armas), para a regra da classe. */
+  weaponType?: string | null
+  /** Munição: as armas que a disparam, para a regra da classe. */
+  launchers?: { name: string; type?: string | null }[]
 }
 
 type WeaponData = {
@@ -144,13 +148,14 @@ export function marketWares(weapons: WeaponData[], armor: ArmorData[], goods: Go
     const name = launcher(w.name)
     if (!seen.has(name)) {
       seen.add(name)
-      out.push({ key: `weapon:${name}`, name, kind: 'weapon', stall: 'smithy', price, weight: parseWeight(w.weight), proficiency: name.toLowerCase(), damage: w.ammunition ? undefined : (w.damageSmall ?? undefined) })
+      out.push({ key: `weapon:${name}`, name, kind: 'weapon', stall: 'smithy', price, weight: parseWeight(w.weight), proficiency: name.toLowerCase(), weaponType: w.type ?? null, damage: w.ammunition ? undefined : (w.damageSmall ?? undefined) })
     }
     const a = w.ammunition
+    if (a) out.find((ware) => ware.key === `ammo:${a.name}`)?.launchers?.push({ name, type: w.type })
     if (a && !seen.has(`ammo:${a.name}`)) {
       seen.add(`ammo:${a.name}`)
       const ap = parsePrice(a.cost)
-      if (ap) out.push({ key: `ammo:${a.name}`, name: a.name, kind: 'ammo', stall: 'smithy', price: { cp: ap.cp, per: a.quantity }, weight: parseWeight(a.weight), damage: w.damageSmall ?? undefined })
+      if (ap) out.push({ key: `ammo:${a.name}`, name: a.name, kind: 'ammo', stall: 'smithy', price: { cp: ap.cp, per: a.quantity }, weight: parseWeight(a.weight), damage: w.damageSmall ?? undefined, launchers: [{ name, type: w.type }] })
     }
   }
   for (const a of armor) {

@@ -7676,6 +7676,51 @@ button.trail-done:hover .trail-label {
   color: var(--on-obsidian-soft);
 }
 
+/* Fora da regra da classe: pode escolher, mas não chama a atenção. */
+.kit-tile-outside:not(.kit-tile-chosen) {
+  opacity: 0.5;
+  filter: saturate(0.5);
+  transition: opacity 0.15s;
+}
+
+.kit-tile-outside:not(.kit-tile-chosen):hover,
+.kit-tile-outside:not(.kit-tile-chosen):focus-within {
+  opacity: 1;
+  filter: none;
+}
+
+.forge-class-law {
+  width: fit-content;
+  max-width: 100%;
+  margin: 8px auto;
+  padding: 6px 14px;
+  border: 1px solid #8a712a;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.3);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+  color: #e8d9b8;
+}
+
+.forge-kit-law {
+  margin: 8px 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #e8d9b8;
+}
+
+.forge-kit-law summary {
+  cursor: pointer;
+  color: #e8b45a;
+}
+
+.forge-kit-law p {
+  margin: 6px 0 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
 .kit-tile-warn {
   font-size: 0.7rem;
   color: var(--amber);
@@ -11493,6 +11538,17 @@ button.sp-line {
   opacity: 0.45;
 }
 
+.eq-ware-outside {
+  opacity: 0.5;
+  filter: saturate(0.5);
+}
+
+.eq-ware-outside:hover,
+.eq-ware-outside:focus-visible {
+  opacity: 1;
+  filter: none;
+}
+
 .eq-ware-dear:hover {
   transform: none;
 }
@@ -11532,6 +11588,11 @@ button.sp-line {
   border-radius: 999px;
   border: 1px solid #6fbf8e;
   color: #a6e3bd;
+}
+
+.eq-badge-outside {
+  background: #6b2318;
+  color: #ffd9cf;
 }
 
 .eq-badge-kit {
