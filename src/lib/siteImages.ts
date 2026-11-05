@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useAuth } from '../auth/context'
-import { slotOfSrc } from './siteImageRules'
+import { resolveSiteImages } from './siteImageRules'
 import { SITE_IMAGES_BASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config'
 import { supabase } from './supabase'
 import { MAX_IMAGE_BYTES, functionErrorMessage, joinURL, parsePresign, putErrorMessage } from './siteImageUploadRules'
@@ -61,7 +61,7 @@ function subscribe(listener: () => void) {
 export function useSiteImages(images: string[]): string[] {
   const map = useSyncExternalStore(subscribe, () => current)
   const key = images.join('|')
-  return useMemo(() => key.split('|').filter(Boolean).map((src) => map.get(slotOfSrc(src) ?? '') ?? src), [key, map])
+  return useMemo(() => resolveSiteImages(key.split('|').filter(Boolean), map), [key, map])
 }
 
 // Uma pergunta só por conta, por mais imagens que a tela tenha.

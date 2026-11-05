@@ -1,19 +1,13 @@
 // Ilustrações do The Forge, em public/images/forge/ (nomes combinados com o
 // usuário, que produz a arte; lista e prompts em docs/forge-arte.md).
 
+import { comboName, forgeSlug, type Gender } from '../rules/forgeCombos'
 import { raceGender, type RaceName } from '../rules/raceKit'
 
-export type Gender = 'male' | 'female'
+export type { Gender }
 
 /** Caminho de uma imagem do Forge. */
 export const forgeImage = (name: string) => `${import.meta.env.BASE_URL}images/forge/${name}.webp`
-
-/** Nome de arquivo a partir do nome da raça/classe: "Genasi (air)" → "genasi-air". */
-export const forgeSlug = (text: string) =>
-  text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
 
 /** O campo `sex` da ficha (texto livre) como gênero do Forge. */
 export function genderOf(sex: string): Gender | null {
@@ -36,4 +30,15 @@ export function raceImages(race: RaceName, gender: Gender | null): string[] {
 export function classImages(characterClass: string, gender: Gender | null): string[] {
   const slug = forgeSlug(characterClass)
   return gender ? [forgeImage(`class-${slug}-${gender}`), forgeImage(`class-${slug}`)] : [forgeImage(`class-${slug}`)]
+}
+
+/** A imagem da combinação de raça, classe e gênero, se ela tiver arte própria. */
+export function comboImages(race: RaceName | null, characterClass: string, gender: Gender | null): string[] {
+  const name = race && comboName(race, characterClass, gender)
+  return name ? [forgeImage(name)] : []
+}
+
+/** O retrato do herói: a combinação, depois a classe, depois a raça. */
+export function heroImages(race: RaceName | null, characterClass: string, gender: Gender | null): string[] {
+  return [...comboImages(race, characterClass, gender), ...classImages(characterClass, gender), ...(race ? raceImages(race, gender) : [])]
 }

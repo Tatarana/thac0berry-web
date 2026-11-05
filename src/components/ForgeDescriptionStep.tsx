@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { loadDeities, type Deity } from '../data/deities'
 import { loadAllKits } from '../data/kits'
-import { classImages, genderOf, raceImages } from '../lib/forgeImages'
+import { genderOf, heroImages } from '../lib/forgeImages'
 import { alignmentCode } from '../rules/alignment'
 import {
   agingStage,
@@ -169,7 +169,7 @@ export function ForgeDescriptionStep({
         .sort((a, b) => a.name.localeCompare(b.name)),
     [deities, q, filter, mine],
   )
-  const portrait = portraitURL ? [portraitURL] : [...classImages(canonicalClass(draft.characterClass), gender), ...(race ? raceImages(race, gender) : [])]
+  const portrait = portraitURL ? [portraitURL] : heroImages(race, canonicalClass(draft.characterClass), gender)
   const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : 'Create character', ready: !creating }
 
   const look = (label: string, list: [string, string][], key: 'hair' | 'eyes' | 'skin') => (

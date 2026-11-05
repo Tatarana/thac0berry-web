@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { classImages, genderOf, raceImages } from '../lib/forgeImages'
+import { genderOf, heroImages } from '../lib/forgeImages'
 import { rogueClass } from '../rules/multiclass'
 import { matchRace } from '../rules/raceKit'
 import { thievingSkillsFor } from '../rules/rules'
@@ -115,7 +115,7 @@ export function ForgeThievingStep({
 
   const gender = genderOf(draft.sex)
   const race = matchRace(draft.race)
-  const portrait = [...classImages(ctx.characterClass, gender), ...(race ? raceImages(race, gender) : [])]
+  const portrait = heroImages(race, ctx.characterClass, gender)
   const chosen = selected && skills.includes(selected) ? selected : null
   const chosenParts = chosen ? skillParts(chosen, ctx.characterClass, ctx.race, ctx.dexterity) : null
   const nav = { onBack, onNext, nextLabel, ready: true }

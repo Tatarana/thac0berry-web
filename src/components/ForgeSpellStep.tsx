@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { isGenericSetting, loadSpell, loadSpellIndex, type Spell, type SpellIndexEntry } from '../data/spells'
-import { classImages, genderOf, raceImages } from '../lib/forgeImages'
+import { genderOf, heroImages } from '../lib/forgeImages'
 import { allowedBySettings } from '../rules/campaignFilter'
 import { levelOf } from '../rules/multiclass'
 import { matchRace } from '../rules/raceKit'
@@ -182,7 +182,7 @@ export function ForgeSpellStep({
   const cls = showArcane ? casting.arcane : casting.divine
   // Sem classe que conjure (não deveria chegar aqui: o CharacterForge só abre a etapa para conjuradores).
   if (!cls) return null
-  const portrait = [...classImages(cls, gender), ...(race ? raceImages(race, gender) : [])]
+  const portrait = heroImages(race, cls, gender)
 
   return (
     <section className="forge-step forge-hero">

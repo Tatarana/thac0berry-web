@@ -13,6 +13,20 @@ export function slotOfSrc(src: string): string | null {
   return match ? `${match[1]}/${match[2]}` : null
 }
 
+/**
+ * Troca cada arquivo do repo pela versão atual do slot, se houver. As combinações
+ * de raça e classe só existem como versão: sem ela, saem da lista em vez de gerar
+ * um 404 para cada card.
+ */
+export function resolveSiteImages(images: string[], versions: ReadonlyMap<string, string>): string[] {
+  return images.flatMap((src) => {
+    const slot = slotOfSrc(src) ?? ''
+    const version = versions.get(slot)
+    if (version) return [version]
+    return slot.startsWith('forge/combo-') ? [] : [src]
+  })
+}
+
 /** O tamanho final do slot, o de docs/forge-arte.md. */
 export function slotSize(slot: string): Size {
   const name = slot.split('/').pop() ?? ''

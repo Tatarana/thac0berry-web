@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { classImages, genderOf, raceImages } from '../lib/forgeImages'
+import { genderOf, heroImages } from '../lib/forgeImages'
 import { allClasses, classLabel, hasSpellSheetAny, levelLabel } from '../rules/multiclass'
 import { matchRace } from '../rules/raceKit'
 import { canonicalClass } from '../rules/rules'
@@ -54,7 +54,7 @@ export function ForgeReveal({
 
   const gender = genderOf(c.sex)
   const race = matchRace(c.race)
-  const portrait = portraitURL ? [portraitURL] : [...classImages(canonicalClass(c.characterClass), gender), ...(race ? raceImages(race, gender) : [])]
+  const portrait = portraitURL ? [portraitURL] : heroImages(race, canonicalClass(c.characterClass), gender)
   const who = [c.race, classLabel(c), c.alignment, `Level ${levelLabel(c)}`, c.kit].filter((t): t is string => !!t)
   const str = c.abilities.strength === 18 && c.abilities.exceptionalStrength ? `18/${String(c.abilities.exceptionalStrength).padStart(2, '0')}` : String(c.abilities.strength)
   const bestSave = Math.min(c.saves.paralyzationPoisonDeath, c.saves.rodStaffWand, c.saves.petrificationPolymorph, c.saves.breathWeapon, c.saves.spell)

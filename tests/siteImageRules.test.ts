@@ -38,3 +38,11 @@ test('arrastar para a direita mostra mais da esquerda; proporção exata não an
   assert.deepEqual(S.panAfterDrag(target, target, 1, { x: 0, y: 0 }, { dx: 50, dy: 50 }, shown), { x: 0, y: 0 })
   assert.equal(S.panAfterDrag({ width: 2000, height: 2000 }, target, 1, { x: 0, y: 0 }, { dx: -9999, dy: 0 }, shown).x, 1)
 })
+
+test('combinação sem versão sai da lista; o resto segue a regra de sempre', () => {
+  const combo = '/images/forge/combo-dwarf-cleric-male.webp'
+  const cls = '/images/forge/class-cleric-male.webp'
+  assert.deepEqual(S.resolveSiteImages([combo, cls], new Map()), [cls])
+  assert.deepEqual(S.resolveSiteImages([combo, cls], new Map([['forge/combo-dwarf-cleric-male', 'https://cdn/a.webp']])), ['https://cdn/a.webp', cls])
+  assert.deepEqual(S.resolveSiteImages([cls], new Map([['forge/class-cleric-male', 'https://cdn/b.webp']])), ['https://cdn/b.webp'])
+})
