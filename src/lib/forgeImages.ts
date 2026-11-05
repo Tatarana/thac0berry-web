@@ -1,8 +1,9 @@
 // Ilustrações do The Forge, em public/images/forge/ (nomes combinados com o
 // usuário, que produz a arte; lista e prompts em docs/forge-arte.md).
 
-import { classArtAllowed, comboName, forgeSlug, type Gender } from '../rules/forgeCombos'
+import { comboAllowed, comboName, forgeSlug, type Gender } from '../rules/forgeCombos'
 import { raceGender, type RaceName } from '../rules/raceKit'
+import { canonicalClass } from '../rules/rules'
 
 export type { Gender }
 
@@ -40,7 +41,7 @@ export function comboImages(race: RaceName | null, characterClass: string, gende
 
 /** A arte da classe no card: a combinação e a genérica; nada se a raça não puder ser dessa classe. */
 export function classCardImages(race: RaceName | null, characterClass: string, gender: Gender | null): string[] {
-  if (race && !classArtAllowed(race, characterClass)) return []
+  if (race && !comboAllowed(race, canonicalClass(characterClass))) return []
   return [...comboImages(race, characterClass, gender), ...classImages(characterClass, gender)]
 }
 

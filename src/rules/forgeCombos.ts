@@ -1,11 +1,11 @@
-import { allRaces, demiBardKits, levelLimit, raceGender, type RaceName } from './raceKit.ts'
+import { allRaces, levelLimit, raceGender, type RaceName } from './raceKit.ts'
 import { ravenloftWarnings } from './ravenloft.ts'
 import { canonicalClass } from './rules.ts'
 
 // Retratos do The Forge por combinação de raça, classe e gênero: o anão clérigo
-// tem arte própria. Só as combinações de uma classe permitidas pela regra; quem
-// entra por kit (bardo anão) ou multiclasse usa a arte genérica ou a da classe
-// principal. Lista e prompts em docs/forge-arte.md.
+// tem arte própria. Só as combinações de uma classe permitidas pela regra. Fora
+// delas, inclusive quem só entra por kit (bardo anão), a classe fica sem imagem
+// (a genérica mostra um humano); multiclasse usa a da classe principal. Lista e prompts em docs/forge-arte.md.
 
 export type Gender = 'male' | 'female'
 
@@ -24,17 +24,6 @@ export const forgeSlug = (text: string) =>
 export function comboAllowed(race: RaceName, characterClass: string): boolean {
   if (levelLimit(race, characterClass) === 'forbidden') return false
   return ravenloftWarnings({ characterClass, race, abilities: bestAbilities } as Parameters<typeof ravenloftWarnings>[0], ['Ravenloft']).length === 0
-}
-
-/**
- * A classe tem imagem para esta raça? Fora da regra, o card fica sem arte. Bardo
- * por kit e ilusionista gnomo são permitidos, só não têm combinação própria.
- */
-export function classArtAllowed(race: RaceName, characterClass: string): boolean {
-  const cls = canonicalClass(characterClass)
-  if (comboAllowed(race, cls)) return true
-  if (cls === 'Bard') return !!demiBardKits[race]
-  return cls === 'Mage' && race === 'Gnome'
 }
 
 /**

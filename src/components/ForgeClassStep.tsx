@@ -21,7 +21,7 @@ import { kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
 import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
 import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
-import { classCardImages, classImages, genderOf, type Gender } from '../lib/forgeImages'
+import { classCardImages, genderOf, type Gender } from '../lib/forgeImages'
 import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker, ForgeThumbButton } from './ForgeParts'
 import { KitDetail } from './KitDetail'
 
@@ -154,13 +154,14 @@ function MultiClassBranch({ draft, mutate, gender }: { draft: PlayerCharacter; m
 
   const change = (multiClasses: ClassLevel[]) => mutate((c) => setMultiClasses(c, multiClasses))
 
+  const art = (cls: string) => classCardImages(matchRace(draft.race), cls, gender)
   const asClasses = (combo: string[]) => combo.map((n) => (n === 'Illusionist' ? 'Mage' : n))
   const isCurrent = (combo: string[]) => {
     const wanted = new Set(asClasses(combo))
     const have = new Set<string>(taken)
     return wanted.size === have.size && [...wanted].every((n) => have.has(n))
   }
-  const comboParts = (combo: string[]) => asClasses(combo).map((n) => ({ images: classImages(n, gender), alt: n }))
+  const comboParts = (combo: string[]) => asClasses(combo).map((n) => ({ images: art(n), alt: n }))
 
   const adopt = (combo: string[]) => {
     const wanted = asClasses(combo).filter((n) => n !== primary)
@@ -216,11 +217,11 @@ function MultiClassBranch({ draft, mutate, gender }: { draft: PlayerCharacter; m
           )}
           <p className="forge-panel-label">Or build your own · tap a class to add or remove it</p>
           <div className="forge-thumbs">
-            <ForgeThumbButton images={classImages(primary, gender)} label={primary} on />
+            <ForgeThumbButton images={art(primary)} label={primary} on />
             {extra.map((k, index) => (
               <ForgeThumbButton
                 key={`${k.characterClass}-${index}`}
-                images={classImages(canonicalClass(k.characterClass), gender)}
+                images={art(canonicalClass(k.characterClass))}
                 label={canonicalClass(k.characterClass)}
                 on
                 onClick={() => change(extra.filter((_, i) => i !== index))}
@@ -229,7 +230,7 @@ function MultiClassBranch({ draft, mutate, gender }: { draft: PlayerCharacter; m
             {multiClassOptions
               .filter((o) => !taken.has(canonicalClass(o)))
               .map((o) => (
-                <ForgeThumbButton key={o} images={classImages(o, gender)} label={o} onClick={() => change([...extra, { characterClass: o, level: 1 }])} />
+                <ForgeThumbButton key={o} images={art(o)} label={o} onClick={() => change([...extra, { characterClass: o, level: 1 }])} />
               ))}
           </div>
           {warnings.map((w) => (
