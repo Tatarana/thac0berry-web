@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadMonster, type Monster, type MonsterIndexEntry, type MonsterVariant } from '../data/monsters'
+import { useIsAdmin, useMonsterImage } from '../lib/siteImages'
+import { monsterSlot } from '../lib/siteImageRules'
 import { combatRows, ecologyRows, extraRows, textBlocks, type StatRow } from '../rules/monsters'
 import { PaperModal, TextBlock } from './DetailBits'
+import { SiteImageEdit } from './SiteImageEdit'
 
 // Ficha do monstro: bloco de estatísticas no formato do Monstrous Manual (uma
 // coluna por variante em tela larga; abas por variante no celular) e a descrição.
@@ -48,6 +51,19 @@ function StatTable({ variants, rows, showNames }: { variants: MonsterVariant[]; 
         ))}
       </tbody>
     </table>
+  )
+}
+
+/** A ilustração, na largura da ficha; a moldura reserva o espaço antes de o arquivo chegar. */
+function MonsterArt({ id, name, url }: { id: string; name: string; url: string | null }) {
+  const isAdmin = useIsAdmin()
+  const slot = monsterSlot(id)
+  if (!url) return isAdmin ? <SiteImageEdit slot={slot} shown={null} inline /> : null
+  return (
+    <figure className="monster-art">
+      <img src={url} alt={`Illustration of ${name}`} width={1536} height={1024} />
+      {isAdmin && <SiteImageEdit slot={slot} shown={url} />}
+    </figure>
   )
 }
 
@@ -107,6 +123,7 @@ export function MonsterDetail({
 }) {
   const [monster, setMonster] = useState<Monster | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const art = useMonsterImage(entry.id)
   useEffect(() => {
     loadMonster(entry)
       .then(setMonster)
@@ -124,7 +141,14 @@ export function MonsterDetail({
           {shieldPin.pinned ? '★ Pinned to Shield' : '☆ Pin to Shield'}
         </button>
       )}
-      {monster ? <Body monster={monster} /> : <p className="paper-soft">{error ? `Could not load: ${error}` : 'Loading…'}</p>}
+      {monster && art !== undefined ? (
+        <>
+          <MonsterArt id={entry.id} name={entry.name} url={art} />
+          <Body monster={monster} />
+        </>
+      ) : (
+        <p className="paper-soft">{error ? `Could not load: ${error}` : 'Loading…'}</p>
+      )}
     </PaperModal>,
     document.body,
   )

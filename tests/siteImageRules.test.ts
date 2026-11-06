@@ -14,7 +14,7 @@ test('tamanho de cada tipo de slot', () => {
   assert.deepEqual(S.slotSize('forge/race-elf-female'), { width: 896, height: 1200 })
   assert.deepEqual(S.slotSize('forge/weapons-missile'), { width: 1680, height: 720 })
   assert.deepEqual(S.slotSize('forge/gender-male'), { width: 848, height: 848 })
-  assert.deepEqual(S.slotSize('monster/beholder'), { width: 896, height: 1200 })
+  assert.deepEqual(S.slotSize(S.monsterSlot('beholder')), { width: 1536, height: 1024 })
 })
 
 test('recorte cobre o alvo, centrado e nas pontas', () => {
