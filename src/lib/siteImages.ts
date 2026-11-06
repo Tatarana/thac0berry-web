@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useAuth } from '../auth/context'
-import { resolveSiteImages } from './siteImageRules'
+import { monsterSlot, resolveSiteImages } from './siteImageRules'
 import { SITE_IMAGES_BASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config'
 import { supabase } from './supabase'
 import { MAX_IMAGE_BYTES, functionErrorMessage, joinURL, parsePresign, putErrorMessage } from './siteImageUploadRules'
@@ -10,7 +10,8 @@ import { MAX_IMAGE_BYTES, functionErrorMessage, joinURL, parsePresign, putErrorM
 // CloudFront (SITE_IMAGES_BASE_URL). Hoje, os personagens do The Forge; depois,
 // o Grimório. Quem manda é a versão atual do slot; sem
 // versão (ou sem rede), vale o arquivo do repo. A lista das atuais é carregada
-// uma vez por sessão e recarregada depois de cada troca.
+// uma vez por sessão e recarregada depois de cada troca. Os monstros são milhares
+// e ficam de fora dessa lista: cada um é buscado ao abrir a ficha.
 
 export interface SiteImageVersion {
   slot: string
@@ -36,6 +37,7 @@ export async function refreshSiteImages(): Promise<void> {
       .from('site_image_version')
       .select('slot, storage_path')
       .eq('is_current', true)
+      .not('slot', 'like', 'monster/%')
       .order('slot')
       .range(from, from + page - 1)
     if (error) return
@@ -62,6 +64,23 @@ export function useSiteImages(images: string[]): string[] {
   const map = useSyncExternalStore(subscribe, () => current)
   const key = images.join('|')
   return useMemo(() => resolveSiteImages(key.split('|').filter(Boolean), map), [key, map])
+}
+
+/** A ilustração do monstro: `undefined` enquanto busca, `null` se não houver. */
+export function useMonsterImage(id: string): string | null | undefined {
+  const refreshed = useSyncExternalStore(subscribe, () => current)
+  const slot = monsterSlot(id)
+  const [found, setFound] = useState<{ slot: string; url: string | null } | null>(null)
+  useEffect(() => {
+    let alive = true
+    void Promise.resolve(supabase.from('site_image_version').select('storage_path').eq('slot', slot).eq('is_current', true).maybeSingle()).then(({ data }) => {
+      if (alive) setFound({ slot, url: data ? siteImageURL((data as { storage_path: string }).storage_path) : null })
+    })
+    return () => {
+      alive = false
+    }
+  }, [slot, refreshed])
+  return found?.slot === slot ? found.url : undefined
 }
 
 /** O mesmo fora do React, para quem precisa do arquivo logo depois do login. */

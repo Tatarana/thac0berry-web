@@ -13,6 +13,9 @@ export function slotOfSrc(src: string): string | null {
   return match ? `${match[1]}/${match[2]}` : null
 }
 
+/** O slot da ilustração de um monstro: uma por monstro, não por variante. */
+export const monsterSlot = (id: string) => `monster/${id}`
+
 /**
  * Troca cada arquivo do repo pela versão atual do slot, se houver. As combinações
  * de raça e classe só existem como versão: sem ela, saem da lista em vez de gerar
@@ -30,6 +33,7 @@ export function resolveSiteImages(images: string[], versions: ReadonlyMap<string
 /** O tamanho final do slot, o de docs/forge-arte.md. */
 export function slotSize(slot: string): Size {
   const name = slot.split('/').pop() ?? ''
+  if (slot.startsWith('monster/')) return { width: 1536, height: 1024 }
   if (name.startsWith('weapons-')) return { width: 1680, height: 720 }
   if (name.startsWith('gender-')) return { width: 848, height: 848 }
   return { width: 896, height: 1200 }
