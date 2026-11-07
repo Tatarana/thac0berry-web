@@ -1,7 +1,7 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-06: 129 monstros
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-06: 179 monstros
 publicados de 2.386.
 
 ## Como funciona
@@ -11,7 +11,12 @@ publicados de 2.386.
 - A fila é `scripts/monster-art-step.mjs`. Cada bloco tem no máximo 50 imagens, e o próximo só
   começa depois do ok do usuário.
 - Prompts, originais em PNG, folhas e registros ficam em `../forge-art/monsters`, fora do repo
-  e sem versionamento: `block-NN.json`, `block-NN-log.md` e `folha-bloco-NN-N.jpg`.
+  e sem Git: `block-NN.json`, `block-NN-log.md` e `folha-bloco-NN-N.jpg`.
+- Backup dessa pasta no bucket privado `thac0berry-art-originals-025112051097` (sa-east-1), com
+  versionamento e sem CloudFront, então nada dali aparece no app. Ao fechar um bloco, enviar com
+  `aws s3 sync . s3://$ART_BACKUP_BUCKET/monsters/`, carregando `~/.thac0berry/art-backup.env`. A
+  credencial só lista e envia, nunca apaga.
+- As imagens do Forge (`../forge-art`, sem a pasta `monsters`) ficam no mesmo bucket, em `forge/`.
 - Todo prompt leva o tamanho da ficha. Sem isso, a Sea Hag de 3 pés saiu gigante no piloto.
 
 ## Situação dos blocos
@@ -21,6 +26,7 @@ publicados de 2.386.
 | Piloto | 30 | Publicado; 4 imagens com contagem errada, abaixo |
 | Bloco 1 | 50 | Publicado; validação do usuário pendente |
 | Bloco 2 | 50 | Publicado; validação do usuário pendente |
+| Bloco 3 | 50 | Publicado; validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -34,6 +40,8 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Carrion Crawler | `carrion_crawler` | 7 tentáculos em vez de 8 |
 | Grell | `grell` | Cerca de 12 tentáculos em vez de 10, e um olho |
 | Neogi | `neogi` | Cerca de 10 membros em vez de 8 |
+| Aurumvorax | `aurumvorax` | 6 patas visíveis em vez de 8; olhos amarelos, não prateados |
+| Giant Squid | `giant_squid` | Cerca de 13 tentáculos em vez de 10 |
 
 ### Desvio importante
 
@@ -54,6 +62,9 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Rust Monster | `rust_monster` | 5 patas visíveis; a descrição não dá a contagem |
 | Dryad | `dryad` | Bem sensual, vestida só de folhas |
 | Harpy | `harpy` | Seios à mostra, e corpo mais de águia que de abutre |
+| Deepspawn | `deepspawn` | Tentáculos parecem mais de 3; ovos ao fundo não estão na ficha |
+| Weretiger | `weretiger` | Pose e corpo sensuais |
+| Halfling | `halfling` | Revisão de IP: as portas redondas, pedidas no prompt, lembram os hobbits de Tolkien |
 
 ### Ressalvas menores
 
@@ -74,11 +85,23 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Stone Golem | `greater_golem` | Mostra só o Stone Golem, que a ficha reúne com o Iron; parece bem maior que 9,5 pés |
 | Stirge | `stirge` | Tom mais escuro e realista que o restante do conjunto |
 | Piercer | `piercer` | Pedúnculos de olhos maiores que os "tiny" da ficha |
+| Blink Dog | `blink_dog` | Esguios, com cara de raposa; a ficha pede mais robustos |
+| Elf | `elf` | Pele menos pálida que a ficha pede |
+| Leprechaun | `leprechaun` | Parece maior que os 2 pés da ficha |
+| Leucrotta | `leucrotta` | Galhada que a ficha não cita; cauda mais de cavalo que leonina |
+| Wereboar | `wereboar` | Pelo mais marrom que negro |
+| Yeti | `yeti` | Parece bem maior que os 8 pés da ficha |
+| Giant Beetle | `giant_beetle` | Mostra só o Stag; a ficha reúne 6 besouros |
+| Hag | `hag` | Mostra só a Green; a ficha reúne Annis, Green e Sea |
 
 ## Pendências de validação
 
 - Validar o bloco 1 inteiro: `../forge-art/monsters/folha-bloco-01-N.jpg`.
 - Validar o bloco 2 inteiro: `../forge-art/monsters/folha-bloco-02-N.jpg`.
+- Validar o bloco 3 inteiro: `../forge-art/monsters/folha-bloco-03-N.jpg`.
+- Depois da primeira passada, criar imagens das variantes que parecem outro monstro (Drider, Ogre
+  Mage, Winter Wolf), o que exige a imagem acompanhar a variante no app. Decisão do usuário em
+  2026-11-06: uma imagem por ficha agora, variantes importantes depois.
 - Confirmar a tela cheia nativa com um clique real.
 
 ## Pegadinhas da fila
