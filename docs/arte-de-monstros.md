@@ -1,7 +1,7 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-06: 115 monstros
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-06: 129 monstros
 publicados de 2.386.
 
 ## Como funciona
@@ -20,7 +20,7 @@ publicados de 2.386.
 |---|---|---|
 | Piloto | 30 | Publicado; 4 imagens com contagem errada, abaixo |
 | Bloco 1 | 50 | Publicado; validação do usuário pendente |
-| Bloco 2 | 36 de 50 | Pausado; próximo: `pseudodragon` |
+| Bloco 2 | 50 | Publicado; validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -49,6 +49,7 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Monstro | Slot | Dúvida |
 |---|---|---|
 | Behir | `behir` | 6 ou 7 patas visíveis de um lado; o outro lado está oculto |
+| Kraken | `kraken` | Os 2 braços farpados estão certos; os demais parecem passar de 8, mas se sobrepõem na água |
 | Gith | `gith` | Os três dedos sem polegar não aparecem nas mãos que seguram as espadas |
 | Rust Monster | `rust_monster` | 5 patas visíveis; a descrição não dá a contagem |
 | Dryad | `dryad` | Bem sensual, vestida só de folhas |
@@ -68,11 +69,16 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Werebear | `werebear` | Goblins verdes ao fundo; a ficha diz laranja a vermelho |
 | Rakshasa | `rakshasa` | Palmas invertidas só sugeridas |
 | Gauth | `gauth` | Boca mais de frente que no lado de baixo |
+| Dragon Turtle | `dragon_turtle` | Casca mais clara que o verde profundo da ficha |
+| Flesh Golem | `lesser_golem` | Mostra só o Flesh Golem; a ficha reúne Flesh e Clay |
+| Stone Golem | `greater_golem` | Mostra só o Stone Golem, que a ficha reúne com o Iron; parece bem maior que 9,5 pés |
+| Stirge | `stirge` | Tom mais escuro e realista que o restante do conjunto |
+| Piercer | `piercer` | Pedúnculos de olhos maiores que os "tiny" da ficha |
 
 ## Pendências de validação
 
 - Validar o bloco 1 inteiro: `../forge-art/monsters/folha-bloco-01-N.jpg`.
-- Validar o bloco 2 quando terminar.
+- Validar o bloco 2 inteiro: `../forge-art/monsters/folha-bloco-02-N.jpg`.
 - Confirmar a tela cheia nativa com um clique real.
 
 ## Pegadinhas da fila
