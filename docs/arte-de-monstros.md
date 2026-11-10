@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-06: 179 monstros
-publicados de 2.386.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-10: 249 monstros
+publicados de 2.386; todos os do Monstrous Manual têm imagem.
 
 ## Como funciona
 
@@ -27,6 +27,8 @@ publicados de 2.386.
 | Bloco 1 | 50 | Publicado; validação do usuário pendente |
 | Bloco 2 | 50 | Publicado; validação do usuário pendente |
 | Bloco 3 | 50 | Publicado; validação do usuário pendente |
+| Bloco 4 | 50 | Publicado; validação do usuário pendente |
+| Bloco 5 | 20 | Publicado; validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -42,6 +44,9 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Neogi | `neogi` | Cerca de 10 membros em vez de 8 |
 | Aurumvorax | `aurumvorax` | 6 patas visíveis em vez de 8; olhos amarelos, não prateados |
 | Giant Squid | `giant_squid` | Cerca de 13 tentáculos em vez de 10 |
+| Director | `director` | 4 tendrils em vez de 3 (os 6 olhos estão certos) |
+| Osquip | `osquip` | 4 patas visíveis em vez de 6 |
+| Overseer | `overseer` | Bem mais de 13 membros, e 2 bocas no topo em vez de 3 |
 
 ### Desvio importante
 
@@ -65,6 +70,18 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Deepspawn | `deepspawn` | Tentáculos parecem mais de 3; ovos ao fundo não estão na ficha |
 | Weretiger | `weretiger` | Pose e corpo sensuais |
 | Halfling | `halfling` | Revisão de IP: as portas redondas, pedidas no prompt, lembram os hobbits de Tolkien |
+| Bird Maidens | `bird_maidens` | Mulher no meio da transformação, com bico e garras; pode lembrar harpia |
+| Pech | `earth_kin` | Nus e com cara de Gollum (revisão de IP) |
+| Fog Giant | `fog_giant` | Peludo demais, quase um yeti |
+| Nereid | `nereid` | Seminua sob o xale transparente |
+| Jermlaine | `jermlaine` | Parecem maiores que 1 pé |
+| Death Kiss | `death_kiss` | Cerca de 10 tentáculos, difícil contar; refeita sem o cavalo caído depois de bloqueio por violência |
+| Giant Crab | `giant_crustacean` | 7 ou 8 patas, sobrepostas |
+| Giant Octopus | `octopus_giant` | 8 tentáculos ou um pouco mais, sobrepostos |
+| Osquip (IP) | `osquip` | Halfling com cara de Bilbo |
+| Totem Spirit | `totem_spirit` | Xamã com visual estereotipado de indígena norte-americano |
+| Werefox | `werefox` | Sensual; uma das companhias é mulher (a ficha diz homens encantados); bico de viúva pouco visível |
+| Skriaxit | `skriaxit` | Parecem bem maiores que 10 pés |
 
 ### Ressalvas menores
 
@@ -99,6 +116,8 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 - Validar o bloco 1 inteiro: `../forge-art/monsters/folha-bloco-01-N.jpg`.
 - Validar o bloco 2 inteiro: `../forge-art/monsters/folha-bloco-02-N.jpg`.
 - Validar o bloco 3 inteiro: `../forge-art/monsters/folha-bloco-03-N.jpg`.
+- Validar o bloco 4 inteiro: `../forge-art/monsters/folha-bloco-04-N.jpg`; ressalvas menores em `block-04-log.md`.
+- Validar o bloco 5 inteiro: `../forge-art/monsters/folha-bloco-05-N.jpg`; ressalvas em `block-05-log.md`.
 - Depois da primeira passada, criar imagens das variantes que parecem outro monstro (Drider, Ogre
   Mage, Winter Wolf), o que exige a imagem acompanhar a variante no app. Decisão do usuário em
   2026-11-06: uma imagem por ficha agora, variantes importantes depois.
