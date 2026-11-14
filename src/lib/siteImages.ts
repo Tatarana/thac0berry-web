@@ -48,6 +48,29 @@ export async function refreshSiteImages(): Promise<void> {
   for (const listener of listeners) listener()
 }
 
+/**
+ * Todas as ilustrações de monstros atuais numa busca só (de 1000 em 1000), para o
+ * livro de ilustrações: id do monstro → endereço público. Em erro de rede, lança.
+ */
+export async function fetchMonsterImages(): Promise<Map<string, string>> {
+  const result = new Map<string, string>()
+  const page = 1000
+  const prefix = monsterSlot('')
+  for (let from = 0; ; from += page) {
+    const { data, error } = await supabase
+      .from('site_image_version')
+      .select('slot, storage_path')
+      .eq('is_current', true)
+      .like('slot', `${prefix}%`)
+      .order('slot')
+      .range(from, from + page - 1)
+    if (error) throw new Error(error.message)
+    for (const row of data as { slot: string; storage_path: string }[]) result.set(row.slot.slice(prefix.length), siteImageURL(row.storage_path))
+    if (data.length < page) break
+  }
+  return result
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener)
   if (!loaded) {
