@@ -17,6 +17,7 @@ import { Diagnostics } from './pages/Diagnostics'
 import { ArmorCompendium, EquipmentCompendium, WeaponCompendium } from './pages/GearCompendiums'
 import { Grimoire } from './pages/Grimoire'
 import { Home } from './pages/Home'
+import { IllustrationBook } from './pages/IllustrationBook'
 import { ImportBackup } from './pages/ImportBackup'
 import { ModePage } from './pages/ModePage'
 import { ProficiencyCompendium } from './pages/ProficiencyCompendium'
@@ -59,6 +60,8 @@ export default function App() {
           <Route path="/compendium/weapons" element={<WeaponCompendium />} />
           <Route path="/compendium/armor" element={<ArmorCompendium />} />
           <Route path="/compendium/equipment" element={<EquipmentCompendium />} />
+          <Route path="/compendium/illustrations" element={<IllustrationBook />} />
+          <Route path="/compendium/illustrations/:chapter" element={<IllustrationBook />} />
           <Route path="/dm" element={<DmTools />} />
           <Route path="/dm/shield" element={<DmShield />} />
           <Route path="/dm/monsters" element={<MonsterCompendium />} />

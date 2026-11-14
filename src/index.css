@@ -12953,3 +12953,452 @@ button.sp-line {
 .si-thumb-current span {
   color: #ffd27a;
 }
+
+/* ---- Illustrations: o livro de ilustrações dos monstros (.plate-book-*, .plate-*) ---- */
+
+/* Sumário e mensagens: fundo escuro do app, tela de jogo. */
+.plate-book {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 18px 20px 40px;
+  background: radial-gradient(ellipse at 50% 0%, var(--obsidian-highlight) 0%, var(--obsidian) 55%, var(--obsidian-deep) 100%);
+  color: var(--on-obsidian);
+  font-family: var(--font-printed);
+}
+
+.plate-book-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.plate-book-soft {
+  margin: 0;
+  color: var(--on-obsidian-soft);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.plate-book-retry {
+  padding: 10px 26px;
+  border: 1px solid var(--brass);
+  border-radius: 999px;
+  background: rgba(16, 11, 8, 0.45);
+  color: var(--glow-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
+.plate-book-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.plate-book-back {
+  color: var(--on-obsidian-soft);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.plate-book-back:hover {
+  color: var(--glow-bright);
+}
+
+.plate-book-count {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--brass);
+}
+
+.plate-book-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 18px auto 26px;
+  text-align: center;
+}
+
+.plate-book-kicker {
+  font-family: var(--font-hand);
+  font-size: 28px;
+  color: var(--brass);
+}
+
+.plate-book-title {
+  margin: 0;
+  font-size: clamp(36px, 7vw, 60px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.plate-book-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(360px, 80%);
+  margin-top: 14px;
+}
+
+.plate-book-rule span {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--brass));
+}
+
+.plate-book-rule span:last-child {
+  background: linear-gradient(270deg, transparent, var(--brass));
+}
+
+/* Mosaico: 5 colunas; o primeiro capítulo ocupa 2x2, os demais 1 célula. */
+.plate-book-mosaic {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: minmax(150px, 17vw);
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.plate-book-mosaic > :first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.plate-book-chapter {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  min-width: 0;
+  border-radius: 4px;
+  background: var(--obsidian-raise);
+  color: var(--on-obsidian);
+  text-decoration: none;
+}
+
+.plate-book-chapter img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.plate-book-chapter:hover img,
+.plate-book-chapter:focus-visible img {
+  transform: scale(1.05);
+}
+
+/* Degradê escuro de baixo para cima e a moldura fina dourada. */
+.plate-book-chapter::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, rgba(16, 11, 8, 0.92) 0%, rgba(16, 11, 8, 0.45) 40%, rgba(16, 11, 8, 0) 70%);
+}
+
+.plate-book-chapter::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  z-index: 2;
+  border: 1px solid rgba(201, 162, 39, 0.55);
+  pointer-events: none;
+  transition: border-color 0.3s ease;
+}
+
+.plate-book-chapter:hover::after,
+.plate-book-chapter:focus-visible::after {
+  border-color: var(--glow-bright);
+}
+
+.plate-book-chapter-text {
+  position: absolute;
+  left: 20px;
+  right: 16px;
+  bottom: 18px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+}
+
+.plate-book-chapter-no {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--glow-bright);
+}
+
+.plate-book-chapter-name {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.plate-book-mosaic > :first-child .plate-book-chapter-name {
+  font-size: clamp(20px, 2.6vw, 30px);
+}
+
+.plate-book-chapter-n {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--on-obsidian-soft);
+}
+
+@media (max-width: 800px) {
+  .plate-book-mosaic {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: minmax(150px, 38vw);
+  }
+  .plate-book-mosaic > :first-child {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .plate-book-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+}
+
+/* Prancha: tela cheia, a ilustração de ponta a ponta. */
+.plate-view {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  background: var(--obsidian-deep);
+  color: var(--on-obsidian);
+  font-family: var(--font-printed);
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.plate-backdrop,
+.plate-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.plate-backdrop {
+  object-fit: cover;
+  filter: blur(28px) brightness(0.45);
+  transform: scale(1.1);
+}
+
+.plate-image {
+  object-fit: contain;
+}
+
+.plate-top,
+.plate-bottom,
+.plate-arrow {
+  z-index: 2;
+  transition: opacity 0.4s ease;
+}
+
+.plate-view-idle .plate-top,
+.plate-view-idle .plate-bottom,
+.plate-view-idle .plate-arrow {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.plate-view-idle {
+  cursor: none;
+}
+
+.plate-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 40px;
+  background: linear-gradient(180deg, rgba(16, 11, 8, 0.85), rgba(16, 11, 8, 0));
+}
+
+.plate-back {
+  justify-self: start;
+  color: var(--on-obsidian);
+  text-decoration: none;
+  font-size: 15px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.plate-back:hover {
+  color: var(--glow-bright);
+}
+
+.plate-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+
+.plate-heading-no {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--glow-bright);
+}
+
+.plate-heading-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.plate-round {
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--brass);
+  border-radius: 50%;
+  background: rgba(16, 11, 8, 0.45);
+  color: var(--on-obsidian);
+  cursor: pointer;
+}
+
+.plate-round:hover,
+.plate-arrow:hover {
+  border-color: var(--glow-bright);
+  color: var(--glow-bright);
+}
+
+.plate-arrow {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  margin-top: -28px;
+  border: 1px solid var(--brass);
+  border-radius: 50%;
+  background: rgba(16, 11, 8, 0.45);
+  color: var(--on-obsidian);
+  cursor: pointer;
+}
+
+.plate-arrow-prev {
+  left: 18px;
+}
+
+.plate-arrow-next {
+  right: 18px;
+}
+
+.plate-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 56px 24px 16px;
+  background: linear-gradient(0deg, rgba(16, 11, 8, 0.9), rgba(16, 11, 8, 0));
+}
+
+.plate-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 12px;
+}
+
+.plate-position {
+  justify-self: start;
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--brass);
+}
+
+.plate-name {
+  font-size: 30px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
+.plate-open {
+  justify-self: end;
+  color: var(--glow-bright);
+  text-decoration: none;
+  font-size: 15px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.plate-open:hover {
+  text-decoration: underline;
+}
+
+.plate-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  height: 6px;
+  margin-top: 14px;
+}
+
+.plate-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(201, 162, 39, 0.4);
+}
+
+.plate-dot-on {
+  width: 22px;
+  background: var(--glow-bright);
+}
+
+@media (max-width: 640px) {
+  .plate-arrow {
+    width: 44px;
+    height: 44px;
+    margin-top: -22px;
+  }
+  .plate-arrow-prev {
+    left: 8px;
+  }
+  .plate-arrow-next {
+    right: 8px;
+  }
+  .plate-bottom-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .plate-name {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    font-size: 24px;
+  }
+  .plate-position {
+    grid-row: 2;
+  }
+  .plate-open {
+    grid-row: 2;
+  }
+}
