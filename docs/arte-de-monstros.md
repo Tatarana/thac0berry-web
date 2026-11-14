@@ -18,6 +18,10 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dark 
   credencial só lista e envia, nunca apaga.
 - As imagens do Forge (`../forge-art`, sem a pasta `monsters`) ficam no mesmo bucket, em `forge/`.
 - Todo prompt leva o tamanho da ficha. Sem isso, a Sea Hag de 3 pés saiu gigante no piloto.
+- O livro "Illustrations" do Compendium usa o medalhão da paleta
+  (`public/images/icon_illustrations.png`, arte do usuário, v0.139.1): o JPG veio com fundo
+  branco, removido por preenchimento a partir das bordas (os brilhos brancos de dentro ficam) e
+  reduzido a 256×256 com transparência, como os outros medalhões.
 
 ## Situação dos blocos
 

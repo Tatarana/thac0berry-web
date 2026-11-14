@@ -29,8 +29,8 @@ const entries: HubEntry[] = [
   { title: 'Equipment', subtitle: '183 items · gear, clothing, food & more', to: '/compendium/equipment', image: 'icon_equipment', accent: 'var(--amber)' },
   { title: 'Magic Items', subtitle: '5,669 items · full corpus, filter by source', to: '/compendium/magic-items', image: 'icon_magic_items', accent: 'var(--glow)' },
   { title: 'Psionic Powers', subtitle: '257 powers · 6 disciplines, Complete Psionics Handbook', to: '/compendium/psionics', image: 'icon_psionic_powers', accent: 'var(--teal)' },
-  // Sem `image`: ainda não existe ícone próprio (aparece ✦).
-  { title: 'Illustrations', subtitle: 'Monster plates · by collection', to: '/compendium/illustrations', accent: 'var(--glow)' },
+  // Medalhão da paleta: arte do usuário (2026-11-14), fundo branco removido.
+  { title: 'Illustrations', subtitle: 'Monster plates · by collection', to: '/compendium/illustrations', image: 'icon_illustrations', accent: 'var(--glow)' },
 ]
 
 function HubRow({ entry }: { entry: HubEntry }) {
