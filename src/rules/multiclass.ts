@@ -484,6 +484,18 @@ interface KitInfo {
  * (ex. Ravenloft) nunca é escondido, só avisado; opcional, como `raceWarnings`.
  */
 export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>, campaignSettings?: string[] | null): string[] {
+  const warnings = kitEligibilityWarnings(kit, c)
+  if (kit.setting && campaignSettings !== undefined && !campaignSettings?.includes(kit.setting)) {
+    warnings.push(`This kit is from the ${kit.setting} setting, and this campaign does not have it on.`)
+  }
+  return warnings
+}
+
+/**
+ * Só os avisos de elegibilidade do kit (multiclasse, combinação, raça): sem cenário
+ * e sem alinhamento. É a base de `kitWarnings` e de `kitApplicable`.
+ */
+function kitEligibilityWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>): string[] {
   const warnings: string[] = []
   // A regra "só classe única" é dos Complete Handbooks (CFH, CTH); kits de outros livros (Elves of Athas,
   // Age of Heroes, Rogues of the Realms…) não a herdam.
@@ -504,10 +516,24 @@ export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter,
   }
   const races = kit.mechanics?.requirements?.races
   if (c.race && !kitAllowsRace(races, c.race)) warnings.push(`This kit is limited to: ${races}.`)
-  if (kit.setting && campaignSettings !== undefined && !campaignSettings?.includes(kit.setting)) {
-    warnings.push(`This kit is from the ${kit.setting} setting, and this campaign does not have it on.`)
-  }
   return warnings
+}
+
+/**
+ * O kit é aplicável a este personagem? (filtro "Only applicable kits"). Só a
+ * elegibilidade: não olha alinhamento (escolhido depois, no Forge) nem cenário.
+ */
+export function kitApplicable(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>): boolean {
+  return kitEligibilityWarnings(kit, c).length === 0
+}
+
+/**
+ * Aplica o filtro "Only applicable kits": desligado devolve tudo; ligado tira os
+ * não aplicáveis, menos o kit já escolhido (`chosenName`), que fica sempre à vista.
+ */
+export function filterApplicableKits<K extends KitInfo>(kits: K[], c: WithClasses & Pick<PlayerCharacter, 'race'>, chosenName: string | null | undefined, onlyApplicable: boolean): K[] {
+  if (!onlyApplicable) return kits
+  return kits.filter((k) => k.name === chosenName || kitApplicable(k, c))
 }
 
 /**

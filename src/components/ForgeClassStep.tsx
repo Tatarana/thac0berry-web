@@ -7,6 +7,7 @@ import {
   classLevels,
   classWarnings,
   combosFor,
+  filterApplicableKits,
   dualClassOptions,
   dualHitPointsRule,
   hitPointsRule,
@@ -23,6 +24,7 @@ import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
 import { classCardImages, genderOf, type Gender } from '../lib/forgeImages'
 import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker, ForgeThumbButton } from './ForgeParts'
+import { KitApplicableFilter } from './KitApplicableFilter'
 import { KitDetail } from './KitDetail'
 
 // Etapa 5 do The Forge: a classe em cards ilustrados (o mesmo ForgeCard das
@@ -318,6 +320,7 @@ function KitGallery({ draft, mutate, settings }: { draft: PlayerCharacter; mutat
   const [kits, setKits] = useState<Kit[] | null>(null)
   const [detail, setDetail] = useState<Kit | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [onlyApplicable, setOnlyApplicable] = useState(true)
 
   useEffect(() => {
     const classes = allClasses(draft).map((k) => k.characterClass)
@@ -331,13 +334,16 @@ function KitGallery({ draft, mutate, settings }: { draft: PlayerCharacter; mutat
 
   const chooseKit = (kit: Kit | null) => mutate((c) => { c.kit = kit ? kit.name : null })
   // Kits dos cenários da mesa (o já escolhido continua à vista).
-  const list = (kits ?? []).filter((kit) => kit.name === draft.kit || allowedBySettings(kit.setting, settings))
+  const bySettings = (kits ?? []).filter((kit) => kit.name === draft.kit || allowedBySettings(kit.setting, settings))
+  // Filtro "Only applicable kits": esconde os não aplicáveis (o já escolhido fica).
+  const list = filterApplicableKits(bySettings, draft, draft.kit, onlyApplicable)
   const visible = showAll ? list : list.slice(0, KIT_PREVIEW)
 
   return (
     <div className="kit-section">
       <p className="forge-kicker">Kit · optional</p>
       {kits === null && <p className="forge-panel-note">Opening the kit books…</p>}
+      {kits !== null && <KitApplicableFilter on={onlyApplicable} hidden={bySettings.length - list.length} onToggle={() => setOnlyApplicable(!onlyApplicable)} />}
       {kits !== null && (
         <div className="kit-grid">
           <div className={draft.kit ? 'kit-tile' : 'kit-tile kit-tile-chosen'}>

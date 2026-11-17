@@ -7762,6 +7762,39 @@ button.trail-done:hover .trail-label {
   overflow-y: auto;
 }
 
+/* Filtro "Only applicable kits" (Forge e ficha): chip + contagem discreta dos ocultos. */
+.kit-applicable-filter {
+  align-items: center;
+  margin: 6px 0;
+}
+
+.kit-applicable-hidden {
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+/* No Forge o fundo é escuro: o chip troca a tinta pelo latão (na ficha, papel, fica o padrão). */
+.kit-section .kit-applicable-filter .chip {
+  color: var(--on-obsidian);
+  border-color: rgb(201 162 39 / 0.55);
+}
+
+.kit-section .kit-applicable-filter .chip:hover {
+  background: rgb(201 162 39 / 0.12);
+}
+
+.kit-section .kit-applicable-filter .chip-on,
+.kit-section .kit-applicable-filter .chip-on:hover {
+  background: var(--brass);
+  color: var(--obsidian-deep);
+  border-color: var(--brass);
+}
+
+.kit-section .kit-applicable-hidden {
+  color: var(--on-obsidian-soft);
+  opacity: 1;
+}
+
 .kit-tile-warn {
   font-size: 0.7rem;
   color: var(--amber);
