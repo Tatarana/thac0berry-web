@@ -468,7 +468,8 @@ export function kitAllowsRace(racesText: string | null | undefined, race: string
 
 interface KitInfo {
   name: string
-  classEligibility: { classGroup: string; subclass?: string | null }
+  sourceBook?: string | null
+  classEligibility: { classGroup: string; subclass?: string | null; combination?: string[] | null }
   mechanics?: { requirements?: { races?: string | null } | null } | null
   /** Cenário do livro de origem (ex. "Ravenloft" nos kits de Denizens of Dread); null = nenhum. */
   setting?: string | null
@@ -483,19 +484,56 @@ interface KitInfo {
  * (ex. Ravenloft) nunca é escondido, só avisado; opcional, como `raceWarnings`.
  */
 export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>, campaignSettings?: string[] | null): string[] {
+  const warnings = kitEligibilityWarnings(kit, c)
+  if (kit.setting && campaignSettings !== undefined && !campaignSettings?.includes(kit.setting)) {
+    warnings.push(`This kit is from the ${kit.setting} setting, and this campaign does not have it on.`)
+  }
+  return warnings
+}
+
+/**
+ * Só os avisos de elegibilidade do kit (multiclasse, combinação, raça): sem cenário
+ * e sem alinhamento. É a base de `kitWarnings` e de `kitApplicable`.
+ */
+function kitEligibilityWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>): string[] {
   const warnings: string[] = []
-  if (isMultiClass(c)) {
+  // A regra "só classe única" é dos Complete Handbooks (CFH, CTH); kits de outros livros (Elves of Athas,
+  // Age of Heroes, Rogues of the Realms…) não a herdam.
+  const handbookKit = !kit.sourceBook || kit.sourceBook.startsWith('The Complete')
+  if (isMultiClass(c) && handbookKit) {
     if (kit.classEligibility.classGroup === 'Warrior') warnings.push('Only single-class warriors can take a warrior kit (CFH, Chapter 2).')
     if (kit.classEligibility.classGroup === 'Rogue' && kit.classEligibility.subclass === 'Thief') {
       warnings.push('Only single-class thieves can take a thief kit (CTH, Chapter 3).')
     }
   }
+  // Kit multiclasse (CBE cap. 10): vale a quem tem as classes juntas; só aviso, como os demais.
+  const combination = kit.classEligibility.combination
+  if (combination && combination.length > 1) {
+    const has = new Set(classLevels(c).map((k) => canonicalClass(k.characterClass)))
+    if (!combination.every((cls) => has.has(canonicalClass(cls)))) {
+      warnings.push(`This is a ${combination.join('/')} kit${kit.sourceBook ? ` (${kit.sourceBook})` : ''}; this character is not that multi-class.`)
+    }
+  }
   const races = kit.mechanics?.requirements?.races
   if (c.race && !kitAllowsRace(races, c.race)) warnings.push(`This kit is limited to: ${races}.`)
-  if (kit.setting && campaignSettings !== undefined && !campaignSettings?.includes(kit.setting)) {
-    warnings.push(`This kit is from the ${kit.setting} setting, and this campaign does not have it on.`)
-  }
   return warnings
+}
+
+/**
+ * O kit é aplicável a este personagem? (filtro "Only applicable kits"). Só a
+ * elegibilidade: não olha alinhamento (escolhido depois, no Forge) nem cenário.
+ */
+export function kitApplicable(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>): boolean {
+  return kitEligibilityWarnings(kit, c).length === 0
+}
+
+/**
+ * Aplica o filtro "Only applicable kits": desligado devolve tudo; ligado tira os
+ * não aplicáveis, menos o kit já escolhido (`chosenName`), que fica sempre à vista.
+ */
+export function filterApplicableKits<K extends KitInfo>(kits: K[], c: WithClasses & Pick<PlayerCharacter, 'race'>, chosenName: string | null | undefined, onlyApplicable: boolean): K[] {
+  if (!onlyApplicable) return kits
+  return kits.filter((k) => k.name === chosenName || kitApplicable(k, c))
 }
 
 /**

@@ -266,6 +266,36 @@ test('kits: guerreiro e ladrão só classe única; raça do kit', () => {
   assert.equal(M.kitAllowsRace('Any except dwarves and halflings', 'Dwarf'), false)
 })
 
+test('kitApplicable: só elegibilidade (multiclasse, combinação, raça)', () => {
+  const single = { characterClass: 'Fighter' as const, level: 3, race: 'Dwarf' }
+  const multi = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Thief' as const, level: 3 }], race: 'Dwarf' }
+  const cfhWarrior = { name: 'Gladiator', sourceBook: 'The Complete Fighter\'s Handbook', classEligibility: { classGroup: 'Warrior', subclass: 'Fighter' } }
+  const otherWarrior = { name: 'Savage Hunter', sourceBook: 'Elves of Athas', classEligibility: { classGroup: 'Warrior', subclass: 'Fighter' } }
+  const comboKit = { name: 'Bladesinger', sourceBook: 'The Complete Book of Elves', classEligibility: { classGroup: 'Wizard', combination: ['Fighter', 'Mage'] } }
+  const elfKit = { name: 'Elven Priest', classEligibility: { classGroup: 'Priest', subclass: 'Cleric' }, mechanics: { requirements: { races: 'Elf' } } }
+  const warAlign = { ...cfhWarrior, mechanics: { requirements: { races: null } } }
+  assert.equal(M.kitApplicable(cfhWarrior, single), true)
+  assert.equal(M.kitApplicable(cfhWarrior, multi), false)
+  assert.equal(M.kitApplicable(otherWarrior, multi), true)
+  assert.equal(M.kitApplicable(comboKit, { ...multi, race: 'Elf' }), false)
+  const fm = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Mage' as const, level: 3 }], race: 'Elf' }
+  assert.equal(M.kitApplicable(comboKit, fm), true)
+  assert.equal(M.kitApplicable(elfKit, single), false)
+  assert.equal(M.kitApplicable(elfKit, { ...single, race: 'Elf' }), true)
+  assert.equal(M.kitApplicable(warAlign, single), true)
+  // O cenário não conta: kit de outro cenário continua aplicável.
+  assert.equal(M.kitApplicable({ ...cfhWarrior, setting: 'Ravenloft' }, single), true)
+})
+
+test('filterApplicableKits: tira os não aplicáveis, mas mantém o já escolhido', () => {
+  const multi = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Thief' as const, level: 3 }], race: 'Dwarf' }
+  const bad = { name: 'Gladiator', classEligibility: { classGroup: 'Warrior', subclass: 'Fighter' } }
+  const ok = { name: 'Cleric Thing', classEligibility: { classGroup: 'Priest', subclass: 'Cleric' } }
+  assert.deepEqual(M.filterApplicableKits([bad, ok], multi, null, true), [ok])
+  assert.deepEqual(M.filterApplicableKits([bad, ok], multi, 'Gladiator', true), [bad, ok])
+  assert.deepEqual(M.filterApplicableKits([bad, ok], multi, null, false), [bad, ok])
+})
+
 test('dreno de nível (PHB): classe mais alta; empate, a que exige mais XP', () => {
   assert.deepEqual(M.levelDrainTarget({ characterClass: 'Fighter', level: 3, multiClasses: [{ characterClass: 'Mage', level: 5 }] }), { index: 0, former: false, characterClass: 'Mage', level: 5 })
   // Empate no 4: Mage (nível 4 exige mais XP que Fighter 4).

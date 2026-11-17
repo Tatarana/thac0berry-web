@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { loadAllKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
-import { allClasses, kitWarnings } from '../rules/multiclass'
+import { allClasses, filterApplicableKits, kitWarnings } from '../rules/multiclass'
 import { allRaces, hasAbilityRequirements, isPlanarRace, isRavenloftRace, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, type RaceName } from '../rules/raceKit'
 import { vistaniTribeForRoll, vistaniTribes, vistaniTribeWarnings, type VistaniTribe } from '../rules/vistani'
 import type { CharacterClass, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
+import { KitApplicableFilter } from './KitApplicableFilter'
 import { KitDetail } from './KitDetail'
 
 // Escolher raça (RacePickerSheet do iPad: lista das raças do PHB; se a ficha
@@ -149,10 +150,17 @@ export function KitPicker({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [character.characterClass, JSON.stringify(character.multiClasses ?? []), JSON.stringify(character.formerClasses ?? []), JSON.stringify(campaignSettings)])
+  // Filtro "Only applicable kits" (ligado por padrão; o kit já escolhido fica sempre).
+  const [onlyApplicable, setOnlyApplicable] = useState(true)
+  const applicable = useMemo(
+    () => filterApplicableKits(kits ?? [], character, character.kit, onlyApplicable),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [kits, onlyApplicable, character.kit, character.race, character.characterClass, JSON.stringify(character.multiClasses ?? [])],
+  )
   const filtered = useMemo(() => {
     const target = normalize(query)
-    return (kits ?? []).filter((k) => target === '' || normalize(k.name).includes(target) || normalize(k.deity ?? '').includes(target))
-  }, [kits, query])
+    return applicable.filter((k) => target === '' || normalize(k.name).includes(target) || normalize(k.deity ?? '').includes(target))
+  }, [applicable, query])
 
   return createPortal(
     <PaperModal title="Choose a Kit" onClose={onClose}>
@@ -161,6 +169,7 @@ export function KitPicker({
         <input className="ink-input" value={query} placeholder="kit or deity name" autoFocus onChange={(e) => setQuery(e.target.value)} />
       </label>
       {kits === null && <p className="paper-soft">Loading kits…</p>}
+      {kits !== null && <KitApplicableFilter on={onlyApplicable} hidden={kits.length - applicable.length} onToggle={() => setOnlyApplicable(!onlyApplicable)} />}
       <ul className="slot-choices">
         <li>
           <button className="slot-choice" onClick={() => onChoose(null)}>

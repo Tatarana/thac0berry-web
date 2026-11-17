@@ -80,7 +80,7 @@ export function KitCompendium({ group }: { group: ClassGroup }) {
                     <span className="spell-name">{kit.name}</span>
                     <span className="spell-meta">{kit.sourceBook}</span>
                   </span>
-                  <span className="kit-summary">{kit.description.briefSummary}</span>
+                  <span className="kit-summary">{kit.description.briefSummary.replaceAll('*', '')}</span>
                 </button>
               </li>
             ))}

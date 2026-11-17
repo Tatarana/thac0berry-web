@@ -2,15 +2,15 @@
 // Models/Kit.swift no app iPad). Um arquivo por grupo de classe, gerado por
 // scripts/build-data.mjs sem o texto bruto de wiki.
 
-import { markdownTables } from '../rules/tableIndex'
+import { markdownTables } from '../rules/tableIndex.ts'
 import type { RuleTable } from './rules'
 
-export type ClassGroup ='Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist'
+export type ClassGroup = 'Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist' | 'Demihuman'
 
 export interface Kit {
   id: string
   name: string
-  classEligibility: { classGroup: string; subclass: string; allowedClasses: string[] }
+  classEligibility: { classGroup: string; subclass: string; allowedClasses: string[]; combination?: string[] }
   sourceBook: string
   features: {
     role?: string | null
@@ -40,11 +40,14 @@ export interface Kit {
 /** Ordem dos subgrupos, igual ao KitCompendiumView do iPad. */
 export const subclassOrder: Record<ClassGroup, string[]> = {
   Priest: ['Cleric', 'Druid', 'Any Priest', 'Specialty Priest'],
-  Wizard: ['Wizard'],
-  Warrior: ['Fighter', 'Paladin', 'Ranger', 'Barbarian'],
-  Rogue: ['Thief', 'Bard', 'Ninja'],
+  // 'Ravenloft': kits do Dragon Magazine Annual 1998 (Denizens of Dread), antes fora da lista.
+  Wizard: ['Wizard', 'Ravenloft'],
+  Warrior: ['Fighter', 'Paladin', 'Ranger', 'Barbarian', 'Ravenloft'],
+  Rogue: ['Thief', 'Bard', 'Ninja', 'Ravenloft'],
   // Kits de Psionicist (2026-10-06): The Will and the Way, Dragon Magazine etc.
   Psionicist: ['Psionicist'],
+  // Kits de raça (Complete Book of Elves, Dragon Magazine; 2026-11-16): o subgrupo é a raça; a classe vem de allowedClasses.
+  Demihuman: ['Elf', 'Half-Elf', 'Dwarf', 'Avariel'],
 }
 
 const cache = new Map<ClassGroup, Promise<Kit[]>>()
@@ -65,7 +68,7 @@ let allKits: Promise<Kit[]> | null = null
 
 /** Todos os kits, de todo grupo (RaceKitPickers e o aviso de cenário ao mudar de campanha). */
 export function loadAllKits(): Promise<Kit[]> {
-  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
+  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist', 'Demihuman'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
   return allKits
 }
 

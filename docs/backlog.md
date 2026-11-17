@@ -15,3 +15,32 @@ mil), por lotes. Item sem `power.uses` ainda entra na spell sheet se tiver o
 
 Bracers of Defense (trocam a AC base em vez de dar bônus). O `acBonus` fixo do
 catálogo já é lido (v0.112.1).
+
+## Regras e kits do Complete Book of Elves e livros "Complete" (2026-11-16, web v0.140.0)
+
+Feito: o `thac0berry-data` ganhou 202 regras (CBE, CWH, CBN, TOM; `scripts/add_mined_rulebooks.py`) e
+30 kits (`scripts/add_elf_and_misc_kits.py`): os 11 do CBE no grupo novo **Demihuman** (subclass Elf,
+só para elfos), mais kits de Rogues of the Realms, Elves of Athas, Planewalker's Handbook, Chronomancer
+Book e Age of Heroes. Decisões do usuário: kit multiclasse aparece a quem tem qualquer classe dele
+(`classEligibility.combination` avisa se a ficha não é essa multiclasse; só aviso); a regra "kit de
+guerreiro/ladrão só classe única" vale só para kits dos Complete Handbooks. Testes: `tests/elfKits.test.ts`.
+Compêndio: página `/compendium/kits/demihuman`; resumos de kit sem os `*` na tela.
+
+### Kits da Dragon Magazine (v0.140.0)
+
+119 kits (`scripts/add_dragon_magazine_kits.py` no `thac0berry-data`), incluindo o Spellarcher (Demihuman/Half-Elf,
+Fighter/Mage). Os 12 do artigo "The Complete Half-Elf" vão para Demihuman/Half-Elf; os 6 anões e 2 avariel também.
+Classe lida da página, não do `classGroup` minerado. 19 kits de fora (Masque of the Red Death, dragões, 9 ambíguos;
+ver o README do `thac0berry-data`). `mechanics` quase vazio (requisitos e proficiências só no texto). Teste:
+`tests/elfKits.test.ts` (inclui "todo kit aparece no compêndio"). Pendências: decidir os 9 ambíguos; nome duplicado
+"Forester" (CFH).
+
+Pendências:
+- Ícone do tile "Demihuman Kits" do Compêndio (aparece ✦ até o usuário mandar a arte).
+- **Raças em dados** (próxima entrega, aprovada): `races.json` no `thac0berry-data` (157 raças já
+  extraídas no repo de mineração, `data/player_races/`) para substituir as raças fixas em `raceKit.ts`,
+  com validação contra os valores atuais (PHB Tabela 7, planares, Half-Vistani) antes de trocar.
+- iPad: rodar `python Scripts/sync_data.py` no `thac0berry-ipad` (o CI de lá acusa a divergência); o iPad
+  ainda usa `bookOrder` fixo, então CWH/CBN/TOM/CBE não aparecem lá até isso mudar.
+- Os outros kits minerados fora do app (Complete Books de anões, gnomos/halflings e humanoides, Al-Qadim,
+  Spacefarer, Skills & Powers…) seguem o mesmo molde do grupo Demihuman.
