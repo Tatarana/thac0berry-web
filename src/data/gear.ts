@@ -12,7 +12,10 @@ export interface Weapon {
   damageSmall?: string | null
   damageLarge?: string | null
   range?: { short?: string | null; medium?: string | null; long?: string | null } | null
+  /** Livro de origem ('CFH', 'DSC'…); ausente nas armas do PHB. */
   source?: string | null
+  /** Cenário próprio ('Dark Sun'); null/ausente = livros gerais. */
+  campaignSetting?: string | null
   /** PHB Table 44 (thac0berry-data, 2026-11-02): "15 gp"; "—" quando o livro não cobra nada. */
   cost?: string | null
   weight?: string | null

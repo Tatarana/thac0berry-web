@@ -351,3 +351,28 @@ test('slots de arma: o kit que define os slots vale na classe única', () => {
   const multi = { characterClass: 'Fighter', level: 1, multiClasses: [{ characterClass: 'Thief', level: 1 }] } as unknown as PlayerCharacter
   assert.equal(M.weaponProficiencySlots(multi, { initial: 1, additional: 4 }), 4)
 })
+
+test('slots nonweapon do kit: initial substitui, bonus soma, perLevels troca o ritmo; sem kit, a Tabela 34', () => {
+  const thief = { characterClass: 'Thief' as const, level: 5 }
+  const mage = { characterClass: 'Mage' as const, level: 7 }
+  const base = (c: { characterClass: 'Thief' | 'Mage'; level: number }) => M.nonweaponProficiencySlots(c)
+  // Sem o campo (ou nulos): igual à Tabela 34.
+  assert.equal(M.nonweaponProficiencySlots(thief, null), base(thief))
+  assert.equal(M.nonweaponProficiencySlots(thief, { initial: null, bonus: null, perLevels: null, notes: 'x' }), base(thief))
+  // Vagabond: 4 iniciais; o ritmo é o do ladrão.
+  const rate = base({ characterClass: 'Thief', level: 8 }) - base({ characterClass: 'Thief', level: 1 })
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Thief', level: 1 }, { initial: 4 }), 4)
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Thief', level: 8 }, { initial: 4 }), 4 + rate)
+  // Arcanist - Elf: +4 sobre o inicial do mago.
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Mage', level: 1 }, { bonus: 4 }), base({ characterClass: 'Mage', level: 1 }) + 4)
+  // Wizards of Waterdeep: +2 e um slot a cada 2 níveis no lugar do ritmo do mago.
+  const initialMage = base({ characterClass: 'Mage', level: 1 })
+  assert.equal(M.nonweaponProficiencySlots(mage, { bonus: 2, perLevels: 2 }), initialMage + 2 + 3)
+  // Bônus negativo (Talon, Sheenchaser) nunca passa de zero.
+  assert.equal(M.nonweaponProficiencySlots({ characterClass: 'Mage', level: 1 }, { bonus: -1 }), Math.max(0, initialMage - 1))
+  // Inteligência continua somando; multiclasse ignora o kit (como nos slots de arma).
+  const withInt = M.nonweaponProficiencySlots({ ...thief, abilities: { intelligence: 16 } }) - base(thief)
+  assert.equal(M.nonweaponProficiencySlots({ ...thief, abilities: { intelligence: 16 } }, { initial: 4 }), M.nonweaponProficiencySlots(thief, { initial: 4 }) + withInt)
+  const multi = { characterClass: 'Fighter' as const, level: 6, multiClasses: [{ characterClass: 'Mage' as const, level: 7 }] }
+  assert.equal(M.nonweaponProficiencySlots(multi, { initial: 1 }), M.nonweaponProficiencySlots(multi))
+})

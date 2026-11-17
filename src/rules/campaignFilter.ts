@@ -44,6 +44,18 @@ export function allowedBySettings(setting: string | null | undefined, settings: 
   return allowed === null || allowed.has(setting ?? CORE_SETTING)
 }
 
+/**
+ * Armas de cenário (Dark Sun…) só aparecem quando o cenário vale; sem filtro de
+ * cenários, todas. `keep` mantém à vista o que já foi escolhido (como kits e raças).
+ */
+export function weaponsForSettings<T extends { campaignSetting?: string | null }>(
+  weapons: T[],
+  settings: string[] | null | undefined,
+  keep?: (w: T) => boolean,
+): T[] {
+  return weapons.filter((w) => allowedBySettings(w.campaignSetting, settings) || keep?.(w) === true)
+}
+
 /** Rótulo do chip: "Campaign (Core + Dark Sun)". */
 export const campaignFilterLabel = (settings: string[]) => `Campaign (${[CORE_SETTING, ...settings].join(' + ')})`
 

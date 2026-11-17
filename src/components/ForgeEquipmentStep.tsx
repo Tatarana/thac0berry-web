@@ -20,6 +20,7 @@ import {
   type Stall,
   type Ware,
 } from '../rules/market'
+import { weaponsForSettings } from '../rules/campaignFilter'
 import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine } from '../rules/classGear'
 import { allClasses } from '../rules/multiclass'
 import { kitWeaponHints } from '../rules/proficiencyCost'
@@ -55,6 +56,7 @@ const dieKind = (sides: number): DieKind => (sides === 4 ? 'd4' : sides === 6 ? 
 export function ForgeEquipmentStep({
   draft,
   mutate,
+  settings,
   market: stored,
   onMarket,
   stepNumber,
@@ -64,6 +66,8 @@ export function ForgeEquipmentStep({
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
+  /** Cenários da mesa: a Smithy só vende armas de cenário (Dark Sun…) se ele valer. */
+  settings?: string[] | null
   market: MarketState
   onMarket: (next: MarketState) => void
   stepNumber: number
@@ -85,7 +89,8 @@ export function ForgeEquipmentStep({
     )
   }, [])
 
-  const wares = useMemo(() => (data ? marketWares(data.weapons, data.armor, data.goods) : []), [data])
+  // Arma sem preço no livro (cost null) não vai à venda (marketWares).
+  const wares = useMemo(() => (data ? marketWares(weaponsForSettings(data.weapons, settings), data.armor, data.goods) : []), [data, settings])
   const byKey = useMemo(() => new Map(wares.map((w) => [w.key, w])), [wares])
   const kit = data?.kits.find((k) => k.name === draft.kit) ?? null
   const classes = allClasses(draft).map((k) => k.characterClass)

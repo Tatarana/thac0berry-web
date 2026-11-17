@@ -43,3 +43,18 @@ test('Forge: Al-Qadim, Greyhawk e Spelljammer em obras; o resto vale; o padrão 
   assert.deepEqual(defaultForgeSettings, ['Forgotten Realms'])
   assert.equal(settingUnderConstruction(defaultForgeSettings[0]), false)
 })
+
+test('armas de cenário: Gythka some sem Dark Sun, aparece com ele ou sem filtro; a já escolhida fica', async () => {
+  const { weaponsForSettings } = await import('../src/rules/campaignFilter.ts')
+  const weapons = [
+    { id: 'long_sword', name: 'Long sword', campaignSetting: undefined },
+    { id: 'katana', name: 'Katana', campaignSetting: null },
+    { id: 'gythka', name: 'Gythka (Thrown)', campaignSetting: 'Dark Sun' },
+  ]
+  const ids = (list: { id: string }[]) => list.map((w) => w.id)
+  assert.deepEqual(ids(weaponsForSettings(weapons, ['Forgotten Realms'])), ['long_sword', 'katana'])
+  assert.deepEqual(ids(weaponsForSettings(weapons, ['Forgotten Realms', 'Dark Sun'])), ['long_sword', 'katana', 'gythka'])
+  assert.deepEqual(ids(weaponsForSettings(weapons, null)), ['long_sword', 'katana', 'gythka'])
+  assert.deepEqual(ids(weaponsForSettings(weapons, [])), ['long_sword', 'katana', 'gythka'])
+  assert.deepEqual(ids(weaponsForSettings(weapons, ['Ravenloft'], (w) => w.id === 'gythka')), ['long_sword', 'katana', 'gythka'])
+})

@@ -99,7 +99,7 @@ export function ForgeSkillStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const skillTotal = nonweaponProficiencySlots(draft)
+  const skillTotal = nonweaponProficiencySlots(draft, kit?.mechanics.nonweaponSlots)
   const skillUsed = nonweaponSlotsUsed(draft)
   const groups = characterProficiencyGroups(draft)
   const recommended = new Set((kit?.mechanics.proficiencies?.recommended ?? []).map((n) => n.toLowerCase()))
@@ -168,6 +168,7 @@ export function ForgeSkillStep({
           ! {line}
         </p>
       ))}
+      {kit?.mechanics.nonweaponSlots?.notes && <p className="forge-panel-note">Kit: {kit.mechanics.nonweaponSlots.notes}.</p>}
       {skillUsed > skillTotal && <p className="forge-warn-line">! {skillUsed - skillTotal} skill slot(s) over what your class, level and Intelligence give.</p>}
 
       <div className="forge-search">

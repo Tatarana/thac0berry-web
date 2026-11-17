@@ -66,6 +66,7 @@ export interface Kit {
     startingCash?: string | null
     weapons?: KitWeapons | null
     weaponSlots?: { initial?: number | null; additional?: number | null; nonproficiencyPenalty?: string | null } | null
+    nonweaponSlots?: { initial?: number | null; bonus?: number | null; perLevels?: number | null; notes?: string | null } | null
     proficiencies?: KitProficiencies | null
   }
   deity?: string | null

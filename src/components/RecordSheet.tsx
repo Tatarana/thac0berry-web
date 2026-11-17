@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CharacterClass, EquipmentItem, PlayerCharacter, ProficiencyGrant, SavingThrows } from '../types/library'
 import { loadSpellIndex } from '../data/spells'
@@ -22,9 +22,10 @@ import {
 } from '../rules/consequences'
 import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, rearArmorClass, shieldlessArmorClass, thievingSkillsShown, weaponProficiencyKey, weaponSlotsSpent } from '../rules/rules'
 import { loadAllKits } from '../data/kits'
+import { weaponsForSettings } from '../rules/campaignFilter'
 import { armorBoxFromPieces, itemACBonus, itemACParts, parsedRating, type ItemACPart } from '../rules/armorClass'
 import { RuleLink } from './RuleLink'
-import { classLabel, classLevels, dualClassRestriction, dualProficiencyNote, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, weaponProficiencySlots, type ClassChoice, type KitWeaponSlots } from '../rules/multiclass'
+import { classLabel, classLevels, dualClassRestriction, dualProficiencyNote, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, weaponProficiencySlots, type ClassChoice, type KitNonweaponSlots, type KitWeaponSlots } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
 import { gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
@@ -1318,8 +1319,14 @@ function RowRemove({ label, onClick }: { label: string; onClick: () => void }) {
   )
 }
 
-function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
+function Weapons({ c, edit, campaignSettings }: { c: PlayerCharacter; edit?: Edit; campaignSettings?: string[] | null }) {
   const [picking, setPicking] = useState(false)
+  // Seletor: armas de cenário só se a campanha as permite (sem campanha, todas); as que já estão na ficha ficam.
+  const loadPickable = useCallback(async () => {
+    const owned = new Set(c.weapons.flatMap((w) => (w.matchedWeaponID ? [w.matchedWeaponID] : [])))
+    return weaponsForSettings(await loadWeapons(), campaignSettings, (w) => owned.has(w.id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignSettings])
   // Especialização: regra única em src/rules/specialization.ts (a mesma da Forja).
   const rule = specializationRule(c)
   const canSpecialize = (name: string) => canSpecializeWeapon(c, name)
@@ -1448,8 +1455,8 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       {picking && edit && (
         <CompendiumPicker<Weapon>
           title="Add a weapon"
-          load={loadWeapons}
-          hint={(w) => [w.type, w.damageSmall && `${w.damageSmall}/${w.damageLarge ?? '—'}`].filter(Boolean).join(' · ')}
+          load={loadPickable}
+          hint={(w) => [w.source, w.type, w.damageSmall && `${w.damageSmall}/${w.damageLarge ?? '—'}`].filter(Boolean).join(' · ')}
           onChoose={(w) => {
             edit((x) => void (x.weapons = [...x.weapons, weaponFromCompendium({ ...w, formattedRange: formattedRange(w) })]))
             setPicking(false)
@@ -1473,12 +1480,24 @@ const proficiencySlots = proficiencySlotCount
 
 /** "Nonweapon Proficiency Slots: 3/4 used (1 left)", como a linha dos slots de arma; vermelha se passou. */
 function NonweaponSlotsLine({ c }: { c: PlayerCharacter }) {
+  const [kitSlots, setKitSlots] = useState<KitNonweaponSlots | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    if (!c.kit) return
+    void loadAllKits().then((kits) => {
+      if (!cancelled) setKitSlots(kits.find((k) => k.name === c.kit)?.mechanics.nonweaponSlots ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [c.kit])
   const used = nonweaponSlotsUsed(c)
-  const total = nonweaponProficiencySlots(c)
+  const total = nonweaponProficiencySlots(c, c.kit ? kitSlots : null)
   const left = total - used
   return (
     <p className={left < 0 ? 'rec-soft rec-red' : 'rec-soft'}>
       Nonweapon Proficiency Slots: {used}/{total} used ({left < 0 ? `${-left} over` : `${left} left`})
+      {c.kit && kitSlots?.notes && <span className="weapon-source" title={kitSlots.notes}> · kit: {kitSlots.notes}</span>}
     </p>
   )
 }
@@ -1723,7 +1742,7 @@ export function RecordSheet({
       <Combat c={character} edit={edit} />
       <Thac0Table c={character} edit={edit} />
       <CombatModifiers c={character} edit={edit} />
-      <Weapons c={character} edit={edit} />
+      <Weapons c={character} edit={edit} campaignSettings={campaignSettings} />
       <Proficiencies c={character} edit={edit} />
       <ThievingSkills c={character} edit={edit} />
       <ActiveEffects c={character} />
