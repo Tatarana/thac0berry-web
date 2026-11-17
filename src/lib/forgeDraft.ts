@@ -1,4 +1,5 @@
 import type { Lean } from '../rules/alignment'
+import { settingUnderConstruction } from '../rules/campaignFilter.ts'
 import type { MarketState } from '../rules/market'
 import type { BookState } from '../rules/spellbook'
 import type { Training } from '../rules/thievingPoints'
@@ -25,12 +26,27 @@ export interface ForgeSnapshot {
   portrait: string | null
 }
 
+/**
+ * Versão do formato gravado. 2: o Forge ganhou a etapa 1 "Campaign Setting" e todos os
+ * números de etapa subiram 1. Rascunho sem versão (formato 1) tem `step` antigo.
+ */
+export const forgeDraftVersion = 2
+
+/**
+ * Leva o snapshot gravado ao formato atual: sem versão, `step` antigo (+1). Mundos ainda
+ * em obras (não escolhíveis na etapa 1) saem dos cenários gravados.
+ */
+export function migrateForgeSnapshot(snapshot: ForgeSnapshot, version: number | undefined): ForgeSnapshot {
+  const settings = (snapshot.settings ?? []).filter((s) => !settingUnderConstruction(s))
+  return { ...snapshot, settings, step: version === undefined ? snapshot.step + 1 : snapshot.step }
+}
+
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 /** false: o navegador não guardou (cheio ou bloqueado), e o login perderia o herói. */
 export function keepForgeDraft(snapshot: ForgeSnapshot, store: Store = localStorage, now = Date.now()): boolean {
   try {
-    store.setItem(key, JSON.stringify({ savedAt: now, snapshot }))
+    store.setItem(key, JSON.stringify({ savedAt: now, version: forgeDraftVersion, snapshot }))
     return true
   } catch {
     return false
@@ -39,8 +55,8 @@ export function keepForgeDraft(snapshot: ForgeSnapshot, store: Store = localStor
 
 export function readForgeDraft(store: Store = localStorage, now = Date.now()): ForgeSnapshot | null {
   try {
-    const saved = JSON.parse(store.getItem(key) ?? 'null') as { savedAt: number; snapshot: ForgeSnapshot } | null
-    return saved && now - saved.savedAt <= forgeDraftTTL ? saved.snapshot : null
+    const saved = JSON.parse(store.getItem(key) ?? 'null') as { savedAt: number; version?: number; snapshot: ForgeSnapshot } | null
+    return saved && now - saved.savedAt <= forgeDraftTTL ? migrateForgeSnapshot(saved.snapshot, saved.version) : null
   } catch {
     return null
   }

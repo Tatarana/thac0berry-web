@@ -46,3 +46,14 @@ export function allowedBySettings(setting: string | null | undefined, settings: 
 
 /** Rótulo do chip: "Campaign (Core + Dark Sun)". */
 export const campaignFilterLabel = (settings: string[]) => `Campaign (${[CORE_SETTING, ...settings].join(' + ')})`
+
+/**
+ * Cenários ainda sem raças, classes ou kits no app: aparecem esmaecidos no Forge
+ * ("Under construction") e não dá para escolhê-los. Tirar daqui quando chegarem.
+ */
+export const settingsUnderConstruction: readonly string[] = ['Al-Qadim', 'Greyhawk', 'Spelljammer']
+
+export const settingUnderConstruction = (setting: string) => settingsUnderConstruction.includes(setting)
+
+/** O Forge novo começa nos Forgotten Realms (rascunho retomado mantém o que gravou). */
+export const defaultForgeSettings = ['Forgotten Realms']

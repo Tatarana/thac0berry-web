@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
-import { campaignFilterLabel, campaignMonsterCollections, campaignSettingSet } from '../src/rules/campaignFilter.ts'
+import { campaignFilterLabel, campaignMonsterCollections, campaignSettingSet, defaultForgeSettings, settingUnderConstruction } from '../src/rules/campaignFilter.ts'
 
 test('cenários da campanha: Core mais os dela; sem restrição = todos', () => {
   assert.deepEqual([...campaignSettingSet(['Dark Sun'])!], ['Core', 'Dark Sun'])
@@ -35,4 +35,11 @@ test('filtro de cenários do construtor: vazio = tudo; senão Core mais os escol
   assert.equal(allowedBySettings('Ravenloft', ['Ravenloft']), true)
   assert.equal(allowedBySettings('Planescape', ['Ravenloft']), false)
   assert.equal(allowedBySettings('Forgotten Realms', ['Dark Sun', 'Forgotten Realms']), true)
+})
+
+test('Forge: Al-Qadim, Greyhawk e Spelljammer em obras; o resto vale; o padrão é Forgotten Realms', () => {
+  for (const s of ['Al-Qadim', 'Greyhawk', 'Spelljammer']) assert.equal(settingUnderConstruction(s), true)
+  for (const s of ['Forgotten Realms', 'Dark Sun', 'Ravenloft', 'Planescape', 'Council of Wyrms']) assert.equal(settingUnderConstruction(s), false)
+  assert.deepEqual(defaultForgeSettings, ['Forgotten Realms'])
+  assert.equal(settingUnderConstruction(defaultForgeSettings[0]), false)
 })

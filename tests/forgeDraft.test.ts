@@ -1,7 +1,7 @@
 // O rascunho do Forge sobrevive ao login, mas não vira personagem dias depois.
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { clearForgeDraft, forgeDraftTTL, keepForgeDraft, readForgeDraft, type ForgeSnapshot } from '../src/lib/forgeDraft.ts'
+import { clearForgeDraft, forgeDraftTTL, forgeDraftVersion, keepForgeDraft, migrateForgeSnapshot, readForgeDraft, type ForgeSnapshot } from '../src/lib/forgeDraft.ts'
 
 const memory = () => {
   const items = new Map<string, string>()
@@ -32,4 +32,18 @@ test('rascunho velho não vale, e limpar apaga', () => {
 test('armazenamento bloqueado avisa em vez de perder o herói calado', () => {
   const blocked = { ...memory(), setItem: () => { throw new Error('quota') } }
   assert.equal(keepForgeDraft(snapshot, blocked), false)
+})
+
+test('rascunho gravado antes da etapa Campaign Setting sobe um passo; o novo não mexe', () => {
+  const store = memory()
+  // Formato antigo: sem `version` no envelope.
+  store.setItem('thac0berry.forge.pending', JSON.stringify({ savedAt: 1000, snapshot: { ...snapshot, step: 4 } }))
+  assert.equal(readForgeDraft(store, 1000)?.step, 5)
+  assert.equal(migrateForgeSnapshot({ ...snapshot, step: 4 }, forgeDraftVersion).step, 4)
+  keepForgeDraft({ ...snapshot, step: 4 }, store, 1000)
+  assert.equal(readForgeDraft(store, 1000)?.step, 4)
+})
+
+test('mundos em obras saem dos cenários gravados', () => {
+  assert.deepEqual(migrateForgeSnapshot({ ...snapshot, settings: ['Spelljammer', 'Ravenloft'] }, forgeDraftVersion).settings, ['Ravenloft'])
 })

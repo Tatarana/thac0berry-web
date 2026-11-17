@@ -9,6 +9,7 @@ import { ForgeEquipmentStep } from '../components/ForgeEquipmentStep'
 import { ForgeGate } from '../components/ForgeGate'
 import { ForgeIdentityStep } from '../components/ForgeIdentityStep'
 import { ForgePsionicStep } from '../components/ForgePsionicStep'
+import { ForgeSettingStep } from '../components/ForgeSettingStep'
 import { ForgeRaceStep } from '../components/ForgeRaceStep'
 import { ForgeReveal } from '../components/ForgeReveal'
 import { ForgeSkillStep } from '../components/ForgeSkillStep'
@@ -16,6 +17,7 @@ import { ForgeSpellStep } from '../components/ForgeSpellStep'
 import { ForgeStartStep } from '../components/ForgeStartStep'
 import { ForgeThievingStep } from '../components/ForgeThievingStep'
 import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
+import { ForgeSettingsReminder } from '../components/ForgeParts'
 import { PageHeader } from '../components/PageHeader'
 import { artAttachment, portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { blobToDataURL, clearForgeDraft, dataURLToFile, keepForgeDraft, readForgeDraft } from '../lib/forgeDraft'
@@ -26,6 +28,7 @@ import { applyAutomatic, applyClassTables, markConsequencesReviewed, pendingCons
 import type { Lean } from '../rules/alignment'
 import { emptyMarket, type MarketState } from '../rules/market'
 import { hasClass, rogueClass } from '../rules/multiclass'
+import { defaultForgeSettings } from '../rules/campaignFilter'
 import { matchRace } from '../rules/raceKit'
 import { canonicalClass } from '../rules/rules'
 import { spellCasting, type BookState } from '../rules/spellbook'
@@ -33,14 +36,14 @@ import type { Training } from '../rules/thievingPoints'
 import type { PlayerCharacter } from '../types/library'
 
 // The Forge (docs/criacao-de-personagem.md): construtor guiado em etapas —
-// Ability Scores, Name & Gender, Race, Class/Kit, Starting point,
+// Campaign Setting, Ability Scores, Name & Gender, Race, Class/Kit, Starting point,
 // proficiências e, para psionicistas e conjuradores, os poderes psiônicos e as magias —, separado da ficha. O rascunho fica só em memória (e neste aparelho durante o login do fim, ver lib/forgeDraft); nada grava no Supabase
 // até o fim, quando vira um personagem de verdade (createCharacter) e o
 // jogador cai na CharacterSheet normal, exatamente como "+ New character"
 // faz hoje — só que chegando lá com nome, gênero, raça, classe/kit,
 // nível/XP, HP, THAC0 e saves já certos.
 
-const baseSteps = ['Ability Scores', 'Name & Gender', 'Race', 'Alignment', 'Class & Kit', 'Starting point', 'Weapon Proficiencies', 'Nonweapon Proficiencies', 'Equipment']
+const baseSteps = ['Campaign Setting', 'Ability Scores', 'Name & Gender', 'Race', 'Alignment', 'Class & Kit', 'Starting point', 'Weapon Proficiencies', 'Nonweapon Proficiencies', 'Equipment']
 
 // Trilha de contas com o nome de cada etapa (como no protótipo); as já
 // feitas são botões para voltar.
@@ -79,11 +82,11 @@ export function CharacterForge() {
   // só do Supabase); aqui, em memória, completa com um array vazio, igual ao
   // que um personagem novo também tem antes da primeira folha de magia.
   const [draft, setDraft] = useState<PlayerCharacter>(() => resumed?.draft ?? { ...blankCharacter(null), spellSheets: [] })
-  // A ficha em branco nasce como Fighter: a etapa 4 só mostra uma classe
+  // A ficha em branco nasce como Fighter: a etapa de classe só mostra uma classe
   // escolhida depois que o jogador escolher uma de fato.
   const [classChosen, setClassChosen] = useState(resumed?.classChosen ?? false)
-  // Cenários da mesa escolhidos na etapa de raça; valem também para classes e kits.
-  const [settings, setSettings] = useState<string[]>(resumed?.settings ?? [])
+  // Cenários da mesa (etapa 1): filtram raças, classes, kits, proficiências e magias. Forge novo = Forgotten Realms.
+  const [settings, setSettings] = useState<string[]>(resumed?.settings ?? defaultForgeSettings)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -237,7 +240,7 @@ export function CharacterForge() {
   }
 
   return (
-    <div className={extra || step === 9 ? 'page page-wide' : 'page'}>
+    <div className={extra || step === 10 ? 'page page-wide' : 'page'}>
       <PageHeader title="The Forge" backTo="/characters" />
       <ForgeTrail stepTitles={stepTitles} current={step} onSelect={setStep} />
       {gate && (
@@ -254,57 +257,56 @@ export function CharacterForge() {
           <span>Could not create the character: {error}</span>
         </div>
       )}
-      {step === 1 && <ForgeAbilitiesStep draft={draft} mutate={mutate} onNext={() => setStep(2)} />}
-      {step === 2 && <ForgeIdentityStep draft={draft} mutate={mutate} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-      {step === 3 && (
-        <ForgeRaceStep draft={draft} mutate={mutate} settings={settings} onSettings={setSettings} onNext={() => setStep(4)} onBack={() => setStep(2)} />
-      )}
-      {step === 4 && (
+      {step > 1 && <ForgeSettingsReminder settings={settings} onChange={() => setStep(1)} />}
+      {step === 1 && <ForgeSettingStep settings={settings} onChange={setSettings} onNext={() => setStep(2)} />}
+      {step === 2 && <ForgeAbilitiesStep draft={draft} mutate={mutate} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+      {step === 3 && <ForgeIdentityStep draft={draft} mutate={mutate} onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+      {step === 4 && <ForgeRaceStep draft={draft} mutate={mutate} settings={settings} onNext={() => setStep(5)} onBack={() => setStep(3)} />}
+      {step === 5 && (
         <ForgeAlignmentStep
           draft={draft}
           mutate={mutate}
           settings={settings}
           answers={alignmentAnswers}
           onAnswers={setAlignmentAnswers}
-          onNext={() => setStep(5)}
-          onBack={() => setStep(3)}
-        />
-      )}
-      {step === 5 && (
-        <ForgeClassStep
-          draft={draft}
-          mutate={mutate}
-          settings={settings}
-          onSettings={setSettings}
-          chosen={classChosen}
-          onChoose={() => setClassChosen(true)}
           onNext={() => setStep(6)}
           onBack={() => setStep(4)}
         />
       )}
-      {step === 6 && <ForgeStartStep draft={draft} mutate={mutate} onBack={() => setStep(5)} onNext={() => setStep(7)} />}
-      {step === 7 && <ForgeWeaponStep draft={draft} mutate={mutate} onBack={() => setStep(6)} onNext={() => setStep(8)} />}
-      {step === 8 && (
+      {step === 6 && (
+        <ForgeClassStep
+          draft={draft}
+          mutate={mutate}
+          settings={settings}
+          chosen={classChosen}
+          onChoose={() => setClassChosen(true)}
+          onNext={() => setStep(7)}
+          onBack={() => setStep(5)}
+        />
+      )}
+      {step === 7 && <ForgeStartStep draft={draft} mutate={mutate} onBack={() => setStep(6)} onNext={() => setStep(8)} />}
+      {step === 8 && <ForgeWeaponStep draft={draft} mutate={mutate} onBack={() => setStep(7)} onNext={() => setStep(9)} />}
+      {step === 9 && (
         <ForgeSkillStep
           draft={draft}
           mutate={mutate}
           settings={settings}
-          onBack={() => setStep(7)}
-          onFinish={nextAfter(8)}
+          onBack={() => setStep(8)}
+          onFinish={nextAfter(9)}
           creating={creating}
-          finishLabel={labelAfter(8)}
+          finishLabel={labelAfter(9)}
         />
       )}
-      {step === 9 && (
+      {step === 10 && (
         <ForgeEquipmentStep
           draft={draft}
           mutate={mutate}
           market={market}
           onMarket={setMarket}
-          stepNumber={9}
-          nextLabel={labelAfter(9) ?? 'Create character'}
-          onBack={() => setStep(8)}
-          onNext={nextAfter(9)}
+          stepNumber={10}
+          nextLabel={labelAfter(10) ?? 'Create character'}
+          onBack={() => setStep(9)}
+          onNext={nextAfter(10)}
         />
       )}
       {extra === 'Thieving Skills' && (

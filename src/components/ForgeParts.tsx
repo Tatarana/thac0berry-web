@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { loadRulesIndex, type RuleIndexEntry } from '../data/rules'
-import { campaignSettings, settingLogo } from '../lib/campaigns'
+import { settingLogo } from '../lib/campaigns'
 import { slotOfSrc } from '../lib/siteImageRules'
 import { useIsAdmin, useSiteImages } from '../lib/siteImages'
 import { BookCode } from './BookCode'
@@ -192,33 +192,22 @@ export function ForgeThumbButton({ images, label, on = false, onClick }: { image
 }
 
 /**
- * Os cenários da mesa (mesma lista e emblemas do "Campaign Settings" da
- * campanha). Nenhum escolhido = todos os mundos; escolhidos = livros gerais
- * mais eles. Usado igual nas etapas de raça e de classe.
+ * Lembrete discreto dos cenários da mesa em toda etapa depois da primeira: os
+ * emblemas em latão apagado (ou "All worlds", sem filtro). Clicar volta à etapa
+ * "Campaign Setting". Renderizado uma vez, pelo CharacterForge.
  */
-export function ForgeSettingsPicker({ settings, onChange }: { settings: string[]; onChange: (next: string[]) => void }) {
-  const toggle = (setting: string) => onChange(settings.includes(setting) ? settings.filter((s) => s !== setting) : [...settings, setting])
+export function ForgeSettingsReminder({ settings, onChange }: { settings: string[]; onChange: () => void }) {
   return (
-    <div className="forge-worlds">
-      <p className="forge-panel-label">{settings.length === 0 ? 'All worlds · tap the ones your table plays in' : `Core rules + ${settings.join(' + ')}`}</p>
-      <div className="forge-worlds-row" role="group" aria-label="Campaign settings">
-        {campaignSettings.map((setting) => {
-          const on = settings.includes(setting)
+    <button type="button" className="forge-setting-reminder" aria-label="Change campaign settings" title={settings.length === 0 ? 'All worlds' : `Core rules + ${settings.join(' + ')}`} onClick={onChange}>
+      {settings.length === 0 ? (
+        <span className="forge-setting-reminder-text">All worlds</span>
+      ) : (
+        settings.map((setting) => {
           const logo = `url(${settingLogo(setting)})`
-          return (
-            <button key={setting} type="button" className={on ? 'forge-world forge-world-on' : 'forge-world'} aria-pressed={on} onClick={() => toggle(setting)}>
-              <span className="forge-world-emblem" style={{ maskImage: logo, WebkitMaskImage: logo }} />
-              <span className="forge-world-name">{setting}</span>
-            </button>
-          )
-        })}
-      </div>
-      {settings.length > 0 && (
-        <button type="button" className="forge-help-rule" onClick={() => onChange([])}>
-          Show all worlds
-        </button>
+          return <span key={setting} className="forge-setting-reminder-mask" style={{ maskImage: logo, WebkitMaskImage: logo }} />
+        })
       )}
-    </div>
+    </button>
   )
 }
 

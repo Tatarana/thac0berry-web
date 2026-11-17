@@ -4,7 +4,7 @@ import { rollDice } from '../rules/dice'
 import type { AbilityScores, PlayerCharacter } from '../types/library'
 import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
 
-// Etapa 1 do The Forge, fiel ao protótipo aprovado (artifact "The Forge —
+// Etapa 2 do The Forge, fiel ao protótipo aprovado (artifact "The Forge —
 // character builder mockup", Abilities.dc.html): três métodos (3d6 em ordem,
 // 4d6 descartando o menor, ou escrever à mão); trocar de método limpa as
 // gemas até rolar (ou digitar); depois de rolar, dois cliques em gemas
@@ -121,10 +121,12 @@ export function ForgeAbilitiesStep({
   draft,
   mutate,
   onNext,
+  onBack,
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
   onNext: () => void
+  onBack: () => void
 }) {
   const [method, setMethod] = useState<Method>('3d6')
   // Ao abrir, as gemas mostram o que a ficha já tem (10 em branco, ou o que
@@ -209,7 +211,7 @@ export function ForgeAbilitiesStep({
   const allFilled = method === 'write' ? order.every(({ key }) => validScore(written[key])) : filled
 
   // Back / Next no topo e no fim da etapa (o mesmo rodapé).
-  const nav = { onNext, nextLabel: 'Next: Name & Gender →', ready: allFilled }
+  const nav = { onBack, onNext, nextLabel: 'Next: Name & Gender →', ready: allFilled }
 
   return (
     <section className="forge-step forge-hero">
@@ -221,7 +223,7 @@ export function ForgeAbilitiesStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 1</p>
+      <p className="forge-kicker">The Forge · Step 2</p>
       <h2 className="forge-title">
         Forge Your Ability Scores
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

@@ -13,9 +13,9 @@ import {
   type RaceName,
 } from '../rules/raceKit'
 import { genderOf, raceImages } from '../lib/forgeImages'
-import { ForgeCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker } from './ForgeParts'
+import { ForgeCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
 
-// Etapa 3 do The Forge: as raças em cards ilustrados (mesmo ForgeCard do
+// Etapa 4 do The Forge: as raças em cards ilustrados (mesmo ForgeCard do
 // gênero). Só as raças do sexo escolhido na etapa 2 (Bariaur tem uma por
 // sexo), filtradas pelos cenários da mesa (os mesmos da etapa de classe); a
 // imagem é a do gênero escolhido. Escolher troca a raça desfazendo a anterior
@@ -37,14 +37,12 @@ export function ForgeRaceStep({
   draft,
   mutate,
   settings,
-  onSettings,
   onNext,
   onBack,
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
   settings: string[]
-  onSettings: (next: string[]) => void
   onNext: () => void
   onBack: () => void
 }) {
@@ -75,12 +73,12 @@ export function ForgeRaceStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 3</p>
+      <p className="forge-kicker">The Forge · Step 4</p>
       <h2 className="forge-title">
         Choose Your Kindred
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
       </h2>
-      <p className="forge-sub">Tap the worlds your table plays in to narrow the kindreds — with none tapped, every world is open. A kindred that strains against your scores only warns you.</p>
+      <p className="forge-sub">The kindreds follow the campaign settings you picked at the start. A kindred that strains against your scores only warns you.</p>
       {help && (
         <ForgeHelpNote ruleID="phb_ch02_character_race_tables">
           The race adjusts your ability scores the moment you choose it, and you can change your mind freely — the previous race&rsquo;s adjustments
@@ -92,8 +90,6 @@ export function ForgeRaceStep({
       <div className="rule" aria-hidden="true">
         <span className="rule-gem" />
       </div>
-
-      <ForgeSettingsPicker settings={settings} onChange={onSettings} />
 
       <div className="forge-card-grid">
         {shown.map((race) => {
