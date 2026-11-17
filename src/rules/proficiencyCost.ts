@@ -6,7 +6,8 @@
 // livro; de qualquer outro grupo, um slot a mais. Multiclasse e classe dupla
 // juntam os grupos de todas as classes.
 
-import type { PlayerCharacter, ProficiencyGrant } from '../types/library.ts'
+import { normalize } from '../lib/search.ts'
+import type { PlayerCharacter, ProficiencyEntry, ProficiencyGrant } from '../types/library.ts'
 import { allClasses } from './multiclass.ts'
 import { grantProficiencies, matchRace, raceBonusProficiencies, revokeProficiencies } from './raceKit.ts'
 import { canonicalClass, classGroup } from './rules.ts'
@@ -65,63 +66,110 @@ export function nonweaponCost(p: { mechanics: { groups: string[]; slotsRequired:
   return p.mechanics.slotsRequired + (inCharacterGroups(p.mechanics.groups, characterGroups) ? 0 : 1)
 }
 
+/** O que o kit diz das armas, já em chaves de proficiência (weaponProficiencyKey). */
+export type KitWeaponHints = {
+  required: Set<string>
+  recommended: Set<string>
+  /** Uma lista por escolha obrigatória ("sickle or scythe"): basta uma de cada. */
+  choices: Set<string>[]
+  /** Armas que o kit proíbe (nome em minúsculas; só aviso). */
+  forbidden: Set<string>
+  /** As únicas armas do kit (nome em minúsculas), ou null quando ele não limita. */
+  allowed: Set<string> | null
+}
+
+type KitWeaponsData = {
+  required?: string[] | null
+  requiredChoices?: string[][] | null
+  recommended?: string[] | null
+  forbidden?: string[] | null
+  allowed?: string[] | null
+}
+
+/** A chave de arma de um nome estruturado do kit ("Long bow" → "long bow"); null se o compêndio não tem a arma (Katana, Ninja-to…). */
+export function kitWeaponKey(name: string, weaponKeys: string[]): string | null {
+  const key = name.trim().toLowerCase()
+  return key !== '' && weaponKeys.includes(key) ? key : null
+}
+
 /**
- * Armas que o kit exige e recomenda, lidas do texto do kit ("* Required:
- * Lance. * Recommended: Spear, long bow…", "Recommended—staff."). Devolve as
- * chaves de proficiência (weaponProficiencyKey) citadas em cada parte; texto
- * sem essas palavras (só um número de slots, por exemplo) não marca nada.
+ * Armas que o kit exige e recomenda. Usa as listas estruturadas do kit
+ * (`mechanics.weapons`: required, requiredChoices, recommended, forbidden, allowed)
+ * quando ele tem required, requiredChoices ou recommended; senão lê o texto do kit
+ * ("* Required: Lance. * Recommended: Spear, long bow…", "Recommended—staff.").
+ * Devolve as chaves de proficiência (weaponProficiencyKey); nome fora do compêndio
+ * (Katana…) não vira chave, e texto sem essas palavras (só um número de slots) não marca nada.
  */
-export function kitWeaponHints(text: string | null | undefined, weaponKeys: string[]): { required: Set<string>; recommended: Set<string> } {
-  const empty = { required: new Set<string>(), recommended: new Set<string>() }
+export function kitWeaponHints(text: string | null | undefined, weaponKeys: string[], structured?: KitWeaponsData | null): KitWeaponHints {
+  const lower = (names: string[] | null | undefined) => new Set((names ?? []).map((n) => n.trim().toLowerCase()).filter((n) => n !== ''))
+  const keys = (names: string[] | null | undefined) => new Set((names ?? []).flatMap((n) => kitWeaponKey(n, weaponKeys) ?? []))
+  const rules = {
+    forbidden: lower(structured?.forbidden),
+    allowed: (structured?.allowed ?? []).length > 0 ? lower(structured?.allowed) : null,
+  }
+  const hasStructured = !!structured && [structured.required, structured.requiredChoices, structured.recommended].some((l) => (l ?? []).length > 0)
+  if (hasStructured) {
+    return {
+      required: keys(structured.required),
+      recommended: keys(structured.recommended),
+      choices: (structured.requiredChoices ?? []).map(keys).filter((g) => g.size > 0),
+      ...rules,
+    }
+  }
+  const empty = { required: new Set<string>(), recommended: new Set<string>(), choices: [], ...rules }
   if (!text) return empty
-  const lower = text.toLowerCase()
-  const recAt = lower.search(/recommended/)
-  const reqAt = lower.search(/required/)
-  const requiredPart = reqAt >= 0 ? lower.slice(reqAt, recAt > reqAt ? recAt : undefined) : ''
-  const recommendedPart = recAt >= 0 ? lower.slice(recAt, reqAt > recAt ? reqAt : undefined) : ''
+  const lowerText = text.toLowerCase()
+  const recAt = lowerText.search(/recommended/)
+  const reqAt = lowerText.search(/required/)
+  const requiredPart = reqAt >= 0 ? lowerText.slice(reqAt, recAt > reqAt ? recAt : undefined) : ''
+  const recommendedPart = recAt >= 0 ? lowerText.slice(recAt, reqAt > recAt ? reqAt : undefined) : ''
   const cited = (part: string) =>
     new Set(weaponKeys.filter((key) => key !== '' && new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?\\b`).test(part)))
-  return { required: cited(requiredPart), recommended: cited(recommendedPart) }
+  return { ...empty, required: cited(requiredPart), recommended: cited(recommendedPart) }
 }
 
 type CompendiumProficiency = { id: string; name: string; mechanics?: { slotsRequired?: number } }
 
-/**
- * Proficiências bônus do kit lidas do texto ("Bonus Proficiency: Endurance."),
- * para os kits em que o thac0berry-data ainda não preencheu `proficiencies.bonus`.
- * Só nomes do compêndio; "X or Y" fica de fora (a escolha é do jogador).
- */
-export function kitBonusFromText(text: string | null | undefined, compendium: Pick<CompendiumProficiency, 'name'>[]): string[] {
-  if (!text) return []
-  const start = /bonus(?:es)?(?: (?:nonweapon )?proficienc(?:y|ies))?\s*[:—–-]+/i.exec(text)
-  if (!start) return []
-  const rest = text.slice(start.index + start[0].length)
-  const end = rest.search(/\.(\s|$)|\*|recommended|required|;/i)
-  let part = ` ${(end >= 0 ? rest.slice(0, end) : rest).toLowerCase().replace(/\s*\(\s*/g, ', ').replace(/\s*\)/g, ' ').replace(/\d+/g, '')} `
-  const names = [...compendium].sort((a, b) => b.name.length - a.name.length)
-  const found: string[] = []
-  for (const p of names) {
-    const escaped = p.name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/,\s*/g, ',\\s*')
-    const match = new RegExp(`(^|[^a-z])(${escaped})s?(?=[^a-z]|$)`).exec(part)
-    if (!match) continue
-    const at = match.index + match[1].length
-    const before = part.slice(0, at)
-    const after = part.slice(at + match[2].length)
-    // apaga o trecho para um nome curto ("Riding") não casar dentro de um longo
-    part = before + ' '.repeat(match[2].length) + after
-    if (/\bor\s*$/.test(before) || /^s?\s*,?\s*or\b/.test(after)) continue
-    found.push(p.name)
-  }
-  return found
+/** As proficiências bônus (grátis) do kit: só a lista estruturada `proficiencies.bonus`. */
+export function kitBonusProficiencies(kit: { mechanics: { proficiencies?: { bonus?: string[] | null } | null } } | null | undefined): string[] {
+  return kit?.mechanics.proficiencies?.bonus ?? []
 }
 
-type KitBonusSource = { mechanics: { proficiencies?: { bonus?: string[] | null } | null }; features: { nonweaponProficiencies?: string | null } }
+type KitChoiceSource = { name: string; mechanics: { proficiencies?: { bonus?: string[] | null; bonusChoices?: string[][] | null } | null } }
+type KitChoiceCharacter = Pick<PlayerCharacter, 'proficiencies' | 'kit'>
 
-/** As bônus do kit: a lista estruturada ou, sem ela, o texto do livro. */
-export function kitBonusProficiencies(kit: KitBonusSource | null | undefined, compendium: Pick<CompendiumProficiency, 'name'>[]): string[] {
-  if (!kit) return []
-  const listed = kit.mechanics.proficiencies?.bonus ?? []
-  return listed.length > 0 ? listed : kitBonusFromText(kit.features.nonweaponProficiencies, compendium)
+/** As listas de escolha grátis do kit ("Hunting or Fishing"): de cada uma o jogador ganha uma. */
+export function kitBonusChoiceGroups(kit: KitChoiceSource | null | undefined): string[][] {
+  return (kit?.mechanics.proficiencies?.bonusChoices ?? []).filter((g) => g.length > 0)
+}
+
+const grantedByKit = (e: ProficiencyEntry, kit: { name: string }) => e.grantedBy?.kind === 'kit' && e.grantedBy.name === kit.name
+const sameName = (a: string | null | undefined, b: string) => normalize(a ?? '') === normalize(b)
+
+/** A opção já escolhida de um grupo: a proficiência que o kit deu e está na lista (null = grupo sem escolha). */
+export function chosenKitBonus(c: KitChoiceCharacter, kit: KitChoiceSource, group: string[]): string | null {
+  const entry = (c.proficiencies ?? []).find((e) => grantedByKit(e, kit) && group.some((n) => sameName(e.name, n)))
+  return entry ? (group.find((n) => sameName(entry.name, n)) ?? null) : null
+}
+
+/** Os grupos de escolha do kit que o personagem ainda não resolveu. */
+export function unresolvedKitBonusChoices(c: KitChoiceCharacter, kit: KitChoiceSource | null | undefined): string[][] {
+  return kit ? kitBonusChoiceGroups(kit).filter((g) => chosenKitBonus(c, kit, g) === null) : []
+}
+
+/**
+ * Escolhe (ou troca) a opção grátis de um grupo: a anterior sai da ficha e a nova
+ * entra como bônus do kit, com 0 slots. Se o jogador já tinha a nova comprada, ela
+ * vira a bônus (devolve os slots). `choice` null só desfaz a escolha.
+ */
+export function setKitBonusChoice(c: Pick<PlayerCharacter, 'proficiencies'>, kit: KitChoiceSource, group: string[], choice: string | null, compendium: CompendiumProficiency[]) {
+  const fixed = kit.mechanics.proficiencies?.bonus ?? []
+  const entries = (c.proficiencies ?? []).filter((e) => !(grantedByKit(e, kit) && group.some((n) => sameName(e.name, n)) && !fixed.some((n) => sameName(e.name, n))))
+  c.proficiencies = entries
+  if (!choice) return
+  const bought = entries.find((e) => !e.grantedBy && sameName(e.name, choice))
+  if (bought) c.proficiencies = entries.map((e) => (e === bought ? { ...e, slots: 0, grantedBy: { kind: 'kit' as const, name: kit.name } } : e))
+  else grantProficiencies(c, { kind: 'kit', name: kit.name }, [choice], compendium)
 }
 
 /**

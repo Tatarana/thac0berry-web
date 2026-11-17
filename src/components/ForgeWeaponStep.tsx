@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formattedRange, type Weapon } from '../data/gear'
 import { loadAllKits, type Kit } from '../data/kits'
 import { loadData } from '../data/load'
 import { forgeImage } from '../lib/forgeImages'
 import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine } from '../rules/classGear'
 import { weaponProficiencySlots } from '../rules/multiclass'
+import { kitWeaponWarnings } from '../rules/kitRequirements'
 import { kitWeaponHints } from '../rules/proficiencyCost'
 import { weaponProficiencyKey, weaponSlotsSpent } from '../rules/rules'
 import { canSpecializeWeapon, kitSpecialization, kitSpecializationWarning, multiClassSpecializationNote, specializationRule } from '../rules/specialization'
@@ -75,17 +76,30 @@ export function ForgeWeaponStep({
   const [search, setSearch] = useState('')
   const [weapons, setWeapons] = useState<Weapon[] | null>(null)
   const [kit, setKit] = useState<Kit | null>(null)
+  // As armas exigidas pelo kit entram uma vez só por kit; se o jogador tirar, não brigamos com ele.
+  const seededFor = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     void Promise.all([loadData<Weapon[]>('weapons.json'), loadAllKits()]).then(([arms, kits]) => {
       if (cancelled) return
       setWeapons(arms)
-      setKit(kits.find((k) => k.name === draft.kit) ?? null)
+      const chosen = kits.find((k) => k.name === draft.kit) ?? null
+      setKit(chosen)
+      if (!chosen || seededFor.current === chosen.name) return
+      seededFor.current = chosen.name
+      const groups = groupWeapons(arms)
+      const required = kitWeaponHints(chosen.features.weaponProficiencies, groups.map((g) => g.key), chosen.mechanics.weapons).required
+      // Só ao entrar na etapa com a lista de armas ainda vazia.
+      mutate((c) => {
+        if (c.weapons.length > 0 || required.size === 0) return
+        c.weapons = groups.filter((g) => required.has(g.key)).flatMap((g) => g.variants.map((w) => weaponFromCompendium({ ...w, formattedRange: formattedRange(w) })))
+      })
     })
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.kit])
 
   // Slots do kit, quando ele muda a Tabela 34 (classe única).
@@ -99,15 +113,15 @@ export function ForgeWeaponStep({
   const specializations = new Set(draft.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name))).size
 
   const weaponGroups = groupWeapons(weapons ?? [])
-  const hints = kitWeaponHints(kit?.features.weaponProficiencies, weaponGroups.map((g) => g.key))
+  const hints = kitWeaponHints(kit?.features.weaponProficiencies, weaponGroups.map((g) => g.key), kit?.mechanics.weapons)
   // O que o texto do kit diz sobre especializar: marca a arma e avisa (nunca bloqueia).
-  const kitSpec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], weaponGroups.map((g) => g.key))
+  const kitSpec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], weaponGroups.map((g) => g.key), kit?.mechanics.weapons?.specialization)
   const specializedKeys = [...new Set(draft.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name)))]
   const kitSpecWarning = kitSpecializationWarning(draft.kit, kitSpec, specializedKeys, (k) => weaponGroups.find((g) => g.key === k)?.label ?? k)
   // A regra da classe não proíbe: o que foge dela vem depois, apagado e com selo.
   const gear = classGear(draft, {
     specialtyPriest: isSpecialtyKit(kit?.classEligibility.allowedClasses),
-    kitWeapons: new Set([...hints.required, ...hints.recommended]),
+    kitWeapons: new Set([...hints.required, ...hints.recommended, ...hints.choices.flatMap((g) => [...g])]),
   })
   const fits = (g: WeaponGroup) => gear.weaponFits({ name: g.label, type: g.type })
   const groupIDs = (g: WeaponGroup) => new Set(g.variants.map((v) => v.id))
@@ -142,6 +156,14 @@ export function ForgeWeaponStep({
   const fitCount = (section: (typeof weaponSections)[number]) => weaponGroups.filter((g) => section.test(g) && fits(g)).length
   const sections = weaponGroups.every(fits) ? weaponSections : [...weaponSections].sort((a, b) => fitCount(b) - fitCount(a))
 
+  const kitWarnings = kitWeaponWarnings(
+    draft.kit,
+    kit?.mechanics.weapons,
+    [...chosen],
+    weaponGroups.map((g) => g.key),
+  )
+  const kitChoiceKeys = new Set(hints.choices.flatMap((g) => [...g]))
+
   // Back / Next no topo e no fim da etapa (o mesmo rodapé).
   const nav = { onBack, onNext, nextLabel: 'Next: Nonweapon Proficiencies →', ready: true }
 
@@ -175,6 +197,11 @@ export function ForgeWeaponStep({
       {specializations > 1 && <p className="forge-warn-line">! Only one weapon specialization is allowed at character creation (PHB, Chapter 5).</p>}
       {multiClassNote && <p className="forge-warn-line">! {multiClassSpecializationNote}</p>}
       {kitSpecWarning && <p className="forge-warn-line">! {kitSpecWarning}</p>}
+      {kitWarnings.map((line) => (
+        <p key={line} className="forge-warn-line">
+          ! {line}
+        </p>
+      ))}
       {outside.length > 0 && <p className="forge-warn-line">{outsideRuleLine(gear, outside)}</p>}
       {gear.weaponNotes.map((note) => (
         <p key={note} className="forge-class-law">
@@ -233,7 +260,8 @@ export function ForgeWeaponStep({
                       {g.missile && g.type && <span className="adj-pill">{g.type}</span>}
                       {off && <span className="adj-pill adj-down">Not for {gear.who}</span>}
                       {kitSpec.weapons.has(g.key) && canSpecialize(g.label) && <span className="adj-pill adj-up">kit: specialize</span>}
-                      {hints.required.has(g.key) && <span className="adj-pill adj-down">kit requires</span>}
+                      {(hints.required.has(g.key) || kitChoiceKeys.has(g.key)) && <span className="adj-pill adj-down">kit requires</span>}
+                      {(hints.forbidden.has(g.key) || (picked && hints.allowed !== null && !hints.allowed.has(g.key))) && <span className="adj-pill adj-down">kit forbids</span>}
                       {hints.recommended.has(g.key) && <span className="adj-pill adj-up">kit suggests</span>}
                     </span>
                   </button>

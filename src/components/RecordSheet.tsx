@@ -28,7 +28,9 @@ import { classLabel, classLevels, dualClassRestriction, dualProficiencyNote, for
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
 import { gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
-import { kitBonusProficiencies } from '../rules/proficiencyCost'
+import { kitBonusProficiencies, setKitBonusChoice, unresolvedKitBonusChoices } from '../rules/proficiencyCost'
+import { kitProficiencyWarnings, kitWeaponWarnings } from '../rules/kitRequirements'
+import type { Kit } from '../data/kits'
 import { canSpecializeWeapon, kitSpecialization, kitSpecializationWarning, multiClassSpecializationNote, specializationRule } from '../rules/specialization'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
@@ -403,8 +405,10 @@ function RecordHeader({
               campaignSettings={campaignSettings}
               onChoose={(kit) => {
                 setPickingKit(false)
+                // Mesmo kit de novo: nada muda (regravar tiraria as escolhas grátis já feitas).
+                if ((kit?.name ?? null) === (c.kit ?? null)) return
                 // A1: as bônus do kit anterior saem e as do novo entram (casadas com o compêndio, 0 slots).
-                void regrant(kitGrant(c.kit), kitGrant(kit?.name), (compendium) => kitBonusProficiencies(kit, compendium), (x) => void (x.kit = kit?.name ?? null))
+                void regrant(kitGrant(c.kit), kitGrant(kit?.name), kitBonusProficiencies(kit), (x) => void (x.kit = kit?.name ?? null))
               }}
               onClose={() => setPickingKit(false)}
             />
@@ -1322,6 +1326,21 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const anySpecialized = c.weapons.some((w) => w.isSpecialized)
   // Texto do kit sobre especializar: só avisa, nunca bloqueia.
   const [kitSpecWarning, setKitSpecWarning] = useState<string | null>(null)
+  // Exigências do kit (armas exigidas, proibidas, únicas permitidas): só avisos.
+  const [kitLines, setKitLines] = useState<string[]>([])
+  useEffect(() => {
+    let cancelled = false
+    if (!c.kit) return
+    void Promise.all([loadAllKits(), loadWeapons()]).then(([kits, arms]) => {
+      if (cancelled) return
+      const rules = kits.find((k) => k.name === c.kit)?.mechanics.weapons
+      const owned = [...new Set(c.weapons.map((w) => weaponProficiencyKey(w.name)).filter((k) => k !== ''))]
+      setKitLines(kitWeaponWarnings(c.kit, rules, owned, arms.map((w) => weaponProficiencyKey(w.name))))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [c.kit, c.weapons])
   useEffect(() => {
     let cancelled = false
     const specialized = [...new Set(c.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name)))]
@@ -1330,7 +1349,7 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
       if (cancelled) return
       const kit = kits.find((k) => k.name === c.kit)
       const labels = new Map(arms.map((w) => [weaponProficiencyKey(w.name), w.name.replace(/\s*\([^)]*\)\s*$/, '')]))
-      const spec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], [...labels.keys()])
+      const spec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], [...labels.keys()], kit?.mechanics.weapons?.specialization)
       setKitSpecWarning(kitSpecializationWarning(c.kit, spec, specialized, (k) => labels.get(k) ?? k))
     })
     return () => {
@@ -1415,6 +1434,11 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         </table>
       </div>
       {rule.multiClassNote && (edit || anySpecialized) && <p className="rec-soft mc-restriction">{multiClassSpecializationNote}</p>}
+      {c.kit && kitLines.map((line) => (
+        <p key={line} className="rec-soft rec-red">
+          {line}
+        </p>
+      ))}
       {anySpecialized && kitSpecWarning && <p className="rec-soft rec-red">{kitSpecWarning}</p>}
       {edit && (
         <button className="paper-link add-line" onClick={() => setPicking(true)}>
@@ -1461,6 +1485,22 @@ function NonweaponSlotsLine({ c }: { c: PlayerCharacter }) {
 
 function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const [picking, setPicking] = useState(false)
+  // O kit: avisos (exigidas, proibidas) e as escolhas grátis ainda sem resposta.
+  const [kit, setKit] = useState<Kit | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    if (!c.kit) return
+    void loadAllKits().then((kits) => {
+      if (!cancelled) setKit(kits.find((k) => k.name === c.kit) ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [c.kit])
+  const kitLines = c.kit ? kitProficiencyWarnings(c.kit, kit?.name === c.kit ? kit.mechanics.proficiencies : null, (c.proficiencies ?? []).map((p) => p.name ?? '')) : []
+  const openChoices = c.kit && kit && c.kit === kit.name ? unresolvedKitBonusChoices(c, kit) : []
+  const chooseBonus = (group: string[], name: string) =>
+    void loadProficiencies().then((compendium) => kit && edit?.((x) => setKitBonusChoice(x, kit, group, name, compendium)))
   // Pela posição na lista gravada: no schema, o id da proficiência é opcional.
   const set = (index: number, patch: { slots?: number; target?: string | null }) =>
     edit?.((x) => void (x.proficiencies = (x.proficiencies ?? []).map((p, i) => (i === index ? { ...p, ...patch } : p))))
@@ -1532,6 +1572,25 @@ function Proficiencies({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
         </button>
       )}
       <NonweaponSlotsLine c={c} />
+      {kitLines.map((line) => (
+        <p key={line} className="rec-soft rec-red">
+          {line}
+        </p>
+      ))}
+      {edit &&
+        openChoices.map((group) => (
+          <p key={group.join('|')} className="rec-soft">
+            Kit bonus — choose one (free):{' '}
+            {group.map((name, i) => (
+              <span key={name}>
+                {i > 0 && ' / '}
+                <button className="paper-link" onClick={() => chooseBonus(group, name)}>
+                  {name}
+                </button>
+              </span>
+            ))}
+          </p>
+        ))}
       {picking && edit && (
         <CompendiumPicker<Proficiency>
           title="Add a proficiency"

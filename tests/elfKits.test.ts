@@ -82,7 +82,7 @@ test('kits reclassificados: livro e grupo reais', () => {
   assert.equal(kit('Rogues of Cormyr').setting, 'Forgotten Realms')
   assert.equal(kit('Savage Hunter').setting, 'Dark Sun')
   assert.equal(kit('Hinterland Bandit').setting, 'Planescape')
-  assert.deepEqual(kit('Windrider').mechanics.proficiencies?.bonus, ['riding, airborne', 'animal handling', 'animal training'])
+  assert.deepEqual(kit('Windrider').mechanics.proficiencies?.bonus, ['Riding, Airborne', 'Animal Handling', 'Animal Training'])
 })
 
 test('regras dos 4 livros novos: contagens e ids únicos', () => {
