@@ -53,7 +53,8 @@ export function KitDetail({ kit, onClose }: { kit: Kit; onClose: () => void }) {
         <Field label="Ability Requirements" value={abilities} />
         <Field label="Alignment" value={mechanics.requirements.alignments.join(', ')} />
         <Field label="Races" value={mechanics.requirements.races} />
-        {kit.classEligibility.classGroup === 'Priest' && <Field label="Turn Undead" value={turnUndead} />}
+        {(kit.classEligibility.classGroup === 'Priest' || mechanics.turnUndead.capable) && <Field label="Turn Undead" value={turnUndead} />}
+        {kit.classEligibility.combination && <Field label="Multi-class" value={kit.classEligibility.combination.join('/')} />}
         <Field label="Weapon Slots" value={slotsText} />
         <Field label="Source" value={kit.sourceBook} />
       </div>

@@ -468,7 +468,8 @@ export function kitAllowsRace(racesText: string | null | undefined, race: string
 
 interface KitInfo {
   name: string
-  classEligibility: { classGroup: string; subclass?: string | null }
+  sourceBook?: string | null
+  classEligibility: { classGroup: string; subclass?: string | null; combination?: string[] | null }
   mechanics?: { requirements?: { races?: string | null } | null } | null
   /** Cenário do livro de origem (ex. "Ravenloft" nos kits de Denizens of Dread); null = nenhum. */
   setting?: string | null
@@ -484,10 +485,21 @@ interface KitInfo {
  */
 export function kitWarnings(kit: KitInfo, c: WithClasses & Pick<PlayerCharacter, 'race'>, campaignSettings?: string[] | null): string[] {
   const warnings: string[] = []
-  if (isMultiClass(c)) {
+  // A regra "só classe única" é dos Complete Handbooks (CFH, CTH); kits de outros livros (Elves of Athas,
+  // Age of Heroes, Rogues of the Realms…) não a herdam.
+  const handbookKit = !kit.sourceBook || kit.sourceBook.startsWith('The Complete')
+  if (isMultiClass(c) && handbookKit) {
     if (kit.classEligibility.classGroup === 'Warrior') warnings.push('Only single-class warriors can take a warrior kit (CFH, Chapter 2).')
     if (kit.classEligibility.classGroup === 'Rogue' && kit.classEligibility.subclass === 'Thief') {
       warnings.push('Only single-class thieves can take a thief kit (CTH, Chapter 3).')
+    }
+  }
+  // Kit multiclasse (CBE cap. 10): vale a quem tem as classes juntas; só aviso, como os demais.
+  const combination = kit.classEligibility.combination
+  if (combination && combination.length > 1) {
+    const has = new Set(classLevels(c).map((k) => canonicalClass(k.characterClass)))
+    if (!combination.every((cls) => has.has(canonicalClass(cls)))) {
+      warnings.push(`This is a ${combination.join('/')} kit${kit.sourceBook ? ` (${kit.sourceBook})` : ''}; this character is not that multi-class.`)
     }
   }
   const races = kit.mechanics?.requirements?.races

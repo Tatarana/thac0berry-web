@@ -5,12 +5,12 @@
 import { markdownTables } from '../rules/tableIndex'
 import type { RuleTable } from './rules'
 
-export type ClassGroup ='Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist'
+export type ClassGroup = 'Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist' | 'Demihuman'
 
 export interface Kit {
   id: string
   name: string
-  classEligibility: { classGroup: string; subclass: string; allowedClasses: string[] }
+  classEligibility: { classGroup: string; subclass: string; allowedClasses: string[]; combination?: string[] }
   sourceBook: string
   features: {
     role?: string | null
@@ -45,6 +45,8 @@ export const subclassOrder: Record<ClassGroup, string[]> = {
   Rogue: ['Thief', 'Bard', 'Ninja'],
   // Kits de Psionicist (2026-10-06): The Will and the Way, Dragon Magazine etc.
   Psionicist: ['Psionicist'],
+  // Kits de raça (Complete Book of Elves, 2026-11-16): o subgrupo é a raça; a classe vem de allowedClasses.
+  Demihuman: ['Elf'],
 }
 
 const cache = new Map<ClassGroup, Promise<Kit[]>>()
@@ -65,7 +67,7 @@ let allKits: Promise<Kit[]> | null = null
 
 /** Todos os kits, de todo grupo (RaceKitPickers e o aviso de cenário ao mudar de campanha). */
 export function loadAllKits(): Promise<Kit[]> {
-  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
+  allKits ??= Promise.all((['Priest', 'Wizard', 'Warrior', 'Rogue', 'Psionicist', 'Demihuman'] as const).map((g) => loadKits(g))).then((groups) => groups.flat())
   return allKits
 }
 
