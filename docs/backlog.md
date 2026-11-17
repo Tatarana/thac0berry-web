@@ -26,6 +26,15 @@ Book e Age of Heroes. Decisões do usuário: kit multiclasse aparece a quem tem 
 guerreiro/ladrão só classe única" vale só para kits dos Complete Handbooks. Testes: `tests/elfKits.test.ts`.
 Compêndio: página `/compendium/kits/demihuman`; resumos de kit sem os `*` na tela.
 
+### Kits da Dragon Magazine (v0.140.0)
+
+119 kits (`scripts/add_dragon_magazine_kits.py` no `thac0berry-data`), incluindo o Spellarcher (Demihuman/Half-Elf,
+Fighter/Mage). Os 12 do artigo "The Complete Half-Elf" vão para Demihuman/Half-Elf; os 6 anões e 2 avariel também.
+Classe lida da página, não do `classGroup` minerado. 19 kits de fora (Masque of the Red Death, dragões, 9 ambíguos;
+ver o README do `thac0berry-data`). `mechanics` quase vazio (requisitos e proficiências só no texto). Teste:
+`tests/elfKits.test.ts` (inclui "todo kit aparece no compêndio"). Pendências: decidir os 9 ambíguos; nome duplicado
+"Forester" (CFH).
+
 Pendências:
 - Ícone do tile "Demihuman Kits" do Compêndio (aparece ✦ até o usuário mandar a arte).
 - **Raças em dados** (próxima entrega, aprovada): `races.json` no `thac0berry-data` (157 raças já
