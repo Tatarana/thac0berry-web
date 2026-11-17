@@ -15,7 +15,7 @@ import { abilityDetail, canonicalClass, hitDieType, levelForExperience } from '.
 import type { AbilityScores, PlayerCharacter } from '../types/library'
 import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
 
-// Etapa 5 do The Forge: nível ou XP inicial. Classe única: um deriva o outro
+// Etapa 7 do The Forge: nível ou XP inicial. Classe única: um deriva o outro
 // (setLevel / levelForExperience). Multiclasse (PHB cap. 3): o XP total é
 // dividido igualmente e cada classe sobe pela tabela dela (levelsForExperience);
 // por nível, cada classe tem o seu e o XP vira o mínimo que cobre todos. Pontos
@@ -138,7 +138,7 @@ export function ForgeStartStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 6</p>
+      <p className="forge-kicker">The Forge · Step 7</p>
       <h2 className="forge-title">
         Where Does Your Story Begin?
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

@@ -7,7 +7,7 @@ import { classCampaignSetting } from '../rules/ravenloft'
 import type { PlayerCharacter } from '../types/library'
 import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeImage } from './ForgeParts'
 
-// Etapa 4 do The Forge, "Weigh Your Soul" (protótipo "Step 4 · Alignment" no
+// Etapa 5 do The Forge, "Weigh Your Soul" (protótipo "Step 4 · Alignment" no
 // canvas): cinco dilemas movem o retrato do herói por um tabuleiro 3×3 (Lei →
 // Caos, Bem → Mal); no fim o Forge diz onde ele ficou, e o jogador aceita ou
 // toca outra casa — ou pula as perguntas. Regras em src/rules/alignment.ts;
@@ -179,7 +179,7 @@ export function ForgeAlignmentStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 4</p>
+      <p className="forge-kicker">The Forge · Step 5</p>
       <h2 className="forge-title">
         Weigh Your Soul
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

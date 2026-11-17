@@ -23,11 +23,11 @@ import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../ru
 import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
 import { classCardImages, genderOf, type Gender } from '../lib/forgeImages'
-import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSettingsPicker, ForgeThumbButton } from './ForgeParts'
+import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeThumbButton } from './ForgeParts'
 import { KitApplicableFilter } from './KitApplicableFilter'
 import { KitDetail } from './KitDetail'
 
-// Etapa 5 do The Forge: a classe em cards ilustrados (o mesmo ForgeCard das
+// Etapa 6 do The Forge: a classe em cards ilustrados (o mesmo ForgeCard das
 // etapas 2 e 3), com o limite de nível da raça em cada card; depois o ramo de
 // multiclasse (semi-humano, também com as ilustrações) ou classe dupla
 // (humano) e o kit. Classes e kits seguem os cenários da mesa escolhidos na
@@ -42,7 +42,6 @@ export function ForgeClassStep({
   draft,
   mutate,
   settings,
-  onSettings,
   chosen,
   onChoose,
   onNext,
@@ -51,7 +50,6 @@ export function ForgeClassStep({
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
   settings: string[]
-  onSettings: (next: string[]) => void
   /** A classe já foi escolhida nesta criação (a ficha em branco nasce como Fighter). */
   chosen: boolean
   onChoose: () => void
@@ -82,7 +80,7 @@ export function ForgeClassStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 5</p>
+      <p className="forge-kicker">The Forge · Step 6</p>
       <h2 className="forge-title">
         Choose Your Calling
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
@@ -99,8 +97,6 @@ export function ForgeClassStep({
       <div className="rule" aria-hidden="true">
         <span className="rule-gem" />
       </div>
-
-      <ForgeSettingsPicker settings={settings} onChange={onSettings} />
 
       <div className="forge-card-grid">
         {shownClasses.map((cls) => {

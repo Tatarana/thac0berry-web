@@ -18,7 +18,7 @@ import type { PlayerCharacter } from '../types/library'
 import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSlotSockets } from './ForgeParts'
 import { ProficiencyDetail } from './ProficiencyDetail'
 
-// Etapa 7 do The Forge: proficiências nonweapon. Slots pela classe e nível
+// Etapa 9 do The Forge: proficiências nonweapon. Slots pela classe e nível
 // (Tabela 34; Inteligência soma). Custa os slots do livro nos grupos da classe
 // ou em General e um a mais fora deles (Tabela 37, proficiencyCost.ts). As
 // bônus de raça e kit entram de graça (syncBonusProficiencies). Gastar além
@@ -131,7 +131,7 @@ export function ForgeSkillStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 8</p>
+      <p className="forge-kicker">The Forge · Step 9</p>
       <h2 className="forge-title">
         Hone Your Skills
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

@@ -4,7 +4,7 @@ import type { PlayerCharacter } from '../types/library'
 import { forgeImage, genderOf, type Gender } from '../lib/forgeImages'
 import { ForgeCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
 
-// Etapa 2 do The Forge, fiel ao protótipo aprovado (NameGender.dc.html):
+// Etapa 3 do The Forge, fiel ao protótipo aprovado (NameGender.dc.html):
 // dois cards ilustrados para o gênero (AD&D 2e: masculino ou feminino; grava
 // "Male"/"Female" em `sex`) e o nome entalhado numa faixa, com um dado que
 // sugere nomes. Vem antes de raça/classe porque alguns kits são de um gênero
@@ -58,7 +58,7 @@ export function ForgeIdentityStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 2</p>
+      <p className="forge-kicker">The Forge · Step 3</p>
       <h2 className="forge-title">
         Who Steps Out of the Forge?
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />

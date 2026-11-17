@@ -12,7 +12,7 @@ import { toggleSpecialization, weaponFromCompendium } from '../rules/sheetEdits'
 import type { PlayerCharacter } from '../types/library'
 import { ForgeCarousel, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSlotSockets } from './ForgeParts'
 
-// Etapa 6 do The Forge: proficiências de arma. Slots pela classe e nível
+// Etapa 8 do The Forge: proficiências de arma. Slots pela classe e nível
 // (Tabela 34; multiclasse e classe dupla como na ficha; o kit pode trocar a
 // tabela). Uma arma é uma proficiência só, qualquer que seja a munição
 // (weaponSlotsSpent). Gastar além dos slots só avisa — o mestre decide. A arma
@@ -148,7 +148,7 @@ export function ForgeWeaponStep({
       <ForgeEmbers />
       <ForgeFooter {...nav} top />
 
-      <p className="forge-kicker">The Forge · Step 7</p>
+      <p className="forge-kicker">The Forge · Step 8</p>
       <h2 className="forge-title">
         Arm Yourself
         <ForgeHelpButton open={help} onToggle={() => setHelp(!help)} />
