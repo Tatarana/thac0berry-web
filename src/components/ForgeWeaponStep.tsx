@@ -4,10 +4,10 @@ import { loadAllKits, type Kit } from '../data/kits'
 import { loadData } from '../data/load'
 import { forgeImage } from '../lib/forgeImages'
 import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine } from '../rules/classGear'
-import { isMultiClass, weaponProficiencySlots } from '../rules/multiclass'
+import { weaponProficiencySlots } from '../rules/multiclass'
 import { kitWeaponHints } from '../rules/proficiencyCost'
-import { gypsyCanSpecialize } from '../rules/ravenloft'
-import { canonicalClass, weaponProficiencyKey, weaponSlotsSpent } from '../rules/rules'
+import { weaponProficiencyKey, weaponSlotsSpent } from '../rules/rules'
+import { canSpecializeWeapon, kitSpecialization, kitSpecializationWarning, multiClassSpecializationNote, specializationRule } from '../rules/specialization'
 import { toggleSpecialization, weaponFromCompendium } from '../rules/sheetEdits'
 import type { PlayerCharacter } from '../types/library'
 import { ForgeCarousel, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSlotSockets } from './ForgeParts'
@@ -88,20 +88,22 @@ export function ForgeWeaponStep({
     }
   }, [draft.kit])
 
-  const multi = isMultiClass(draft)
   // Slots do kit, quando ele muda a Tabela 34 (classe única).
   const weaponTotal = weaponProficiencySlots(draft, kit?.mechanics.weaponSlots)
   const weaponUsed = weaponSlotsSpent(draft.weapons)
   const query = search.trim().toLowerCase()
 
-  // Especialização: só guerreiro de classe única; Gypsy só na faca (como na ficha).
-  const isFighter = canonicalClass(draft.characterClass) === 'Fighter' && !multi
-  const isGypsy = canonicalClass(draft.characterClass) === 'Gypsy' && !multi
-  const canSpecialize = (name: string) => isFighter || (isGypsy && gypsyCanSpecialize(name))
+  // Especialização (regra única, a mesma da ficha): src/rules/specialization.ts.
+  const canSpecialize = (name: string) => canSpecializeWeapon(draft, name)
+  const multiClassNote = specializationRule(draft).multiClassNote
   const specializations = new Set(draft.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name))).size
 
   const weaponGroups = groupWeapons(weapons ?? [])
   const hints = kitWeaponHints(kit?.features.weaponProficiencies, weaponGroups.map((g) => g.key))
+  // O que o texto do kit diz sobre especializar: marca a arma e avisa (nunca bloqueia).
+  const kitSpec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], weaponGroups.map((g) => g.key))
+  const specializedKeys = [...new Set(draft.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name)))]
+  const kitSpecWarning = kitSpecializationWarning(draft.kit, kitSpec, specializedKeys, (k) => weaponGroups.find((g) => g.key === k)?.label ?? k)
   // A regra da classe não proíbe: o que foge dela vem depois, apagado e com selo.
   const gear = classGear(draft, {
     specialtyPriest: isSpecialtyKit(kit?.classEligibility.allowedClasses),
@@ -157,7 +159,7 @@ export function ForgeWeaponStep({
       {help && (
         <ForgeHelpNote ruleID="phb_ch05_proficiencies">
           Your class and level give the weapon slots (PHB Table 34); some kits change them. One slot buys one weapon — a bow with every kind of
-          arrow, a sling with stones and bullets. Single-class fighters may specialize in a weapon for an extra slot (two for a bow). Going over
+          arrow, a sling with stones and bullets. Fighters may specialize in a weapon for an extra slot (two for a bow); multi-class fighters only if the DM or the kit allows it. Going over
           your slots only warns you.
         </ForgeHelpNote>
       )}
@@ -171,6 +173,8 @@ export function ForgeWeaponStep({
       </div>
       {weaponUsed > weaponTotal && <p className="forge-warn-line">! {weaponUsed - weaponTotal} weapon slot(s) over what your class and level give.</p>}
       {specializations > 1 && <p className="forge-warn-line">! Only one weapon specialization is allowed at character creation (PHB, Chapter 5).</p>}
+      {multiClassNote && <p className="forge-warn-line">! {multiClassSpecializationNote}</p>}
+      {kitSpecWarning && <p className="forge-warn-line">! {kitSpecWarning}</p>}
       {outside.length > 0 && <p className="forge-warn-line">{outsideRuleLine(gear, outside)}</p>}
       {gear.weaponNotes.map((note) => (
         <p key={note} className="forge-class-law">
@@ -228,6 +232,7 @@ export function ForgeWeaponStep({
                       {range && <span className="adj-pill">{g.missile ? 'range' : 'thrown'} {range}</span>}
                       {g.missile && g.type && <span className="adj-pill">{g.type}</span>}
                       {off && <span className="adj-pill adj-down">Not for {gear.who}</span>}
+                      {kitSpec.weapons.has(g.key) && canSpecialize(g.label) && <span className="adj-pill adj-up">kit: specialize</span>}
                       {hints.required.has(g.key) && <span className="adj-pill adj-down">kit requires</span>}
                       {hints.recommended.has(g.key) && <span className="adj-pill adj-up">kit suggests</span>}
                     </span>

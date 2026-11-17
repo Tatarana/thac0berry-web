@@ -28,6 +28,7 @@ export interface Kit {
     requirements: { abilities: Record<string, number>; alignments: string[]; races?: string | null }
     turnUndead: { capable: boolean; mode: string; notes: string }
     startingCash?: string | null
+    weapons?: { notes?: string | null } | null
     weaponSlots?: { initial?: number | null; additional?: number | null; nonproficiencyPenalty?: string | null } | null
     proficiencies?: { bonus?: string[] | null; recommended?: string[] | null; notes?: string | null } | null
   }

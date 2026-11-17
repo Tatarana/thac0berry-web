@@ -20,15 +20,16 @@ import {
   undoDualClass,
   type AbilityKey,
 } from '../rules/consequences'
-import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, rearArmorClass, shieldlessArmorClass, thievingSkillsShown, weaponSlotsSpent } from '../rules/rules'
+import { backstabMultiplier, canonicalClass, dexDefenseAdjustment, finalArmorClass, hitDieType, rearArmorClass, shieldlessArmorClass, thievingSkillsShown, weaponProficiencyKey, weaponSlotsSpent } from '../rules/rules'
 import { loadAllKits } from '../data/kits'
 import { armorBoxFromPieces, itemACBonus, itemACParts, parsedRating, type ItemACPart } from '../rules/armorClass'
 import { RuleLink } from './RuleLink'
 import { classLabel, classLevels, dualClassRestriction, dualProficiencyNote, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, weaponProficiencySlots, type ClassChoice, type KitWeaponSlots } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
-import { gypsyCanSpecialize, gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
+import { gypsyLore, ravenloftClasses, ravenloftWarnings, scareChecks } from '../rules/ravenloft'
 import { kitBonusProficiencies } from '../rules/proficiencyCost'
+import { canSpecializeWeapon, kitSpecialization, kitSpecializationWarning, multiClassSpecializationNote, specializationRule } from '../rules/specialization'
 import { loadData } from '../data/load'
 import { formattedRange, type Weapon } from '../data/gear'
 import type { Proficiency } from '../data/proficiencies'
@@ -1315,11 +1316,27 @@ function RowRemove({ label, onClick }: { label: string; onClick: () => void }) {
 
 function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const [picking, setPicking] = useState(false)
-  // Especialização: só guerreiro de classe única (PHB cap. 5; multiclasse não especializa).
-  const isFighter = canonicalClass(c.characterClass) === 'Fighter' && !isMultiClass(c)
-  // Gypsy (Domains of Dread): especializa só na faca (+1/+2, sem ataque extra).
-  const isGypsy = canonicalClass(c.characterClass) === 'Gypsy' && !isMultiClass(c)
-  const canSpecialize = (name: string) => isFighter || (isGypsy && gypsyCanSpecialize(name))
+  // Especialização: regra única em src/rules/specialization.ts (a mesma da Forja).
+  const rule = specializationRule(c)
+  const canSpecialize = (name: string) => canSpecializeWeapon(c, name)
+  const anySpecialized = c.weapons.some((w) => w.isSpecialized)
+  // Texto do kit sobre especializar: só avisa, nunca bloqueia.
+  const [kitSpecWarning, setKitSpecWarning] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    const specialized = [...new Set(c.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name)))]
+    if (!c.kit || specialized.length === 0) return
+    void Promise.all([loadAllKits(), loadWeapons()]).then(([kits, arms]) => {
+      if (cancelled) return
+      const kit = kits.find((k) => k.name === c.kit)
+      const labels = new Map(arms.map((w) => [weaponProficiencyKey(w.name), w.name.replace(/\s*\([^)]*\)\s*$/, '')]))
+      const spec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], [...labels.keys()])
+      setKitSpecWarning(kitSpecializationWarning(c.kit, spec, specialized, (k) => labels.get(k) ?? k))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [c.kit, c.weapons])
   const field = (w: PlayerCharacter['weapons'][number], key: WeaponKey, label: string) =>
     edit ? (
       <InkInput
@@ -1340,7 +1357,7 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           <thead>
             <tr>
               <th className="rec-row-label weapon-col-name">Weapon</th>
-              <th className="weapon-col-spec" title={isGypsy ? 'Weapon specialization (gypsy: knife only)' : 'Weapon specialization (Fighter only)'}>★</th>
+              <th className="weapon-col-spec" title={rule.knifeOnly ? 'Weapon specialization (gypsy: knife only)' : 'Weapon specialization (Fighter only)'}>★</th>
               <th>#AT</th>
               <th>Size</th>
               <th>Type</th>
@@ -1397,6 +1414,8 @@ function Weapons({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
           </tbody>
         </table>
       </div>
+      {rule.multiClassNote && (edit || anySpecialized) && <p className="rec-soft mc-restriction">{multiClassSpecializationNote}</p>}
+      {anySpecialized && kitSpecWarning && <p className="rec-soft rec-red">{kitSpecWarning}</p>}
       {edit && (
         <button className="paper-link add-line" onClick={() => setPicking(true)}>
           + add weapon
