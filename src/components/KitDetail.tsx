@@ -41,6 +41,18 @@ export function KitDetail({ kit, onClose }: { kit: Kit; onClose: () => void }) {
         .join(', ')
     : null
 
+  const nw = mechanics.nonweaponSlots
+  const nwText = nw
+    ? [
+        nw.initial != null ? `${nw.initial} initial` : null,
+        nw.bonus != null ? `${nw.bonus > 0 ? '+' : ''}${nw.bonus} extra` : null,
+        nw.perLevels != null ? `1 per ${nw.perLevels} levels` : null,
+        nw.notes,
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : null
+
   return (
     <PaperModal title={kit.name} subtitle={subtitle} onClose={onClose}>
       {deity && (
@@ -56,6 +68,7 @@ export function KitDetail({ kit, onClose }: { kit: Kit; onClose: () => void }) {
         {(kit.classEligibility.classGroup === 'Priest' || mechanics.turnUndead.capable) && <Field label="Turn Undead" value={turnUndead} />}
         {kit.classEligibility.combination && <Field label="Multi-class" value={kit.classEligibility.combination.join('/')} />}
         <Field label="Weapon Slots" value={slotsText} />
+        <Field label="Nonweapon Slots" value={nwText} />
         <Field label="Source" value={kit.sourceBook} />
       </div>
       <div className="detail-field">

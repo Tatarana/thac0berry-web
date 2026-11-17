@@ -142,10 +142,11 @@ test('armas do kit estruturadas: village druid e skyrider', () => {
   // Sem lista estruturada, o texto ainda vale.
   const text = P.kitWeaponHints('* Required: Lance.', ['lance'], { required: [], recommended: [] })
   assert.deepEqual([...text.required], ['lance'])
-  // Nome fora do compêndio (Katana) não vira chave.
+  // Katana e Daikyu entraram no compêndio (thac0berry-data, armas dos kits); Garrote segue fora e não vira chave.
   const samurai = kitNamed('samurai_fighter')
-  assert.equal(P.kitWeaponHints(null, weaponKeys, samurai.mechanics.weapons).required.size, 0)
-  assert.equal(P.kitWeaponKey('Katana', weaponKeys), null)
+  assert.deepEqual([...P.kitWeaponHints(null, weaponKeys, samurai.mechanics.weapons).required].sort(), ['daikyu', 'katana'])
+  assert.equal(P.kitWeaponKey('Katana', weaponKeys), 'katana')
+  assert.equal(P.kitWeaponKey('Garrote', weaponKeys), null)
   assert.equal(P.kitWeaponKey('Long bow', weaponKeys), 'long bow')
 })
 
@@ -184,10 +185,14 @@ test('avisos de arma: exigida, escolha, proibida e só-permitidas', () => {
   const druid = kitNamed('village_druid')
   assert.deepEqual(kitWeaponWarnings(druid.name, druid.mechanics.weapons, ['quarterstaff'], weaponKeys), ['Village Druid requires one of: Sickle, Scythe.'])
   assert.deepEqual(kitWeaponWarnings(druid.name, druid.mechanics.weapons, ['sickle'], weaponKeys), [])
-  // Katana e Daikyu não estão no compêndio: sem aviso na Forja, mas com aviso se a lista de chaves for omitida.
+  // Samurai: Katana e Daikyu agora no compêndio, então a Forja avisa as duas.
   const samurai = kitNamed('samurai_fighter')
-  assert.deepEqual(kitWeaponWarnings(samurai.name, samurai.mechanics.weapons, [], weaponKeys), [])
-  assert.equal(kitWeaponWarnings(samurai.name, samurai.mechanics.weapons, ['katana']).length, 1)
+  assert.equal(kitWeaponWarnings(samurai.name, samurai.mechanics.weapons, [], weaponKeys).length, 2)
+  assert.equal(kitWeaponWarnings(samurai.name, samurai.mechanics.weapons, ['katana', 'daikyu'], weaponKeys).length, 0)
+  // Arma fora do compêndio: sem aviso com a lista de chaves, aviso sem ela (digitada na ficha).
+  const garrote = { required: ['Garrote'] }
+  assert.deepEqual(kitWeaponWarnings('Test', garrote, [], weaponKeys), [])
+  assert.equal(kitWeaponWarnings('Test', garrote, []).length, 1)
   const rules = { forbidden: ['Dagger or dirk'], allowed: ['Long bow', 'Sling'] }
   assert.deepEqual(kitWeaponWarnings('Test', rules, ['long bow']), [])
   const out = kitWeaponWarnings('Test', rules, ['long bow', 'dagger or dirk'])

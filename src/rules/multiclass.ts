@@ -699,17 +699,40 @@ export function dualProficiencySlots(c: WithClasses, kind: 'weapon' | 'nonweapon
   }, 0)
 }
 
+/** Slots nonweapon do kit (Kit.mechanics.nonweaponSlots), quando o kit muda a Tabela 34. */
+export interface KitNonweaponSlots {
+  /** SUBSTITUI os slots iniciais da classe. */
+  initial?: number | null
+  /** SOMA aos iniciais (pode ser negativo: "três em vez de quatro"). */
+  bonus?: number | null
+  /** Um slot novo a cada N níveis, no lugar do ritmo da classe. */
+  perLevels?: number | null
+  /** Texto do livro com o que os números não dizem (mostrado discretamente). */
+  notes?: string | null
+}
+
 /**
- * Slots de proficiência nonweapon (Tabela 34): classe única, multiclasse
- * (maior inicial, ritmo mais rápido) ou classe dupla (cada classe soma os
- * dela), mais o bônus de Inteligência (Tabela 4, "# of Languages"): no PHB
- * (cap. 5) ele soma slots nonweapon. Até a v0.107 ia para os slots de arma, como
- * no iPad; o iPad ainda faz assim (pendência registrada no TODO.md).
+ * Slots de proficiência nonweapon (Tabela 34): classe única (ou os slots do kit,
+ * quando ele os define), multiclasse (maior inicial, ritmo mais rápido) ou
+ * classe dupla (cada classe soma os dela), mais o bônus de Inteligência
+ * (Tabela 4, "# of Languages"): no PHB (cap. 5) ele soma slots nonweapon. Até a
+ * v0.107 ia para os slots de arma, como no iPad; o iPad ainda faz assim
+ * (pendência registrada no TODO.md). Como nos slots de arma, o kit só vale na
+ * classe única.
  */
-export function nonweaponProficiencySlots(c: WithClasses & { abilities?: Pick<PlayerCharacter['abilities'], 'intelligence'> }): number {
+export function nonweaponProficiencySlots(
+  c: WithClasses & { abilities?: Pick<PlayerCharacter['abilities'], 'intelligence'> },
+  kitSlots?: KitNonweaponSlots | null,
+): number {
   const intBonus = c.abilities ? bonusLanguages(c.abilities.intelligence) : 0
   if (isMultiClass(c)) return combinedProficiencySlots(classLevels(c), 'nonweapon') + intBonus
   if (isDualClass(c)) return dualProficiencySlots(c, 'nonweapon') + intBonus
+  if (kitSlots && (kitSlots.initial != null || kitSlots.bonus != null || kitSlots.perLevels != null)) {
+    const row = proficiencyRow(c.characterClass)
+    const initial = kitSlots.initial ?? num(row?.initialNonweapon) ?? 0
+    const every = kitSlots.perLevels ?? num(row?.levelsNonweapon) ?? 0
+    return Math.max(0, initial + (kitSlots.bonus ?? 0) + (every > 0 ? Math.trunc(c.level / every) : 0) + intBonus)
+  }
   return combinedProficiencySlots([{ characterClass: c.characterClass, level: c.level }], 'nonweapon') + intBonus
 }
 

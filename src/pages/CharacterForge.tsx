@@ -285,7 +285,7 @@ export function CharacterForge() {
         />
       )}
       {step === 7 && <ForgeStartStep draft={draft} mutate={mutate} onBack={() => setStep(6)} onNext={() => setStep(8)} />}
-      {step === 8 && <ForgeWeaponStep draft={draft} mutate={mutate} onBack={() => setStep(7)} onNext={() => setStep(9)} />}
+      {step === 8 && <ForgeWeaponStep draft={draft} mutate={mutate} settings={settings} onBack={() => setStep(7)} onNext={() => setStep(9)} />}
       {step === 9 && (
         <ForgeSkillStep
           draft={draft}
@@ -301,6 +301,7 @@ export function CharacterForge() {
         <ForgeEquipmentStep
           draft={draft}
           mutate={mutate}
+          settings={settings}
           market={market}
           onMarket={setMarket}
           stepNumber={10}

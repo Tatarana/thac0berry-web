@@ -7,6 +7,7 @@ import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine } from '../rules/
 import { weaponProficiencySlots } from '../rules/multiclass'
 import { kitWeaponWarnings } from '../rules/kitRequirements'
 import { kitWeaponHints } from '../rules/proficiencyCost'
+import { weaponsForSettings } from '../rules/campaignFilter'
 import { weaponProficiencyKey, weaponSlotsSpent } from '../rules/rules'
 import { canSpecializeWeapon, kitSpecialization, kitSpecializationWarning, multiClassSpecializationNote, specializationRule } from '../rules/specialization'
 import { toggleSpecialization, weaponFromCompendium } from '../rules/sheetEdits'
@@ -52,8 +53,10 @@ function groupWeapons(weapons: Weapon[]): WeaponGroup[] {
   const map = new Map<string, WeaponGroup>()
   for (const w of weapons) {
     const key = weaponProficiencyKey(w.name)
-    const group = map.get(key) ?? { key, label: w.name.replace(/\s*\([^)]*\)\s*$/, ''), variants: [], type: w.type ?? null, missile: false, ranged: false }
+    const group = map.get(key) ?? { key, label: w.name.replace(/\s*\([^)]*\)\s*$/, ''), variants: [], type: null, missile: false, ranged: false }
     group.variants.push(w)
+    // Variante sem tipo impresso (null) não apaga o tipo das outras.
+    group.type ??= w.type ?? null
     group.ranged ||= !!w.range
     group.missile ||= !!w.range && launcher.test(w.name)
     map.set(key, group)
@@ -64,11 +67,14 @@ function groupWeapons(weapons: Weapon[]): WeaponGroup[] {
 export function ForgeWeaponStep({
   draft,
   mutate,
+  settings,
   onBack,
   onNext,
 }: {
   draft: PlayerCharacter
   mutate: (fn: (c: PlayerCharacter) => void) => void
+  /** Cenários da mesa: armas de cenário (Dark Sun…) só aparecem se o cenário valer. */
+  settings?: string[] | null
   onBack: () => void
   onNext: () => void
 }) {
@@ -112,7 +118,9 @@ export function ForgeWeaponStep({
   const multiClassNote = specializationRule(draft).multiClassNote
   const specializations = new Set(draft.weapons.filter((w) => w.isSpecialized).map((w) => weaponProficiencyKey(w.name))).size
 
-  const weaponGroups = groupWeapons(weapons ?? [])
+  // Arma de cenário fora dos cenários da mesa some, menos a que já está na ficha.
+  const pickedKeys = new Set(draft.weapons.map((w) => weaponProficiencyKey(w.name)))
+  const weaponGroups = groupWeapons(weaponsForSettings(weapons ?? [], settings, (w) => pickedKeys.has(weaponProficiencyKey(w.name))))
   const hints = kitWeaponHints(kit?.features.weaponProficiencies, weaponGroups.map((g) => g.key), kit?.mechanics.weapons)
   // O que o texto do kit diz sobre especializar: marca a arma e avisa (nunca bloqueia).
   const kitSpec = kitSpecialization([kit?.features.weaponProficiencies, kit?.mechanics.weapons?.notes], weaponGroups.map((g) => g.key), kit?.mechanics.weapons?.specialization)
@@ -243,7 +251,10 @@ export function ForgeWeaponStep({
               return (
                 <div key={g.key} className={`kit-tile${picked ? ' kit-tile-chosen' : ''}${off ? ' kit-tile-outside' : ''}`}>
                   <button type="button" className="kit-tile-hit" aria-pressed={picked} onClick={() => toggleWeapon(g)}>
-                    <span className="kit-tile-name">{g.label}</span>
+                    <span className="kit-tile-name">
+                      {g.label}
+                      {first.source && <span className="weapon-source" title={`Source: ${first.source}`}>{first.source}</span>}
+                    </span>
                     <span className="weapon-variants">
                       {g.variants.map((v) => (
                         <span key={v.id} className="adj-pills adj-pills-left">

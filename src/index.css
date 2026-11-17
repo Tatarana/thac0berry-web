@@ -8042,6 +8042,15 @@ button.trail-done:hover .trail-label {
   gap: 4px;
 }
 
+.weapon-source {
+  margin-left: 6px;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+  vertical-align: middle;
+}
+
 .weapon-variant-name {
   font-size: 0.72rem;
   font-style: italic;
