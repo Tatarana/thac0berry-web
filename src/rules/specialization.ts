@@ -74,12 +74,24 @@ const othersRe = /\b(?:may|can)\s*(?:not|never)\s+specializ\w*\s+in\s+(?:any\s+)
 const forbidRe = /\b(?:may not|may never|cannot|can not|can't)\s+specializ/
 
 /**
- * Lê o texto do kit (features.weaponProficiencies e mechanics.weapons.notes) e acha as armas
+ * Usa `weapons.specialization` do kit quando existe; senão lê o texto (features.weaponProficiencies e mechanics.weapons.notes) e acha as armas
  * em que ele manda especializar e se proíbe as outras. Frase por frase; só reconhece os jeitos
  * de dizer que aparecem nos livros, o resto fica de fora (sem aviso, nunca com aviso falso).
  */
-export function kitSpecialization(texts: (string | null | undefined)[], weaponKeys: string[]): KitSpecialization {
+export function kitSpecialization(
+  texts: (string | null | undefined)[],
+  weaponKeys: string[],
+  structured?: { weapons: string[]; mustSpecialize?: boolean; othersForbidden: boolean } | null,
+): KitSpecialization {
   const result: KitSpecialization = { weapons: new Set(), forbidsOthers: false, forbidsAll: false }
+  // Dado curado do kit (weapons.specialization) vence o texto. Nome fora do compêndio (Katana)
+  // fica em minúsculas: casa com uma linha digitada na ficha.
+  if (structured) {
+    structured.weapons.forEach((w) => result.weapons.add(w.trim().toLowerCase()))
+    result.forbidsOthers = structured.othersForbidden && result.weapons.size > 0
+    result.forbidsAll = structured.othersForbidden && result.weapons.size === 0
+    return result
+  }
   const sentences = [
     ...new Set(
       texts

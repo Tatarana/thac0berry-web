@@ -7,12 +7,16 @@ import { nonweaponProficiencySlots, nonweaponSlotsUsed } from '../rules/multicla
 import {
   characterProficiencyGroups,
   inCharacterGroups,
+  chosenKitBonus,
+  kitBonusChoiceGroups,
   kitBonusProficiencies,
   nonweaponCost,
   proficiencyGroupsIn,
+  setKitBonusChoice,
   syncBonusProficiencies,
   type ProficiencyGroup,
 } from '../rules/proficiencyCost'
+import { kitProficiencyWarnings } from '../rules/kitRequirements'
 import { proficiencyFromCompendium } from '../rules/sheetEdits'
 import type { PlayerCharacter } from '../types/library'
 import { ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeSlotSockets } from './ForgeParts'
@@ -86,7 +90,7 @@ export function ForgeSkillStep({
       setCompendium(profs)
       setKit(chosenKit)
       // As bônus de raça e kit, já com os escolhidos nas etapas 3 e 4.
-      mutate((c) => syncBonusProficiencies(c, kitBonusProficiencies(chosenKit, profs), profs))
+      mutate((c) => syncBonusProficiencies(c, kitBonusProficiencies(chosenKit), profs))
     })
     return () => {
       cancelled = true
@@ -100,6 +104,13 @@ export function ForgeSkillStep({
   const groups = characterProficiencyGroups(draft)
   const recommended = new Set((kit?.mechanics.proficiencies?.recommended ?? []).map((n) => n.toLowerCase()))
   const query = search.trim().toLowerCase()
+  // O que o kit manda: exigidas (e as listas "uma de"), proibidas e as escolhas grátis.
+  const kitRules = kit?.mechanics.proficiencies
+  const lowerSet = (names: (string | null | undefined)[]) => new Set(names.map((n) => (n ?? '').toLowerCase()))
+  const kitRequires = lowerSet([...(kitRules?.required ?? []), ...(kitRules?.requiredChoices ?? []).flat()])
+  const kitForbids = lowerSet(kitRules?.forbidden ?? [])
+  const choiceGroups = kitBonusChoiceGroups(kit)
+  const kitWarnings = kitProficiencyWarnings(kit?.name, kitRules, (draft.proficiencies ?? []).map((e) => e.name ?? ''))
 
   const granted = (draft.proficiencies ?? []).filter((p) => p.grantedBy)
   const ownedIDs = new Set((draft.proficiencies ?? []).flatMap((p) => (p.matchedProficiencyID ? [p.matchedProficiencyID] : [])))
@@ -152,6 +163,11 @@ export function ForgeSkillStep({
       <div className="slot-pools">
         <ForgeSlotSockets label="Skill slots" used={skillUsed} total={skillTotal} />
       </div>
+      {kitWarnings.map((line) => (
+        <p key={line} className="forge-warn-line">
+          ! {line}
+        </p>
+      ))}
       {skillUsed > skillTotal && <p className="forge-warn-line">! {skillUsed - skillTotal} skill slot(s) over what your class, level and Intelligence give.</p>}
 
       <div className="forge-search">
@@ -162,6 +178,26 @@ export function ForgeSkillStep({
 
       {compendium !== null && (
         <>
+          {choiceGroups.map((group) => {
+            const picked = kit ? chosenKitBonus(draft, kit, group) : null
+            return (
+              <div key={group.join('|')} className="method-row" role="group" aria-label={`Kit bonus, choose one: ${group.join(' or ')}`}>
+                <span className="forge-panel-label">Kit bonus — choose one:</span>
+                {group.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className={picked === name ? 'method-pill method-active' : 'method-pill'}
+                    aria-pressed={picked === name}
+                    onClick={() => kit && mutate((c) => setKitBonusChoice(c, kit, group, picked === name ? null : name, compendium))}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )
+          })}
+
           {granted.length > 0 && (
             <>
               <p className="forge-panel-label">Granted free</p>
@@ -220,6 +256,8 @@ export function ForgeSkillStep({
                         </span>
                       )}
                       {outside && <span className="adj-pill adj-down">other group +1</span>}
+                      {kitRequires.has(p.name.toLowerCase()) && <span className="adj-pill adj-down">kit requires</span>}
+                      {kitForbids.has(p.name.toLowerCase()) && <span className="adj-pill adj-down">kit forbids</span>}
                       {recommended.has(p.name.toLowerCase()) && <span className="adj-pill adj-up">kit suggests</span>}
                     </span>
                   </button>

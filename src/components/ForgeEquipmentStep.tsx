@@ -151,6 +151,7 @@ export function ForgeEquipmentStep({
   const hints = kitWeaponHints(
     kit?.features.weaponProficiencies,
     wares.filter((w) => w.kind === 'weapon').map((w) => w.proficiency ?? ''),
+    kit?.mechanics.weapons,
   )
   // A regra da classe não proíbe: o que foge dela vem depois, apagado e com selo.
   const gear = classGear(draft, {

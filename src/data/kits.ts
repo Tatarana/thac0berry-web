@@ -7,6 +7,42 @@ import type { RuleTable } from './rules'
 
 export type ClassGroup = 'Priest' | 'Wizard' | 'Warrior' | 'Rogue' | 'Psionicist' | 'Demihuman'
 
+/**
+ * Proficiências nonweapon do kit (thac0berry-data, kit.schema.json): nomes exatos de
+ * proficiencies.json; os campos opcionais ficam ausentes quando vazios.
+ */
+export interface KitProficiencies {
+  /** Grátis (0 slots). */
+  bonus?: string[] | null
+  /** Grátis, uma de cada lista ("Hunting or Fishing"). */
+  bonusChoices?: string[][] | null
+  /** O kit obriga a tomar (gasta slots). */
+  required?: string[] | null
+  requiredChoices?: string[][] | null
+  recommended?: string[] | null
+  forbidden?: string[] | null
+  notes?: string | null
+}
+
+/** Especialização lida do livro: armas, se é obrigatória e se as outras ficam proibidas. */
+export interface KitSpecializationData {
+  weapons: string[]
+  mustSpecialize: boolean
+  othersForbidden: boolean
+}
+
+/** Armas do kit: nomes do PHB sem o parêntese ("Long bow") ou em maiúscula, fora do PHB ("Katana"). */
+export interface KitWeapons {
+  notes?: string | null
+  required?: string[] | null
+  requiredChoices?: string[][] | null
+  recommended?: string[] | null
+  forbidden?: string[] | null
+  /** As únicas armas do kit; alguns kits limitam só as iniciais, por isso é aviso. */
+  allowed?: string[] | null
+  specialization?: KitSpecializationData | null
+}
+
 export interface Kit {
   id: string
   name: string
@@ -28,9 +64,9 @@ export interface Kit {
     requirements: { abilities: Record<string, number>; alignments: string[]; races?: string | null }
     turnUndead: { capable: boolean; mode: string; notes: string }
     startingCash?: string | null
-    weapons?: { notes?: string | null } | null
+    weapons?: KitWeapons | null
     weaponSlots?: { initial?: number | null; additional?: number | null; nonproficiencyPenalty?: string | null } | null
-    proficiencies?: { bonus?: string[] | null; recommended?: string[] | null; notes?: string | null } | null
+    proficiencies?: KitProficiencies | null
   }
   deity?: string | null
   pantheon?: string | null
