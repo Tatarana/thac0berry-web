@@ -354,7 +354,8 @@ function KitGallery({ draft, mutate, settings }: { draft: PlayerCharacter; mutat
           </div>
           {visible.map((kit) => {
             const alignmentWarning = kitAlignmentWarning(kit.mechanics.requirements?.alignments, draft.alignment)
-            const warnings = [...kitWarnings(kit, draft, null), ...(alignmentWarning ? [alignmentWarning] : [])]
+            // Cenário: só avisa o que ficou fora dos mundos escolhidos (nenhum escolhido = todos valem).
+            const warnings = [...kitWarnings(kit, draft, settings.length > 0 ? settings : undefined), ...(alignmentWarning ? [alignmentWarning] : [])]
             return (
               <div key={kit.id} className={draft.kit === kit.name ? 'kit-tile kit-tile-chosen' : 'kit-tile'}>
                 <button type="button" className="kit-tile-hit" onClick={() => chooseKit(kit)}>
