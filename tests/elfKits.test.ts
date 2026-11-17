@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { kitWarnings } from '../src/rules/multiclass.ts'
 import { kitsAllowedFor } from '../src/rules/raceKit.ts'
-import type { Kit } from '../src/data/kits.ts'
+import { subclassOrder, type ClassGroup, type Kit } from '../src/data/kits.ts'
 
 const source = resolve(process.env.DATA_DIR ?? join(import.meta.dirname, '..', '..', 'thac0berry-data', 'data'))
 const kits: (Kit & { sourceBook: string })[] = JSON.parse(readFileSync(join(source, 'kits.json'), 'utf8'))
@@ -30,7 +30,7 @@ test('os 11 kits do CBE: grupo Demihuman, subclass Elf, só para elfos, sem id r
     assert.equal(k.classEligibility.subclass, 'Elf', name)
     assert.equal(k.mechanics.requirements.races, 'Elf', name)
   }
-  assert.equal(kits.filter((k) => k.classEligibility.classGroup === 'Demihuman').length, 11)
+  assert.equal(kits.filter((k) => k.sourceBook === 'The Complete Book of Elves').length, 11)
 })
 
 test('requisitos conferidos no texto: Bladesinger 13/13/15/15, Collector Int 13 e Cha 15', () => {
@@ -89,4 +89,47 @@ test('regras dos 4 livros novos: contagens e ids únicos', () => {
   const count = (book: string) => rules.filter((r) => r.book === book).length
   assert.deepEqual([count('CBE'), count('CWH'), count('CBN'), count('TOM')], [69, 58, 62, 13])
   assert.equal(new Set(rules.map((r) => r.id)).size, rules.length)
+})
+
+test('kits da Dragon Magazine: classe pela própria página, não pela detecção antiga', () => {
+  const spell = kit('Spellarcher')
+  assert.equal(spell.sourceBook, 'Dragon Magazine #214')
+  assert.equal(spell.classEligibility.classGroup, 'Demihuman')
+  assert.equal(spell.classEligibility.subclass, 'Half-Elf')
+  assert.deepEqual(spell.classEligibility.combination, ['Fighter', 'Mage'])
+  assert.deepEqual(spell.classEligibility.allowedClasses, ['Fighter', 'Mage'])
+  assert.equal(spell.mechanics.requirements.races, 'Half-Elf')
+  assert.ok(namesFor('Mage').includes('Spellarcher'))
+  // minerados com o grupo errado (Warrior, Al-Qadim, Priest, Wizard)
+  assert.equal(kit('Sohei').classEligibility.classGroup, 'Priest')
+  assert.equal(kit('Fiend Slayer').classEligibility.classGroup, 'Wizard')
+  assert.equal(kit('Earthstoker').classEligibility.subclass, 'Druid')
+  assert.deepEqual(kit('Earthstoker').classEligibility.allowedClasses, ['Druid'])
+  assert.equal(kit('Shikari').classEligibility.subclass, 'Ranger')
+  // não entram: Masque of the Red Death (outro sistema de classes) e kits de dragão
+  for (const name of ['Enthusiast', 'Exorcist', 'Athlete', 'Dragon Sage', 'Manikin']) assert.ok(!kits.some((k) => k.name === name), name)
+  // meio-elfo e elfo: o kit de meio-elfo avisa para o elfo
+  const elfFM = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Mage' as const, level: 3 }], race: 'Elf' }
+  const halfElfFM = { ...elfFM, race: 'Half-Elf' }
+  assert.deepEqual(kitWarnings(spell, halfElfFM), [])
+  assert.match(kitWarnings(spell, elfFM).join(' '), /limited to: Half-Elf/)
+})
+
+test('dinheiro inicial só com fórmula de dados e moeda explícita; ids e nomes não se repetem nos kits novos', () => {
+  assert.equal(kit('Sheenchaser').mechanics.startingCash, '(1d4+1)x10 gp')
+  assert.equal(kit('Gray Chasseur').mechanics.startingCash, '(3d4+3)x30 cp')
+  assert.equal(kit('Singh').mechanics.startingCash, null) // "5d4x10 rupees"
+  assert.equal(kit('Raider').mechanics.startingCash, null) // "ceramic pieces"
+  const dragon = kits.filter((k) => k.sourceBook.startsWith('Dragon Magazine #'))
+  assert.equal(new Set(dragon.map((k) => k.name.toLowerCase())).size, dragon.length)
+  assert.equal(dragon.length, 119)
+  for (const k of dragon) {
+    assert.ok(!k.description.briefSummary.includes('*'), k.name)
+    assert.ok(!k.description.briefSummary.startsWith(':'), k.name)
+  }
+})
+
+test('todo kit aparece no compêndio: o subgrupo está em subclassOrder', () => {
+  const hidden = kits.filter((k) => !subclassOrder[k.classEligibility.classGroup as ClassGroup]?.includes(k.classEligibility.subclass))
+  assert.deepEqual(hidden.map((k) => `${k.name} (${k.classEligibility.classGroup}/${k.classEligibility.subclass})`), [])
 })
