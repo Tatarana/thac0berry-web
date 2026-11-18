@@ -9,7 +9,7 @@ import { Field, PaperModal, TextBlock } from './DetailBits'
 export function CustomItemDetail({ data, onEdit, onClose }: { data: CustomMagicItemData; onEdit?: () => void; onClose: () => void }) {
   const bonuses = customItemBonuses(data)
   return createPortal(
-    <PaperModal title={data.name} subtitle={`${data.category ?? 'Miscellaneous'} · Homebrew`} onClose={onClose}>
+    <PaperModal readable title={data.name} subtitle={`${data.category ?? 'Miscellaneous'} · Homebrew`} onClose={onClose}>
       {onEdit && (
         <button className="paper-link" onClick={onEdit}>
           Edit this item →

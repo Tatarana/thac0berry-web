@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { TextWithTables } from './DetailBits'
+import { ReadingScaleButton } from './ReadingScaleControl'
+import { useReadableWindow } from '../lib/useReadableWindow'
 import { loadSpell, type Spell, type SpellIndexEntry } from '../data/spells'
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -42,13 +44,14 @@ export function SpellDetail({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const { backdropRef, style } = useReadableWindow(true)
   const kind = entry.file.startsWith('wizard_') ? 'wizard' : 'priest'
   const spheres = spell?.spheres ?? []
   const schools = spell?.schools ?? []
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="paper-sheet modal-sheet" role="dialog" aria-modal="true" aria-label={entry.name} onClick={(event) => event.stopPropagation()}>
+    <div ref={backdropRef} className="modal-backdrop" style={style} data-reading-window="" onClick={onClose}>
+      <div className="paper-sheet modal-sheet reading-window" role="dialog" aria-modal="true" aria-label={entry.name} onClick={(event) => event.stopPropagation()}>
         <div className="detail-header">
           <div>
             <h2 className="paper-title">{entry.name}</h2>
@@ -67,11 +70,13 @@ export function SpellDetail({
                 {favorite.on ? '★' : '☆'}
               </button>
             )}
+            <ReadingScaleButton />
             <button className="paper-link" onClick={onClose}>close</button>
           </div>
         </div>
         <hr className="paper-rule" />
 
+        <div className="reading-area">
         {error && <p className="paper-soft">Could not load the details: {error}</p>}
         {!spell && !error && <p className="paper-soft">Loading…</p>}
 
@@ -95,6 +100,7 @@ export function SpellDetail({
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   )

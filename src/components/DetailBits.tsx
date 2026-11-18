@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from 'react'
 import { splitTextTables } from '../rules/textTables'
 import { RuleTableView } from './RuleTableView'
+import { ReadingScaleButton } from './ReadingScaleControl'
+import { useReadableWindow } from '../lib/useReadableWindow'
 
 // Peças comuns das fichas de detalhe (modal em papel).
 
@@ -41,6 +43,7 @@ export function PaperModal({
   onClose,
   children,
   wide = false,
+  readable = false,
 }: {
   title: string
   subtitle?: ReactNode
@@ -48,7 +51,10 @@ export function PaperModal({
   children: ReactNode
   /** Janela grande (editores com muitos campos). */
   wide?: boolean
+  /** Janela de leitura (fichas de detalhe): ganha o botão "Aa" e a escala do texto. Editores e formulários não. */
+  readable?: boolean
 }) {
+  const { backdropRef, style } = useReadableWindow(readable)
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
@@ -58,9 +64,9 @@ export function PaperModal({
   }, [onClose])
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div ref={backdropRef} className="modal-backdrop" style={style} data-reading-window={readable ? '' : undefined} onClick={onClose}>
       <div
-        className={wide ? 'paper-sheet modal-sheet modal-wide' : 'paper-sheet modal-sheet'}
+        className={['paper-sheet modal-sheet', wide && 'modal-wide', readable && 'reading-window'].filter(Boolean).join(' ')}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -71,10 +77,17 @@ export function PaperModal({
             <h2 className="paper-title">{title}</h2>
             {subtitle && <p className="paper-soft">{subtitle}</p>}
           </div>
-          <button className="paper-link" onClick={onClose}>close</button>
+          {readable ? (
+            <div className="detail-actions">
+              <ReadingScaleButton />
+              <button className="paper-link" onClick={onClose}>close</button>
+            </div>
+          ) : (
+            <button className="paper-link" onClick={onClose}>close</button>
+          )}
         </div>
         <hr className="paper-rule" />
-        {children}
+        {readable ? <div className="reading-area">{children}</div> : children}
       </div>
     </div>
   )

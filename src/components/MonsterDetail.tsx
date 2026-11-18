@@ -184,7 +184,7 @@ export function MonsterDetail({
   }, [entry])
 
   return createPortal(
-    <PaperModal title={entry.name} subtitle={entry.collection} onClose={onClose} wide>
+    <PaperModal readable title={entry.name} subtitle={entry.collection} onClose={onClose} wide>
       {shieldPin && (
         <button
           className={shieldPin.pinned ? 'chip chip-on table-pin' : 'chip table-pin'}

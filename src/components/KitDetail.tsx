@@ -54,7 +54,7 @@ export function KitDetail({ kit, onClose }: { kit: Kit; onClose: () => void }) {
     : null
 
   return (
-    <PaperModal title={kit.name} subtitle={subtitle} onClose={onClose}>
+    <PaperModal readable title={kit.name} subtitle={subtitle} onClose={onClose}>
       {deity && (
         <button className="paper-link" onClick={() => setShowDeity(true)}>
           View deity: {deity.name} →

@@ -39,7 +39,7 @@ export function RuleLink({ ruleID, title, children }: { ruleID: string; title?: 
       </button>
       {open === 'explain' &&
         createPortal(
-          <PaperModal title={label} subtitle={
+          <PaperModal readable title={label} subtitle={
               entry ? (
                 <>
                   <BookCode id={entry.book} /> · {entry.topic}

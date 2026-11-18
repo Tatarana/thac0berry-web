@@ -91,7 +91,7 @@ export function MagicItemDetail({ entry, onClose }: { entry: MagicItemIndexEntry
   }, [entry])
 
   return (
-    <PaperModal title={entry.name} subtitle={item?.classification.specificType ?? entry.category} onClose={onClose}>
+    <PaperModal readable title={entry.name} subtitle={item?.classification.specificType ?? entry.category} onClose={onClose}>
       {error && <p className="paper-soft">Could not load the item: {error}</p>}
       {!item && !error && <p className="paper-soft">Loading…</p>}
       {item && <Body item={item} />}

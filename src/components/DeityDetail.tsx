@@ -10,7 +10,7 @@ export function DeityDetail({ deity, onClose }: { deity: Deity; onClose: () => v
     .join(' · ')
 
   return (
-    <PaperModal title={deity.name} subtitle={subtitle} onClose={onClose}>
+    <PaperModal readable title={deity.name} subtitle={subtitle} onClose={onClose}>
       <div className="detail-grid">
         <Field label="Alignment" value={deity.alignment} />
         <Field label="Portfolio" value={deity.portfolio} />
