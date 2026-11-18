@@ -59,7 +59,7 @@ const cellsOf = (line: string) => {
   return inner.split('|').map((cell) => cell.trim())
 }
 
-const isSeparator = (line: string) => /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line.trim())
+export const isSeparator = (line: string) => /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line.trim())
 
 /**
  * Acerta cabeçalho e linhas de tamanhos diferentes (erros da extração): tira
