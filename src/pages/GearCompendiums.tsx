@@ -36,7 +36,7 @@ function weaponGroupOrder(present: string[]): string[] {
 
 function WeaponDetail({ weapon, onClose }: { weapon: Weapon; onClose: () => void }) {
   return (
-    <PaperModal title={weapon.name} subtitle={weapon.source ?? undefined} onClose={onClose}>
+    <PaperModal readable title={weapon.name} subtitle={weapon.source ?? undefined} onClose={onClose}>
       <div className="detail-grid">
         <Field label="Size" value={weapon.size} />
         <Field label="Type" value={weapon.type} />
@@ -78,7 +78,7 @@ const armorGroupOrder = () => ['Armor', 'Helmets', 'Shields']
 
 function ArmorDetail({ piece, onClose }: { piece: ArmorPiece; onClose: () => void }) {
   return (
-    <PaperModal title={piece.name} subtitle={armorKindLabel[piece.kind]} onClose={onClose}>
+    <PaperModal readable title={piece.name} subtitle={armorKindLabel[piece.kind]} onClose={onClose}>
       <div className="detail-grid">
         <Field label="Base AC" value={piece.baseAC != null ? String(piece.baseAC) : null} />
         <Field label="Cost" value={piece.cost} />
@@ -119,7 +119,7 @@ const itemGroupOrder = (present: string[]) => [
 
 function ItemDetail({ item, onClose }: { item: MundaneItem; onClose: () => void }) {
   return (
-    <PaperModal title={item.name} subtitle={item.category} onClose={onClose}>
+    <PaperModal readable title={item.name} subtitle={item.category} onClose={onClose}>
       <div className="detail-grid">
         <Field label="Cost" value={item.cost} />
         <Field label="Weight" value={item.weight} />

@@ -134,7 +134,7 @@ export function TableDetail({
 
   return createPortal(
     <>
-      <PaperModal title={tableLabel(table)} subtitle={
+      <PaperModal readable title={tableLabel(table)} subtitle={
         onEdit ? (
           <>Your table · {table.chapterTitle}</>
         ) : (

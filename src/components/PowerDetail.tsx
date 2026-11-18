@@ -24,7 +24,7 @@ export interface PsionicPower {
 export function PowerDetail({ power, onClose }: { power: PsionicPower; onClose: () => void }) {
   const rolls = power.description.sections.powerScoreRollResults
   return (
-    <PaperModal title={power.title} subtitle={`${power.discipline} · ${power.powerTier}`} onClose={onClose}>
+    <PaperModal readable title={power.title} subtitle={`${power.discipline} · ${power.powerTier}`} onClose={onClose}>
       <div className="detail-grid">
         <Field label="Power Score" value={power.powerScore.raw} />
         <Field label="PSP Cost (initial/maint.)" value={power.pspCost.summary} />

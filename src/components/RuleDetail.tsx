@@ -68,7 +68,7 @@ export function RuleDetail({ entry, onClose }: { entry: RuleIndexEntry; onClose:
   }, [entry])
 
   return (
-    <PaperModal title={entry.topic} subtitle={
+    <PaperModal readable title={entry.topic} subtitle={
         rule?.breadcrumbs ?? (
           <>
             <BookCode id={entry.book} /> · Ch. {entry.chapterNumber}: {entry.chapterTitle}

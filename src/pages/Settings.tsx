@@ -5,6 +5,8 @@ import { PageHeader } from '../components/PageHeader'
 import { paperStyles, type PaperStyle } from '../lib/notebook'
 import { preferencesChanged } from '../lib/combatMessages'
 import { loadPreferences, savePreferences } from '../lib/preferences'
+import { ReadingScaleStepper } from '../components/ReadingScaleControl'
+import { readingStyle, useReadingIndex } from '../lib/readingScale'
 
 /**
  * Preferências da conta (2026-10-10): papel padrão das folhas novas do caderno
@@ -112,6 +114,28 @@ function PreferencesCard({ userID }: { userID: string }) {
   )
 }
 
+/**
+ * Tamanho do texto das janelas de detalhe (magias, regras, monstros...).
+ * Vale só neste aparelho: fica no localStorage, não vai para a conta.
+ */
+function ReadingSizeCard() {
+  const index = useReadingIndex()
+  return (
+    <section className="ember-card">
+      <h2 className="card-title">Reading</h2>
+      <div className="settings-field">
+        <span className="soft">Reading text size — in spell, rule, monster and other detail windows, on this device</span>
+        <ReadingScaleStepper buttonClass="btn" />
+        <div style={readingStyle(index)}>
+          <div className="reading-area reading-sample">
+            <p className="detail-description">The quick brown fox casts fireball at a startled ogre: 1d6 damage per level, 20-foot radius.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function Settings() {
   const { session, loading, signInWithGoogle, signOut } = useAuth()
   const email = session?.user.email ?? null
@@ -140,6 +164,8 @@ export function Settings() {
           </>
         )}
       </section>
+
+      <ReadingSizeCard />
 
       {session && <PreferencesCard userID={session.user.id} />}
 

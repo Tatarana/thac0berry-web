@@ -5,7 +5,7 @@ import { Field, PaperModal, TextBlock } from './DetailBits'
 export function ProficiencyDetail({ proficiency, onClose }: { proficiency: Proficiency; onClose: () => void }) {
   const { mechanics } = proficiency
   return (
-    <PaperModal title={proficiency.name} subtitle={proficiency.primaryGroup} onClose={onClose}>
+    <PaperModal readable title={proficiency.name} subtitle={proficiency.primaryGroup} onClose={onClose}>
       <div className="detail-grid">
         <Field label="Ability" value={mechanics.relevantAbility} />
         <Field label="Check Modifier" value={signedModifier(mechanics.checkModifier)} />

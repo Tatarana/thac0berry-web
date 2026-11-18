@@ -13524,3 +13524,194 @@ button.sp-line {
     grid-row: 2;
   }
 }
+
+/* ---- Tamanho do texto de leitura (janelas de detalhe) ----
+   --reading-scale e --reading-leading vêm do .modal-backdrop (useReadableWindow).
+   Só o miolo (.reading-area) escala: título, close, chips e botões ficam como
+   estão. A base continua em rem, então a fonte do navegador é multiplicada, não
+   substituída; as classes de texto viram em apenas aqui dentro. */
+
+.reading-area {
+  /* Não muda o layout da moldura (coluna com gap); só carrega a fonte herdada. */
+  display: contents;
+  font-size: calc(1rem * var(--reading-scale, 1));
+}
+
+/* Celular: no 100% o texto de corpo (0.9em) fica com pelo menos 16px. */
+@media (max-width: 560px) {
+  .reading-area {
+    font-size: calc(max(1.112rem, 17.8px) * var(--reading-scale, 1));
+  }
+}
+
+/* Janela de leitura: a largura cresce com a escala (~70-80 caracteres por linha). */
+.modal-backdrop[data-reading-window] {
+  /* Sem isso a coluna da grade cresce com o conteúdo (tabela larga) e o 100% da
+     janela estoura a tela no celular. */
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.modal-sheet.reading-window {
+  width: min(calc(760px * var(--reading-scale, 1)), 100%);
+  max-width: none;
+}
+
+.modal-sheet.modal-wide.reading-window {
+  width: min(calc(980px * var(--reading-scale, 1)), 100%);
+}
+
+.reading-area .detail-description {
+  font-size: 0.9em;
+  line-height: var(--reading-leading, 1.6);
+}
+
+.reading-area .detail-value {
+  font-size: 1.15em;
+}
+
+.reading-area .paper-label {
+  font-size: 0.6em;
+}
+
+.reading-area .paper-soft {
+  font-size: 0.82em;
+}
+
+.reading-area .monster-source {
+  font-size: 0.8em;
+}
+
+.reading-area .monster-summary {
+  line-height: var(--reading-leading, 1.55);
+}
+
+.reading-area .rule-heading {
+  font-size: 1.45em;
+}
+
+.reading-area .rule-subheading {
+  font-size: 0.95em;
+}
+
+.reading-area .rule-list {
+  font-size: 0.9em;
+  line-height: calc(var(--reading-leading, 1.6) - 0.05);
+}
+
+.reading-area .section-title {
+  font-size: 0.7em;
+}
+
+.reading-area .detail-lines {
+  font-size: 0.85em;
+}
+
+.reading-area .table-result {
+  font-size: 0.95em;
+}
+
+.reading-area .table-result strong {
+  font-size: 1.21em; /* 1.15 / 0.95: o em acumula com o do pai */
+}
+
+.reading-area .table-history {
+  font-size: 0.85em;
+}
+
+.reading-area .rule-table table {
+  font-size: 0.78em;
+}
+
+.reading-area .monster-stats {
+  font-size: 0.86em;
+}
+
+.reading-area .monster-stats thead th {
+  font-size: 1.221em; /* 1.05 / 0.86 */
+}
+
+/* Tabelas largas rolam dentro do próprio quadro (.rule-table-scroll, .monster-stats-wrap),
+   com a primeira coluna fixa à esquerda e fundo opaco para não deixar o texto passar por baixo. */
+.reading-area .rule-table th:first-child,
+.reading-area .rule-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.reading-area .rule-table td:first-child {
+  background-color: color-mix(in srgb, rgb(233 220 190) 50%, var(--sheet));
+}
+
+.reading-area .rule-table tbody tr:nth-child(even) td:first-child {
+  background-image: linear-gradient(rgb(47 39 28 / 0.06), rgb(47 39 28 / 0.06));
+}
+
+.reading-area .rule-table tbody tr.table-hit:nth-child(n) td:first-child {
+  background-image: linear-gradient(rgb(140 47 34 / 0.18), rgb(140 47 34 / 0.18));
+}
+
+.reading-area .monster-stats tbody th:first-child,
+.reading-area .monster-stats thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--sheet);
+  padding-right: 10px;
+}
+
+/* ---- Controle "Aa" (popover) e linha nos Settings ---- */
+
+.reading-menu {
+  position: relative;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.reading-popover {
+  /* Fixo onde abriu (top/right vêm do componente): a janela alarga com a escala
+     e um popover preso ao cabeçalho fugiria do cursor a cada clique. */
+  position: fixed;
+  z-index: 20;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1.3px solid var(--ink);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.35);
+}
+
+.reading-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.reading-percent {
+  min-width: 3.2em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.reading-btn {
+  font: inherit;
+  padding: 3px 9px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink-soft);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.reading-btn:hover:not(:disabled) {
+  background: rgb(47 39 28 / 0.1);
+}
+
+.reading-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.reading-sample {
+  margin-top: 4px;
+}
