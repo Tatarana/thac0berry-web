@@ -60,10 +60,12 @@ export function weaponsForSettings<T extends { campaignSetting?: string | null }
 export const campaignFilterLabel = (settings: string[]) => `Campaign (${[CORE_SETTING, ...settings].join(' + ')})`
 
 /**
- * Cenários ainda sem raças, classes ou kits no app: aparecem esmaecidos no Forge
- * ("Under construction") e não dá para escolhê-los. Tirar daqui quando chegarem.
+ * Cenários que ainda não dá para jogar no app: aparecem esmaecidos no Forge
+ * ("Under construction") e não dá para escolhê-los. Council of Wyrms fica aqui
+ * enquanto não houver personagem dragão; Greyhawk joga com o PHB e tem as magias
+ * próprias, então vale. Tirar daqui quando o cenário ficar jogável.
  */
-export const settingsUnderConstruction: readonly string[] = ['Al-Qadim', 'Greyhawk', 'Spelljammer']
+export const settingsUnderConstruction: readonly string[] = ['Al-Qadim', 'Council of Wyrms', 'Spelljammer']
 
 export const settingUnderConstruction = (setting: string) => settingsUnderConstruction.includes(setting)
 
