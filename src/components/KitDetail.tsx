@@ -3,7 +3,7 @@ import { findDeityByName, loadDeities, type Deity } from '../data/deities'
 import { displaySections, type Kit } from '../data/kits'
 import { DeityDetail } from './DeityDetail'
 import { Field, PaperModal, TextBlock } from './DetailBits'
-import { RuleTableView } from './RuleDetail'
+import { RuleTableView } from './RuleTableView'
 
 // Ficha do kit (KitDetailSheet do iPad), com o atalho para a divindade do
 // sacerdote especialista quando ela existe no compêndio.

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { TextWithTables } from './DetailBits'
 import { loadSpell, type Spell, type SpellIndexEntry } from '../data/spells'
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -90,7 +91,7 @@ export function SpellDetail({
             {schools.length > 0 && <Field label="Schools" value={schools.join(', ')} />}
             <div className="detail-field">
               <span className="paper-label">Description</span>
-              <p className="detail-description">{spell.fullDescription ?? spell.summary}</p>
+              <TextWithTables text={spell.fullDescription ?? spell.summary} />
             </div>
           </>
         )}

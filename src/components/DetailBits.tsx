@@ -1,4 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
+import { splitTextTables } from '../rules/textTables'
+import { RuleTableView } from './RuleTableView'
 
 // Peças comuns das fichas de detalhe (modal em papel).
 
@@ -17,8 +19,19 @@ export function TextBlock({ label, text }: { label: string; text?: string | null
   return (
     <div className="detail-field">
       <span className="paper-label">{label}</span>
-      <p className="detail-description">{text}</p>
+      <TextWithTables text={text} />
     </div>
+  )
+}
+
+/** Texto longo com as tabelas em markdown desenhadas como tabelas (rolam na horizontal dentro do próprio quadro). */
+export function TextWithTables({ text }: { text: string }) {
+  return (
+    <>
+      {splitTextTables(text).map((part, index) =>
+        part.kind === 'table' ? <RuleTableView key={index} table={part.table} /> : <p key={index} className="detail-description">{part.text}</p>,
+      )}
+    </>
   )
 }
 
