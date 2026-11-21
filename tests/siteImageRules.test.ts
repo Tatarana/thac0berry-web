@@ -15,6 +15,7 @@ test('tamanho de cada tipo de slot', () => {
   assert.deepEqual(S.slotSize('forge/weapons-missile'), { width: 1680, height: 720 })
   assert.deepEqual(S.slotSize('forge/gender-male'), { width: 848, height: 848 })
   assert.deepEqual(S.slotSize(S.monsterSlot('beholder')), { width: 1536, height: 1024 })
+  assert.deepEqual(S.slotSize(S.deitySlot('heracles')), { width: 1536, height: 1024 })
 })
 
 test('recorte cobre o alvo, centrado e nas pontas', () => {
@@ -45,4 +46,17 @@ test('combinação sem versão sai da lista; o resto segue a regra de sempre', (
   assert.deepEqual(S.resolveSiteImages([combo, cls], new Map()), [cls])
   assert.deepEqual(S.resolveSiteImages([combo, cls], new Map([['forge/combo-dwarf-cleric-male', 'https://cdn/a.webp']])), ['https://cdn/a.webp', cls])
   assert.deepEqual(S.resolveSiteImages([cls], new Map([['forge/class-cleric-male', 'https://cdn/b.webp']])), ['https://cdn/b.webp'])
+})
+
+test('slot e rótulo de divindades e heróis', () => {
+  assert.equal(S.deitySlot('heracles'), 'deity/heracles')
+  assert.equal(S.deitySlot('hiawatha'), 'deity/hiawatha')
+  assert.equal(S.slotLabel(S.deitySlot('heracles')), 'Heracles')
+  // Divindade não é arquivo do repo: o slot não vem de um caminho de imagem.
+  assert.equal(S.slotOfSrc('/thac0berry-web/images/deity/heracles.webp'), null)
+})
+
+test('slot de divindade nunca é trocado por arquivo do repo', () => {
+  const versions = new Map([[S.deitySlot('heracles'), 'https://cdn/x.webp']])
+  assert.deepEqual(S.resolveSiteImages(['/images/forge/race-elf-male.webp'], versions), ['/images/forge/race-elf-male.webp'])
 })

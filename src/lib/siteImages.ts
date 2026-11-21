@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useAuth } from '../auth/context'
-import { monsterSlot, resolveSiteImages } from './siteImageRules'
+import { deitySlot, monsterSlot, resolveSiteImages } from './siteImageRules'
 import { SITE_IMAGES_BASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '../config'
 import { supabase } from './supabase'
 import { MAX_IMAGE_BYTES, functionErrorMessage, joinURL, parsePresign, putErrorMessage } from './siteImageUploadRules'
@@ -11,7 +11,8 @@ import { MAX_IMAGE_BYTES, functionErrorMessage, joinURL, parsePresign, putErrorM
 // o Grimório. Quem manda é a versão atual do slot; sem
 // versão (ou sem rede), vale o arquivo do repo. A lista das atuais é carregada
 // uma vez por sessão e recarregada depois de cada troca. Os monstros são milhares
-// e ficam de fora dessa lista: cada um é buscado ao abrir a ficha.
+// e ficam de fora dessa lista: cada um é buscado ao abrir a ficha. As divindades
+// (e heróis) também ficam de fora: uma busca só (slots deity/%), guardada em cache.
 
 export interface SiteImageVersion {
   slot: string
@@ -38,6 +39,7 @@ export async function refreshSiteImages(): Promise<void> {
       .select('slot, storage_path')
       .eq('is_current', true)
       .not('slot', 'like', 'monster/%')
+      .not('slot', 'like', 'deity/%')
       .order('slot')
       .range(from, from + page - 1)
     if (error) return
@@ -48,14 +50,10 @@ export async function refreshSiteImages(): Promise<void> {
   for (const listener of listeners) listener()
 }
 
-/**
- * Todas as ilustrações de monstros atuais numa busca só (de 1000 em 1000), para o
- * livro de ilustrações: id do monstro → endereço público. Em erro de rede, lança.
- */
-export async function fetchMonsterImages(): Promise<Map<string, string>> {
+/** Todas as imagens atuais de um prefixo de slot (de 1000 em 1000): id → endereço público. Em erro de rede, lança. */
+async function fetchSlotImages(prefix: string): Promise<Map<string, string>> {
   const result = new Map<string, string>()
   const page = 1000
-  const prefix = monsterSlot('')
   for (let from = 0; ; from += page) {
     const { data, error } = await supabase
       .from('site_image_version')
@@ -71,6 +69,26 @@ export async function fetchMonsterImages(): Promise<Map<string, string>> {
   return result
 }
 
+/**
+ * Todas as ilustrações de monstros atuais numa busca só, para o livro de
+ * ilustrações: id do monstro → endereço público. Em erro de rede, lança.
+ */
+export const fetchMonsterImages = () => fetchSlotImages(monsterSlot(''))
+
+let deityImages: Promise<Map<string, string>> | null = null
+
+/** Todas as imagens de divindades e heróis (id → endereço), numa busca só e em cache até a próxima troca. */
+export function fetchDeityImages(): Promise<Map<string, string>> {
+  if (!deityImages) {
+    const request = fetchSlotImages(deitySlot(''))
+    deityImages = request
+    // Erro de rede não fica em cache: a próxima ficha tenta de novo.
+    request.catch(() => {
+      if (deityImages === request) deityImages = null
+    })
+  }
+  return deityImages
+}
 function subscribe(listener: () => void) {
   listeners.add(listener)
   if (!loaded) {
@@ -104,6 +122,24 @@ export function useMonsterImage(id: string): string | null | undefined {
     }
   }, [slot, refreshed])
   return found?.slot === slot ? found.url : undefined
+}
+
+/** A ilustração da divindade ou herói: undefined enquanto busca, 
+ull se não houver. */
+export function useDeityImage(id: string): string | null | undefined {
+  const refreshed = useSyncExternalStore(subscribe, () => current)
+  const [found, setFound] = useState<{ id: string; url: string | null } | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetchDeityImages().then(
+      (all) => alive && setFound({ id, url: all.get(id) ?? null }),
+      () => alive && setFound({ id, url: null }),
+    )
+    return () => {
+      alive = false
+    }
+  }, [id, refreshed])
+  return found?.id === id ? found.url : undefined
 }
 
 /** O mesmo fora do React, para quem precisa do arquivo logo depois do login. */
@@ -188,6 +224,7 @@ export async function addSiteImageVersion(slot: string, webp: Blob, size: { widt
   }
   if (!put.ok) throw new Error(putErrorMessage(put.status))
   await callUploadFunction({ action: 'finalize', slot, path: presign.path, width: size.width, height: size.height })
+  deityImages = null
   await refreshSiteImages()
 }
 
@@ -195,5 +232,6 @@ export async function addSiteImageVersion(slot: string, webp: Blob, size: { widt
 export async function setCurrentSiteImage(slot: string, version: number): Promise<void> {
   const { error } = await supabase.rpc('set_current_site_image', { p_slot: slot, p_version: version })
   if (error) throw new Error(error.message)
+  deityImages = null
   await refreshSiteImages()
 }

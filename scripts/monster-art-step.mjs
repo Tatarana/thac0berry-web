@@ -1,6 +1,9 @@
 // Um passo da geração das ilustrações de monstros pelo ChatGPT no Chrome. Quem roda é um
 // agente, que só executa o que este script entrega. Cada bloco tem no máximo 50 imagens e o
 // usuário valida antes do próximo; os prompts e os originais ficam em ../forge-art/monsters.
+// Para outra pasta de arte (heróis e divindades), acrescente --dir <pasta> [--kind monster|deity]
+// em qualquer comando: a pasta fora de 'monsters' publica como deity (add-site-art.mjs deity).
+// Atalho: scripts/hero-art-step.mjs, que já aponta para ../forge-art/heroes.
 //   node scripts/monster-art-step.mjs next <bloco>            próximo item e os JavaScripts
 //   node scripts/monster-art-step.mjs ingest <id>             leva o download a forge-art
 //   node scripts/monster-art-step.mjs skip <bloco> <id> <por> marca um item que não saiu
@@ -12,15 +15,28 @@ import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { downloadScript, sendScript } from './lib/forge-art.mjs'
 
 const INTERVAL_MS = 217_000
 const MAX_BLOCK = 50
-const ART = fileURLToPath(new URL('../../forge-art/monsters', import.meta.url))
-const STYLE =
-  'Create one wide landscape image, 3:2 aspect ratio, horizontal format. Fantasy illustration in traditional ink and watercolor, confident hand-drawn ink lines, visible paper grain, the mood of a classic 1990s AD&D Monstrous Manual plate, no text, no letters, no border, no watermark.'
+
+// --dir e --kind saem da lista de argumentos antes dos comandos.
+function takeFlag(name) {
+  const at = process.argv.indexOf(name)
+  if (at < 0) return undefined
+  const [, value] = process.argv.splice(at, 2)
+  if (!value || value.startsWith('--')) throw new Error(`${name} pede um valor.`)
+  return value
+}
+const dirFlag = takeFlag('--dir')
+const kindFlag = takeFlag('--kind')
+const ART = dirFlag ? resolve(dirFlag) : fileURLToPath(new URL('../../forge-art/monsters', import.meta.url))
+const KIND = kindFlag ?? (basename(ART) === 'monsters' ? 'monster' : 'deity')
+if (!['monster', 'deity'].includes(KIND)) throw new Error('--kind é monster ou deity.')
+const PLATE = KIND === 'monster' ? 'Monstrous Manual' : 'Legends & Lore'
+const STYLE = `Create one wide landscape image, 3:2 aspect ratio, horizontal format. Fantasy illustration in traditional ink and watercolor, confident hand-drawn ink lines, visible paper grain, the mood of a classic 1990s AD&D ${PLATE} plate, no text, no letters, no border, no watermark.`
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const png = (id) => join(ART, `${id}.png`)
@@ -45,10 +61,10 @@ if (command === 'next') {
     const item = queue[0]
     console.log(`ID: ${item.id}\nPENDENTES: ${queue.length}\nINICIO: ${Date.now()}`)
     console.log(`--- JS_ENVIAR\n${sendScript(prompt(item))}`)
-    console.log(`--- JS_BAIXAR\n${downloadScript(`monster-${item.id}`)}`)
+    console.log(`--- JS_BAIXAR\n${downloadScript(`${KIND}-${item.id}`)}`)
   }
 } else if (command === 'ingest') {
-  const file = join(homedir(), 'Downloads', `monster-${args[0]}.png`)
+  const file = join(homedir(), 'Downloads', `${KIND}-${args[0]}.png`)
   let size = -1
   for (let i = 0; i < 30; i++) {
     const now = existsSync(file) ? statSync(file).size : -1
@@ -80,13 +96,13 @@ if (command === 'next') {
   await sharp({ create: canvas }).composite(layers).jpeg({ quality: 82 }).toFile(out)
   console.log(`FOLHA ${out}`)
 } else if (command === 'publish') {
-  const script = fileURLToPath(new URL('./add-monster-image.mjs', import.meta.url))
+  const script = fileURLToPath(new URL('./add-site-art.mjs', import.meta.url))
   for (const id of args) {
-    console.log(execFileSync(process.execPath, ['--no-warnings', script, id, png(id)], { encoding: 'utf8' }).trim())
+    console.log(execFileSync(process.execPath, ['--no-warnings', script, KIND, id, png(id)], { encoding: 'utf8' }).trim())
   }
 } else if (command === 'wait') {
   await sleep(Math.max(0, Number(args[0]) + INTERVAL_MS - Date.now()))
   console.log('PRONTO')
 } else {
-  throw new Error('Uso: next <bloco> | ingest <id> | skip <bloco> <id> <motivo> | sheet <saída> <ids> | publish <ids> | wait <início>')
+  throw new Error('Uso (com --dir <pasta> [--kind monster|deity] opcional): next <bloco> | ingest <id> | skip <bloco> <id> <motivo> | sheet <saída> <ids> | publish <ids> | wait <início>')
 }
