@@ -44,6 +44,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dark 
 | Bloco 14 | 50 | Os 9 últimos do Dragonlance (Tayling a Zhakar Lizards) e Ravenloft de Aggie a Hound, Phantom; publicado e validado pelo usuário (3 para corrigir) |
 | Bloco 15 | 50 | Ravenloft, de Jack Frost a Zombie Wolf (faltam Will O'Deep, Will O'Sea, Zombie Fog, Zombie Lord e Desert Zombie); publicado, validação do usuário pendente |
 | Bloco 16 | 5 | Fim do Ravenloft: Will O'Deep, Will O'Sea, Zombie Fog, Zombie Lord, Desert Zombie; publicado, validação do usuário pendente |
+| Bloco 17 | 50 | Mystara e Savage Coast, de Actaeon a Herathian Voat (32 Mystara, 18 Savage Coast); publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -272,6 +273,8 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 - Validar o bloco 12 inteiro: `../forge-art/monsters/folha-bloco-12-N.jpg`; ressalvas em `block-12-log.md`.
 - Validar o bloco 15 inteiro: `../forge-art/monsters/folha-bloco-15-N.jpg`; ressalvas em `block-15-log.md`.
 - Validar o bloco 16 (5 imagens): ressalvas em `block-16-log.md`.
+- Validar o bloco 17: `../forge-art/monsters/folha-bloco-17-N.jpg`; ressalvas em `block-17-log.md`.
+  Atenção ao Fachan: o único braço saiu do ombro, não do meio do peito (candidato ao lápis).
 - Depois da primeira passada, criar imagens das variantes que parecem outro monstro (Drider, Ogre
   Mage, Winter Wolf), o que exige a imagem acompanhar a variante no app. Decisão do usuário em
   2026-11-06: uma imagem por ficha agora, variantes importantes depois.
