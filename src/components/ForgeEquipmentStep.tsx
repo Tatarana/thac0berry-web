@@ -25,6 +25,7 @@ import { classGear, fitsFirst, isSpecialtyKit, outsideRuleLine } from '../rules/
 import { allClasses } from '../rules/multiclass'
 import { kitWeaponHints } from '../rules/proficiencyCost'
 import { matchRace } from '../rules/raceKit'
+import { formatStrength } from '../rules/exceptionalStrength'
 import { canonicalClass, classGroup, dexDefenseAdjustment, strengthRow, weaponProficiencyKey } from '../rules/rules'
 import { leastFilledColumn } from '../rules/sheetEdits'
 import type { Page2EquipmentEntry, PlayerCharacter } from '../types/library'
@@ -376,7 +377,7 @@ export function ForgeEquipmentStep({
                 <i style={{ width: `${Math.min(100, (weight / allowance) * 100)}%` }} />
               </div>
               <p>
-                {Math.round(weight)} lb carried · {allowance} lb before you slow down (Strength {draft.abilities.strength})
+                {Math.round(weight)} lb carried · {allowance} lb before you slow down (Strength {formatStrength(draft.abilities)})
               </p>
             </div>
           </div>

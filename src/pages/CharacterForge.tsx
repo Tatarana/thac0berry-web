@@ -31,6 +31,7 @@ import type { Lean } from '../rules/alignment'
 import { emptyMarket, type MarketState } from '../rules/market'
 import { hasClass, rogueClass } from '../rules/multiclass'
 import { defaultForgeSettings } from '../rules/campaignFilter'
+import { needsExceptionalRoll, rollExceptionalStrength } from '../rules/exceptionalStrength'
 import { matchRace } from '../rules/raceKit'
 import { canonicalClass } from '../rules/rules'
 import { spellCasting, type BookState } from '../rules/spellbook'
@@ -205,6 +206,8 @@ export function CharacterForge() {
       }
       if (!casting.divine) final.sphereAccess = null
       if (!rogue) final.thievingSkills = null
+      // Rede de segurança: a etapa de classe não deixa passar sem o d100, mas um rascunho antigo pode chegar aqui sem ele.
+      if (needsExceptionalRoll(final)) final.abilities.exceptionalStrength = rollExceptionalStrength()
       applyAutomatic(pendingConsequences(final), final)
       // THAC0 e saves da classe mesmo no 1º nível (não há consequência pendente ali).
       applyClassTables(final)

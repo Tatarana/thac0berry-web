@@ -13,6 +13,7 @@ import {
   markConsequencesReviewed,
   pendingConsequences,
   setAbility,
+  setExceptionalStrength,
   setLevel,
   setMultiClassLevel,
   setFormerClasses,
@@ -25,6 +26,7 @@ import { loadAllKits } from '../data/kits'
 import { weaponsForSettings } from '../rules/campaignFilter'
 import { armorBoxFromPieces, itemACBonus, itemACParts, parsedRating, type ItemACPart } from '../rules/armorClass'
 import { RuleLink } from './RuleLink'
+import { exceptionalDigits, formatStrength, isExceptionalValue, parseExceptionalStrength, qualifiesForExceptionalStrength, rollExceptionalStrength } from '../rules/exceptionalStrength'
 import { classLabel, classLevels, dualClassRestriction, dualProficiencyNote, formerLabel, hitPointsRule, isDualClass, isMultiClass, levelLabel, multiClassRestrictions, multiClassThiefArmorRule, classWarnings, nonweaponProficiencySlots, nonweaponSlotsUsed, proficiencySlotCount, rogueClass, weaponProficiencySlots, type ClassChoice, type KitNonweaponSlots, type KitWeaponSlots } from '../rules/multiclass'
 import { MultiClassWindow } from './MultiClass'
 import { KitSpellcastingWindow } from './KitSpellcasting'
@@ -530,12 +532,48 @@ function MarkedCell({ rule, ...props }: { rule: string; label: string; value: st
   return <Cell {...props} className={useMark(rule)} />
 }
 
+/**
+ * "/xx" da Força excepcional, ao lado do 18: os dois dígitos do d100 ("00" =
+ * 100), com um botão que rola. O texto só vira valor ao sair do campo; vazio apaga.
+ */
+function ExceptionalStrengthField({ value, onChange }: { value: number | null; onChange: (value: number | null) => void }) {
+  const [text, setText] = useState<string | null>(null)
+  const commit = () => {
+    if (text === null) return
+    const trimmed = text.trim()
+    if (trimmed === '') onChange(null)
+    else {
+      const parsed = parseExceptionalStrength(trimmed)
+      // Fora da faixa: volta ao que estava.
+      if (parsed !== null) onChange(parsed)
+    }
+    setText(null)
+  }
+  return (
+    <span className="rec-ability-exc" title="Exceptional Strength: percentile roll (00 = 100)">
+      <span aria-hidden="true">/</span>
+      <input
+        className="ink-input ink-number"
+        inputMode="numeric"
+        maxLength={3}
+        placeholder="xx"
+        aria-label="Exceptional Strength percentile"
+        value={text ?? (value === null ? '' : exceptionalDigits(value))}
+        onFocus={(event) => event.currentTarget.select()}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+      />
+      <button type="button" className="rec-exc-roll" aria-label="Roll d100 for Exceptional Strength" title="Roll d100" onClick={() => onChange(rollExceptionalStrength())}>
+        d%
+      </button>
+    </span>
+  )
+}
+
 function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
   const d = c.details as unknown as Record<string, string | null | undefined>
-  const strength =
-    c.abilities.exceptionalStrength != null && c.abilities.strength === 18
-      ? `18/${String(c.abilities.exceptionalStrength).padStart(2, '0')}`
-      : String(c.abilities.strength)
+  const strength = formatStrength(c.abilities)
   // Cada célula: rótulo e o campo de PlayerCharacter.details que ela mostra.
   const rows: [string, string | number, [string, string][], AbilityKey][] = [
     ['STR', strength, [
@@ -594,7 +632,10 @@ function AbilityScores({ c, edit }: { c: PlayerCharacter; edit?: Edit }) {
                 <InkNumber value={c.abilities[ability]} min={1} max={25} label={name} onChange={(v) => edit((x) => setAbility(x, ability, v))} />
               </span>
             ) : (
-              <span className={`rec-ability-score rec-value${tone}`} title={hint}>{score}</span>
+              <span className={`rec-ability-score rec-value${tone}${String(score).includes('/') ? ' rec-ability-score-wide' : ''}`} title={hint}>{score}</span>
+            )}
+            {edit && ability === 'strength' && (qualifiesForExceptionalStrength(c) || isExceptionalValue(c.abilities.exceptionalStrength)) && c.abilities.strength === 18 && (
+              <ExceptionalStrengthField value={c.abilities.exceptionalStrength ?? null} onChange={(v) => edit((x) => setExceptionalStrength(x, v))} />
             )}
             <div className="rec-ability-cells">
               {cells.map(([label, key]) =>

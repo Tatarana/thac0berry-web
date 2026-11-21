@@ -17,6 +17,7 @@ import {
   multiClassOptions,
 } from '../rules/multiclass'
 import { classAlignmentWarning, kitAlignmentWarning } from '../rules/alignment'
+import { clearExceptionalIfDisqualified, needsExceptionalRoll } from '../rules/exceptionalStrength'
 import { allowedBySettings } from '../rules/campaignFilter'
 import { isHumanRace, kitSelectable, kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
 import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
@@ -24,6 +25,7 @@ import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
 import { classCardImages, genderOf, type Gender } from '../lib/forgeImages'
 import { ForgeCard, ForgeComboCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote, ForgeThumbButton } from './ForgeParts'
+import { ForgeExceptionalStrength } from './ForgeExceptionalStrength'
 import { KitApplicableFilter } from './KitApplicableFilter'
 import { KitDetail } from './KitDetail'
 
@@ -68,12 +70,14 @@ export function ForgeClassStep({
       c.multiClasses = null
       c.formerClasses = null
       c.kit = null
+      // Trocar de classe: a Força excepcional fica se a nova também é de guerreiro, senão sai.
+      clearExceptionalIfDisqualified(c)
     })
     onChoose()
   }
 
   // Back / Next no topo e no fim da etapa (o mesmo rodapé).
-  const nav = { onBack, onNext, nextLabel: 'Next: Starting point →', ready: !!primary }
+  const nav = { onBack, onNext, nextLabel: 'Next: Starting point →', ready: !!primary && !needsExceptionalRoll(draft) }
 
   return (
     <section className="forge-step forge-hero">
@@ -129,6 +133,8 @@ export function ForgeClassStep({
           )
         })}
       </div>
+
+      {primary && <ForgeExceptionalStrength draft={draft} mutate={mutate} />}
 
       {primary && isHumanRace(race) && <DualClassBranch draft={draft} mutate={mutate} />}
       {primary && race && !isHumanRace(race) && <MultiClassBranch draft={draft} mutate={mutate} gender={gender} />}
