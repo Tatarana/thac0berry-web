@@ -18,7 +18,7 @@ import {
 } from '../rules/multiclass'
 import { classAlignmentWarning, kitAlignmentWarning } from '../rules/alignment'
 import { allowedBySettings } from '../rules/campaignFilter'
-import { kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
+import { isHumanRace, kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
 import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
 import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
@@ -130,8 +130,8 @@ export function ForgeClassStep({
         })}
       </div>
 
-      {primary && race === 'Human' && <DualClassBranch draft={draft} mutate={mutate} />}
-      {primary && race && race !== 'Human' && <MultiClassBranch draft={draft} mutate={mutate} gender={gender} />}
+      {primary && isHumanRace(race) && <DualClassBranch draft={draft} mutate={mutate} />}
+      {primary && race && !isHumanRace(race) && <MultiClassBranch draft={draft} mutate={mutate} gender={gender} />}
       {primary && <KitGallery draft={draft} mutate={mutate} settings={settings} />}
 
       <ForgeFooter {...nav} />

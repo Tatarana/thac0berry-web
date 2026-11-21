@@ -13,7 +13,7 @@
 import type { CharacterClass, ClassLevel, KitSpellcasting, PlayerCharacter } from '../types/library.ts'
 import { normalize } from '../lib/search.ts'
 import { primeRequisites } from './sessionReport.ts'
-import { demiBardKits, demiBardWarning, isPlanarRace, levelLimitWarning, matchRace, type RaceName } from './raceKit.ts'
+import { demiBardKits, demiBardWarning, isHumanRace, isRaceOf, levelLimitWarning, matchRace, multiClassSource, raceBardCombos, raceClassCombinations, raceKitForms, type RaceName } from './raceKit.ts'
 import {
   bestSaves,
   bestTHAC0,
@@ -284,41 +284,15 @@ export function hitPointsRule(classes: ClassLevel[]): string {
 
 type Combo = string[]
 
-/**
- * PHB: combinações por raça. Illusionist = Mage com escola Illusion/Phantasm.
- * Psionicist (CPsiH, cap. 1): só anões e halflings, com Fighter ou Thief.
- */
-const combos: Partial<Record<RaceName, Combo[]>> = {
-  Dwarf: [['Fighter', 'Thief'], ['Fighter', 'Cleric'], ['Fighter', 'Psionicist'], ['Thief', 'Psionicist']],
-  Elf: [['Fighter', 'Mage'], ['Fighter', 'Thief'], ['Mage', 'Thief'], ['Fighter', 'Mage', 'Thief']],
-  Gnome: [
-    ['Fighter', 'Cleric'], ['Fighter', 'Illusionist'], ['Fighter', 'Thief'],
-    ['Cleric', 'Illusionist'], ['Cleric', 'Thief'], ['Illusionist', 'Thief'],
-  ],
-  Halfling: [['Fighter', 'Thief'], ['Fighter', 'Psionicist'], ['Thief', 'Psionicist']],
-  'Half-Elf': [
-    ['Fighter', 'Cleric'], ['Fighter', 'Thief'], ['Fighter', 'Mage'], ['Cleric', 'Ranger'],
-    ['Cleric', 'Mage'], ['Thief', 'Mage'], ['Fighter', 'Mage', 'Cleric'],
-    // "Druid pode ocupar o lugar de Cleric" (asterisco da tabela).
-    ['Fighter', 'Druid'], ['Druid', 'Ranger'], ['Druid', 'Mage'], ['Fighter', 'Mage', 'Druid'],
-  ],
-  // Raças planares (PWH, a página de cada raça; campanha Planescape). Bariaur,
-  // genasi da terra e modron não podem ser multiclasse.
-  Aasimar: [
-    ['Fighter', 'Cleric'], ['Fighter', 'Mage'], ['Fighter', 'Bard'], ['Ranger', 'Mage'], ['Ranger', 'Cleric'],
-    ['Mage', 'Cleric'], ['Mage', 'Thief'], ['Mage', 'Bard'], ['Cleric', 'Bard'],
-  ],
-  'Genasi (air)': [['Fighter', 'Cleric'], ['Fighter', 'Mage']],
-  'Genasi (fire)': [['Fighter', 'Mage']],
-  'Genasi (water)': [['Fighter', 'Cleric'], ['Fighter', 'Thief']],
-  Githzerai: [['Fighter', 'Mage']],
-  Tiefling: [['Fighter', 'Mage'], ['Fighter', 'Cleric'], ['Fighter', 'Thief'], ['Mage', 'Thief'], ['Cleric', 'Thief']],
-}
+// As combinações por raça (PHB Tabela 7; PWH; os livros das raças novas) vêm do dado
+// (`classCombinations` de races.json, via `raceClassCombinations`): só as de classes
+// do app. Illusionist = Mage com escola Illusion/Phantasm. Psionicist (CPsiH, cap. 1):
+// só anões e halflings, com Fighter ou Thief.
 
 /** As combinações da raça, para o seletor. */
 export function combosFor(race: string): Combo[] {
   const r = matchRace(race)
-  return r ? (combos[r] ?? []) : []
+  return r ? raceClassCombinations(r) : []
 }
 
 const sameSet = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join('|') === [...b].sort().join('|')
@@ -335,7 +309,7 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
   const warnings: string[] = []
   const names = classes.map((k) => {
     const cls = canonicalClass(k.characterClass)
-    return cls === 'Mage' && c.wizardSchool === 'Illusion/Phantasm' && race === 'Gnome' ? 'Illusionist' : cls
+    return cls === 'Mage' && c.wizardSchool === 'Illusion/Phantasm' && isRaceOf(race, 'gnome') ? 'Illusionist' : cls
   })
   if (new Set(names).size !== names.length) warnings.push('The same class appears twice.')
   // CNH: ninja semi-humano não pode ser multiclasse.
@@ -343,16 +317,16 @@ export function multiClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'
   const bard = race ? bardCombo(race, names) : null
   if (!race) {
     warnings.push('Choose a race: multi-class combinations depend on it (PHB, Chapter 3).')
-  } else if (race === 'Human') {
+  } else if (isHumanRace(race)) {
     warnings.push('Humans cannot be multi-class (they can be dual-class instead) — PHB, Chapter 3.')
-  } else if (names.includes('Bard') && !(combos[race] ?? []).some((combo) => sameSet(combo, names))) {
+  } else if (names.includes('Bard') && !raceClassCombinations(race).some((combo) => sameSet(combo, names))) {
     // CBH cap. 3: o multiclasse de bardo vem ligado a kits (o do aasimar, PWH, não).
     if (!bard) warnings.push(`${names.join('/')} is not a standard ${race} bard multi-class (CBH, Chapter 3).`)
     else if (!kitMatchesAny(c.kit, bard.kits)) {
       warnings.push(`A ${race} ${names.join('/')} must take the ${bard.kits.map(kitLabel).join(' or ')} kit (CBH, Chapter 3).`)
     }
-  } else if (!(combos[race] ?? []).some((combo) => sameSet(combo, names))) {
-    const source = names.includes('Psionicist') ? 'CPsiH, Chapter 1' : isPlanarRace(race) ? "The Planewalker's Handbook" : 'PHB, Chapter 3'
+  } else if (!raceClassCombinations(race).some((combo) => sameSet(combo, names))) {
+    const source = names.includes('Psionicist') ? 'CPsiH, Chapter 1' : multiClassSource(race)
     warnings.push(`${names.join('/')} is not a standard ${race} multi-class combination (${source}).`)
   }
   if (c.wizardSchool && names.includes('Mage')) {
@@ -383,36 +357,14 @@ interface BardCombo {
   kits: string[]
 }
 
-/** CBH cap. 3: multiclasse de bardo por raça, com os kits de cada combinação ("True" = True Bard). */
-const bardCombos: Partial<Record<RaceName, BardCombo[]>> = {
-  Dwarf: [{ classes: ['Fighter', 'Bard'], kits: ['Chanter', 'Skald'] }],
-  Elf: [
-    { classes: ['Mage', 'Bard'], kits: ['Minstrel'] },
-    { classes: ['Thief', 'Bard'], kits: ['Gypsy'] },
-  ],
-  Gnome: [
-    { classes: ['Illusionist', 'Bard'], kits: ['Professor'] },
-    { classes: ['Thief', 'Bard'], kits: ['Professor', 'Jongleur'] },
-  ],
-  'Half-Elf': [
-    { classes: ['Fighter', 'Bard'], kits: ['True', 'Blade', 'Gallant', 'Skald'] },
-    { classes: ['Ranger', 'Bard'], kits: ['True', 'Meistersinger'] },
-    { classes: ['Mage', 'Bard'], kits: ['Loremaster', 'Riddlemaster'] },
-    { classes: ['Cleric', 'Bard'], kits: ['True'] },
-    { classes: ['Druid', 'Bard'], kits: ['Meistersinger'] },
-    { classes: ['Thief', 'Bard'], kits: ['True', 'Gypsy', 'Jongleur', 'Thespian'] },
-  ],
-  Halfling: [{ classes: ['Thief', 'Bard'], kits: ['Jongleur'] }],
-}
-
 function bardCombo(race: RaceName, names: string[]): BardCombo | null {
-  return (bardCombos[race] ?? []).find((combo) => sameSet(combo.classes, names)) ?? null
+  return raceBardCombos(race).find((combo) => sameSet(combo.classes, names)) ?? null
 }
 
 /** As combinações de bardo da raça, para o seletor (classes e kits). */
 export function bardCombosFor(race: string): { classes: string[]; kits: string[] }[] {
   const r = matchRace(race)
-  return r ? (bardCombos[r] ?? []).map((combo) => ({ classes: combo.classes, kits: combo.kits.map(kitLabel) })) : []
+  return r ? raceBardCombos(r).map((combo) => ({ classes: combo.classes, kits: combo.kits.map(kitLabel) })) : []
 }
 
 /**
@@ -439,29 +391,10 @@ export function kitAllowsRace(racesText: string | null | undefined, race: string
   const r = matchRace(race)
   const text = normalize(racesText ?? '')
   if (!r || text === '' || text === 'none' || text === 'any') return true
-  const forms: Record<RaceName, string[]> = {
-    Human: ['human', 'humans'],
-    Dwarf: ['dwarf', 'dwarves'],
-    Elf: ['elf', 'elves'],
-    Gnome: ['gnome', 'gnomes'],
-    'Half-Elf': ['halfelf'],
-    Halfling: ['halfling', 'halflings'],
-    Aasimar: ['aasimar'],
-    'Bariaur (male)': ['bariaur'],
-    'Bariaur (female)': ['bariaur'],
-    'Genasi (air)': ['genasi'],
-    'Genasi (earth)': ['genasi'],
-    'Genasi (fire)': ['genasi'],
-    'Genasi (water)': ['genasi'],
-    Githzerai: ['githzerai'],
-    Modron: ['modron', 'modrons'],
-    Tiefling: ['tiefling', 'tieflings'],
-    // "Half-Vistani" vira as palavras "half" e "vistani" (o hífen separa); "vistani" já identifica.
-    'Half-Vistani': ['vistani'],
-  }
   // Palavras do texto; "half-elf(ves)" vira uma palavra só, para "elf" não casar dentro dela.
   const words = (part: string) => part.replace(/half[\s-]?el(f|ves)/g, 'halfelf').split(/[^a-z]+/)
-  const mentions = (part: string) => forms[r].some((f) => words(part).includes(f))
+  const forms = raceKitForms(r)
+  const mentions = (part: string) => forms.some((f) => words(part).includes(f))
   if (text.startsWith('any except')) return !mentions(text.slice('any except'.length))
   return mentions(text)
 }
@@ -618,7 +551,7 @@ export function dualClassRequirements(
   }
   const taken = allClasses(c).map((k) => canonicalClass(k.characterClass))
   const list: Requirement[] = [
-    { text: 'Human (only humans can be dual-classed)', ok: matchRace(c.race) === 'Human' },
+    { text: 'Human (only humans can be dual-classed)', ok: isHumanRace(matchRace(c.race)) },
     { text: `Level 2 or higher as ${current} (now ${c.level})`, ok: c.level >= 2 },
     scores(current, 15, leaveRequirement[current]),
     scores(target, 17, enterRequirement[target]),
@@ -654,7 +587,7 @@ export function dualClassWarnings(c: WithClasses & Pick<PlayerCharacter, 'race'>
   if (!isDualClass(c)) return []
   const warnings: string[] = []
   const race = matchRace(c.race)
-  if (race && race !== 'Human') warnings.push('Only humans can be dual-classed (PHB, Chapter 3).')
+  if (race && !isHumanRace(race)) warnings.push('Only humans can be dual-classed (PHB, Chapter 3).')
   if (isMultiClass(c)) warnings.push('A character is either multi-class or dual-class, not both (PHB, Chapter 3).')
   const current = canonicalClass(c.characterClass)
   const names = (c.formerClasses ?? []).map((k) => canonicalClass(k.characterClass))

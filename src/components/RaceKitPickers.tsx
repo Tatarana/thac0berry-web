@@ -3,15 +3,17 @@ import { createPortal } from 'react-dom'
 import { loadAllKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
 import { allClasses, filterApplicableKits, kitWarnings } from '../rules/multiclass'
-import { allRaces, hasAbilityRequirements, isPlanarRace, isRavenloftRace, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, type RaceName } from '../rules/raceKit'
+import { groupRaces, hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, selectableRaces, type RaceName } from '../rules/raceKit'
 import { vistaniTribeForRoll, vistaniTribes, vistaniTribeWarnings, type VistaniTribe } from '../rules/vistani'
 import type { CharacterClass, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
 import { KitApplicableFilter } from './KitApplicableFilter'
 import { KitDetail } from './KitDetail'
+import { RaceDetail } from './RaceDetail'
 
-// Escolher raça (RacePickerSheet do iPad: lista das raças do PHB; se a ficha
-// fica fora da Tabela 7, mostra os avisos antes de confirmar) e kit
+// Escolher raça (RacePickerSheet do iPad: se a ficha fica fora da Tabela 7,
+// mostra os avisos antes de confirmar; desde as raças em dados, só as jogáveis dos
+// cenários da campanha, agrupadas por origem) e kit
 // (KitPickerSheet: kits da classe, busca por nome ou divindade, "None").
 
 export function RacePicker({
@@ -21,13 +23,15 @@ export function RacePicker({
   onClose,
 }: {
   character: Pick<PlayerCharacter, 'race' | 'abilities' | 'characterClass' | 'level' | 'kit'>
-  /** Cenários da campanha da ficha: raça de outro cenário (Planescape, Ravenloft) continua na lista, só ganha aviso. */
+  /** Cenários da campanha da ficha: só as raças jogáveis do Core e desses cenários entram na lista (a raça atual fica sempre); sem filtro, todas as jogáveis. */
   campaignSettings?: string[] | null
   onChoose: (race: RaceName) => void
   onClose: () => void
 }) {
   const [pending, setPending] = useState<RaceName | null>(null)
+  const [detail, setDetail] = useState<RaceName | null>(null)
   const current = matchRace(character.race)
+  const groups = groupRaces(selectableRaces(campaignSettings, current))
   const warnings = pending ? raceWarnings(pending, character, campaignSettings) : []
   return createPortal(
     <PaperModal title={pending ? `${pending}?` : 'Choose Race'} onClose={onClose}>
@@ -46,27 +50,36 @@ export function RacePicker({
         </div>
       ) : (
         <ul className="slot-choices">
-          {allRaces.map((race, i, list) => (
-            <li key={race}>
-              {isPlanarRace(race) && !isPlanarRace(list[i - 1]) && <p className="paper-label">Planescape · The Planewalker's Handbook</p>}
-              {isRavenloftRace(race) && !isRavenloftRace(list[i - 1]) && <p className="paper-label">Ravenloft · Domains of Dread</p>}
-              <button
-                className="slot-choice"
-                onClick={() => (raceWarnings(race, character, campaignSettings).length > 0 ? setPending(race) : onChoose(race))}
-              >
-                <span className="slot-choice-fav">{current === race ? '★' : ''}</span>
-                <span className="rec-value">{race}</span>
-                <span className="rec-soft">
-                  {[raceAdjustmentsText(race), hasAbilityRequirements(race) ? 'ability score minimums apply' : 'no ability score restrictions']
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </button>
+          {groups.map(({ group, races }) => (
+            <li key={group}>
+              <p className="paper-label">{group}</p>
+              <ul className="slot-choices">
+                {races.map((race) => (
+                  <li key={race} className="kit-choice">
+                    <button
+                      className="slot-choice"
+                      onClick={() => (raceWarnings(race, character, campaignSettings).length > 0 ? setPending(race) : onChoose(race))}
+                    >
+                      <span className="slot-choice-fav">{current === race ? '★' : ''}</span>
+                      <span className="rec-value">{race}</span>
+                      <span className="rec-soft">
+                        {[raceAdjustmentsText(race), hasAbilityRequirements(race) ? 'ability score minimums apply' : 'no ability score restrictions']
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </button>
+                    <button className="info-btn" aria-label={`About ${race}`} title="Read about this race" onClick={() => setDetail(race)}>
+                      ⓘ
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
           <li className="paper-soft">Choosing a race applies its ability adjustments to the scores on the sheet.</li>
         </ul>
       )}
+      {detail && <RaceDetail race={detail} onClose={() => setDetail(null)} />}
     </PaperModal>,
     document.body,
   )

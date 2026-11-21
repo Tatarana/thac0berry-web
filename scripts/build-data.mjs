@@ -14,6 +14,8 @@
 //   public/data/rules/<livro>.json      regras completas de cada livro
 //   public/data/tables.json             tabelas do Table Grimoire (estruturadas + markdown)
 //   public/data/books.json              livros das regras: ordem e cenário (cópia)
+//   public/data/races.json              raças (carregadas no início do app), sem o texto longo do livro
+//   public/data/races-content.json      {id: texto em markdown} das raças, lido só ao abrir o detalhe
 //   public/data/magic-index.json         índice dos itens mágicos (com resumo)
 //   public/data/magic/magic_*.json       itens mágicos completos, por categoria
 //   public/data/psionic-powers.json      poderes psiônicos, sem o texto bruto de wiki
@@ -105,6 +107,24 @@ if (unlisted.length > 0) {
   process.exit(1)
 }
 copyFileSync(booksFile, join(out, 'books.json'))
+
+// Raças (races.json): o app lê no início (regras síncronas de raça); o texto longo do livro
+// (`content`) e os textos minerados (`*Text`) vão para um arquivo à parte, lido só no detalhe.
+const racesFile = join(source, 'races.json')
+if (!existsSync(racesFile)) {
+  console.error(`Faltou ${racesFile}: atualize o thac0berry-data (races.json entrou em 2026-11-20).`)
+  process.exit(1)
+}
+const raceList = JSON.parse(readFileSync(racesFile, 'utf8'))
+const raceContent = {}
+const raceLongText = ['content', 'abilityScoreRequirementsText', 'abilityScoreAdjustmentsText', 'classLevelLimitsText', 'classCombinationsText']
+const raceLight = raceList.map((race) => {
+  if (race.content) raceContent[race.id] = race.content
+  return Object.fromEntries(Object.entries(race).filter(([key]) => !raceLongText.includes(key)))
+})
+writeFileSync(join(out, 'races.json'), JSON.stringify(raceLight))
+writeFileSync(join(out, 'races-content.json'), JSON.stringify(raceContent))
+console.log(`data: ${raceList.length} raças (${raceList.filter((r) => r.playable !== false).length} jogáveis)`)
 mkdirSync(join(out, 'rules'), { recursive: true })
 const rulesByBook = {}
 const rulesIndex = rules.map((rule) => {

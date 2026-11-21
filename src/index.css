@@ -7302,6 +7302,16 @@ button.trail-done:hover .trail-label {
   gap: 18px;
 }
 
+/* Raças agrupadas por origem (PHB, subraças, cada cenário): o título de cada grupo fica acima da sua grade. */
+.forge-race-group + .forge-race-group {
+  margin-top: 26px;
+}
+
+.forge-race-group > .forge-panel-label {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
 .forge-card {
   position: relative;
   display: block;

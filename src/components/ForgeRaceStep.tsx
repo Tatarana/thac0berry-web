@@ -1,23 +1,26 @@
 import { useState } from 'react'
-import { allowedBySettings } from '../rules/campaignFilter'
 import type { AbilityScores, PlayerCharacter } from '../types/library'
 import {
   abilityWarnings,
+  groupRaces,
   matchRace,
   raceAdjustments,
-  raceCampaignSetting,
   raceLabel,
   racesForGender,
   raceSettingWarning,
   replaceRace,
+  selectableRaces,
   type RaceName,
 } from '../rules/raceKit'
 import { genderOf, raceImages } from '../lib/forgeImages'
 import { ForgeCard, ForgeEmbers, ForgeFooter, ForgeHelpButton, ForgeHelpNote } from './ForgeParts'
+import { RaceDetail } from './RaceDetail'
 
 // Etapa 4 do The Forge: as raças em cards ilustrados (mesmo ForgeCard do
 // gênero). Só as raças do sexo escolhido na etapa 2 (Bariaur tem uma por
-// sexo), filtradas pelos cenários da mesa (os mesmos da etapa de classe); a
+// sexo), só as jogáveis dos cenários da mesa (os mesmos da etapa de classe;
+// raça de cenário em construção nunca entra), agrupadas por origem (PHB,
+// subraças, cada cenário); a
 // imagem é a do gênero escolhido. Escolher troca a raça desfazendo a anterior
 // (replaceRace) e mostra os seis atributos já ajustados. Avisos de faixa de
 // atributo e de cenário aparecem, mas nunca bloqueiam (o mestre decide).
@@ -47,6 +50,7 @@ export function ForgeRaceStep({
   onBack: () => void
 }) {
   const [help, setHelp] = useState(false)
+  const [about, setAbout] = useState(false)
   const current = matchRace(draft.race)
   const gender = genderOf(draft.sex)
 
@@ -61,7 +65,8 @@ export function ForgeRaceStep({
   }
 
   // A raça já escolhida continua à vista mesmo se o filtro mudar depois.
-  const shown = racesForGender(gender).filter((race) => race === current || allowedBySettings(raceCampaignSetting(race), settings))
+  const forGender = new Set(racesForGender(gender))
+  const groups = groupRaces(selectableRaces(settings, current).filter((race) => forGender.has(race)))
   const chosenWarnings = current ? warningsFor(current) : []
   const chosenDeltas = current ? raceAdjustments(current) : []
 
@@ -81,9 +86,9 @@ export function ForgeRaceStep({
       <p className="forge-sub">The kindreds follow the campaign settings you picked at the start. A kindred that strains against your scores only warns you.</p>
       {help && (
         <ForgeHelpNote ruleID="phb_ch02_character_race_tables">
-          The race adjusts your ability scores the moment you choose it, and you can change your mind freely — the previous race&rsquo;s adjustments
-          are undone first. A &ldquo;!&rdquo; marks a race whose ability ranges your scores don&rsquo;t meet, or one from a setting outside the core
-          rules; you can still take it.
+          The race adjusts your ability scores the moment you choose it, and you can change your mind freely — the previous race&rsquo;s adjustments are undone
+          first. A &ldquo;!&rdquo; marks a race whose ability ranges your scores don&rsquo;t meet, or one from a setting outside the core rules; you can still
+          take it.
         </ForgeHelpNote>
       )}
 
@@ -91,37 +96,42 @@ export function ForgeRaceStep({
         <span className="rule-gem" />
       </div>
 
-      <div className="forge-card-grid">
-        {shown.map((race) => {
-          const warnings = warningsFor(race)
-          const deltas = raceAdjustments(race)
-          return (
-            <ForgeCard
-              key={race}
-              image={raceImages(race, gender)}
-              alt={raceLabel(race)}
-              label={raceLabel(race)}
-              chosen={current === race}
-              dimmed={!!current && current !== race}
-              flag={warnings.length > 0 ? warnings.join(' ') : undefined}
-              onClick={() => mutate((c) => replaceRace(c, race))}
-            >
-              <span className="adj-pills">
-                {deltas.length === 0 ? (
-                  <span className="adj-pill">no adjustment</span>
-                ) : (
-                  deltas.map(({ ability, delta }) => (
-                    <span key={ability} className={delta > 0 ? 'adj-pill adj-up' : 'adj-pill adj-down'}>
-                      {delta > 0 ? '+' : '−'}
-                      {Math.abs(delta)} {abbrOf(ability)}
-                    </span>
-                  ))
-                )}
-              </span>
-            </ForgeCard>
-          )
-        })}
-      </div>
+      {groups.map(({ group, races }) => (
+        <div key={group} className="forge-race-group">
+          {groups.length > 1 && <p className="forge-panel-label">{group}</p>}
+          <div className="forge-card-grid">
+            {races.map((race) => {
+              const warnings = warningsFor(race)
+              const deltas = raceAdjustments(race)
+              return (
+                <ForgeCard
+                  key={race}
+                  image={raceImages(race, gender)}
+                  alt={raceLabel(race)}
+                  label={raceLabel(race)}
+                  chosen={current === race}
+                  dimmed={!!current && current !== race}
+                  flag={warnings.length > 0 ? warnings.join(' ') : undefined}
+                  onClick={() => mutate((c) => replaceRace(c, race))}
+                >
+                  <span className="adj-pills">
+                    {deltas.length === 0 ? (
+                      <span className="adj-pill">no adjustment</span>
+                    ) : (
+                      deltas.map(({ ability, delta }) => (
+                        <span key={ability} className={delta > 0 ? 'adj-pill adj-up' : 'adj-pill adj-down'}>
+                          {delta > 0 ? '+' : '−'}
+                          {Math.abs(delta)} {abbrOf(ability)}
+                        </span>
+                      ))
+                    )}
+                  </span>
+                </ForgeCard>
+              )
+            })}
+          </div>
+        </div>
+      ))}
 
       {current && (
         <div className="race-outcome">
@@ -146,6 +156,10 @@ export function ForgeRaceStep({
               )
             })}
           </div>
+          <button type="button" className="forge-help-rule" onClick={() => setAbout(true)}>
+            About {raceLabel(current)}
+          </button>
+          {about && <RaceDetail race={current} onClose={() => setAbout(false)} />}
           {chosenWarnings.map((w) => (
             <p key={w} className="forge-warn-line">
               ! {w}

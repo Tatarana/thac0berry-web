@@ -18,7 +18,7 @@ import {
   levelDrainTarget,
   multiClassOptions,
 } from '../rules/multiclass'
-import { matchRace } from '../rules/raceKit'
+import { isHumanRace, matchRace } from '../rules/raceKit'
 import { canonicalClass, xpRequired } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -57,7 +57,7 @@ export function MultiClassWindow({
   onFormerChange: (formerClasses: ClassLevel[]) => void
   onClose: () => void
 }) {
-  const defaultTab: Tab = isDualClass(c) ? 'dual' : isMultiClass(c) ? 'multi' : matchRace(c.race) === 'Human' ? 'dual' : 'multi'
+  const defaultTab: Tab = isDualClass(c) ? 'dual' : isMultiClass(c) ? 'multi' : isHumanRace(matchRace(c.race)) ? 'dual' : 'multi'
   const [tab, setTab] = useState<Tab>(initialTab ?? defaultTab)
   const primary = canonicalClass(c.characterClass)
 

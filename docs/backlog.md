@@ -37,10 +37,45 @@ ver o README do `thac0berry-data`). `mechanics` quase vazio (requisitos e profic
 
 Pendências:
 - Ícone do tile "Demihuman Kits" do Compêndio (aparece ✦ até o usuário mandar a arte).
-- **Raças em dados** (próxima entrega, aprovada): `races.json` no `thac0berry-data` (157 raças já
-  extraídas no repo de mineração, `data/player_races/`) para substituir as raças fixas em `raceKit.ts`,
-  com validação contra os valores atuais (PHB Tabela 7, planares, Half-Vistani) antes de trocar.
+- ~~**Raças em dados**~~ **Feito (2026-11-20, v0.147.0)**, ver "Raças em dados" abaixo.
 - iPad: rodar `python Scripts/sync_data.py` no `thac0berry-ipad` (o CI de lá acusa a divergência); o iPad
   ainda usa `bookOrder` fixo, então CWH/CBN/TOM/CBE não aparecem lá até isso mudar.
 - Os outros kits minerados fora do app (Complete Books de anões, gnomos/halflings e humanoides, Al-Qadim,
   Spacefarer, Skills & Powers…) seguem o mesmo molde do grupo Demihuman.
+
+## Raças em dados (2026-11-20, web v0.147.0)
+
+Feito: `races.json` no `thac0berry-data` (schema `race.schema.json`; gerado por `scripts/build_races.py` a partir da
+mineração + `scripts/race_curation.json`) substitui as tabelas fixas de `raceKit.ts`. Relatório das divergências e das
+raças escondidas: `thac0berry-data/docs/racas-divergencias-2026-11.md`.
+
+- **As 17 raças de antes** (6 PHB, 10 planares, Half-Vistani; o texto da ficha não mudou) têm os valores do app como
+  verdade; o teste de não-regressão (`tests/raceKitSnapshot.test.ts` + fixture gerado com o código antigo) compara
+  ~50 funções públicas de raça/multiclasse/combos para elas.
+- **83 jogáveis** (17 de antes + 10 Dark Sun + 17 subraças Core dos Complete Books + Nathri e Nethling em Planescape +
+  5 do Sea of Fallen Stars em Forgotten Realms + Half-Greyhawk Dragon + 22 dragões do Council of Wyrms + 9 do Spelljammer).
+  Council of Wyrms e Spelljammer só não aparecem porque o cenário está em construção (`raceSelectable` o garante).
+  Escondidas (`playable: false`): 30 humanoides, 18 de cenários fora do Forge (Dragonlance, Kara-Tur, Savage Coast, Celts,
+  Vikings), 2 duplicatas e 26 "para decisão do usuário".
+- **Carregamento:** `main.tsx` carrega `races.json` antes do primeiro render (`loadRaces()` em `src/data/races.ts`) e o
+  entrega a `setRaceData` (registro em `raceKit.ts`); as funções seguem síncronas e com as mesmas assinaturas
+  (`allRaces`, `singleClassBonus` e `demiBardKits` são objetos preenchidos no lugar). Nos testes, `tests/setup-races.ts`
+  (`--import` no script `test`). O texto longo do livro vai para `races-content.json`, lido só no detalhe (`RaceDetail`).
+- **Subraças (`baseRace`)** valem para kits (um kit "Elf" aceita Drow, Grey Elf, Athasian Elf; "Any except elf" as
+  exclui), imagem do Forge (cai na da raça-base), "é humano?" (classe dupla do Athasian Human), Gypsy/Anchorite e a tabela
+  de altura/peso/idade. Regras (bônus de CON nos testes, sono/charme do elfo, bônus de combate, Endurance, demi-bardo) só
+  vêm da raça-base quando o texto da subraça traz "Standard <Raça> Abilities" (o script copia; Drow fica sem a resistência
+  do elfo). Limites de nível, requisitos, ajustes e combinações são sempre os da própria raça.
+- **Classes que o app não tem** (Gladiator, Defiler, Preserver, Shaman…) ficam no JSON e são ignoradas em limites e
+  combinações; uma raça nova só combina com as 12 classes do app.
+- **Seletores:** o Forge e a troca de raça da ficha mostram só raças jogáveis do Core e dos cenários da campanha (a raça
+  atual fica sempre), agrupadas por origem (Player's Handbook, Subraces, cada cenário). Isto muda a decisão de 2026-10-17
+  para a ficha: antes a lista mostrava tudo e só avisava; agora a raça de cenário fora da campanha só aparece se a campanha
+  não restringir cenários. Aviso de cenário (`raceSettingWarning`, `settingFit`) continua para fichas já existentes. Cada raça
+  tem ⓘ/"About" com os dados e o texto do livro. Raça nova sem arte usa a imagem da raça-base ou o "Art coming".
+- `forgeArtRaces` (forgeCombos.ts): só as 17 de antes têm arte de combinação (e entram no banner da Home); a raça nova
+  entra ali quando a arte vier.
+- Pendências: o usuário decidir as "para decisão" (lista no relatório); `sync_data.py` do iPad passa a copiar `races.json`
+  (o app não o lê); regras especiais das raças novas ficam só em texto (drow, thri-kreen, mul…); Stout/Tallfellow
+  Halfling têm "+1 DEX or CON/WIS" no livro, o app aplica só o +1 DEX; arte das raças novas.
+

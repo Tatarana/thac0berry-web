@@ -1,7 +1,7 @@
 {
   "name": "thac0berry-web",
   "private": true,
-  "version": "0.146.0",
+  "version": "0.147.0",
   "type": "module",
   "scripts": {
     "data": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/build-data.mjs",
@@ -12,7 +12,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "pretest": "npm run data",
-    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --test \"tests/**/*.test.ts\"",
+    "test": "node --experimental-strip-types --no-warnings=ExperimentalWarning --import ./tests/setup-races.ts --test \"tests/**/*.test.ts\"",
     "preview": "vite preview"
   },
   "dependencies": {
