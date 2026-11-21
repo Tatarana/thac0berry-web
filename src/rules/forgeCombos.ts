@@ -9,6 +9,17 @@ import { canonicalClass } from './rules.ts'
 
 export type Gender = 'male' | 'female'
 
+/**
+ * As raças com arte própria de combinação (o usuário produz a arte à mão, ver
+ * docs/forge-arte.md): as 17 que o app tinha em código. Raça nova dos dados
+ * (subraças, Dark Sun…) entra aqui quando vier a arte; até lá usa a imagem da
+ * raça-base e a genérica da classe. Também limita o banner da Home.
+ */
+export const forgeArtRaces: readonly RaceName[] = [
+  'Human', 'Dwarf', 'Elf', 'Gnome', 'Half-Elf', 'Halfling', 'Aasimar', 'Bariaur (male)', 'Bariaur (female)',
+  'Genasi (air)', 'Genasi (earth)', 'Genasi (fire)', 'Genasi (water)', 'Githzerai', 'Modron', 'Tiefling', 'Half-Vistani',
+]
+
 export const forgeClasses = ['Fighter', 'Paladin', 'Ranger', 'Mage', 'Cleric', 'Druid', 'Thief', 'Bard', 'Ninja', 'Psionicist', 'Anchorite', 'Gypsy'] as const
 
 const bestAbilities = { strength: 18, dexterity: 18, constitution: 18, intelligence: 18, wisdom: 18, charisma: 18 }
@@ -53,7 +64,7 @@ export function comboName(race: RaceName, characterClass: string, gender: Gender
 /** Todas as combinações com arte própria, uma por imagem. */
 export function forgeCombos(): { name: string; race: RaceName; characterClass: string; gender: Gender | null }[] {
   const seen = new Set<string>()
-  return allRaces.flatMap((race) =>
+  return forgeArtRaces.filter((race) => allRaces.includes(race)).flatMap((race) =>
     forgeClasses.flatMap((characterClass) =>
       (['male', 'female'] as const).flatMap((gender) => {
         const only = raceGender(race)

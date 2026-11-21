@@ -4,7 +4,7 @@
 
 import type { CharacterClass, PlayerCharacter } from '../types/library.ts'
 import { hasClass, type ClassChoice } from './multiclass.ts'
-import { matchRace } from './raceKit.ts'
+import { matchRace, raceFamily } from './raceKit.ts'
 import { canonicalClass, type CanonicalClass } from './rules.ts'
 
 /** O nome do cenário em `campaign.enabled_settings` (lista de `lib/campaigns.ts`). */
@@ -66,7 +66,7 @@ export function ravenloftWarnings(
       if (score < (min ?? 0)) warnings.push(`${req.plural} need ${abilityName[ability]} ${min} or more (Domains of Dread); this character has ${score}.`)
     }
     const race = matchRace(c.race)
-    if (race && !req.races.includes(race)) warnings.push(`${req.plural} must be ${req.racesText} (Domains of Dread).`)
+    if (race && !raceFamily(race).some((name) => req.races.includes(name))) warnings.push(`${req.plural} must be ${req.racesText} (Domains of Dread).`)
   }
   return warnings
 }

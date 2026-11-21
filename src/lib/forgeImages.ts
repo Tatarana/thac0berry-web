@@ -2,7 +2,7 @@
 // usuário, que produz a arte; lista e prompts em docs/forge-arte.md).
 
 import { comboAllowed, comboName, forgeSlug, type Gender } from '../rules/forgeCombos'
-import { raceGender, type RaceName } from '../rules/raceKit'
+import { baseRaceRecord, raceGender, type RaceName } from '../rules/raceKit'
 import { canonicalClass } from '../rules/rules'
 
 export type { Gender }
@@ -19,12 +19,17 @@ export function genderOf(sex: string): Gender | null {
 /**
  * Imagens de uma raça, na ordem de tentativa: a do gênero escolhido na etapa 2
  * (race-elf-female.webp) e, se ela ainda não existir, a única da raça
- * (race-elf.webp). Raça de um sexo só (Bariaur) já tem o sexo no nome.
+ * (race-elf.webp). Raça de um sexo só (Bariaur) já tem o sexo no nome. Subraça:
+ * depois das próprias, as da raça-base.
  */
 export function raceImages(race: RaceName, gender: Gender | null): string[] {
-  const slug = forgeSlug(race)
-  if (raceGender(race) || !gender) return [forgeImage(`race-${slug}`)]
-  return [forgeImage(`race-${slug}-${gender}`), forgeImage(`race-${slug}`)]
+  const own = (name: RaceName) => {
+    const slug = forgeSlug(name)
+    return raceGender(name) || !gender ? [forgeImage(`race-${slug}`)] : [forgeImage(`race-${slug}-${gender}`), forgeImage(`race-${slug}`)]
+  }
+  // Subraça sem arte própria (Drow, Hill Dwarf, Athasian Elf…) cai na da raça-base.
+  const base = baseRaceRecord(race)
+  return base ? [...own(race), ...own(base.name)] : own(race)
 }
 
 /** Imagens de uma classe, na mesma ordem: a do gênero, depois a única. */

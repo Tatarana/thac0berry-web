@@ -9,7 +9,7 @@
 // - Meio-vistani (Domains of Dread): envelhece como o humano (Tabela 67); a
 //   altura, o peso e a idade inicial ficam os do humano.
 
-import type { RaceName } from './raceKit.ts'
+import { baseRaceRecord, type RaceName } from './raceKit.ts'
 import type { Gender } from '../lib/forgeImages.ts'
 
 export interface Dice {
@@ -53,8 +53,8 @@ export const bodyTables: Partial<Record<RaceName, BodyTable>> = {
   'Half-Vistani': human,
 }
 
-/** A tabela da raça (raça fora das tabelas: a humana). */
-export const bodyTable = (race: RaceName | null): BodyTable => (race ? bodyTables[race] : null) ?? human
+/** A tabela da raça; subraça sem tabela própria usa a da raça-base; raça fora das tabelas: a humana. */
+export const bodyTable = (race: RaceName | null): BodyTable => (race ? (bodyTables[race] ?? bodyTables[baseRaceRecord(race)?.name ?? '']) : null) ?? human
 
 const average = (base: number, d: Dice | null) => base + (d ? Math.ceil((d.count * (d.sides + 1)) / 2) : 0)
 const roll = (base: number, d: Dice | null, random: () => number) => {

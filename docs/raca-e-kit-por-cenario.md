@@ -87,3 +87,11 @@ bloquear.
     Land-Based casadas com o compêndio, e o texto da tribo se somou ao da
     raça; a ficha mostrou "Half-Vistani / Equaar". Personagem de teste
     apagado depois; testes: 237 (2 novos).
+- 2026-11-20, raças em dados (web v0.147.0; `thac0berry-data` ganhou `races.json`): as raças vêm dos dados e os seletores
+  mudaram. **Decisão do usuário, que substitui a de 2026-10-17 para raças:** o Forge e a troca de raça na ficha
+  (`RacePicker`) mostram só as raças jogáveis dos cenários da campanha (Core sempre; a raça atual fica; sem filtro de
+  cenários, todas as jogáveis), agrupadas por origem. Raça de cenário em construção (Council of Wyrms, Spelljammer,
+  Al-Qadim) nunca aparece (`raceSelectable`). O aviso (`raceSettingWarning`, `settingFitNotes`) segue para fichas que já
+  têm a raça. Classes e kits continuam como em 2026-10-17 (sempre aparecem, só avisam). Detalhes e números em
+  `docs/backlog.md` ("Raças em dados"); relatório em `thac0berry-data/docs/racas-divergencias-2026-11.md`.
+

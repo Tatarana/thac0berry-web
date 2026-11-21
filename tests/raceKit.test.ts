@@ -150,8 +150,11 @@ test('seletor de raça: bardo semi-humano recebe o aviso do CBH, não o "cannot 
 })
 
 test('raças planares (PWH): sempre na lista (2026-10-17: o cenário só avisa, não esconde); ajustes, limites, multiclasse e ladrão', () => {
-  // 6 do PHB + 10 planares (Planescape) + 1 (Half-Vistani, Ravenloft).
-  assert.equal(K.allRaces.length, 17)
+  // As 17 de antes (6 do PHB + 10 planares + Half-Vistani) seguem na lista, na mesma ordem, junto com as raças dos dados (tests/races.test.ts).
+  assert.deepEqual(K.allRaces.slice(0, 17), [
+    'Human', 'Dwarf', 'Elf', 'Gnome', 'Half-Elf', 'Halfling', 'Aasimar', 'Bariaur (male)', 'Bariaur (female)',
+    'Genasi (air)', 'Genasi (earth)', 'Genasi (fire)', 'Genasi (water)', 'Githzerai', 'Modron', 'Tiefling', 'Half-Vistani',
+  ])
   assert.match(K.raceSettingWarning('Tiefling', null) ?? '', /Planescape race .*The Planewalker's Handbook.*does not have the Planescape setting on/)
   assert.equal(K.raceSettingWarning('Tiefling', ['Planescape']), null)
   assert.equal(K.raceSettingWarning('Human', null), null)
