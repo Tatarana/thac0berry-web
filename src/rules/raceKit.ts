@@ -453,6 +453,39 @@ export function kitsAllowedFor<T extends KitChoice>(kits: T[], characterClass: C
   return kits.filter((k) => k.classEligibility.allowedClasses.includes(cls) || (cls === 'Cleric' && k.classEligibility.allowedClasses.includes('Specialty Priest')))
 }
 
+/**
+ * O kit aparece nos seletores (Forge e troca de kit na ficha)? Esconde o que os dados marcam
+ * `playable: false` (raça ou classe que o app não tem, cenário fora do Forge, decisão pendente) e
+ * os kits de cenário em construção (Al-Qadim, Council of Wyrms, Spelljammer), como `raceSelectable`
+ * faz com as raças. `settings` = o filtro de cenários do Forge; sem ele (ficha), o cenário
+ * da campanha só avisa e nunca esconde (decisão do usuário, 2026-10-17). `chosen` (o kit já
+ * escolhido) continua à vista.
+ */
+export function kitSelectable(
+  kit: { name: string; playable?: boolean | null; setting?: string | null },
+  settings?: string[] | null,
+  chosen?: string | null,
+): boolean {
+  if (kit.name === chosen) return true
+  if (kit.playable === false) return false
+  if (kit.setting && settingUnderConstruction(kit.setting)) return false
+  return allowedBySettings(kit.setting, settings)
+}
+
+/**
+ * O aviso do compêndio para um kit que o Forge e a ficha não oferecem ("Not offered in the Forge:
+ * humanoid races are not playable", "Spelljammer: under construction"); null se é oferecido.
+ * `reasons` = hiddenReasonLabel (data/kits.ts), passado para esta regra não importar dados.
+ */
+export function kitAvailabilityNote(
+  kit: { playable?: boolean | null; hiddenReason?: string | null; setting?: string | null },
+  reasons: Record<string, string>,
+): string | null {
+  if (kit.playable === false) return `Not offered in the Forge: ${reasons[kit.hiddenReason ?? 'undecided'] ?? 'hidden'}`
+  if (kit.setting && settingUnderConstruction(kit.setting)) return `${kit.setting}: under construction`
+  return null
+}
+
 // --- Proficiências bônus (kit, raça, tribo) ------------------------------------------------
 //
 // Decisões do usuário (2026-10-24): entram marcadas com a origem (`grantedBy`)

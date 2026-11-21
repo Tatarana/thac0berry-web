@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { loadAllKits, type Kit } from '../data/kits'
 import { normalize } from '../lib/search'
 import { allClasses, filterApplicableKits, kitWarnings } from '../rules/multiclass'
-import { groupRaces, hasAbilityRequirements, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, selectableRaces, type RaceName } from '../rules/raceKit'
+import { groupRaces, hasAbilityRequirements, kitSelectable, kitsAllowedFor, matchRace, raceAdjustmentsText, raceWarnings, selectableRaces, type RaceName } from '../rules/raceKit'
 import { vistaniTribeForRoll, vistaniTribes, vistaniTribeWarnings, type VistaniTribe } from '../rules/vistani'
 import type { CharacterClass, PlayerCharacter } from '../types/library'
 import { PaperModal } from './DetailBits'
@@ -158,6 +158,8 @@ export function KitPicker({
       const seen = new Set<string>()
       const list = classes
         .flatMap((cls) => kitsAllowedFor(all, cls))
+        // Sem os escondidos nem os de cenário em construção; o cenário da campanha só avisa (kitWarnings).
+        .filter((k) => kitSelectable(k, undefined, character.kit))
         .filter((k) => (seen.has(k.id) ? false : (seen.add(k.id), true)))
       setKits(list.sort((a, b) => a.name.localeCompare(b.name)))
     })

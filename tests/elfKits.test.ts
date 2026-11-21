@@ -106,8 +106,8 @@ test('kits da Dragon Magazine: classe pela própria página, não pela detecçã
   assert.equal(kit('Earthstoker').classEligibility.subclass, 'Druid')
   assert.deepEqual(kit('Earthstoker').classEligibility.allowedClasses, ['Druid'])
   assert.equal(kit('Shikari').classEligibility.subclass, 'Ranger')
-  // não entram: Masque of the Red Death (outro sistema de classes) e kits de dragão
-  for (const name of ['Enthusiast', 'Exorcist', 'Athlete', 'Dragon Sage', 'Manikin']) assert.ok(!kits.some((k) => k.name === name), name)
+  // 2026-11-20: Masque of the Red Death (outro sistema de classes) e os ambíguos entram, mas escondidos
+  for (const name of ['Enthusiast', 'Exorcist', 'Athlete', 'Manikin']) assert.equal(kit(name).playable, false, name)
   // meio-elfo e elfo: o kit de meio-elfo avisa para o elfo
   const elfFM = { characterClass: 'Fighter' as const, level: 3, multiClasses: [{ characterClass: 'Mage' as const, level: 3 }], race: 'Elf' }
   const halfElfFM = { ...elfFM, race: 'Half-Elf' }
@@ -122,13 +122,15 @@ test('dinheiro inicial só com fórmula de dados e moeda explícita; ids e nomes
   assert.equal(kit('Raider').mechanics.startingCash, null) // "ceramic pieces"
   const dragon = kits.filter((k) => k.sourceBook.startsWith('Dragon Magazine #'))
   assert.equal(new Set(dragon.map((k) => k.name.toLowerCase())).size, dragon.length)
-  assert.equal(dragon.length, 119)
+  assert.equal(dragon.length, 134) // 119 mais 15 de 2026-11-20: Kshatriya, Courier, MotRD, Taltos e ambíguos
   for (const k of dragon) {
     assert.ok(!k.description.briefSummary.includes('*'), k.name)
     assert.ok(!k.description.briefSummary.startsWith(':'), k.name)
   }
 })
 
+// Regra de 2026-11-20: o compêndio mostra TODO kit (inclusive os escondidos, com aviso); só o Forge e a ficha
+// deixam de oferecer os playable:false e os de cenário em construção (tests/missingKits.test.ts).
 test('todo kit aparece no compêndio: o subgrupo está em subclassOrder', () => {
   const hidden = kits.filter((k) => !subclassOrder[k.classEligibility.classGroup as ClassGroup]?.includes(k.classEligibility.subclass))
   assert.deepEqual(hidden.map((k) => `${k.name} (${k.classEligibility.classGroup}/${k.classEligibility.subclass})`), [])

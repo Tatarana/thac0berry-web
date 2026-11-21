@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { GroupSection } from '../components/GroupSection'
 import { KitDetail } from '../components/KitDetail'
-import { loadKits, subclassOrder, type ClassGroup, type Kit } from '../data/kits'
+import { hiddenReasonLabel, loadKits, subclassOrder, type ClassGroup, type Kit } from '../data/kits'
+import { kitAvailabilityNote } from '../rules/raceKit'
 import { normalize } from '../lib/search'
 import { useGroupToggle } from '../lib/useGroupToggle'
 
@@ -78,8 +79,9 @@ export function KitCompendium({ group }: { group: ClassGroup }) {
                 <button className="spell-row kit-row" onClick={() => setSelected(kit)}>
                   <span className="kit-row-top">
                     <span className="spell-name">{kit.name}</span>
-                    <span className="spell-meta">{kit.sourceBook}</span>
+                    <span className="spell-meta">{[kit.sourceBook, kit.setting].filter(Boolean).join(' · ')}</span>
                   </span>
+                  {kitAvailabilityNote(kit, hiddenReasonLabel) && <span className="kit-summary">⚠ {kitAvailabilityNote(kit, hiddenReasonLabel)}</span>}
                   <span className="kit-summary">{kit.description.briefSummary.replaceAll('*', '')}</span>
                 </button>
               </li>

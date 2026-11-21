@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { findDeityByName, loadDeities, type Deity } from '../data/deities'
-import { displaySections, type Kit } from '../data/kits'
+import { displaySections, hiddenReasonLabel, type Kit } from '../data/kits'
+import { kitAvailabilityNote } from '../rules/raceKit'
 import { DeityDetail } from './DeityDetail'
 import { Field, PaperModal, TextBlock } from './DetailBits'
 import { RuleTableView } from './RuleTableView'
@@ -60,7 +61,9 @@ export function KitDetail({ kit, onClose }: { kit: Kit; onClose: () => void }) {
           View deity: {deity.name} →
         </button>
       )}
+      {kitAvailabilityNote(kit, hiddenReasonLabel) && <p className="paper-soft">⚠ {kitAvailabilityNote(kit, hiddenReasonLabel)}{kit.note ? ` — ${kit.note}` : ''}</p>}
       <div className="detail-grid">
+        <Field label="Setting" value={kit.setting} />
         <Field label="Starting Cash" value={mechanics.startingCash} />
         <Field label="Ability Requirements" value={abilities} />
         <Field label="Alignment" value={mechanics.requirements.alignments.join(', ')} />

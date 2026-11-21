@@ -73,19 +73,37 @@ export interface Kit {
   pantheon?: string | null
   setting?: string | null
   titleInChurch?: string | null
+  /** false = o app guarda o kit mas não o oferece no Forge nem na ficha (ver `hiddenReason`); ausente = jogável. */
+  playable?: boolean | null
+  hiddenReason?: 'humanoid-not-playable' | 'setting-not-in-forge' | 'class-not-in-app' | 'race-not-playable' | 'undecided' | null
+  /** Observação de curadoria (por que está escondido, o que a página não diz). */
+  note?: string | null
+}
+
+/** O que o selo do compêndio diz de um kit escondido (os dados ficam; só a oferta no Forge e na ficha some). */
+export const hiddenReasonLabel: Record<NonNullable<Kit['hiddenReason']>, string> = {
+  'humanoid-not-playable': 'humanoid races are not playable',
+  'setting-not-in-forge': 'its setting is not in the Forge',
+  'class-not-in-app': 'its class is not in the app',
+  'race-not-playable': 'its race is not playable',
+  undecided: 'undecided (see the note)',
 }
 
 /** Ordem dos subgrupos, igual ao KitCompendiumView do iPad. */
 export const subclassOrder: Record<ClassGroup, string[]> = {
-  Priest: ['Cleric', 'Druid', 'Any Priest', 'Specialty Priest'],
+  // 'Mystic': kits da classe Mystic do Masque of the Red Death (a classe não existe no app; kits escondidos).
+  Priest: ['Cleric', 'Druid', 'Any Priest', 'Specialty Priest', 'Mystic'],
   // 'Ravenloft': kits do Dragon Magazine Annual 1998 (Denizens of Dread), antes fora da lista.
   Wizard: ['Wizard', 'Ravenloft'],
-  Warrior: ['Fighter', 'Paladin', 'Ranger', 'Barbarian', 'Ravenloft'],
-  Rogue: ['Thief', 'Bard', 'Ninja', 'Ravenloft'],
+  // 'Gladiator': kits da classe Gladiator de Dark Sun (Complete Gladiator's Handbook; a classe não existe no app).
+  Warrior: ['Fighter', 'Paladin', 'Ranger', 'Barbarian', 'Gladiator', 'Ravenloft'],
+  // 'Tradesman': classe do Masque of the Red Death (kits escondidos).
+  Rogue: ['Thief', 'Bard', 'Ninja', 'Tradesman', 'Ravenloft'],
   // Kits de Psionicist (2026-10-06): The Will and the Way, Dragon Magazine etc.
   Psionicist: ['Psionicist'],
   // Kits de raça (Complete Book of Elves, Dragon Magazine; 2026-11-16): o subgrupo é a raça; a classe vem de allowedClasses.
-  Demihuman: ['Elf', 'Half-Elf', 'Dwarf', 'Avariel'],
+  // 2026-11-20: Complete Book of Dwarves (Dwarf) e of Gnomes & Halflings (Gnome, Halfling).
+  Demihuman: ['Elf', 'Half-Elf', 'Dwarf', 'Gnome', 'Halfling', 'Avariel'],
 }
 
 const cache = new Map<ClassGroup, Promise<Kit[]>>()
