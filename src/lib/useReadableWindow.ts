@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject } from 'react'
+import { readingKeyDelta } from '../rules/readingScale'
 import { readingStyle, stepReadingScale, subscribeReadingScale, useReadingIndex } from './readingScale'
 
 // Comportamento comum das janelas de leitura: variáveis de escala, atalhos
@@ -44,6 +45,30 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /**
+ * Atalhos + e - do tamanho do texto, nunca enquanto se digita. `accept` decide,
+ * no momento da tecla, se este ouvinte é o responsável (evita passo duplo quando
+ * há uma janela de leitura aberta sobre a Forja).
+ */
+export function useReadingShortcuts(enabled: boolean, accept: () => boolean = () => true) {
+  const acceptRef = useRef(accept)
+  useEffect(() => {
+    acceptRef.current = accept
+  })
+  useEffect(() => {
+    if (!enabled) return
+    const onKey = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) return
+      const delta = readingKeyDelta(event)
+      if (delta === 0 || !acceptRef.current()) return
+      event.preventDefault()
+      stepReadingScale(delta)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [enabled])
+}
+
+/**
  * Para o elemento que rola (`.modal-backdrop`) de uma janela de leitura. Com
  * `enabled` falso não faz nada. Devolve a ref e o estilo (variáveis CSS) a pôr nele.
  */
@@ -68,20 +93,10 @@ export function useReadableWindow(enabled: boolean): { backdropRef: RefObject<HT
   }, [enabled, index])
 
   // Atalhos + e - (só a janela de cima, se houver várias empilhadas).
-  useEffect(() => {
-    if (!enabled) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) return
-      const delta = event.key === '+' || event.key === '=' ? 1 : event.key === '-' ? -1 : 0
-      if (delta === 0) return
-      const windows = document.querySelectorAll('[data-reading-window]')
-      if (windows[windows.length - 1] !== backdropRef.current) return
-      event.preventDefault()
-      stepReadingScale(delta)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [enabled])
+  useReadingShortcuts(enabled, () => {
+    const windows = document.querySelectorAll('[data-reading-window]')
+    return windows[windows.length - 1] === backdropRef.current
+  })
 
   return { backdropRef, style: enabled ? readingStyle(index) : undefined }
 }

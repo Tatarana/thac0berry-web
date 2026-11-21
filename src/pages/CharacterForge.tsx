@@ -19,6 +19,8 @@ import { ForgeThievingStep } from '../components/ForgeThievingStep'
 import { ForgeWeaponStep } from '../components/ForgeWeaponStep'
 import { ForgeSettingsReminder } from '../components/ForgeParts'
 import { PageHeader } from '../components/PageHeader'
+import { readingStyle, useReadingIndex } from '../lib/readingScale'
+import { useReadingShortcuts } from '../lib/useReadableWindow'
 import { artAttachment, portraitJPEG, uploadAttachment } from '../lib/attachments'
 import { blobToDataURL, clearForgeDraft, dataURLToFile, keepForgeDraft, readForgeDraft } from '../lib/forgeDraft'
 import { genderOf, heroImages } from '../lib/forgeImages'
@@ -75,6 +77,10 @@ function ForgeTrail({ stepTitles, current, onSelect }: { stepTitles: string[]; c
 
 export function CharacterForge() {
   const navigate = useNavigate()
+  // Tamanho do texto de leitura (o mesmo das janelas): só a prosa explicativa escala, via --reading-scale.
+  const readingIndex = useReadingIndex()
+  // Com uma janela de leitura aberta sobre a Forja, os atalhos são dela (senão o passo contaria em dobro).
+  useReadingShortcuts(true, () => !document.querySelector('[data-reading-window]'))
   // Voltando do login do fim: tudo recomeça de onde estava.
   const [resumed] = useState(readForgeDraft)
   const [step, setStep] = useState(resumed?.step ?? 1)
@@ -240,7 +246,7 @@ export function CharacterForge() {
   }
 
   return (
-    <div className={extra || step === 10 ? 'page page-wide' : 'page'}>
+    <div className={extra || step === 10 ? 'page page-wide' : 'page'} style={readingStyle(readingIndex)}>
       <PageHeader title="The Forge" backTo="/characters" />
       <ForgeTrail stepTitles={stepTitles} current={step} onSelect={setStep} />
       {gate && (

@@ -5,6 +5,7 @@ import { settingLogo } from '../lib/campaigns'
 import { slotOfSrc } from '../lib/siteImageRules'
 import { useIsAdmin, useSiteImages } from '../lib/siteImages'
 import { BookCode } from './BookCode'
+import { ReadingScaleButton } from './ReadingScaleControl'
 import { RuleDetail } from './RuleDetail'
 import { SiteImageEdit } from './SiteImageEdit'
 
@@ -211,12 +212,15 @@ export function ForgeSettingsReminder({ settings, onChange }: { settings: string
   )
 }
 
-/** O "?" ao lado do título da etapa; abre/fecha a `ForgeHelpNote`. */
+/** O "?" ao lado do título da etapa (abre/fecha a `ForgeHelpNote`) e, junto dele, o "Aa" do tamanho do texto. */
 export function ForgeHelpButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
-    <button type="button" className="forge-help-button" aria-expanded={open} aria-label="Help" onClick={onToggle}>
-      ?
-    </button>
+    <>
+      <button type="button" className="forge-help-button" aria-expanded={open} aria-label="Help" onClick={onToggle}>
+        ?
+      </button>
+      <ReadingScaleButton buttonClass="forge-help-button forge-aa-button" />
+    </>
   )
 }
 
