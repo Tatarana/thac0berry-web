@@ -156,16 +156,26 @@ export const forgeDeities = <T extends Pick<Deity, 'forgeSelectable'>>(deities: 
  * O deus é da raça do personagem? A raça (ou a raça-base da subraça) bate com
  * a `race` do deus: Mountain Dwarf → Moradin; Drow → os deuses elfos.
  */
-export function deityOfRace(deity: Pick<Deity, 'race'>, race: RaceName | null | undefined): boolean {
-  return !!deity.race && isRaceOf(race, deity.race)
+// Panteões de sub-raça: só valem para a própria sub-raça (Lolth não é "do povo" de um High Elf),
+// e a sub-raça vê o próprio panteão, não o da raça-base.
+const subracePantheon: Record<string, string> = { Drow: 'drow', Duergar: 'duergar', Svirfneblin: 'deep_gnome_svirfneblin' }
+
+export function deityOfRace(deity: Pick<Deity, 'race' | 'pantheon'>, race: RaceName | null | undefined): boolean {
+  if (!deity.race || !race) return false
+  const own = raceRecord(race)?.id
+  const sub = deity.pantheon ? subracePantheon[deity.pantheon] : undefined
+  if (sub) return own === sub
+  if (own && Object.values(subracePantheon).includes(own)) return false
+  return isRaceOf(race, deity.race)
 }
 
 const demihumanAdjective: Record<string, string> = { dwarf: 'Dwarven', elf: 'Elven', gnome: 'Gnomish', halfling: 'Halfling' }
 
 /** Rótulo do chip da raça do personagem ("Dwarven gods"); null se a raça não tem deuses semi-humanos. */
-export function raceGodsLabel(deities: Pick<Deity, 'race'>[], race: RaceName | null | undefined): string | null {
+export function raceGodsLabel(deities: Pick<Deity, 'race' | 'pantheon'>[], race: RaceName | null | undefined): string | null {
   const sample = deities.find((d) => deityOfRace(d, race))
   if (!sample?.race) return null
+  if (sample.pantheon && subracePantheon[sample.pantheon]) return `${sample.pantheon} gods`
   const baseId = sample.race
   return `${demihumanAdjective[baseId] ?? raceRecord(baseId)?.name ?? baseId} gods`
 }

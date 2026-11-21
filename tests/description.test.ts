@@ -116,6 +116,14 @@ test('raça do personagem: Mountain Dwarf (subraça → raça-base) destaca Mora
   assert.equal(D.raceGodsLabel(allDeities, 'Mountain Dwarf'), 'Dwarven gods')
   assert.equal(D.raceGodsLabel(allDeities, 'High Elf'), 'Elven gods')
   assert.equal(D.raceGodsLabel(allDeities, 'Human'), null)
+  // Panteões de sub-raça: Lolth é dos drow, não de qualquer elfo; o drow vê os deuses drow.
+  const lolth = { race: 'elf', pantheon: 'Drow' }
+  const laduguer = { race: 'dwarf', pantheon: 'Duergar' }
+  assert.equal(D.deityOfRace(lolth, 'High Elf'), false)
+  assert.equal(D.deityOfRace(lolth, 'Drow'), true)
+  assert.equal(D.deityOfRace({ race: 'elf', pantheon: 'Elven' }, 'Drow'), false)
+  assert.equal(D.deityOfRace(laduguer, 'Mountain Dwarf'), false)
+  assert.equal(D.deityOfRace(laduguer, 'Duergar'), true)
   // O filtro "race" traz só os deuses anões; no "all" eles vêm primeiro.
   const dwarven = choices('Mountain Dwarf', 'race')
   assert.ok(dwarven.length >= 8 && dwarven.every((d) => d.race === 'dwarf'))
