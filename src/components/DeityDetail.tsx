@@ -1,17 +1,22 @@
 import { useState } from 'react'
 import { pantheonOf, type Deity } from '../data/deities'
+import { useDeityImage } from '../lib/siteImages'
+import { deitySlot } from '../lib/siteImageRules'
 import { raceRecords } from '../rules/raceKit'
 import { Field, PaperModal, TextBlock } from './DetailBits'
+import { SlotArt } from './SlotArt'
 
 // Ficha da divindade (DeityDetailSheet do iPad).
 export function DeityDetail({ deity, onClose }: { deity: Deity; onClose: () => void }) {
   const [showAvatar, setShowAvatar] = useState(false)
+  const art = useDeityImage(deity.id)
   const subtitle = [pantheonOf(deity), deity.rank, deity.status && deity.status !== 'None' ? deity.status : null, deity.bookCode]
     .filter(Boolean)
     .join(' · ')
 
   return (
     <PaperModal readable title={deity.name} subtitle={subtitle} onClose={onClose}>
+      {art !== undefined && <SlotArt slot={deitySlot(deity.id)} name={deity.name} url={art} />}
       <div className="detail-grid">
         <Field label="Pantheon" value={pantheonOf(deity)} />
         <Field label="Race" value={deity.race ? (raceRecords().find((r) => r.id === deity.race)?.name ?? deity.race) : null} />
