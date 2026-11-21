@@ -25,6 +25,7 @@ import {
   type RuleKey,
   type RuleValue,
 } from './rules.ts'
+import { clearExceptionalIfDisqualified, isExceptionalValue, qualifiesForExceptionalStrength } from './exceptionalStrength.ts'
 import { raiseExperienceToLevel } from './multiclass.ts'
 
 export type ConsequenceKind = 'autoApplicable' | 'alreadyAutomatic'
@@ -240,6 +241,7 @@ export function setMultiClasses(c: PlayerCharacter, multiClasses: ClassLevel[]) 
   // Primeiro multiclasse da ficha: o retrato guarda o estado de antes (classe única).
   if (c.lastAppliedMultiClasses === undefined) c.lastAppliedMultiClasses = (c.multiClasses ?? []).map((k) => ({ ...k }))
   c.multiClasses = multiClasses.length ? multiClasses.map((k) => ({ ...k })) : null
+  clearExceptionalIfDisqualified(c)
   raiseExperienceToLevel(c)
   // Dado de vida "d10/d4" quando não foi escrito à mão (o padrão segue as classes).
   const dice = [c.characterClass, ...multiClasses.map((k) => k.characterClass)].map((k) => hitDieType(k)).join('/')
@@ -268,6 +270,19 @@ export type AbilityKey = 'strength' | 'dexterity' | 'constitution' | 'intelligen
 export function setAbility(c: PlayerCharacter, key: AbilityKey, value: number) {
   ensureConsequenceSnapshot(c)
   c.abilities = { ...c.abilities, [key]: value }
+  clearExceptionalIfDisqualified(c)
+}
+
+/**
+ * Força excepcional (18/01 a 18/00; 100 = 18/00): grava o d100, ou apaga com
+ * null. Quem não tem direito (ver exceptionalStrength.ts) não recebe valor.
+ * Passa pelo motor de consequências como qualquer mudança de atributo: bônus
+ * de acerto, dano, carga, portas e barras ficam pendentes até o jogador revisar.
+ */
+export function setExceptionalStrength(c: PlayerCharacter, value: number | null) {
+  if (value !== null && !(isExceptionalValue(value) && qualifiesForExceptionalStrength(c))) return
+  ensureConsequenceSnapshot(c)
+  c.abilities = { ...c.abilities, exceptionalStrength: value }
 }
 
 /**
@@ -280,6 +295,7 @@ export function setAbility(c: PlayerCharacter, key: AbilityKey, value: number) {
 export function setClass(c: PlayerCharacter, characterClass: CharacterClass, readMagic: { id: string; name: string } | null) {
   ensureConsequenceSnapshot(c)
   c.characterClass = characterClass
+  clearExceptionalIfDisqualified(c)
   refreshXPNeeded(c)
   const die = hitDieType(characterClass)
   if (c.combat?.hitDiceType !== die) c.combat = { ...(c.combat ?? {}), hitDiceType: die }
@@ -300,6 +316,7 @@ export function setFormerClasses(c: PlayerCharacter, formerClasses: ClassLevel[]
   ensureConsequenceSnapshot(c)
   if (c.lastAppliedFormerClasses === undefined) c.lastAppliedFormerClasses = (c.formerClasses ?? []).map((k) => ({ ...k }))
   c.formerClasses = formerClasses.length ? formerClasses.map((k) => ({ ...k })) : null
+  clearExceptionalIfDisqualified(c)
 }
 
 /**
@@ -334,8 +351,9 @@ export function undoDualClass(c: PlayerCharacter) {
   const former = c.formerClasses ?? []
   const last = former[former.length - 1]
   if (!last) return
-  setFormerClasses(c, former.slice(0, -1))
+  // A classe volta primeiro: com as anteriores ainda na lista, a Força excepcional não se perde no meio do caminho.
   setClass(c, last.characterClass, null)
+  setFormerClasses(c, former.slice(0, -1))
   setLevel(c, last.level)
   c.experience = xpRequired(last.level, last.characterClass) ?? 0
 }

@@ -19,6 +19,7 @@ import { normalize } from '../lib/search.ts'
 import type { AbilityScores, CharacterClass, PlayerCharacter, ProficiencyEntry, ProficiencyGrant } from '../types/library.ts'
 import { allowedBySettings, settingUnderConstruction } from './campaignFilter.ts'
 import { ensureConsequenceSnapshot } from './consequences.ts'
+import { clearExceptionalIfDisqualified } from './exceptionalStrength.ts'
 import { canonicalClass } from './rules.ts'
 
 /** O nome da raça como a ficha o grava ("Elf", "Genasi (fire)", "Drow"). Desde as raças em dados, qualquer texto; `matchRace` reconhece os que existem. */
@@ -172,6 +173,17 @@ const requirementsOf = (race: RaceName) => raceRecord(race)?.abilityScoreRequire
 /** Ajustes da raça na ordem do dado: [atributo, delta]. */
 const adjustmentsOf = (race: RaceName): [AbilityName, number][] =>
   (raceRecord(race)?.abilityScoreAdjustments ?? []).flatMap((a) => (abilityOfCode[a.ability] ? [[abilityOfCode[a.ability], a.modifier] as [AbilityName, number]] : []))
+
+/**
+ * Maior Força que a raça alcança na ficha (Tabela 7): o máximo da faixa, que é
+ * dos atributos antes dos ajustes, mais o ajuste de Força da raça (halfling:
+ * 18 − 1 = 17). null quando a raça não tem faixa (humano) ou não é conhecida.
+ */
+export function raceStrengthMax(race: RaceName): number | null {
+  const max = requirementsOf(race)?.STR?.max
+  if (max === undefined) return null
+  return max + (adjustmentsOf(race).find(([name]) => name === 'Strength')?.[1] ?? 0)
+}
 
 export function hasAbilityRequirements(race: RaceName) {
   return !!requirementsOf(race)
@@ -356,6 +368,7 @@ export function applyRace(c: PlayerCharacter, race: RaceName) {
   const abilities = { ...c.abilities }
   for (const [name, delta] of adjustmentsOf(race)) (abilities[abilityKey[name]] as number) += delta
   c.abilities = abilities
+  clearExceptionalIfDisqualified(c)
   c.saves = { ...c.saves, spellResistance: raceRecord(race)?.spellResistance ?? null }
   const abilitiesText = specialAbilities(race)
   if (!c.racialAbilities && abilitiesText) c.racialAbilities = abilitiesText

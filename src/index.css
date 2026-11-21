@@ -1816,6 +1816,50 @@ a.shield-combatant-row:hover {
   margin: 0 -1px -1px 0;
 }
 
+/* 18/xx na ficha só para leitura: a caixa cresce para caber a barra. */
+.rec-ability-score-wide {
+  width: auto;
+  min-width: 54px;
+  padding: 0 4px;
+  font-size: 1.25rem;
+}
+
+/* "/xx" da Força excepcional, ao lado do 18, na ficha editável. */
+.rec-ability-exc {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  border: 1px solid var(--ink);
+  margin: 0 -1px -1px 0;
+  font-size: 1.25rem;
+}
+
+.rec-ability-exc .ink-input {
+  width: 2.4ch;
+  min-width: 0;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.rec-exc-roll {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 4px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.rec-exc-roll:hover {
+  background: rgb(233 220 190 / 0.35);
+}
+
 .rec-ability-cells {
   flex: 1;
   display: grid;
@@ -11535,6 +11579,38 @@ button.sp-line {
   font-size: calc(0.8rem * var(--reading-scale, 1));
   line-height: 1.5;
   color: #b8a690;
+}
+
+/* Força excepcional (ForgeExceptionalStrength): o d100 na etapa de classe. */
+.exc-card {
+  gap: 12px;
+  margin: 22px auto 0;
+  max-width: 560px;
+}
+
+.exc-own {
+  margin-top: 4px;
+  font-size: calc(0.82rem * var(--reading-scale, 1));
+}
+
+.exc-own-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffd27a;
+  font-weight: 700;
+}
+
+.exc-input {
+  width: 4.2ch;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #c9a227;
+  background: rgba(12, 8, 5, 0.6);
+  color: #ffd27a;
+  font: inherit;
+  font-size: 1.1rem;
+  text-align: center;
 }
 
 /* --- The Forge, equipamento (ForgeEquipmentStep; protótipo "Step 9 · Equipment") --- */
