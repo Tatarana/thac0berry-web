@@ -1,17 +1,20 @@
 import { useState } from 'react'
-import type { Deity } from '../data/deities'
+import { pantheonOf, type Deity } from '../data/deities'
+import { raceRecords } from '../rules/raceKit'
 import { Field, PaperModal, TextBlock } from './DetailBits'
 
 // Ficha da divindade (DeityDetailSheet do iPad).
 export function DeityDetail({ deity, onClose }: { deity: Deity; onClose: () => void }) {
   const [showAvatar, setShowAvatar] = useState(false)
-  const subtitle = [deity.rank, deity.status && deity.status !== 'None' ? deity.status : null, deity.bookCode]
+  const subtitle = [pantheonOf(deity), deity.rank, deity.status && deity.status !== 'None' ? deity.status : null, deity.bookCode]
     .filter(Boolean)
     .join(' · ')
 
   return (
     <PaperModal readable title={deity.name} subtitle={subtitle} onClose={onClose}>
       <div className="detail-grid">
+        <Field label="Pantheon" value={pantheonOf(deity)} />
+        <Field label="Race" value={deity.race ? (raceRecords().find((r) => r.id === deity.race)?.name ?? deity.race) : null} />
         <Field label="Alignment" value={deity.alignment} />
         <Field label="Portfolio" value={deity.portfolio} />
         <Field label="Symbol" value={deity.symbol} />

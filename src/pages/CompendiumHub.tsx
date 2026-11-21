@@ -23,7 +23,7 @@ const entries: HubEntry[] = [
   { title: 'Psionicist Kits', subtitle: '35 kits · The Will and the Way, Dragon Magazine & Thri-Kreen', to: '/compendium/kits/psionicist', image: 'icon_psionicist_kits', accent: 'var(--teal)' },
   // Sem arte própria ainda (aparece ✦): o usuário produz o medalhão.
   { title: 'Demihuman Kits', subtitle: '83 kits · Elf, Half-Elf, Dwarf, Gnome, Halfling & Avariel', to: '/compendium/kits/demihuman', accent: 'var(--mint-glow)' },
-  { title: 'Deities', subtitle: '101 deities · Forgotten Realms & Dragonlance', to: '/compendium/deities', image: 'icon_deities', accent: 'var(--brass)' },
+  { title: 'Deities', subtitle: '386 deities · Forgotten Realms, Dragonlance, demihuman, Legends & Lore, Monster Mythology & more', to: '/compendium/deities', image: 'icon_deities', accent: 'var(--brass)' },
   { title: 'Rules Reference', subtitle: '1,226 rules · PHB, DMG, Complete Handbooks, Tome of Magic & settings', to: '/compendium/rules', image: 'icon_rules_reference', accent: 'var(--brass)' },
   { title: 'Proficiencies', subtitle: '372 proficiencies · general, class & racial', to: '/compendium/proficiencies', image: 'icon_proficiencies', accent: 'var(--teal)' },
   { title: 'Weapons', subtitle: '75 weapons · PHB & CPrH', to: '/compendium/weapons', image: 'icon_weapons', accent: 'var(--crimson)' },

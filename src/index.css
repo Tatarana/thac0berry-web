@@ -907,6 +907,24 @@ a.shield-combatant-row:hover {
   background: var(--ink);
 }
 
+/* Compêndio de divindades: filtro por panteão */
+.deity-pantheon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.deity-pantheon select {
+  font: inherit;
+  font-size: 0.8rem;
+  max-width: 100%;
+  padding: 3px 6px;
+  background: transparent;
+  color: var(--ink);
+  border: 1.1px solid rgb(47 39 28 / 0.55);
+}
+
 .level-section {
   border: 1.3px solid var(--ink);
   background: rgb(255 255 255 / 0.12);
@@ -12288,6 +12306,21 @@ button.sp-line {
 .ds-god-fit .ds-god-al {
   border-color: #6fbf8e;
   color: #a6e3bd;
+}
+
+.ds-god-kin {
+  border-color: #8a712a;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 178, 60, 0.16), transparent 60%),
+    linear-gradient(170deg, rgba(48, 38, 40, 0.9), rgba(20, 15, 18, 0.95));
+}
+
+.ds-god-kin-tag {
+  align-self: flex-start;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffd27a;
 }
 
 .ds-god-on {
