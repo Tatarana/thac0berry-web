@@ -8,6 +8,7 @@ import {
   canStepReading,
   clampReadingIndex,
   parseStoredReadingScale,
+  readingKeyDelta,
   readingLineHeight,
   readingPercentLabel,
   readingScaleOf,
@@ -62,4 +63,15 @@ test('a entrelinha cai de 1.6 para 1.5 a partir de 130%', () => {
   assert.equal(readingLineHeight(2), 1.6)
   assert.equal(readingLineHeight(3), 1.5)
   assert.equal(readingLineHeight(4), 1.5)
+})
+
+test('readingKeyDelta: + e = aumentam, - diminui, com modificador ou outra tecla não faz nada', () => {
+  const key = (k: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) => ({ key: k, ctrlKey: false, metaKey: false, altKey: false, ...mods })
+  assert.equal(readingKeyDelta(key('+')), 1)
+  assert.equal(readingKeyDelta(key('=')), 1)
+  assert.equal(readingKeyDelta(key('-')), -1)
+  assert.equal(readingKeyDelta(key('a')), 0)
+  assert.equal(readingKeyDelta(key('+', { ctrlKey: true })), 0)
+  assert.equal(readingKeyDelta(key('-', { metaKey: true })), 0)
+  assert.equal(readingKeyDelta(key('=', { altKey: true })), 0)
 })

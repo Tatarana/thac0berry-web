@@ -57,3 +57,10 @@ export function parseStoredReadingScale(raw: string | null | undefined): number 
 export function readingLineHeight(index: number): number {
   return readingScaleOf(index) >= 1.3 ? 1.5 : 1.6
 }
+
+/** Passos que a tecla pede: "+" e "=" aumentam, "-" diminui; com Ctrl/Cmd/Alt (zoom do navegador) ou outra tecla, 0. */
+export function readingKeyDelta(event: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): number {
+  if (event.ctrlKey || event.metaKey || event.altKey) return 0
+  if (event.key === '+' || event.key === '=') return 1
+  return event.key === '-' ? -1 : 0
+}

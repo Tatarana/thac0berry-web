@@ -24,7 +24,7 @@ export function ReadingScaleStepper({ buttonClass }: { buttonClass: string }) {
 }
 
 /** Botão "Aa" do cabeçalho das janelas de leitura, com o popover de tamanho. */
-export function ReadingScaleButton() {
+export function ReadingScaleButton({ buttonClass = 'paper-link' }: { buttonClass?: string }) {
   // Posição do popover (fixa na tela, medida quando abre).
   const [open, setOpen] = useState<{ top: number; right: number } | null>(null)
   const wrap = useRef<HTMLSpanElement>(null)
@@ -52,7 +52,7 @@ export function ReadingScaleButton() {
 
   return (
     <span className="reading-menu" ref={wrap}>
-      <button ref={button} type="button" className="paper-link" aria-label="Text size" aria-expanded={open !== null} aria-haspopup="true" onClick={() => {
+      <button ref={button} type="button" className={buttonClass} aria-label="Text size" aria-expanded={open !== null} aria-haspopup="true" onClick={() => {
           if (open) return setOpen(null)
           const rect = button.current?.getBoundingClientRect()
           if (rect) setOpen({ top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) })
