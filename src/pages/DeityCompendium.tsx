@@ -63,7 +63,7 @@ export function DeityCompendium() {
         <h1 className="paper-title">Deities</h1>
         <p className="paper-soft">
           {deities
-            ? `${filtered.length} of ${deities.length} deities · ${pantheons.reduce((n, g) => n + g.pantheons.length, 0)} pantheons`
+            ? `${filtered.length} of ${deities.length} gods & heroes · ${pantheons.reduce((n, g) => n + g.pantheons.length, 0)} pantheons`
             : error
               ? `Could not load deities: ${error}`
               : 'Loading deities…'}

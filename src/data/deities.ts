@@ -35,15 +35,17 @@ export interface Deity {
   forgeSelectable?: boolean
   /** Raça-base (id, "dwarf") dos deuses semi-humanos. */
   race?: string
+  /** "hero": herói mortal do LL/MoMy (só compêndio); ausente = divindade. */
+  kind?: 'hero'
 }
 
 /** Ordem dos grupos por posto, igual ao DeityCompendiumView do iPad. */
-export const rankOrder = ['Over-power', 'Greater Power', 'Intermediate Power', 'Lesser Power', 'Demipower', 'Other']
+export const rankOrder = ['Over-power', 'Greater Power', 'Intermediate Power', 'Lesser Power', 'Demipower', 'Heroes', 'Other']
 
 /** Posto divino do grupo; o TotL diz "Greater God", o FA "Greater Power": mesmo grupo. */
 export function rankGroup(rank: string | null | undefined): string {
   const god = /^(Greater|Intermediate|Lesser) God(?:dess)?$/.exec(rank ?? '')
-  const name = god ? `${god[1]} Power` : rank === 'Demigod' ? 'Demipower' : rank
+  const name = god ? `${god[1]} Power` : rank === 'Demigod' ? 'Demipower' : rank === 'Hero' ? 'Heroes' : rank
   return name && rankOrder.includes(name) ? name : 'Other'
 }
 
@@ -65,8 +67,11 @@ export const isForgeSelectable = (deity: Pick<Deity, 'forgeSelectable'>) => deit
 export const pantheonGroupOrder = ['Campaign settings', 'Demihuman', 'Legends & Lore', 'Monster pantheons', 'Other']
 
 /** Em que grupo o panteão da divindade aparece no filtro. */
-export function pantheonGroup(deity: Pick<Deity, 'book' | 'race'>): string {
-  if (deity.race) return 'Demihuman'
+// Panteões demi-humanos: os heróis desses povos (sem `race`) ficam no mesmo grupo dos deuses.
+const demihumanPantheons = ['Dwarven', 'Elven', 'Gnomish', 'Halfling', 'Drow', 'Duergar', 'Svirfneblin']
+
+export function pantheonGroup(deity: Pick<Deity, 'book' | 'race'> & { pantheon?: string }): string {
+  if (deity.race || (deity.pantheon && demihumanPantheons.includes(deity.pantheon))) return 'Demihuman'
   if (settingBooks.includes(deity.book)) return 'Campaign settings'
   if (deity.book === 'Legends & Lore') return 'Legends & Lore'
   if (deity.book === 'Monster Mythology') return 'Monster pantheons'
