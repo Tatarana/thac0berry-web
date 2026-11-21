@@ -40,8 +40,7 @@ Pendências:
 - ~~**Raças em dados**~~ **Feito (2026-11-20, v0.147.0)**, ver "Raças em dados" abaixo.
 - iPad: rodar `python Scripts/sync_data.py` no `thac0berry-ipad` (o CI de lá acusa a divergência); o iPad
   ainda usa `bookOrder` fixo, então CWH/CBN/TOM/CBE não aparecem lá até isso mudar.
-- Os outros kits minerados fora do app (Complete Books de anões, gnomos/halflings e humanoides, Al-Qadim,
-  Spacefarer, Skills & Powers…) seguem o mesmo molde do grupo Demihuman.
+- ~~Os outros kits minerados fora do app~~ **Feito (2026-11-20, v0.148.0)**, ver "Kits que faltavam" abaixo.
 
 ## Raças em dados (2026-11-20, web v0.147.0)
 
@@ -79,3 +78,24 @@ raças escondidas: `thac0berry-data/docs/racas-divergencias-2026-11.md`.
   (o app não o lê); regras especiais das raças novas ficam só em texto (drow, thri-kreen, mul…); Stout/Tallfellow
   Halfling têm "+1 DEX or CON/WIS" no livro, o app aplica só o +1 DEX; arte das raças novas.
 
+
+## Kits que faltavam (2026-11-20, web v0.148.0)
+
+Feito: 234 kits novos no `thac0berry-data` (`scripts/add_missing_kits_2026_11.py`; relatório em
+`thac0berry-data/docs/kits-faltantes-2026-11.md`): 100 jogáveis (Skills & Powers, Complete Books de anões e de
+gnomos/halflings, Sages & Specialists, Necromancers...), 58 de cenário em construção, 76 escondidos. Web:
+- `kit.playable === false` (campo novo, `hiddenReason`, `note`) e os kits de cenário em construção saem do Forge e do
+  seletor da ficha (`kitSelectable` em `src/rules/raceKit.ts`, como `raceSelectable`); o kit já escolhido continua à vista.
+  Isto também esconde o `Dragon Psionicist` (Council of Wyrms), que aparecia em "todos os mundos".
+- Compêndio mostra todos, com o cenário ao lado do livro e o aviso dos escondidos (`kitAvailabilityNote`);
+  subclasses novas: Gnome, Halfling (Demihuman), Gladiator (Warrior), Tradesman (Rogue), Mystic (Priest).
+- Testes: `tests/missingKits.test.ts`; `tests/elfKits.test.ts` ajustado (a regra "todo kit aparece no compêndio" vale
+  também para os escondidos).
+
+Pendências (decisão do usuário):
+- Os 11 kits `undecided` (Rogues of the Moonsea, Dragon PC/Sage/Ward, Taltos, Mystery Man, Tribal Scout, Zande Witch
+  Woman, Manikin) e a prateleira dos Skills & Powers (todas as classes; o grupo é só o arquétipo).
+- Tirar do escondido, quando o usuário quiser: humanoides (precisa das raças jogáveis), Red Steel/Glory of Rome
+  (precisam do cenário no Forge), Gladiator de Dark Sun (precisa da classe).
+- `Forester` duplicado (CFH) segue pendente; Courier (avariel) escondido por raça enquanto Skywarden e Talon seguem visíveis.
+- iPad: `python Scripts/sync_data.py`.

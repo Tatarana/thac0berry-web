@@ -18,7 +18,7 @@ import {
 } from '../rules/multiclass'
 import { classAlignmentWarning, kitAlignmentWarning } from '../rules/alignment'
 import { allowedBySettings } from '../rules/campaignFilter'
-import { isHumanRace, kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
+import { isHumanRace, kitSelectable, kitsAllowedFor, levelLimit, matchRace } from '../rules/raceKit'
 import { classCampaignSetting, ravenloftClasses, ravenloftWarnings } from '../rules/ravenloft'
 import { canonicalClass, classGroup } from '../rules/rules'
 import type { CharacterClass, ClassLevel, PlayerCharacter } from '../types/library'
@@ -329,8 +329,8 @@ function KitGallery({ draft, mutate, settings }: { draft: PlayerCharacter; mutat
   }, [draft.characterClass, JSON.stringify(draft.multiClasses ?? []), JSON.stringify(draft.formerClasses ?? [])])
 
   const chooseKit = (kit: Kit | null) => mutate((c) => { c.kit = kit ? kit.name : null })
-  // Kits dos cenários da mesa (o já escolhido continua à vista).
-  const bySettings = (kits ?? []).filter((kit) => kit.name === draft.kit || allowedBySettings(kit.setting, settings))
+  // Kits dos cenários da mesa, sem os escondidos (playable: false) nem os de cenário em construção (o já escolhido continua à vista).
+  const bySettings = (kits ?? []).filter((kit) => kitSelectable(kit, settings, draft.kit))
   // Filtro "Only applicable kits": esconde os não aplicáveis (o já escolhido fica).
   const list = filterApplicableKits(bySettings, draft, draft.kit, onlyApplicable)
   const visible = showAll ? list : list.slice(0, KIT_PREVIEW)
