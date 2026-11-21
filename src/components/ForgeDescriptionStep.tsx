@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { loadDeities, type Deity } from '../data/deities'
+import { deityLabel, duplicateNames, loadDeities, pantheonOf, type Deity } from '../data/deities'
 import { loadAllKits } from '../data/kits'
 import { genderOf, heroImages } from '../lib/forgeImages'
 import { alignmentCode } from '../rules/alignment'
@@ -9,10 +9,13 @@ import {
   averageMeasure,
   bodyTable,
   deityFits,
+  deityOfRace,
   deitySetting,
   feetAndInches,
   measureDice,
   parseInches,
+  patronChoices,
+  raceGodsLabel,
   rollMeasure,
   type Measure,
 } from '../rules/description'
@@ -156,19 +159,11 @@ export function ForgeDescriptionStep({
     mutate((c) => void (c.backgroundHistory = hook.charAt(0).toUpperCase() + hook.slice(1)))
   }
 
-  const q = query.trim().toLowerCase()
-  const gods = useMemo(
-    () =>
-      (deities ?? [])
-        .filter((g) => {
-          if (q && !`${g.name} ${g.portfolio ?? ''}`.toLowerCase().includes(q)) return false
-          if (filter === 'fit') return deityFits(g.alignment, mine)
-          if (filter === 'all') return true
-          return deitySetting(g.book) === filter
-        })
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [deities, q, filter, mine],
-  )
+  // Só os deuses que o Forge oferece (os de forgeSelectable false ficam no compêndio); os semi-humanos
+  // valem em qualquer cenário, e os da raça do personagem vêm primeiro, em destaque.
+  const gods = useMemo(() => patronChoices(deities ?? [], { filter, query, alignment: mine, race }), [deities, query, filter, mine, race])
+  const raceLabel = useMemo(() => raceGodsLabel(deities ?? [], race), [deities, race])
+  const repeated = useMemo(() => duplicateNames(deities ?? []), [deities])
   const portrait = portraitURL ? [portraitURL] : heroImages(race, canonicalClass(draft.characterClass), gender)
   const nav = { onBack, onNext: onFinish, nextLabel: creating ? 'Creating…' : 'Create character', ready: !creating }
 
@@ -300,6 +295,7 @@ export function ForgeDescriptionStep({
               {(
                 [
                   ['fit', 'Fits your alignment'],
+                  ...(raceLabel ? ([['race', raceLabel]] as const) : ([['Demihuman', 'Demihuman gods']] as const)),
                   ['Forgotten Realms', 'Forgotten Realms'],
                   ['Dragonlance', 'Dragonlance'],
                   ['all', 'All'],
@@ -320,15 +316,16 @@ export function ForgeDescriptionStep({
                 <button
                   key={g.id}
                   type="button"
-                  className={['ds-god', deityFits(g.alignment, mine) ? 'ds-god-fit' : '', draft.deity === g.name ? 'ds-god-on' : ''].join(' ')}
+                  className={['ds-god', deityFits(g.alignment, mine) ? 'ds-god-fit' : '', deityOfRace(g, race) ? 'ds-god-kin' : '', draft.deity === g.name ? 'ds-god-on' : ''].join(' ')}
                   aria-pressed={draft.deity === g.name}
                   onClick={() => mutate((c) => void (c.deity = g.name))}
                 >
                   <span className="ds-god-al">{g.alignment && g.alignment !== 'None' ? g.alignment : '—'}</span>
-                  <b>{g.name}</b>
+                  <b>{deityLabel(g, repeated)}</b>
                   <i>
-                    {g.rank || 'Power'} · {deitySetting(g.book)}
+                    {[g.rank || 'Power', g.race ? pantheonOf(g) : deitySetting(g)].join(' · ')}
                   </i>
+                  {deityOfRace(g, race) && <span className="ds-god-kin-tag">Your people’s god</span>}
                   {g.portfolio && <p>{g.portfolio.length > 90 ? `${g.portfolio.slice(0, 88).trimEnd()}…` : g.portfolio}</p>}
                   {g.symbol && <em>{g.symbol.length > 70 ? `${g.symbol.slice(0, 68).trimEnd()}…` : g.symbol}</em>}
                 </button>

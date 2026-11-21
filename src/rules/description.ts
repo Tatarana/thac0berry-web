@@ -9,7 +9,8 @@
 // - Meio-vistani (Domains of Dread): envelhece como o humano (Tabela 67); a
 //   altura, o peso e a idade inicial ficam os do humano.
 
-import { baseRaceRecord, type RaceName } from './raceKit.ts'
+import { isForgeSelectable, type Deity } from '../data/deities.ts'
+import { baseRaceRecord, isRaceOf, raceRecord, type RaceName } from './raceKit.ts'
 import type { Gender } from '../lib/forgeImages.ts'
 
 export interface Dice {
@@ -133,6 +134,60 @@ export function deityFits(deity: string | null | undefined, mine: string | null 
   return Math.abs(g.law - m.law) + Math.abs(g.good - m.good) <= 1
 }
 
-/** De que cenário a divindade vem (pelo livro dos dados). */
-export const deitySetting = (book: string | null | undefined) =>
-  book === 'Tales of the Lance' ? 'Dragonlance' : book === 'Faiths & Avatars' || book === 'Powers & Pantheons' ? 'Forgotten Realms' : (book ?? '')
+/** Grupo dos deuses semi-humanos: valem em qualquer cenário. */
+export const DEMIHUMAN = 'Demihuman'
+
+/**
+ * De que cenário a divindade vem: pelo panteão e pelo livro. Deus semi-humano
+ * (tem `race`) é "Demihuman", de qualquer campanha; o Legends & Lore e o
+ * Monster Mythology têm o nome do livro (só aparecem no compêndio).
+ */
+export function deitySetting(deity: Pick<Deity, 'book' | 'race' | 'pantheon'> | string | null | undefined): string {
+  const d = typeof deity === 'string' || !deity ? { book: deity ?? '', race: undefined } : deity
+  if (d.race) return DEMIHUMAN
+  const book = d.book
+  return book === 'Tales of the Lance' ? 'Dragonlance' : book === 'Faiths & Avatars' || book === 'Powers & Pantheons' ? 'Forgotten Realms' : book
+}
+
+/** Quem o Forge oferece como patrono: fora os de `forgeSelectable: false` (só compêndio). */
+export const forgeDeities = <T extends Pick<Deity, 'forgeSelectable'>>(deities: T[]): T[] => deities.filter(isForgeSelectable)
+
+/**
+ * O deus é da raça do personagem? A raça (ou a raça-base da subraça) bate com
+ * a `race` do deus: Mountain Dwarf → Moradin; Drow → os deuses elfos.
+ */
+export function deityOfRace(deity: Pick<Deity, 'race'>, race: RaceName | null | undefined): boolean {
+  return !!deity.race && isRaceOf(race, deity.race)
+}
+
+const demihumanAdjective: Record<string, string> = { dwarf: 'Dwarven', elf: 'Elven', gnome: 'Gnomish', halfling: 'Halfling' }
+
+/** Rótulo do chip da raça do personagem ("Dwarven gods"); null se a raça não tem deuses semi-humanos. */
+export function raceGodsLabel(deities: Pick<Deity, 'race'>[], race: RaceName | null | undefined): string | null {
+  const sample = deities.find((d) => deityOfRace(d, race))
+  if (!sample?.race) return null
+  const baseId = sample.race
+  return `${demihumanAdjective[baseId] ?? raceRecord(baseId)?.name ?? baseId} gods`
+}
+
+/**
+ * A lista do patrono no Forge. `filter`: 'fit' (alinhamento), 'race' (deuses da
+ * raça), 'all', ou o cenário/grupo ("Forgotten Realms", "Dragonlance",
+ * "Demihuman"). Os deuses semi-humanos não dependem do cenário da campanha.
+ * Os da raça do personagem vêm primeiro; o resto, em ordem alfabética.
+ */
+export function patronChoices(
+  deities: Deity[],
+  opts: { filter: string; query: string; alignment: string | null | undefined; race: RaceName | null | undefined },
+): Deity[] {
+  const q = opts.query.trim().toLowerCase()
+  return forgeDeities(deities)
+    .filter((g) => {
+      if (q && !`${g.name} ${g.portfolio ?? ''}`.toLowerCase().includes(q)) return false
+      if (opts.filter === 'fit') return deityFits(g.alignment, opts.alignment)
+      if (opts.filter === 'race') return deityOfRace(g, opts.race)
+      if (opts.filter === 'all') return true
+      return deitySetting(g) === opts.filter
+    })
+    .sort((a, b) => Number(deityOfRace(b, opts.race)) - Number(deityOfRace(a, opts.race)) || a.name.localeCompare(b.name))
+}
