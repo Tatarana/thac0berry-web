@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-14: 716 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dark Sun, de Greyhawk, do Dragonlance e do Ravenloft com descrição têm imagem.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-22: 867 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms e do Dragonlance com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres. Os dados foram enriquecidos depois dos primeiros blocos, então Ravenloft (65), Dark Sun (32) e Greyhawk (9) voltaram a ter pendências.
 
 ## Como funciona
 
@@ -46,6 +46,8 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dark 
 | Bloco 16 | 5 | Fim do Ravenloft: Will O'Deep, Will O'Sea, Zombie Fog, Zombie Lord, Desert Zombie; publicado, validação do usuário pendente |
 | Bloco 17 | 50 | Mystara e Savage Coast, de Actaeon a Herathian Voat (32 Mystara, 18 Savage Coast); publicado, validação do usuário pendente |
 | Bloco 18 | 50 | Mystara e Savage Coast, de Herex a Spectral Death (27 Mystara, 23 Savage Coast); publicado, validação do usuário pendente |
+| Bloco 19 | 32 | Fim do Forgotten Realms & Continents (Faerûn, Al-Qadim, Kara-Tur e Realmspace), de Architect Builder a Tempest; publicado, validação do usuário pendente |
+| Bloco 20 | 19 | Fim do Dragonlance, de Daemonlord a Wichtlin; publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -277,6 +279,7 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 - Validar o bloco 17: `../forge-art/monsters/folha-bloco-17-N.jpg`; ressalvas em `block-17-log.md`.
   Atenção ao Fachan: o único braço saiu do ombro, não do meio do peito (candidato ao lápis).
 - Validar o bloco 18: `../forge-art/monsters/folha-bloco-18-N.jpg`; ressalvas em `block-18-log.md`.
+- Validar os blocos 19 e 20: `../forge-art/monsters/folha-bloco-19-N.jpg` e `folha-bloco-20-N.jpg`; ressalvas em `block-19-log.md` e `block-20-log.md`.
 - Depois da primeira passada, criar imagens das variantes que parecem outro monstro (Drider, Ogre
   Mage, Winter Wolf), o que exige a imagem acompanhar a variante no app. Decisão do usuário em
   2026-11-06: uma imagem por ficha agora, variantes importantes depois.
