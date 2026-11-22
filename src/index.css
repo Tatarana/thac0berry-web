@@ -7444,6 +7444,12 @@ button.trail-done:hover .trail-label {
   transform: scale(1.04);
 }
 
+.forge-image-wait {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .forge-card-noart {
   display: flex;
   flex-direction: column;

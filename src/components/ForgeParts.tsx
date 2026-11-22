@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { loadRulesIndex, type RuleIndexEntry } from '../data/rules'
 import { settingLogo } from '../lib/campaigns'
 import { slotOfSrc } from '../lib/siteImageRules'
-import { useIsAdmin, useSiteImages } from '../lib/siteImages'
+import { useIsAdmin, useSiteImages, useSiteImagesReady } from '../lib/siteImages'
 import { BookCode } from './BookCode'
 import { ReadingScaleButton } from './ReadingScaleControl'
 import { RuleDetail } from './RuleDetail'
@@ -60,6 +60,7 @@ export function ForgeEmbers() {
 export function ForgeImage({ images, alt, compact = false, editable = false }: { images: string | string[]; alt: string; compact?: boolean; editable?: boolean }) {
   const repo = Array.isArray(images) ? images : [images]
   const list = useSiteImages(repo)
+  const ready = useSiteImagesReady()
   const isAdmin = useIsAdmin()
   const key = list.join('|')
   const [tried, setTried] = useState({ key, index: 0 })
@@ -67,6 +68,9 @@ export function ForgeImage({ images, alt, compact = false, editable = false }: {
   // O lápis edita a imagem mais específica da lista (a do gênero, se houver).
   const slot = editable && isAdmin ? slotOfSrc(repo[0]) : null
   const pencil = slot && <SiteImageEdit slot={slot} shown={list[index] ?? null} />
+  // Sem a lista de imagens do site, o arquivo do repo pode ser a arte antiga:
+  // espera, mostrando só o fundo do card.
+  if (!ready) return <span className="forge-image-wait" aria-hidden="true" />
   if (index >= list.length) {
     return (
       <>
@@ -281,7 +285,9 @@ export function ForgeSlotSockets({ label, used, total }: { label: string; used: 
 export function ForgeCarousel({ title, note, art, children }: { title: string; note?: string; art?: string; children: ReactNode }) {
   const track = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ start: true, end: true })
-  const [artSrc] = useSiteImages(art ? [art] : [])
+  const [siteArt] = useSiteImages(art ? [art] : [])
+  // Antes da lista de imagens do site, o arquivo do repo pode ser a arte antiga.
+  const artSrc = useSiteImagesReady() ? siteArt : undefined
   const [artFailed, setArtFailed] = useState<string | null>(null)
   const artSlot = useIsAdmin() && art ? slotOfSrc(art) : null
 

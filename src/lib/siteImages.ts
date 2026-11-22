@@ -27,10 +27,37 @@ export const siteImageURL = (path: string) => joinURL(SITE_IMAGES_BASE_URL, path
 
 let current: ReadonlyMap<string, string> = new Map()
 let loaded = false
+// A lista "está pronta" quando a primeira carga termina (com ou sem erro) ou
+// depois de 3 s sem resposta: até lá, o Forge não mostra o arquivo do repo,
+// que pode ser a arte antiga, para não trocá-la na frente do usuário.
+let ready = false
+const READY_TIMEOUT_MS = 3000
 const listeners = new Set<() => void>()
+
+function markReady() {
+  if (ready) return
+  ready = true
+  for (const listener of listeners) listener()
+}
+
+/** Começa a carga da lista uma única vez (e o prazo de 3 s). Chamada na partida do app; o `subscribe` segue como reserva. */
+export function preloadSiteImages(): void {
+  if (loaded) return
+  loaded = true
+  setTimeout(markReady, READY_TIMEOUT_MS)
+  void refreshSiteImages()
+}
 
 /** Recarrega as versões atuais (de 1000 em 1000, o limite por resposta da API). */
 export async function refreshSiteImages(): Promise<void> {
+  try {
+    await loadSiteImages()
+  } finally {
+    markReady()
+  }
+}
+
+async function loadSiteImages(): Promise<void> {
   const next = new Map<string, string>()
   const page = 1000
   for (let from = 0; ; from += page) {
@@ -91,13 +118,15 @@ export function fetchDeityImages(): Promise<Map<string, string>> {
 }
 function subscribe(listener: () => void) {
   listeners.add(listener)
-  if (!loaded) {
-    loaded = true
-    void refreshSiteImages()
-  }
+  preloadSiteImages()
   return () => {
     listeners.delete(listener)
   }
+}
+
+/** A lista de imagens atuais já chegou (ou deu erro, ou passou o prazo)? */
+export function useSiteImagesReady(): boolean {
+  return useSyncExternalStore(subscribe, () => ready)
 }
 
 /** Troca cada arquivo do repo pela versão atual do slot, se houver. */
