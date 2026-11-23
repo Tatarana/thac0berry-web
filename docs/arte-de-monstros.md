@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-22: 867 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms e do Dragonlance com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres. Os dados foram enriquecidos depois dos primeiros blocos, então Ravenloft (65), Dark Sun (32) e Greyhawk (9) voltaram a ter pendências.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-23: 899 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance e do Dark Sun com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres. Os dados foram enriquecidos depois dos primeiros blocos, então Ravenloft (65) e Greyhawk (9) voltaram a ter pendências.
 
 ## Como funciona
 
@@ -48,6 +48,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms e do Drag
 | Bloco 18 | 50 | Mystara e Savage Coast, de Herex a Spectral Death (27 Mystara, 23 Savage Coast); publicado, validação do usuário pendente |
 | Bloco 19 | 32 | Fim do Forgotten Realms & Continents (Faerûn, Al-Qadim, Kara-Tur e Realmspace), de Architect Builder a Tempest; publicado, validação do usuário pendente |
 | Bloco 20 | 19 | Fim do Dragonlance, de Daemonlord a Wichtlin; publicado, validação do usuário pendente |
+| Bloco 21 | 32 | Fim do Dark Sun com descrição, de Brambleweed a Thinking Zombie (Dwarf e Elf de Athas ficam fora, nome igual ao de outras coleções); publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
