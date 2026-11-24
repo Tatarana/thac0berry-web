@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-23: 1.076 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk e do Ravenloft com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-24: 1.118 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft e do Spelljammer com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -52,7 +52,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 22 | 43 | Fim de Mystara/Savage Coast (34) e do Greyhawk (9) com descrição, de Gargantua a Sea Zombie; publicado, validação do usuário pendente |
 | Bloco 23 | 33 | Ravenloft com descrição, de Akikage a Hearth Fiend; publicado, validação do usuário pendente |
 | Bloco 24 | 32 | Fim do Ravenloft com descrição, de Abber Nomads a Vampire Illithid; publicado, validação do usuário pendente |
-| Blocos 25 a 27 | 111 | Spelljammer com descrição, 37 por bloco; 69 publicados (bloco 25 inteiro e 32 do 26), 42 aguardando o limite diário do ChatGPT; fila em `tmp-data/art17/queue25.txt` |
+| Blocos 25 a 27 | 111 | Spelljammer com descrição, 37 por bloco; gerados em dois dias por causa do limite diário do ChatGPT |
 
 ## Imagens que exigem atenção
 
