@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-25: 1.343 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft e do Spelljammer com descrição têm imagem, e do Planescape faltam 4 (dabus, dretch, dust_mephit, eater_of_knowledge). Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-25: 1.347 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -53,7 +53,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 23 | 33 | Ravenloft com descrição, de Akikage a Hearth Fiend; publicado, validação do usuário pendente |
 | Bloco 24 | 32 | Fim do Ravenloft com descrição, de Abber Nomads a Vampire Illithid; publicado, validação do usuário pendente |
 | Blocos 25 a 27 | 111 | Spelljammer com descrição, 37 por bloco; gerados em dois dias por causa do limite diário do ChatGPT |
-| Blocos 28 a 33 | 225 | Planescape com descrição (229); faltam 4 por causa do limite do ChatGPT; publicado, validação do usuário pendente |
+| Blocos 28 a 33 | 229 | Planescape com descrição; publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
