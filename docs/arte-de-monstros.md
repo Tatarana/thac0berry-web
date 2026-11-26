@@ -266,6 +266,9 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Werejaguar | `werejaguar` | O rosto também tem pelo (a ficha diz rosto e palmas sem pelo) |
 | Greater Wolfwere | `wolfwere_greater` | O lobo não parece ter 5 a 6 pés na cernelha |
 | Zombie Wolf | `zombie_wolf` | Nenhum lobo aparece com três patas (refeito sem feridas depois de bloqueio por violência) |
+| Shalarin | `shalarin` | Humanos comuns nadando ao fundo, sem magia aparente para respirar |
+| Roc (Zakhara) | `roc_zakharan` | Parece pequeno; a perspectiva não mostra o tamanho colossal |
+| Kamatlan | `kamatlan` | Só duas cobras visíveis; a ficha pede duas em cada ombro |
 
 ## Pendências de validação
 
@@ -307,6 +310,3 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
   "night scene, no sun" ou "indoor scene, no sky"; mesmo assim, "subterrâneo" sozinho ainda saiu
   com céu.
 - O `--dry-run` de `add-monster-image.mjs` deixa `.preview.webp` na pasta atual; rodar fora do repo.
-| Shalarin | `shalarin` | Humanos comuns nadando ao fundo, sem magia aparente para respirar |
-| Roc (Zakhara) | `roc_zakharan` | Parece pequeno; a perspectiva não mostra o tamanho colossal |
-| Kamatlan | `kamatlan` | Só duas cobras visíveis; a ficha pede duas em cada ombro |
