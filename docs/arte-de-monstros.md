@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-25: 1.347 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-25: 1.423 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur). Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -54,6 +54,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 24 | 32 | Fim do Ravenloft com descrição, de Abber Nomads a Vampire Illithid; publicado, validação do usuário pendente |
 | Blocos 25 a 27 | 111 | Spelljammer com descrição, 37 por bloco; gerados em dois dias por causa do limite diário do ChatGPT |
 | Blocos 28 a 33 | 229 | Planescape com descrição; publicado, validação do usuário pendente |
+| Blocos 34 e 35 | 76 | Other Campaigns & Magazines do Forgotten Realms: 52 de Faerûn (34) e 24 de Al-Qadim, Maztica e Kara-Tur (35); publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -306,3 +307,6 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
   "night scene, no sun" ou "indoor scene, no sky"; mesmo assim, "subterrâneo" sozinho ainda saiu
   com céu.
 - O `--dry-run` de `add-monster-image.mjs` deixa `.preview.webp` na pasta atual; rodar fora do repo.
+| Shalarin | `shalarin` | Humanos comuns nadando ao fundo, sem magia aparente para respirar |
+| Roc (Zakhara) | `roc_zakharan` | Parece pequeno; a perspectiva não mostra o tamanho colossal |
+| Kamatlan | `kamatlan` | Só duas cobras visíveis; a ficha pede duas em cada ombro |
