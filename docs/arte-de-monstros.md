@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.479 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft e de Greyhawk. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.531 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun e de Dragonlance. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -56,6 +56,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Blocos 28 a 33 | 229 | Planescape com descrição; publicado, validação do usuário pendente |
 | Blocos 34 e 35 | 76 | Other Campaigns & Magazines do Forgotten Realms: 52 de Faerûn (34) e 24 de Al-Qadim, Maztica e Kara-Tur (35); publicado, validação do usuário pendente |
 | Blocos 36 e 37 | 56 | Other Campaigns & Magazines de Ravenloft (30, bloco 36) e de Greyhawk (26, bloco 37); publicado, validação do usuário pendente |
+| Bloco 38 | 52 | Other Campaigns & Magazines de Planescape (37), Dark Sun (7), Dragonlance (7) e The Meharmaine (Birthright, listado com Dark Sun); publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
@@ -273,6 +274,8 @@ Todas estão publicadas. Saem desta lista quando o usuário validar ou trocar a 
 | Giant Starfish | `giant_starfish` | Os braços parecem tentáculos de polvo, com ventosas por cima |
 | Vecna | `vecna_the_maimed_god_lord_of_cavitius_demigod` | Não fica evidente que faltam a mão e o olho esquerdos |
 | The Hand | `the_hand` | A mão que serve de cabeça tem um olho na palma, que a ficha não descreve |
+| Pazrael | `pazrael_abyssal_lord_tanar_ri` | Parece uma ave gigante; o vrock da ficha é um demônio humanoide com feições de abutre |
+| Shaqat Beetle | `shaqat_beetle` | Os besouros parecem bem maiores que as 3 polegadas da ficha |
 
 ## Pendências de validação
 
