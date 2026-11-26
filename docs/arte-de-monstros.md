@@ -1,7 +1,7 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.686 monstros
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.688 monstros
 publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun, de Dragonlance e de Spelljammer, e os do MC Annuals que são do Forgotten Realms, de Ravenloft, de Dark Sun e de Greyhawk. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
@@ -60,6 +60,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 39 | 32 | Other Campaigns & Magazines de Spelljammer; publicado, validação do usuário pendente |
 | Bloco 40 | 71 | MC Annuals do Forgotten Realms; publicado, validação do usuário pendente |
 | Bloco 41 | 64 | MC Annuals de Ravenloft, Dark Sun, Planescape, Greyhawk, Mystara, Dragonlance e Spelljammer; 52 publicados, 12 esperando o limite diário do ChatGPT |
+| Bloco 42 | 21 | MC Annuals de Al-Qadim, Birthright e Council of Wyrms; 2 publicados, 19 esperando o limite diário do ChatGPT |
 
 ## Imagens que exigem atenção
 
