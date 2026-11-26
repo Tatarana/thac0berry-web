@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.531 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun e de Dragonlance. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.563 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun, de Dragonlance e de Spelljammer. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -57,6 +57,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Blocos 34 e 35 | 76 | Other Campaigns & Magazines do Forgotten Realms: 52 de Faerûn (34) e 24 de Al-Qadim, Maztica e Kara-Tur (35); publicado, validação do usuário pendente |
 | Blocos 36 e 37 | 56 | Other Campaigns & Magazines de Ravenloft (30, bloco 36) e de Greyhawk (26, bloco 37); publicado, validação do usuário pendente |
 | Bloco 38 | 52 | Other Campaigns & Magazines de Planescape (37), Dark Sun (7), Dragonlance (7) e The Meharmaine (Birthright, listado com Dark Sun); publicado, validação do usuário pendente |
+| Bloco 39 | 32 | Other Campaigns & Magazines de Spelljammer; publicado, validação do usuário pendente |
 
 ## Imagens que exigem atenção
 
