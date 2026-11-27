@@ -172,9 +172,9 @@ Human, Elf, Dwarf, Half-Elf, Halfling) deixam de usar a imagem da raça-base do 
 
 Geradas em 2026-11-27 pelo ChatGPT (originais 1086×1448 em `forge-art/race-<raça>-<gênero>.png`, com
 backup no bucket privado em `forge/`). Publicar com `scripts/add-forge-image.mjs <nome> <arquivo>`
-(credenciais de `~/.thac0berry/monster-art-upload.env` no ambiente); o usuário IAM
-`thac0berry-monster-art` precisa poder gravar em `forge/*` no bucket de imagens do site (hoje só
-`monster/*` e `deity/*`). Alternativa: o lápis de admin no card da raça. Detalhes aceitos: os
+(credenciais de `~/.thac0berry/monster-art-upload.env` no ambiente; o usuário IAM
+`thac0berry-monster-art` grava em `monster/*`, `deity/*` e `forge/*` desde 2026-11-27). As 20 estão
+publicadas (versão 1) e aparecem nos cards do Forge. Detalhes aceitos: os
 halflings saíram com orelhas pontudas (o livro só diz que têm proporções humanas e rosto de criança);
 o estilo é mais aquarelado que o das 17 raças antigas, puxado pela paleta de Athas.
 
