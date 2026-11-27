@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-26: 1.688 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun, de Dragonlance e de Spelljammer, e os do MC Annuals que são do Forgotten Realms, de Ravenloft, de Dark Sun e de Greyhawk. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-27: 1.719 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun, de Dragonlance e de Spelljammer, e os do MC Annuals ligados a cenários (Forgotten Realms, Ravenloft, Dark Sun, Al-Qadim, Planescape, Greyhawk, Mystara, Birthright, Dragonlance, Spelljammer e Council of Wyrms). Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -59,8 +59,8 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 38 | 52 | Other Campaigns & Magazines de Planescape (37), Dark Sun (7), Dragonlance (7) e The Meharmaine (Birthright, listado com Dark Sun); publicado, validação do usuário pendente |
 | Bloco 39 | 32 | Other Campaigns & Magazines de Spelljammer; publicado, validação do usuário pendente |
 | Bloco 40 | 71 | MC Annuals do Forgotten Realms; publicado, validação do usuário pendente |
-| Bloco 41 | 64 | MC Annuals de Ravenloft, Dark Sun, Planescape, Greyhawk, Mystara, Dragonlance e Spelljammer; 52 publicados, 12 esperando o limite diário do ChatGPT |
-| Bloco 42 | 21 | MC Annuals de Al-Qadim, Birthright e Council of Wyrms; 2 publicados, 19 esperando o limite diário do ChatGPT |
+| Bloco 41 | 64 | MC Annuals de Ravenloft, Dark Sun, Planescape, Greyhawk, Mystara, Dragonlance e Spelljammer |
+| Bloco 42 | 21 | MC Annuals de Al-Qadim, Birthright e Council of Wyrms |
 
 ## Imagens que exigem atenção
 
