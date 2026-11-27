@@ -61,7 +61,7 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 40 | 71 | MC Annuals do Forgotten Realms; publicado, validação do usuário pendente |
 | Bloco 41 | 64 | MC Annuals de Ravenloft, Dark Sun, Planescape, Greyhawk, Mystara, Dragonlance e Spelljammer |
 | Bloco 42 | 21 | MC Annuals de Al-Qadim, Birthright e Council of Wyrms |
-| Bloco 43 | 45 | Os que tinham escapado: 26 das coleções de cenário (Planescape, Mystara, Spelljammer, Dark Sun, Dragonlance, Ravenloft, FR e Greyhawk), 18 de Other Campaigns ligados a cenário pelo texto e o Fish (Athas) do MC Annuals |
+| Bloco 43 | 45 | Os que tinham escapado: 27 das coleções de cenário (Planescape, Mystara, Spelljammer, Dark Sun, Dragonlance, Ravenloft, FR e Greyhawk), 17 de Other Campaigns ligados a cenário pelo texto e o Fish (Athas) do MC Annuals |
 | Bloco 44 | 19 | Birthright de Other Campaigns (Blood Spawn, Book of Magecraft, Tribes of the Heartless Waste) |
 
 ## Imagens que exigem atenção
