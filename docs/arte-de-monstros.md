@@ -1,8 +1,8 @@
 # Ilustrações de monstros
 
 Uma imagem em paisagem (1536×1024) por monstro, gerada pelo ChatGPT no Chrome e mostrada na
-ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-27: 1.719 monstros
-publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun, de Dragonlance e de Spelljammer, e os do MC Annuals ligados a cenários (Forgotten Realms, Ravenloft, Dark Sun, Al-Qadim, Planescape, Greyhawk, Mystara, Birthright, Dragonlance, Spelljammer e Council of Wyrms). Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
+ficha, com tela cheia para o mestre exibir à mesa. Situação em 2026-11-27: 1.783 monstros
+publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Dragonlance, do Dark Sun, de Mystara, do Greyhawk, do Ravenloft, do Spelljammer e do Planescape com descrição têm imagem, e também os de Other Campaigns & Magazines que são do Forgotten Realms (Faerûn, Al-Qadim, Maztica e Kara-Tur), de Ravenloft, de Greyhawk, de Planescape, de Dark Sun, de Dragonlance e de Spelljammer, e os do MC Annuals ligados a cenários (Forgotten Realms, Ravenloft, Dark Sun, Al-Qadim, Planescape, Greyhawk, Mystara, Birthright, Dragonlance, Spelljammer e Council of Wyrms). De Other Campaigns entram também os de Birthright e os que o texto da descrição liga a um cenário coberto. Ficam de fora Dwarf e Elf de Athas (nome igual ao de outras coleções), o Parasite de Savage Coast (a ficha é uma lista de parasitas) e os genéricos de MC Annuals e Other Campaigns. Critério de "com descrição": o texto antes de `## Combat` em `fullText` tem pelo menos 300 caracteres.
 
 ## Como funciona
 
@@ -61,6 +61,8 @@ publicados de 2.386; todos os do Monstrous Manual, do Forgotten Realms, do Drago
 | Bloco 40 | 71 | MC Annuals do Forgotten Realms; publicado, validação do usuário pendente |
 | Bloco 41 | 64 | MC Annuals de Ravenloft, Dark Sun, Planescape, Greyhawk, Mystara, Dragonlance e Spelljammer |
 | Bloco 42 | 21 | MC Annuals de Al-Qadim, Birthright e Council of Wyrms |
+| Bloco 43 | 45 | Os que tinham escapado: 26 das coleções de cenário (Planescape, Mystara, Spelljammer, Dark Sun, Dragonlance, Ravenloft, FR e Greyhawk), 18 de Other Campaigns ligados a cenário pelo texto e o Fish (Athas) do MC Annuals |
+| Bloco 44 | 19 | Birthright de Other Campaigns (Blood Spawn, Book of Magecraft, Tribes of the Heartless Waste) |
 
 ## Imagens que exigem atenção
 
