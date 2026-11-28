@@ -27,5 +27,13 @@ Cada cena segue a descrição do avatar no livro. Ressalvas leves aceitas: a rod
 (símbolo do livro, 4 raios) e o punho da espada de Helm lembram cruz; Garagos pode ter 5 ou 6
 braços; o rosto de Savras não ficou cristalino.
 
-Próximos blocos, pela ordem combinada: Dragonlance (22), deuses semi-humanos (38), deuses de
-monstros (89) e mitologias do mundo real (158, com cuidado com os que ainda são cultuados).
+## Divindades de Dragonlance (2026-11-28)
+
+As 22 divindades do panteão de Krynn (Tales of the Lance) estão publicadas (versão 1). Bloco em
+`../forge-art/deities/block-dl.json`; originais em `../forge-art/deities/<id>.png`, com backup.
+Paladine aparece como Fizban, seu avatar do livro, com o dragão de platina ao fundo; para quem o
+livro não descreve avatar (High God, Chislev, Zivilyn, Takhisis), a cena segue a descrição do
+deus. Ressalva leve aceita: a espada de fogo de Sirrion lembra uma tocha.
+
+Próximos blocos, pela ordem combinada: deuses semi-humanos (38), deuses de monstros (89) e
+mitologias do mundo real (158, com cuidado com os que ainda são cultuados).
