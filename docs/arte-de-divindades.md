@@ -18,3 +18,14 @@ componente `SlotArt` dos monstros). Sem imagem, só o admin vê o lápis; os dem
   `../forge-art/heroes/<bloco>.json` (mesmo formato dos blocos de monstros: id, subject, accuracy,
   scale, setting); ou `monster-art-step.mjs ... --dir <pasta> [--kind monster|deity]`.
 - A Edge Function `site-image-upload` (lápis) precisa aceitar slots `deity/*` no backend.
+## Divindades de Faerûn (2026-11-27)
+
+As 79 divindades do panteão Faerûnian (Faiths & Avatars e Powers & Pantheons) estão publicadas
+(versão 1). O bloco com cena, acurácia, escala e cenário de cada uma está em
+`../forge-art/deities/block-fr.json`; os originais, em `../forge-art/deities/<id>.png`, com backup.
+Cada cena segue a descrição do avatar no livro. Ressalvas leves aceitas: a roda dentada de Gond
+(símbolo do livro, 4 raios) e o punho da espada de Helm lembram cruz; Garagos pode ter 5 ou 6
+braços; o rosto de Savras não ficou cristalino.
+
+Próximos blocos, pela ordem combinada: Dragonlance (22), deuses semi-humanos (38), deuses de
+monstros (89) e mitologias do mundo real (158, com cuidado com os que ainda são cultuados).
